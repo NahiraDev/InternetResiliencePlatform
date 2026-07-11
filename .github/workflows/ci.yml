@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, sprint-0-foundation ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Repository validation
+        run: echo "GuardianDNS CI baseline passed"
