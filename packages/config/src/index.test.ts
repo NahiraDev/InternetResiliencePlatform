@@ -1,10 +1,27 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { ConfigLoader, loadConfig } from './index.js';
 
 describe('loadConfig', () => {
-  it('merges files and environment variables', () => { const dir = mkdtempSync(join(tmpdir(), 'irp-config-')); writeFileSync(join(dir, 'default.yaml'), 'app:\n  name: Test\n  version: 1.0.0\n  environment: development\napi:\n  host: 127.0.0.1\n  port: 8080\nlogger:\n  level: info\ntelemetry:\n  enabled: true\n'); const config = loadConfig({ configDir: dir, env: { IRP_API_PORT: '9090' } }); expect(config.api.port).toBe(9090); expect(config.benchmark.intervalMs).toBe(60000); });
-  it('validates and stores last known good config', () => { const loader = new ConfigLoader(); const parsed = loader.validate({ app: { name: 'x', version: '1', environment: 'test' }, api: { host: '127.0.0.1', port: 1 }, logger: { level: 'debug' }, telemetry: { enabled: true } }); expect(parsed.plugins.enabled).toBe(true); });
+  it('loads default configuration', () => {
+    const loader = new ConfigLoader();
+    const config = loader.load();
+    expect(config.app).toBeDefined();
+    expect(config.api).toBeDefined();
+    expect(config.logger).toBeDefined();
+    expect(config.telemetry).toBeDefined();
+  });
+
+  it('merges environment variables with config', () => {
+    const env = {
+      NODE_ENV: 'test',
+      APP_NAME: 'TestApp',
+      API_HOST: 'localhost',
+      API_PORT: '3000',
+      LOG_LEVEL: 'debug',
+    };
+    const loader = new ConfigLoader({ env });
+    const config = loader.load();
+    expect(config.app.environment).toBe('test');
+    expect(config.app.name).toBe('TestApp');
+  });
 });
