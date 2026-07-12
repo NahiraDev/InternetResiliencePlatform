@@ -138,6 +138,12 @@ importers:
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@irp/network':
+        specifier: workspace:*
+        version: link:../../packages/network
+      '@irp/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -226,6 +232,9 @@ importers:
       '@irp/config':
         specifier: workspace:*
         version: link:../config
+      '@irp/dns':
+        specifier: workspace:*
+        version: link:../dns
       '@irp/logger':
         specifier: workspace:*
         version: link:../logger
