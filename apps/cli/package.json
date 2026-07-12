@@ -16,6 +16,8 @@
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
     "commander": "^12.1.0",
+    "@irp/network": "workspace:*",
+    "@irp/telemetry": "workspace:*"
     "@irp/dns": "workspace:*"
   },
   "devDependencies": {

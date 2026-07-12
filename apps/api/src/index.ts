@@ -11,6 +11,13 @@ import { createHealthStatus, httpRequestDuration, renderPrometheusMetrics } from
 import { AnonymousAuthenticationProvider, AllowAnonymousAuthorization } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
+import { Application } from '@irp/core';
+import { createLogger } from '@irp/logger';
+import { ConnectivityMonitor } from '@irp/network';
+import { MetricsRegistry } from '@irp/telemetry';
+export const buildServer = (runtime = new Application(loadConfig(), createLogger('info'))) => { const app = Fastify({ logger: false }); const network = new ConnectivityMonitor(); const metrics = new MetricsRegistry(); app.get('/health', async () => ({ status: runtime.state })); app.get('/version', async () => ({ name: 'InternetResiliencePlatform', version: runtime.config.app.version })); app.get('/status', async () => ({ status: runtime.state })); app.get('/providers', async () => runtime.providers.map((p) => ({ id: p.id, name: p.name, metadata: p.metadata(), score: runtime.scorer.score(p, runtime.benchmark.stats(p.id)) }))); app.get('/providers/:id', async (request, reply) => { const provider = runtime.providers.find((p) => p.id === (request.params as { id: string }).id); if (!provider) return reply.code(404).send({ error: 'provider not found' }); return { id: provider.id, name: provider.name, metadata: provider.metadata(), health: await provider.health() }; }); app.get('/benchmark', async () => runtime.benchmark.snapshot()); app.post('/benchmark', async () => runtime.benchmark.run(runtime.providers)); app.get('/metrics', async () => { metrics.collectRuntime(); return metrics.snapshot(); }); app.get('/events', async () => runtime.events.snapshot()); app.get('/network', async () => network.status()); app.get('/config', async () => runtime.config); app.post('/reload', async () => { const config = loadConfig(); await runtime.reload(config); return { reloaded: true }; }); return app; };
+if (process.argv[1]?.endsWith('index.js')) { const config = loadConfig(); const runtime = new Application(config, createLogger(config.logger.level)); await runtime.start(); const server = buildServer(runtime); await server.listen({ host: config.api.host, port: config.api.port }); }
+import { IntelligentDnsEngine, defaultDnsEngineConfig, type DnsHealthCheck, type DnsProvider } from '@irp/dns';
 
 const versionResponse = z.object({ name: z.string(), version: z.string(), environment: z.string() });
 const healthResponse = z.object({ state: z.string(), checks: z.record(z.string()), updatedAt: z.string() });
