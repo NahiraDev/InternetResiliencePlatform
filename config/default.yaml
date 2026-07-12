@@ -1,0 +1,11 @@
+app:
+  name: InternetResiliencePlatform
+  version: 0.1.0
+  environment: development
+api:
+  host: 0.0.0.0
+  port: 8080
+logger:
+  level: info
+telemetry:
+  enabled: true
