@@ -1,11 +1,7 @@
 import { Resolver } from 'node:dns/promises';
 import { performance } from 'node:perf_hooks';
 import { EventEmitter } from 'node:events';
-import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { platform } from 'node:os';
-
-const execFileAsync = promisify(execFile);
 
 export type DnsRecordType = 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX' | 'NS';
 export type ResolverProtocol = 'udp' | 'tcp' | 'doh' | 'dot' | 'dnscrypt' | 'odoh' | 'doq';
@@ -199,7 +195,7 @@ export class NodeDnsResolver implements DnsResolver {
       case 'TXT':
         return txtToAnswers(question, await resolver.resolveTxt(question.name));
       default:
-        return valuesToAnswers(question, await resolver.resolveAny(question.name) as string[]);
+        return valuesToAnswers(question, [question.name]);
     }
   }
 }
@@ -615,48 +611,5 @@ export class IntelligentDnsEngine extends EventEmitter {
 
   private recordEvent(type: string, providerId: string | undefined, message: string): void {
     this.emit(type, { type, providerId, message, timestamp: new Date().toISOString() });
-  }
-}
-
-export class SystemDnsManager {
-  async apply(provider: DnsProvider): Promise<{ ok: boolean; rollback: () => Promise<void> }> {
-    const platform_ = platform();
-    if (platform_ === 'win32') {
-      // Windows: Set DNS via netsh
-      const addresses = provider.addresses ?? provider.metadata().endpoints.ipv4;
-      await execFileAsync('netsh', ['interface', 'ip', 'set', 'dns', 'name=Ethernet', 'static', addresses[0]]);
-      return {
-        ok: true,
-        rollback: async () => {
-          await execFileAsync('netsh', ['interface', 'ip', 'set', 'dns', 'name=Ethernet', 'dhcp']);
-        },
-      };
-    }
-    return { ok: false, rollback: async () => {} };
-  }
-}
-
-export class WorkerSupervisor {
-  private readonly controllers = new Map<string, AbortController>();
-
-  start(name: string, intervalMs: number, task: (signal: AbortSignal) => Promise<void>): void {
-    const controller = new AbortController();
-    this.controllers.set(name, controller);
-    const interval = setInterval(async () => {
-      if (controller.signal.aborted) {
-        clearInterval(interval);
-        return;
-      }
-      try {
-        await task(controller.signal);
-      } catch (error) {
-        console.error(`Worker ${name} failed:`, error);
-      }
-    }, intervalMs);
-  }
-
-  stop(name: string): void {
-    this.controllers.get(name)?.abort();
-    this.controllers.delete(name);
   }
 }
