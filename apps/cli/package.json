@@ -15,7 +15,9 @@
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "@irp/network": "workspace:*",
+    "@irp/telemetry": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

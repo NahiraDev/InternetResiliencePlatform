@@ -7,5 +7,17 @@ api:
   port: 8080
 logger:
   level: info
+  json: true
+  color: false
 telemetry:
   enabled: true
+  prometheus: true
+benchmark:
+  intervalMs: 60000
+  question:
+    name: example.com
+    recordType: A
+plugins:
+  directory: plugins
+  enabled: true
+providers: {}
