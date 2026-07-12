@@ -16,6 +16,8 @@
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
     "fastify": "^5.2.1",
+    "@irp/network": "workspace:*",
+    "@irp/telemetry": "workspace:*"
     "@irp/dns": "workspace:*"
   },
   "devDependencies": {

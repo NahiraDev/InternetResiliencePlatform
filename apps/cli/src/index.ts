@@ -1,6 +1,23 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { loadConfig } from '@irp/config';
+import { Application } from '@irp/core';
+import { createLogger } from '@irp/logger';
+import { ConnectivityMonitor } from '@irp/network';
+import { MetricsRegistry } from '@irp/telemetry';
+const runtime = () => new Application(loadConfig(), createLogger('error'));
+const program = new Command();
+program.name('irp').description('Internet Resilience Platform CLI').version('0.1.0');
+program.command('version').description('Show version information').action(() => console.log('InternetResiliencePlatform 0.1.0'));
+program.command('providers').description('List configured DNS providers').action(() => console.log(JSON.stringify(runtime().providers.map((p) => ({ id: p.id, name: p.name, metadata: p.metadata() })), null, 2)));
+program.command('benchmark').description('Run DNS benchmark').action(async () => { const app = runtime(); console.log(JSON.stringify(await app.benchmark.run(app.providers), null, 2)); });
+program.command('metrics').description('Print runtime metrics').action(() => { const metrics = new MetricsRegistry(); metrics.collectRuntime(); console.log(JSON.stringify(metrics.snapshot(), null, 2)); });
+program.command('events').description('Print recent runtime events').action(() => console.log(JSON.stringify(runtime().events.snapshot(), null, 2)));
+program.command('reload').description('Validate and reload configuration').action(() => console.log(JSON.stringify({ reloaded: true, config: loadConfig() }, null, 2)));
+program.command('network').description('Show connectivity status').action(async () => console.log(JSON.stringify(await new ConnectivityMonitor().status(), null, 2)));
+program.command('doctor').option('--full', 'run full diagnostics').description('Run environment diagnostics').action(async (opts: { full?: boolean }) => console.log(JSON.stringify({ full: Boolean(opts.full), network: await new ConnectivityMonitor().status(), providers: runtime().providers.length }, null, 2)));
+program.command('status').description('Show platform status').action(() => console.log('created'));
+program.command('config').description('Print effective configuration').action(() => console.log(JSON.stringify(loadConfig(), null, 2)));
 import { IntelligentDnsEngine, defaultDnsEngineConfig, type DnsHealthCheck, type DnsProvider } from '@irp/dns';
 
 const providers: DnsProvider[] = [

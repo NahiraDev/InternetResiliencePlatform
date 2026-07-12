@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@irp/config": "workspace:*",
-    "@irp/logger": "workspace:*"
+    "@irp/logger": "workspace:*",
+    "@irp/dns": "workspace:*"
   }
 }
