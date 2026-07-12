@@ -15,7 +15,8 @@
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
-    "fastify": "^5.2.1"
+    "fastify": "^5.2.1",
+    "@irp/dns": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
