@@ -11,7 +11,7 @@ describe('DNS providers', () => {
 
 const provider = (id: string, latency: number, _healthy = true): DnsProvider => {
   const details = { id, name: id, homepage: 'https://example.com', endpoints: { ipv4: ['1.1.1.1'], ipv6: ['::1'] }, tags: ['test'], dnssec: true };
-  const config = { enabled: true, timeoutMs: 2000, protocols: ['udp'] as const };
+  const config = { enabled: true, timeoutMs: 2000, protocols: ['udp' as const] };
   return {
     id,
     name: id,
