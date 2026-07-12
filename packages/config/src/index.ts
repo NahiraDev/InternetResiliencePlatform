@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 export const ConfigSchema = z.object({
-  app: z.object({ name: z.string(), version: z.string(), environment: z.enum(['development', 'production', 'test']) }),
+  app: z.object({ name: z.string(), version: z.string(), environment: z.enum(['development', 'staging', 'production', 'test']) }),
   api: z.object({ host: z.string(), port: z.coerce.number().int().min(1).max(65535) }),
   logger: z.object({ level: z.enum(['debug', 'info', 'warn', 'error']), file: z.string().optional() }),
   telemetry: z.object({ enabled: z.boolean() }),
