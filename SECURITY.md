@@ -1,21 +1,18 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+The project is pre-release during Phase 0. Security fixes target the default branch until versioned releases begin.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please do not open public issues for suspected vulnerabilities. Instead, use GitHub private vulnerability reporting when available, or contact the maintainers through the project's published security contact.
 
-Use this section to tell people how to report a vulnerability.
+Include:
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+- Affected component or documentation area.
+- Reproduction steps or proof of concept.
+- Impact assessment.
+- Suggested mitigation, if known.
+
+Maintainers will acknowledge reports, triage severity, and coordinate remediation before public disclosure.

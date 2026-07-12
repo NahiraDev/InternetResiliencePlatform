@@ -1,0 +1,6 @@
+# Default ownership for all repository content.
+* @InternetResiliencePlatform/maintainers
+
+# Security-sensitive documentation and automation.
+/docs/security/ @InternetResiliencePlatform/security
+/.github/workflows/ @InternetResiliencePlatform/maintainers

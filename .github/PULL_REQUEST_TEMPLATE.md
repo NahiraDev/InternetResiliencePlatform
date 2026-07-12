@@ -1,13 +1,22 @@
 ## Summary
 
-Describe the change.
+- 
+
+## Type of change
+
+- [ ] Documentation
+- [ ] Build or CI
+- [ ] Feature
+- [ ] Bug fix
+- [ ] Security
 
 ## Validation
 
-- [ ] Tests added or updated
-- [ ] Documentation updated
-- [ ] No breaking changes introduced
+- [ ] `./scripts/lint.sh`
+- [ ] `./scripts/test.sh`
 
-## Notes
+## Checklist
 
-Additional context.
+- [ ] I updated documentation for user-facing or architecture-impacting changes.
+- [ ] I added or updated ADRs for long-lived design decisions.
+- [ ] I considered security and operational impact.
