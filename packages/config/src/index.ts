@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const ProviderConfigSchema = z.object({ enabled: z.boolean().default(true), timeoutMs: z.coerce.number().int().min(100).max(30_000).default(2_000), protocols: z.array(z.enum(['udp', 'tcp', 'doh', 'dot', 'dnscrypt', 'odoh', 'doq'])).default(['udp', 'tcp', 'doh', 'dot']) });
 export const ConfigSchema = z.object({
-  app: z.object({ name: z.string(), version: z.string(), environment: z.enum(['development', 'production', 'test']) }),
+  app: z.object({ name: z.string(), version: z.string(), environment: z.enum(['development', 'staging', 'production', 'test']) }),
   api: z.object({ host: z.string(), port: z.coerce.number().int().min(1).max(65535) }),
   logger: z.object({ level: z.enum(['debug', 'info', 'warn', 'error']), file: z.string().optional(), json: z.boolean().default(true), color: z.boolean().default(false), rotation: z.object({ maxBytes: z.number().int().positive(), maxFiles: z.number().int().positive() }).optional() }),
   telemetry: z.object({ enabled: z.boolean(), prometheus: z.boolean().default(true) }),

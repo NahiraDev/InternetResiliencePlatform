@@ -10,7 +10,7 @@ describe('DNS providers', () => {
     expect(providers.every((p) => p.supportsDoH() && p.supportsDoT() && p.supportsDNSSEC())).toBe(true);
 import { IntelligentDnsEngine, type DnsHealthCheck, type DnsProvider } from './index.js';
 
-const provider = (id: string, latency: number, healthy = true): DnsProvider => ({ id, name: id, addresses: ['1.1.1.1'], privacyScore: id === 'privacy' ? 1 : 0.5, securityScore: 0.8, supportsDnssec: true, resolvers: [{ resolve: async (question) => [{ ...question, ttl: 60, value: id === 'fast' ? '1.1.1.1' : '9.9.9.9', dnssecValidated: true }] }] });
+const provider = (id: string, latency: number, _healthy = true): DnsProvider => ({ id, name: id, addresses: ['1.1.1.1'], privacyScore: id === 'privacy' ? 1 : 0.5, securityScore: 0.8, supportsDnssec: true, resolvers: [{ resolve: async (question) => [{ ...question, ttl: 60, value: id === 'fast' ? '1.1.1.1' : '9.9.9.9', dnssecValidated: true }] }] });
 
 describe('IntelligentDnsEngine', () => {
   it('ranks healthy low latency providers first and resolves through active provider', async () => {
