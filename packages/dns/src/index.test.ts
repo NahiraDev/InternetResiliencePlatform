@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBuiltinProviders, type DnsResolver } from './index.js';
+import { createBuiltinProviders, type DnsResolver, IntelligentDnsEngine, type DnsHealthCheck, type DnsProvider } from './index.js';
 
 describe('DNS providers', () => {
   it('creates all builtin providers with required capabilities', async () => {
@@ -8,9 +8,21 @@ describe('DNS providers', () => {
     expect(providers.map((p) => p.id)).toEqual(['cloudflare', 'google', 'quad9', 'opendns', 'controld', 'adguard', 'nextdns', 'cleanbrowsing']);
     await expect(providers[0]?.resolveIPv4('example.test')).resolves.toEqual(['127.0.0.1']);
     expect(providers.every((p) => p.supportsDoH() && p.supportsDoT() && p.supportsDNSSEC())).toBe(true);
-import { IntelligentDnsEngine, type DnsHealthCheck, type DnsProvider } from './index.js';
+  });
+});
 
-const provider = (id: string, latency: number, _healthy = true): DnsProvider => ({ id, name: id, addresses: ['1.1.1.1'], privacyScore: id === 'privacy' ? 1 : 0.5, securityScore: 0.8, supportsDnssec: true, resolvers: [{ resolve: async (question) => [{ ...question, ttl: 60, value: id === 'fast' ? '1.1.1.1' : '9.9.9.9', dnssecValidated: true }] }] });
+const provider = (id: string, latency: number, _healthy = true): DnsProvider => ({
+  id,
+  name: id,
+  addresses: ['1.1.1.1'],
+  privacyScore: id === 'privacy' ? 1 : 0.5,
+  securityScore: 0.8,
+  supportsDNSSEC: () => true,
+  supportsDoH: () => true,
+  supportsDoT: () => true,
+  resolveIPv4: async () => ['1.1.1.1'],
+  resolveIPv6: async () => ['2606:4700:4700::1111'],
+});
 
 describe('IntelligentDnsEngine', () => {
   it('ranks healthy low latency providers first and resolves through active provider', async () => {
