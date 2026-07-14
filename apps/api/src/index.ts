@@ -11,9 +11,6 @@ import { createHealthStatus, httpRequestDuration, renderPrometheusMetrics } from
 import { JwtAuthenticationProvider, JwtService, RbacAuthorization, hashPassword, verifyPassword, type Principal } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
-const versionResponse = z.object({ name: z.string(), version: z.string(), environment: z.string() });
-const healthResponse = z.object({ state: z.string(), checks: z.record(z.string()), updatedAt: z.string() });
-const validateResponse = <T>(schema: z.ZodSchema<T>, payload: T): T => schema.parse(payload);
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };

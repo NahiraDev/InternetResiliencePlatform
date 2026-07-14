@@ -77,12 +77,12 @@ importers:
       '@irp/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@irp/dns':
-        specifier: workspace:*
-        version: link:../../packages/dns
       '@irp/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@irp/dns':
+        specifier: workspace:*
+        version: link:../../packages/dns
       '@irp/events':
         specifier: workspace:*
         version: link:../../packages/events
@@ -138,9 +138,6 @@ importers:
       '@irp/dns':
         specifier: workspace:*
         version: link:../../packages/dns
-      '@irp/database':
-        specifier: workspace:*
-        version: link:../../packages/database
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
