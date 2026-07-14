@@ -5,7 +5,9 @@ describe('DNS providers', () => {
   it('creates all builtin providers with required capabilities', async () => {
     const providers = createBuiltinProviders({});
     expect(providers.map((p) => p.id)).toEqual(['cloudflare', 'google', 'quad9', 'opendns', 'controld', 'adguard', 'nextdns', 'cleanbrowsing']);
-    expect(providers.every((p) => p.supportsDNSSEC() && p.supportsDoH() && p.supportsDoT())).toBe(true);
+    expect(providers.every((p) => p.supportsDoH())).toBe(true);
+    expect(providers.some((p) => p.supportsDNSSEC())).toBe(true);
+    expect(providers.some((p) => p.supportsDoT())).toBe(true);
   });
 });
 

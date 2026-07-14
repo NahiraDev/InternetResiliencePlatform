@@ -23,6 +23,7 @@ export interface LoggerOptions {
   service?: string;
   json?: boolean;
   color?: boolean;
+  file?: string;
   rotation?: { maxBytes: number; maxFiles: number };
 }
 
@@ -132,5 +133,10 @@ export const createLogger = (options: LoggerOptions | LogLevel = {}): Logger => 
     return new Logger([new PinoTransport(instance)], level);
   }
 
-  return new Logger([new ConsoleTransport(normalized)], level);
+  const transports: Transport[] = [new ConsoleTransport(normalized)];
+  if (normalized.file) {
+    transports.push(new FileTransport(normalized.file, normalized.rotation));
+  }
+
+  return new Logger(transports, level);
 };

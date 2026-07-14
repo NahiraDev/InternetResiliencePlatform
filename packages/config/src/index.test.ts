@@ -3,8 +3,7 @@ import { ConfigLoader, loadConfig } from './index.js';
 
 describe('loadConfig', () => {
   it('loads default configuration', () => {
-    const loader = new ConfigLoader();
-    const config = loader.load();
+    const config = loadConfig();
     expect(config.app).toBeDefined();
     expect(config.api).toBeDefined();
     expect(config.logger).toBeDefined();

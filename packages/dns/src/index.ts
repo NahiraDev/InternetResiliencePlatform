@@ -1,7 +1,6 @@
 import { Resolver } from 'node:dns/promises';
 import { performance } from 'node:perf_hooks';
 import { EventEmitter } from 'node:events';
-import { promisify } from 'node:util';
 
 export type DnsRecordType = 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX' | 'NS';
 export type ResolverProtocol = 'udp' | 'tcp' | 'doh' | 'dot' | 'dnscrypt' | 'odoh' | 'doq';
