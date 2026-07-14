@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Application, EventBus, HealthScorer, Scheduler } from './index.js';
 import type { AppConfig } from '@irp/config';
 import { Logger } from '@irp/logger';
-const config: AppConfig = { app: { name: 'test', version: '1.0.0', environment: 'test' }, api: { host: '127.0.0.1', port: 8080 }, logger: { level: 'info', json: true, color: false }, telemetry: { enabled: true, prometheus: true }, providers: {}, benchmark: { intervalMs: 60_000, question: { name: 'example.com', recordType: 'A' } }, plugins: { directory: 'plugins', enabled: true } };
+const config: AppConfig = { app: { name: 'test', version: '1.0.0', environment: 'test' }, api: { host: '127.0.0.1', port: 8080 }, logger: { level: 'info', json: true, color: false }, telemetry: { enabled: true, prometheus: true }, providers: {}, benchmark: { intervalMs: 60_000, question: { name: 'example.com', recordType: 'A' } }, dns: { strategy: 'balanced', failover: { failureThreshold: 2, recoveryThreshold: 2, cooldownMs: 30000 }, dnssec: { enabled: true, requireValidation: false }, cache: { ttlMs: 300000, warmDomains: ['example.com'] } }, plugins: { directory: 'plugins', enabled: true } };
 const logger = new Logger([], 'debug');
 describe('core runtime', () => {
   it('publishes asynchronous events', async () => { const bus = new EventBus(); const seen: string[] = []; bus.subscribe('BenchmarkCompleted', (e) => { seen.push(e.type); }); await bus.publish('BenchmarkCompleted', { ok: true }); expect(seen).toEqual(['BenchmarkCompleted']); });

@@ -38,3 +38,16 @@ Report suspected vulnerabilities using the process in [SECURITY.md](SECURITY.md)
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+
+## Phase 5 Core Backend
+
+Phase 5 introduces the production backend foundation under `/api/v1`: authentication with HMAC JWT access and refresh tokens, RBAC permissions, session lifecycle endpoints, standardized success/error responses, pagination metadata, health/readiness/metrics endpoints, and core user, organization, project, and workspace APIs.
+
+The database model is defined in `packages/database/prisma/schema.prisma` and includes users, organizations, projects, workspaces, memberships, roles, permissions, sessions, tokens, audit logs, outbox events, and cache entries with UUID primary keys, timestamps, constraints, foreign keys, indexes, and soft-delete columns where lifecycle deletion is required.
+
+Run the core checks with:
+
+```bash
+pnpm build
+pnpm --filter @irp/api test
+```
