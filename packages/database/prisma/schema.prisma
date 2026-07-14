@@ -1,11 +1,146 @@
 generator client { provider = "prisma-client-js" }
 datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-model User { id String @id @default(uuid()) email String @unique name String? status String @default("active") devices Device[] sessions Session[] auditLogs AuditLog[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
-model Device { id String @id @default(uuid()) userId String name String publicKey String? status String @default("pending") user User @relation(fields: [userId], references: [id], onDelete: Cascade) sessions Session[] healthChecks HealthCheck[] metrics Metric[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
-model Session { id String @id @default(uuid()) userId String deviceId String? expiresAt DateTime revokedAt DateTime? user User @relation(fields: [userId], references: [id], onDelete: Cascade) device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull) createdAt DateTime @default(now()) }
-model Configuration { id String @id @default(uuid()) key String @unique value Json environment String version Int @default(1) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
-model Provider { id String @id @default(uuid()) type String name String slug String @unique status String @default("disabled") capabilities Json @default("{}") healthChecks HealthCheck[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
-model HealthCheck { id String @id @default(uuid()) providerId String? deviceId String? status String latencyMs Int? details Json @default("{}") checkedAt DateTime @default(now()) provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull) device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull) }
-model Metric { id String @id @default(uuid()) name String value Float labels Json @default("{}") deviceId String? observedAt DateTime @default(now()) device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull) }
-model AuditLog { id String @id @default(uuid()) actorUserId String? action String resource String metadata Json @default("{}") ipAddress String? createdAt DateTime @default(now()) actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull) }
-model SystemSetting { id String @id @default(uuid()) key String @unique value Json description String? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
+
+enum UserStatus { pending active suspended deleted }
+enum TokenType { refresh password_reset email_verification }
+enum MembershipStatus { invited active suspended removed }
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique @db.Citext
+  name String?
+  passwordHash String
+  status UserStatus @default(pending)
+  emailVerifiedAt DateTime?
+  lastLoginAt DateTime?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships Membership[]
+  sessions Session[]
+  auditLogs AuditLog[] @relation("ActorAuditLogs")
+  @@index([status, createdAt])
+  @@index([deletedAt])
+}
+model Organization {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  slug String @unique
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships Membership[]
+  projects Project[]
+  workspaces Workspace[]
+  roles Role[]
+  @@index([deletedAt])
+}
+model Project {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  name String
+  slug String
+  description String?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaces Workspace[]
+  @@unique([organizationId, slug])
+  @@index([organizationId, deletedAt])
+}
+model Workspace {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  projectId String? @db.Uuid
+  name String
+  slug String
+  environment String @default("production")
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  @@unique([organizationId, slug])
+  @@index([organizationId, projectId, deletedAt])
+}
+model Membership {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  organizationId String @db.Uuid
+  roleId String @db.Uuid
+  status MembershipStatus @default(active)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  @@unique([userId, organizationId])
+  @@index([organizationId, status])
+}
+model Role {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String? @db.Uuid
+  name String
+  slug String
+  system Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  permissions RolePermission[]
+  @@unique([organizationId, slug])
+}
+model Permission {
+  id String @id @default(uuid()) @db.Uuid
+  action String @unique
+  description String
+  roles RolePermission[]
+}
+model RolePermission {
+  roleId String @db.Uuid
+  permissionId String @db.Uuid
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  refreshTokenHash String @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokens Token[]
+  @@index([userId, revokedAt, expiresAt])
+}
+model Token {
+  id String @id @default(uuid()) @db.Uuid
+  sessionId String? @db.Uuid
+  userId String @db.Uuid
+  type TokenType
+  tokenHash String @unique
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([userId, type, expiresAt])
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  actorUserId String? @db.Uuid
+  action String
+  resource String
+  resourceId String?
+  metadata Json @default("{}")
+  ipAddress String?
+  createdAt DateTime @default(now())
+  actor User? @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([resource, resourceId])
+  @@index([actorUserId, createdAt])
+}
+model OutboxEvent { id String @id @default(uuid()) @db.Uuid; type String; aggregateId String; payload Json; occurredAt DateTime @default(now()); processedAt DateTime?; @@index([processedAt, occurredAt]) }
+model CacheEntry { key String @id; value Json; expiresAt DateTime; createdAt DateTime @default(now()); @@index([expiresAt]) }
