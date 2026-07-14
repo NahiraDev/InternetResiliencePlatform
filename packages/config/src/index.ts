@@ -1,7 +1,10 @@
+import { existsSync, readFileSync, watch } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import { z } from 'zod';
+import { fileURLToPath } from 'node:url';
 
 const ProviderConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -71,6 +74,20 @@ export interface ConfigLoaderOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+
+const findConfigDir = (startDir: string): string => {
+  let current = startDir;
+  while (true) {
+    const candidate = join(current, 'config');
+    if (existsSync(join(candidate, 'default.yaml'))) return candidate;
+    const parent = dirname(current);
+    if (parent === current) return join(startDir, 'config');
+    current = parent;
+  }
+};
+
+const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+
 const merge = (base: unknown, overlay: unknown): unknown => {
   if (typeof base !== 'object' || base === null || typeof overlay !== 'object' || overlay === null) return overlay ?? base;
   const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
@@ -89,7 +106,8 @@ export class ConfigLoader {
     const env = this.options.env ?? process.env;
     const environment = this.options.environment ?? (env.NODE_ENV as AppConfig['app']['environment'] | undefined) ?? 'development';
 
-    const configDir = this.options.configDir ?? join(process.cwd(), 'config');
+    const configDir = this.options.configDir ?? findConfigDir(packageRoot);
+    const defaultConfigFile = join(configDir, 'default.yaml');
     const configFile = join(configDir, `${environment}.yaml`);
     const defaultFile = join(configDir, 'default.yaml');
     const rootConfigDir = join(process.cwd(), '..', '..', 'config');
@@ -97,6 +115,11 @@ export class ConfigLoader {
     const rootDefaultFile = join(rootConfigDir, 'default.yaml');
 
     let fileConfig: unknown = {};
+    if (existsSync(defaultConfigFile)) {
+      fileConfig = merge(fileConfig, parse(readFileSync(defaultConfigFile, 'utf-8')) ?? {});
+    }
+    if (existsSync(configFile)) {
+      fileConfig = merge(fileConfig, parse(readFileSync(configFile, 'utf-8')) ?? {});
     for (const file of [rootDefaultFile, defaultFile, rootConfigFile, configFile]) {
       if (existsSync(file)) fileConfig = merge(fileConfig, parse(readFileSync(file, 'utf-8')) ?? {});
     }
@@ -141,8 +164,22 @@ export class ConfigLoader {
     return result;
   }
 
-  watch(_onChange: (config: AppConfig) => void): () => void {
-    return () => undefined;
+  watch(onChange: (config: AppConfig) => void): () => void {
+    const env = this.options.env ?? process.env;
+    const environment = this.options.environment ?? (env.NODE_ENV as AppConfig['app']['environment'] | undefined) ?? 'development';
+    const configDir = this.options.configDir ?? findConfigDir(packageRoot);
+    const configFile = join(configDir, `${environment}.yaml`);
+
+    if (!existsSync(configFile)) {
+      return () => undefined;
+    }
+
+    const watcher = watch(configFile, () => {
+      const config = this.load();
+      onChange(config);
+    });
+
+    return () => watcher.close();
   }
 }
 
