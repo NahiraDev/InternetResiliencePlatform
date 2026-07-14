@@ -21,6 +21,7 @@ export interface LoggerOptions {
   level?: LogLevel;
   pretty?: boolean;
   service?: string;
+  file?: string;
   json?: boolean;
   color?: boolean;
   file?: string;
@@ -138,5 +139,6 @@ export const createLogger = (options: LoggerOptions | LogLevel = {}): Logger => 
     transports.push(new FileTransport(normalized.file, normalized.rotation));
   }
 
+  if (normalized.file) transports.push(new FileTransport(normalized.file, normalized.rotation));
   return new Logger(transports, level);
 };

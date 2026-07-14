@@ -1,25 +1,7 @@
-# Operating systems
-.DS_Store
-Thumbs.db
-
-# Editors
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Logs and temporary files
-*.log
-.tmp/
-tmp/
-
-# Build and coverage output
-build/
+node_modules/
+.turbo/
 dist/
 coverage/
-.cache/
-
-# Environment files
 .env
 .env.*
 !.env.example

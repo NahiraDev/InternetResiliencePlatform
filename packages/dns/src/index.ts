@@ -330,9 +330,10 @@ export const BUILTIN_PROVIDER_METADATA: Array<ProviderMetadata & { dnssec: boole
       ipv4: ['208.67.222.222', '208.67.220.220'],
       ipv6: ['2620:119:35::35', '2620:119:53::53'],
       doh: 'https://doh.opendns.com/dns-query',
+    dot: 'dns.opendns.com',
     },
     tags: ['family-safe'],
-    dnssec: false,
+    dnssec: true,
   },
   {
     id: 'controld',
@@ -343,9 +344,10 @@ export const BUILTIN_PROVIDER_METADATA: Array<ProviderMetadata & { dnssec: boole
       ipv4: ['76.76.2.0', '76.76.10.0'],
       ipv6: ['2606:1a40::', '2606:1a40:1::'],
       doh: 'https://freedns.controld.com/p0',
+    dot: 'p0.freedns.controld.com',
     },
     tags: ['privacy'],
-    dnssec: false,
+    dnssec: true,
   },
   {
     id: 'adguard',
@@ -370,6 +372,7 @@ export const BUILTIN_PROVIDER_METADATA: Array<ProviderMetadata & { dnssec: boole
       ipv4: ['45.90.28.0', '45.90.30.0'],
       ipv6: ['2a07:a8c0::', '2a07:a8c1::'],
       doh: 'https://dns.nextdns.io',
+    dot: 'dns.nextdns.io',
     },
     tags: ['privacy', 'customizable'],
     dnssec: true,
@@ -386,7 +389,7 @@ export const BUILTIN_PROVIDER_METADATA: Array<ProviderMetadata & { dnssec: boole
       dot: 'family-filter-dns.cleanbrowsing.org',
     },
     tags: ['family-safe', 'blocking'],
-    dnssec: false,
+    dnssec: true,
   },
 ];
 

@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, watch } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parse } from 'yaml';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
@@ -107,6 +109,10 @@ export class ConfigLoader {
     const configDir = this.options.configDir ?? findConfigDir(packageRoot);
     const defaultConfigFile = join(configDir, 'default.yaml');
     const configFile = join(configDir, `${environment}.yaml`);
+    const defaultFile = join(configDir, 'default.yaml');
+    const rootConfigDir = join(process.cwd(), '..', '..', 'config');
+    const rootConfigFile = join(rootConfigDir, `${environment}.yaml`);
+    const rootDefaultFile = join(rootConfigDir, 'default.yaml');
 
     let fileConfig: unknown = {};
     if (existsSync(defaultConfigFile)) {
@@ -114,6 +120,8 @@ export class ConfigLoader {
     }
     if (existsSync(configFile)) {
       fileConfig = merge(fileConfig, parse(readFileSync(configFile, 'utf-8')) ?? {});
+    for (const file of [rootDefaultFile, defaultFile, rootConfigFile, configFile]) {
+      if (existsSync(file)) fileConfig = merge(fileConfig, parse(readFileSync(file, 'utf-8')) ?? {});
     }
 
     const envConfig = {

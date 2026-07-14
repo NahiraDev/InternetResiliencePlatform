@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConfigLoader, loadConfig } from './index.js';
+import { ConfigLoader } from './index.js';
 
 describe('loadConfig', () => {
   it('loads default configuration', () => {
