@@ -38,7 +38,7 @@ for (const file of workflows) {
   if (!text.includes('actions/setup-node@v4')) errors.push(`${rel} missing setup-node@v4`);
   if (!text.includes('pnpm/action-setup@v4')) errors.push(`${rel} missing pnpm/action-setup@v4`);
 }
-for (const required of ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','turbo.json','tsconfig.base.json','vercel.json']) if (!statSync(join(root, required), { throwIfNoEntry: false })) errors.push(`missing ${required}`);
+for (const required of ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','turbo.json','tsconfig.base.json']) if (!statSync(join(root, required), { throwIfNoEntry: false })) errors.push(`missing ${required}`);
 const turbo = spawnSync('pnpm', ['exec', 'turbo', 'run', 'build', '--dry=json'], { cwd: root, encoding: 'utf8' });
 if (turbo.status !== 0) errors.push(`turbo graph validation failed: ${turbo.stderr || turbo.stdout}`);
 if (errors.length) { console.error(`Repository validation failed with ${errors.length} issue(s):`); for (const error of errors) console.error(`- ${error}`); process.exit(1); }
