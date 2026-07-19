@@ -89,6 +89,9 @@ importers:
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@irp/network':
+        specifier: workspace:*
+        version: link:../../packages/network
       '@irp/queue':
         specifier: workspace:*
         version: link:../../packages/queue

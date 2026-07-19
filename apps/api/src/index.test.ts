@@ -18,5 +18,21 @@ describe('phase 5 core API', () => {
     const workspace = await app.inject({ method: 'POST', url: `/api/v1/organizations/${org.json().data.id}/workspaces`, headers: { authorization: `Bearer ${token}` }, payload: { name: 'Production', projectId: project.json().data.id, environment: 'production' } });
     expect(workspace.statusCode).toBe(201);
     await app.close();
-  });
+  }, 15000);
+});
+
+
+describe('phase 6 network intelligence API', () => {
+  it('runs probes and returns network measurements', async () => {
+    const app = await buildServer();
+    const run = await app.inject({ method: 'POST', url: '/api/v1/probes/run' });
+    expect(run.statusCode).toBe(200);
+    expect(run.json().data.score.score).toBeGreaterThanOrEqual(0);
+    const health = await app.inject({ method: 'GET', url: '/api/v1/health/network' });
+    expect(health.statusCode).toBe(200);
+    const measurements = await app.inject({ method: 'GET', url: '/api/v1/measurements' });
+    expect(measurements.statusCode).toBe(200);
+    expect(measurements.json().data.length).toBeGreaterThan(0);
+    await app.close();
+  }, 15000);
 });
