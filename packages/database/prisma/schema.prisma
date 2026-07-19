@@ -144,3 +144,36 @@ model AuditLog {
 }
 model OutboxEvent { id String @id @default(uuid()) @db.Uuid; type String; aggregateId String; payload Json; occurredAt DateTime @default(now()); processedAt DateTime?; @@index([processedAt, occurredAt]) }
 model CacheEntry { key String @id; value Json; expiresAt DateTime; createdAt DateTime @default(now()); @@index([expiresAt]) }
+
+enum NetworkNodeStatus { active degraded offline unknown }
+
+model NetworkMeasurement {
+  id String @id @default(uuid()) @db.Uuid
+  timestamp DateTime @default(now())
+  probeType String
+  latency Float?
+  success Boolean
+  error String?
+  metadata Json @default("{}")
+  @@index([probeType, timestamp])
+  @@index([success, timestamp])
+}
+
+model NetworkNode {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  location String?
+  endpoint String
+  status NetworkNodeStatus @default(unknown)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status])
+}
+
+model NetworkHealthScore {
+  id String @id @default(uuid()) @db.Uuid
+  timestamp DateTime @default(now())
+  score Float
+  factors Json @default("{}")
+  @@index([timestamp])
+}

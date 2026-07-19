@@ -51,3 +51,15 @@ Run the core checks with:
 pnpm build
 pnpm --filter @irp/api test
 ```
+
+## Phase 6 Network Intelligence Core
+
+Phase 6 adds a measurement-only network intelligence subsystem. It does not install VPNs, proxies, censorship bypass components, or traffic interception hooks. The core runs modular TypeScript probes for DNS latency, TCP latency, HTTP availability, packet-loss estimation, connection stability, basic throughput estimation, IPv4/IPv6 availability, and locally available provider information.
+
+Operational surfaces:
+
+- API: `GET /api/v1/health/network`, `GET /api/v1/metrics/network`, `GET /api/v1/measurements`, and `POST /api/v1/probes/run`.
+- CLI: `irp network check` prints DNS status, latency, connectivity score, and detected issues.
+- Telemetry: Prometheus metrics include `probe_success_total`, `probe_failure_total`, `network_latency_ms`, and `network_health_score`.
+
+Probe implementations live in `@irp/network` behind a plugin contract so future probes can be added without changing API or CLI callers.

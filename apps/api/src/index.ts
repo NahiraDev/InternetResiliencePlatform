@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { loadConfig } from '@irp/config';
 import { ConflictAppError, ForbiddenAppError, NotFoundAppError, UnauthorizedAppError, ValidationAppError, createDomainEvent, mapErrorToHttp } from '@irp/core';
 import { createLogger } from '@irp/logger';
-import { createHealthStatus, httpRequestDuration, renderPrometheusMetrics } from '@irp/telemetry';
+import { createHealthStatus, httpRequestDuration, networkHealthScore, networkLatencyMs, probeFailureTotal, probeSuccessTotal, renderPrometheusMetrics } from '@irp/telemetry';
+import { NetworkMonitoringService, type NetworkProbe } from '@irp/network';
 import { JwtAuthenticationProvider, JwtService, RbacAuthorization, hashPassword, verifyPassword, type Principal } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
@@ -39,6 +40,8 @@ const requirePermission = async (request: FastifyRequest, permission: string) =>
 declare module 'fastify' { interface FastifyRequest { jwtAuth: JwtAuthenticationProvider; rbac: RbacAuthorization; } }
 export const buildServer = async (): Promise<FastifyInstance> => {
   const config = loadConfig(); const logger = createLogger({ level: config.logger.level, pretty: false, service: 'irp-api' });
+  const testProbe: NetworkProbe = { name: 'test-dns', type: 'dns', config: {}, async execute() { return { name: 'test-dns', probeType: 'dns', success: true, latencyMs: 1, timestamp: new Date().toISOString(), metadata: { environment: 'test' } }; } };
+  const networkMonitor = process.env.NODE_ENV === 'test' ? new NetworkMonitoringService([testProbe], undefined, 60_000, 0) : new NetworkMonitoringService();
   const app = Fastify({ logger: false, genReqId: (request) => request.headers['x-request-id']?.toString() ?? crypto.randomUUID() });
   const jwt = new JwtService(process.env.JWT_SECRET ?? 'development-secret-development-secret-32', 'irp'); const jwtAuth = new JwtAuthenticationProvider(jwt); const rbac = new RbacAuthorization(); const events = new InMemoryEventBus(); const queue = new MemoryQueue(); const db = createPrismaClient(process.env.DATABASE_URL);
   app.decorateRequest('jwtAuth', undefined as unknown as JwtAuthenticationProvider); app.decorateRequest('rbac', undefined as unknown as RbacAuthorization);
@@ -51,6 +54,19 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   app.get('/api/v1/live', async () => ok(createHealthStatus({ process: 'healthy' })));
   app.get('/api/v1/version', async () => ok({ name: config.app.name, version: config.app.version, environment: config.app.environment }));
   app.get('/api/v1/metrics', async (_r, reply) => reply.type('text/plain').send(await renderPrometheusMetrics()));
+  const recordNetworkTelemetry = (snapshot: Awaited<ReturnType<NetworkMonitoringService['runOnce']>>) => {
+    networkHealthScore.set(snapshot.score.score);
+    for (const measurement of snapshot.measurements) {
+      const labels = { probe_type: measurement.probeType, probe_name: String(measurement.metadata['probeName'] ?? measurement.probeType) };
+      if (measurement.success) probeSuccessTotal.inc(labels); else probeFailureTotal.inc(labels);
+      if (typeof measurement.latency === 'number') networkLatencyMs.observe(labels, measurement.latency);
+    }
+  };
+  app.get('/api/v1/health/network', async () => ok(networkMonitor.snapshot()));
+  app.get('/api/v1/metrics/network', async () => ok({ latest: networkMonitor.snapshot().score, measurements: networkMonitor.measurements().length }));
+  app.get('/api/v1/measurements', async (request) => { const q = paginationSchema.parse(request.query); const rows = networkMonitor.measurements().slice((q.page - 1) * q.pageSize, q.page * q.pageSize); return ok(rows, { total: networkMonitor.measurements().length, page: q.page, pageSize: q.pageSize }); });
+  app.post('/api/v1/probes/run', async () => { const snapshot = await networkMonitor.runOnce(); recordNetworkTelemetry(snapshot); logger.info('network probes completed', { status: snapshot.status, score: snapshot.score.score, issues: snapshot.issues }); return ok(snapshot); });
+
   app.post('/api/v1/auth/register', async (request, reply) => { const input = registerSchema.parse(request.body); if (users.find((u) => u.email === input.email)) throw new ConflictAppError('Email is already registered.'); const user = users.put({ id: crypto.randomUUID(), email: input.email, name: input.name, passwordHash: hashPassword(input.password), status: 'active', roles: ['platform_admin'], permissions, createdAt: now(), updatedAt: now() }); await events.publish(createDomainEvent('user.registered', user.id, { email: user.email })); return reply.code(201).send(created(publicUser(user) as never)); });
   app.post('/api/v1/auth/login', async (request) => { const input = loginSchema.parse(request.body); const user = users.find((u) => u.email === input.email); if (!user || !verifyPassword(input.password, user.passwordHash)) throw new UnauthorizedAppError('Invalid credentials'); const session: Session = { id: crypto.randomUUID(), userId: user.id, refreshToken: crypto.randomUUID(), expiresAt: new Date(Date.now()+30*86400_000).toISOString() }; sessions.set(session.id, session); const accessToken = jwt.sign({ sub: user.id, roles: user.roles, scopes: user.permissions, sessionId: session.id, type: 'access', ttlSeconds: 900 }); const refreshToken = jwt.sign({ sub: user.id, roles: user.roles, scopes: user.permissions, sessionId: session.id, type: 'refresh', ttlSeconds: 30*86400 }); return ok({ accessToken, refreshToken, expiresIn: 900, user: publicUser(user) }); });
   app.post('/api/v1/auth/refresh', async (request) => { const token = z.object({ refreshToken: z.string() }).parse(request.body).refreshToken; const claims = jwt.verify(token, 'refresh'); const user = users.get(claims.sub); if (!user || !claims.sessionId || !sessions.has(claims.sessionId)) throw new UnauthorizedAppError(); return ok({ accessToken: jwt.sign({ sub: user.id, roles: user.roles, scopes: user.permissions, sessionId: claims.sessionId, type: 'access', ttlSeconds: 900 }), expiresIn: 900 }); });

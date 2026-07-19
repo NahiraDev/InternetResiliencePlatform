@@ -11,3 +11,8 @@ client.collectDefaultMetrics({ register: prometheusRegister });
 export const httpRequestDuration = new client.Histogram({ name: 'irp_http_request_duration_seconds', help: 'HTTP request duration in seconds', labelNames: ['method', 'route', 'status_code'], registers: [prometheusRegister] });
 export const bootstrapOpenTelemetry = (serviceName: string): void => { trace.getTracer(serviceName); };
 export const renderPrometheusMetrics = async (): Promise<string> => prometheusRegister.metrics();
+
+export const probeSuccessTotal = new client.Counter({ name: 'probe_success_total', help: 'Successful network probe executions', labelNames: ['probe_type', 'probe_name'], registers: [prometheusRegister] });
+export const probeFailureTotal = new client.Counter({ name: 'probe_failure_total', help: 'Failed network probe executions', labelNames: ['probe_type', 'probe_name'], registers: [prometheusRegister] });
+export const networkLatencyMs = new client.Histogram({ name: 'network_latency_ms', help: 'Network probe latency in milliseconds', labelNames: ['probe_type', 'probe_name'], registers: [prometheusRegister] });
+export const networkHealthScore = new client.Gauge({ name: 'network_health_score', help: 'Aggregated network health score', registers: [prometheusRegister] });
