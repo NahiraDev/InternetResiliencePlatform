@@ -377,6 +377,25 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/security:
+    dependencies:
+      '@irp/auth':
+        specifier: workspace:^
+        version: link:../auth
+      '@irp/shared':
+        specifier: workspace:^
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/shared:
     dependencies:
       zod:
