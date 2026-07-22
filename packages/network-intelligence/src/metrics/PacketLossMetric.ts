@@ -1,2 +1,0 @@
-import type { PingProvider } from '../providers/PingProvider.js'; import { packetLossRatio } from '../utils/Statistics.js';
-export class PacketLossMetric { constructor(private readonly provider: PingProvider, private readonly host: string, private readonly attempts: number) {} async measure(signal: AbortSignal): Promise<number> { const results:boolean[]=[]; for(let i=0;i<this.attempts;i+=1){ results.push((await this.provider.ping(this.host, signal)).success); } return packetLossRatio(results); } }
