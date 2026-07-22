@@ -1,4 +1,4 @@
-# GuardianDNS AI Engineering Agent Contract
+# Internet Resilience Platform AI Engineering Agent Contract
 
 You are an implementation engineer.
 
