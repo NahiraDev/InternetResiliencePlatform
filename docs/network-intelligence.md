@@ -40,7 +40,13 @@ Each snapshot includes latency, jitter, packet loss, DNS lookup time, HTTP respo
 ## API
 
 ```ts
-import { NetworkMonitor, NetworkSampler, NodeDNSProvider, NodeHTTPProvider, MockablePingProvider } from '@irp/network-intelligence';
+import {
+  NetworkMonitor,
+  NetworkSampler,
+  NodeDNSProvider,
+  NodeHTTPProvider,
+  MockablePingProvider,
+} from '@irp/network-intelligence';
 
 const sampler = new NetworkSampler({
   ping: new MockablePingProvider(),
@@ -71,15 +77,15 @@ monitor.stop();
 
 The deterministic score is clamped to `0..100` and combines weighted sub-scores:
 
-| Metric | Weight |
-| --- | ---: |
-| Latency | 20% |
-| Packet loss | 25% |
-| Jitter | 15% |
-| DNS | 10% |
-| HTTP | 10% |
-| Bandwidth | 10% |
-| Reachability | 10% |
+| Metric       | Weight |
+| ------------ | -----: |
+| Latency      |    20% |
+| Packet loss  |    25% |
+| Jitter       |    15% |
+| DNS          |    10% |
+| HTTP         |    10% |
+| Bandwidth    |    10% |
+| Reachability |    10% |
 
 Lower latency, jitter, DNS, and HTTP timings score better. Packet loss decreases linearly up to complete loss. Bandwidth reaches full credit at 25 Mbps. Reachability combines internet, gateway, IPv4, and IPv6 evidence.
 

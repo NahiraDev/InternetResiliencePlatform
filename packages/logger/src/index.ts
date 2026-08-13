@@ -44,15 +44,19 @@ class PinoTransport implements Transport {
 class ConsoleTransport implements Transport {
   constructor(private readonly options: LoggerOptions = { json: true }) {}
   write(record: LogRecord): void {
-    const line = this.options.json === false
-      ? `${colors[record.level]}[${record.level.toUpperCase()}]${colors.debug} ${record.message}`
-      : JSON.stringify(record);
+    const line =
+      this.options.json === false
+        ? `${colors[record.level]}[${record.level.toUpperCase()}]${colors.debug} ${record.message}`
+        : JSON.stringify(record);
     console.log(line);
   }
 }
 
 class FileTransport implements Transport {
-  constructor(private readonly filePath: string, private readonly rotation?: { maxBytes: number; maxFiles: number }) {
+  constructor(
+    private readonly filePath: string,
+    private readonly rotation?: { maxBytes: number; maxFiles: number },
+  ) {
     mkdirSync(dirname(filePath), { recursive: true });
   }
 

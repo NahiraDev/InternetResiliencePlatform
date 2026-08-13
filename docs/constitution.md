@@ -1,6 +1,7 @@
 # GuardianDNS Constitution
 
 ## Mission
+
 GuardianDNS is an adaptive DNS orchestration platform focused on maintaining reliable resolver performance through measurement, analysis, and controlled adaptation.
 
 ## Engineering Principles

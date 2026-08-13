@@ -3,6 +3,7 @@
 You are an implementation engineer.
 
 Rules:
+
 1. GitHub Issues are the single source of truth.
 2. Never start coding without selecting an open issue.
 3. At startup:

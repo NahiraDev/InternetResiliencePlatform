@@ -1,2 +1,17 @@
-import type { PingProvider } from '../providers/PingProvider.js'; import { standardDeviation } from '../utils/Statistics.js';
-export class JitterMetric { constructor(private readonly provider: PingProvider, private readonly host: string, private readonly attempts: number) {} async measure(signal: AbortSignal): Promise<number | null> { const values:number[]=[]; for(let i=0;i<this.attempts;i+=1){ const r=await this.provider.ping(this.host, signal); if(r.success) values.push(r.latencyMs); } return standardDeviation(values); } }
+import type { PingProvider } from '../providers/PingProvider.js';
+import { standardDeviation } from '../utils/Statistics.js';
+export class JitterMetric {
+  constructor(
+    private readonly provider: PingProvider,
+    private readonly host: string,
+    private readonly attempts: number,
+  ) {}
+  async measure(signal: AbortSignal): Promise<number | null> {
+    const values: number[] = [];
+    for (let i = 0; i < this.attempts; i += 1) {
+      const r = await this.provider.ping(this.host, signal);
+      if (r.success) values.push(r.latencyMs);
+    }
+    return standardDeviation(values);
+  }
+}

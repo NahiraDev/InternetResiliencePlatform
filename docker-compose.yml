@@ -3,6 +3,6 @@ services:
     build: .
     command: pnpm --filter @irp/api start
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
       - .:/app

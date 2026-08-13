@@ -1,5 +1,34 @@
 import { describe, expect, it } from 'vitest';
 import { DependencyResolver, PluginManifestValidator, satisfies } from './index.js';
 import type { PluginManifest } from '@irp/plugin-sdk';
-const m = (id: string, deps: PluginManifest['dependencies'] = []): PluginManifest => ({ id, name: id, displayName: id, version: '1.0.0', description: 'x', author: 'x', license: 'MIT', engineVersion: '^0.1.0', minimumPlatformVersion: '0.1.0', permissions: [], dependencies: deps, optionalDependencies: [], entry: 'index.js', activationEvents: [], capabilities: ['automation-module'] });
-describe('manifest validation and dependencies', () => { it('validates semver and version ranges', () => { new PluginManifestValidator().validate(m('valid.plugin')); expect(satisfies('1.2.0','^1.0.0')).toBe(true); }); it('detects circular dependencies', () => { expect(() => new DependencyResolver().order([m('a.plugin',[{id:'b.plugin',version:'1.0.0'}]), m('b.plugin',[{id:'a.plugin',version:'1.0.0'}])])).toThrow(/Circular/); }); });
+const m = (id: string, deps: PluginManifest['dependencies'] = []): PluginManifest => ({
+  id,
+  name: id,
+  displayName: id,
+  version: '1.0.0',
+  description: 'x',
+  author: 'x',
+  license: 'MIT',
+  engineVersion: '^0.1.0',
+  minimumPlatformVersion: '0.1.0',
+  permissions: [],
+  dependencies: deps,
+  optionalDependencies: [],
+  entry: 'index.js',
+  activationEvents: [],
+  capabilities: ['automation-module'],
+});
+describe('manifest validation and dependencies', () => {
+  it('validates semver and version ranges', () => {
+    new PluginManifestValidator().validate(m('valid.plugin'));
+    expect(satisfies('1.2.0', '^1.0.0')).toBe(true);
+  });
+  it('detects circular dependencies', () => {
+    expect(() =>
+      new DependencyResolver().order([
+        m('a.plugin', [{ id: 'b.plugin', version: '1.0.0' }]),
+        m('b.plugin', [{ id: 'a.plugin', version: '1.0.0' }]),
+      ]),
+    ).toThrow(/Circular/);
+  });
+});
