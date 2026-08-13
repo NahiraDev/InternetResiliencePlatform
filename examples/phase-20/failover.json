@@ -1,0 +1,90 @@
+{
+  "network": {
+    "source": "DEMO",
+    "connection": "reconnecting",
+    "currentRoute": "backup-cellular",
+    "interfaces": [
+      {
+        "name": "eth0",
+        "state": "up",
+        "latencyMs": 18,
+        "packetLossPct": 0.1
+      },
+      {
+        "name": "wlan0",
+        "state": "standby",
+        "latencyMs": 45,
+        "packetLossPct": 1.2
+      }
+    ],
+    "health": "degraded",
+    "updatedAt": "2026-08-13T23:12:52.631879Z"
+  },
+  "security": {
+    "source": "DEMO",
+    "state": "healthy",
+    "protectionState": "Protected",
+    "killSwitch": "armed",
+    "violations": [],
+    "routeLeak": "healthy",
+    "dnsLeak": "healthy",
+    "ipv6": "guarded",
+    "explanation": "Demo fixture; no host firewall, routing, DNS, or tunnel state was changed."
+  },
+  "tunnel": {
+    "source": "DEMO",
+    "activeTunnel": "wg-backup",
+    "tunnels": [
+      {
+        "id": "wg-primary",
+        "name": "WireGuard primary",
+        "status": "healthy",
+        "endpoint": "redacted-endpoint",
+        "latencyMs": 22,
+        "durationSeconds": 1840
+      },
+      {
+        "id": "wg-backup",
+        "name": "WireGuard backup",
+        "status": "healthy",
+        "endpoint": "redacted-backup",
+        "latencyMs": 56,
+        "durationSeconds": 0
+      }
+    ]
+  },
+  "dns": {
+    "source": "DEMO",
+    "resolver": "DoH policy resolver",
+    "secureTransport": "DoH",
+    "health": "healthy",
+    "latencyMs": 28,
+    "policyStatus": "enforced",
+    "leakStatus": "healthy"
+  },
+  "decision": {
+    "source": "DEMO",
+    "recommendation": "Complete failover to backup path",
+    "score": 0.91,
+    "confidence": 0.87,
+    "mode": "deterministic",
+    "explanation": "Recommendation is displayed only; execution requires backend policy and security authorization.",
+    "candidates": [
+      {
+        "name": "direct-primary",
+        "score": 0.91,
+        "accepted": true,
+        "reason": "policy compliant"
+      },
+      {
+        "name": "backup-tunnel",
+        "score": 0.76,
+        "accepted": false,
+        "reason": "higher latency"
+      }
+    ],
+    "policyValidation": "passed",
+    "securityValidation": "passed",
+    "decisionAgeSeconds": 4
+  }
+}
