@@ -1,0 +1,26 @@
+{
+  "phase": 20,
+  "timestamp": "2026-08-13T23:16:23.862019+00:00",
+  "branch": "phase/20-electron-desktop",
+  "applicationVersion": "0.1.0",
+  "buildStatus": "pass: pnpm --filter @irp/desktop build",
+  "testStatus": "pass: pnpm --filter @irp/desktop test (8 tests)",
+  "demoStatus": "fixtures generated; runtime launch blocked by missing electron binary after npm 403",
+  "ipcStatus": "pass: allowlisted typed IPC and validators",
+  "securityStatus": "pass: static security tests for contextIsolation, nodeIntegration, sandbox, CSP, navigation, preload allowlist",
+  "backendStatus": "UNAVAILABLE; demo provider active",
+  "screensVerified": [
+    "Dashboard static renderer coverage",
+    "Network static renderer coverage",
+    "Security static renderer coverage",
+    "Tunnels static renderer coverage",
+    "DNS static renderer coverage",
+    "Decisions static renderer coverage",
+    "Settings static renderer coverage",
+    "Diagnostics static renderer coverage"
+  ],
+  "knownFailures": [
+    "pnpm install failed with 403 from registry.npmjs.org for typescript/electron dependencies",
+    "pnpm --filter @irp/desktop dev failed because electron command was not installed"
+  ]
+}
