@@ -126,10 +126,10 @@ Each phase below follows the same template used for per-phase docs (`docs/phases
 **Objective:** Select the best eligible network path for each destination from route candidates, connectivity state, health, and policy while applying changes only through the Kernel routing capability.
 **Deliverables:** Canonical route/path/candidate/plan models, provider-agnostic route discovery and normalization, IPv4/IPv6 CIDR and longest-prefix matching, policy-aware eligibility, composable scoring, deterministic selection, simulation, explainability, transaction-like kernel application, verification/rollback, failover/recovery, hysteresis/flapping protection, events, metrics, plugin extension points, tests, and documentation.
 
-### Phase 14 — Benchmark Database
+### Phase 14 — Smart DNS Engine & Resolver Intelligence Layer
 
-**Objective:** Persist daily performance data (DNS, VPN, ISP, route) to build a historical dataset that improves future decisions.
-**Deliverables:** Benchmark schema, daily aggregation job, query API for historical lookups.
+**Objective:** Transform DNS resolution from static configuration into an intelligent, observable, policy-aware resolver orchestration subsystem.
+**Deliverables:** Typed resolver/query/response/decision models, resolver registry and lifecycle, health-aware eligibility, composable scoring, deterministic selection, bounded retries/fallback, cooldown/hysteresis, positive and negative cache with single-flight, validation, anomaly and consistency signals, simulation, explainability, privacy-conscious telemetry/events, plugin extension points, tests, and documentation.
 
 ### Phase 15 — Network Diagnostics
 
