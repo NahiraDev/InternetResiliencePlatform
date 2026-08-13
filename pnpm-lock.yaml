@@ -615,6 +615,35 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+
+  packages/routing:
+    dependencies:
+      '@irp/connectivity':
+        specifier: workspace:*
+        version: link:../connectivity
+      '@irp/events':
+        specifier: workspace:*
+        version: link:../events
+      '@irp/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@irp/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@irp/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/security:
     dependencies:
       '@irp/auth':
