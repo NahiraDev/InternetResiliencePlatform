@@ -140,10 +140,10 @@ Each phase below follows the same template used for per-phase docs (`docs/phases
 
 ## Developer Experience (Phases 16–18)
 
-### Phase 16 — Developer Mode
+### Phase 16 — Intelligent Auto Failover & Recovery Engine
 
-**Objective:** A profile that prioritizes developer-critical endpoints (GitHub, Docker, npm, PyPI, Go proxy, OpenAI, Anthropic, Google APIs, Vercel, Cloudflare, JetBrains, VS Code, Figma, Supabase, Firebase) and biases routing decisions toward them.
-**Deliverables:** Built-in Developer Mode profile, priority endpoint list (user-editable), profile-aware Decision Engine hooks.
+**Objective:** Provide a unified resilience orchestration layer that converts health signals, correlated failures, dependency state, policy, connectivity state, routing state, DNS state, and secure DNS transport state into safe, deterministic, minimal-disruption recovery plans.
+**Deliverables:** Normalized failure model, classification/confidence/correlation, dependency graph, recovery strategies/plans, candidate eligibility/scoring, state machine, executor, validation/rollback, retry/recovery/failover budgets, backoff, circuit breaker, hysteresis/cooldown, degraded mode, escalation, manual override, simulation, explainability, events, telemetry, auditability, tests, and documentation.
 
 ### Phase 17 — Service Profiles
 
