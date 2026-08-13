@@ -1,6 +1,54 @@
 import { Resolver } from 'node:dns/promises';
 import { performance } from 'node:perf_hooks';
 import { EventEmitter } from 'node:events';
+import { connect as tlsConnect, type TLSSocket } from 'node:tls';
+import { request as httpsRequest, Agent as HttpsAgent } from 'node:https';
+
+export interface Phase15ConnectivitySource {
+  id: string;
+  providerId?: string;
+  type?: string;
+  state?: string;
+  health?: { score?: number };
+}
+export interface Phase15NetworkPath {
+  id: string;
+  type?: string;
+  capabilities?: string[];
+  score?: number;
+  state?: string;
+  metadata?: Record<string, unknown>;
+}
+export interface Phase15EventBus {
+  publish(event: {
+    id: string;
+    type: string;
+    aggregateId: string;
+    occurredAt: Date;
+    payload: Record<string, unknown>;
+  }): Promise<void>;
+}
+export interface Phase15MetricsRegistry {
+  record(name: string, value: number, labels?: Record<string, string>): void;
+}
+export interface Phase15RoutingEngine {
+  simulateRouting(context: {
+    destination: { kind: 'hostname' | 'ip'; value: string };
+  }): Promise<{ selected?: { path: Phase15NetworkPath } }>;
+}
+export interface Phase15KernelRuntime {
+  id: string;
+  state?: string;
+}
+export interface Phase15Principal {
+  id: string;
+  capabilities?: string[];
+}
+const createId = (prefix = 'irp'): string => `${prefix}_${crypto.randomUUID()}`;
+const phase15Destination = (value: string): { kind: 'hostname' | 'ip'; value: string } => ({
+  kind: /^[0-9a-f:.]+$/i.test(value) ? 'ip' : 'hostname',
+  value,
+});
 
 export type DnsRecordType = 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX' | 'NS';
 export type ResolverProtocol = 'udp' | 'tcp' | 'doh' | 'dot' | 'dnscrypt' | 'odoh' | 'doq';
@@ -704,7 +752,7 @@ export class IntelligentDnsEngine extends EventEmitter {
 // Phase 14 — Smart DNS Engine & Resolver Intelligence Layer
 export type DnsResolverType =
   'system' | 'local' | 'gateway' | 'public' | 'private' | 'custom' | 'plugin';
-export type DnsTransportType = ResolverProtocol | 'system' | 'local-stub' | 'custom';
+export type DnsTransportType = ResolverProtocol | 'system' | 'local-stub' | 'dnscrypt' | 'custom';
 export type DnsResolverFamily = 'ipv4' | 'ipv6' | 'dual';
 export type DnsResolverCapability =
   | 'ipv4'
@@ -1553,3 +1601,1311 @@ export class SmartDnsEngine {
     });
   }
 }
+
+export type DnsTransportState =
+  | 'unknown'
+  | 'available'
+  | 'unavailable'
+  | 'connecting'
+  | 'healthy'
+  | 'degraded'
+  | 'failed'
+  | 'recovering'
+  | 'disabled';
+export type DnsTransportCapability =
+  | 'plaintext'
+  | 'encrypted'
+  | 'tls'
+  | 'https'
+  | 'quic'
+  | 'certificate-validation'
+  | 'hostname-verification'
+  | 'connection-reuse'
+  | 'wire-format'
+  | 'plugin-provided'
+  | string;
+export type DnsSecurityProfileId = 'strict' | 'secure' | 'balanced' | 'compatibility' | 'custom';
+export type DnsTransportErrorCode =
+  | 'TransportUnavailable'
+  | 'ConnectionTimeout'
+  | 'ConnectionRefused'
+  | 'TlsHandshakeFailed'
+  | 'CertificateValidationFailed'
+  | 'HostnameVerificationFailed'
+  | 'HttpError'
+  | 'HttpTimeout'
+  | 'ProtocolError'
+  | 'DnsMessageInvalid'
+  | 'QuicHandshakeFailed'
+  | 'TransportPolicyRejected'
+  | 'TransportCancelled'
+  | 'ConfigurationInvalid'
+  | 'ResponseTooLarge'
+  | 'CircuitOpen';
+export type DnsTransportFailureKind =
+  | 'retryable-transport'
+  | 'non-retryable-security'
+  | 'resolver'
+  | 'policy'
+  | 'configuration'
+  | 'cancelled';
+export type CertificateValidationState =
+  | 'valid'
+  | 'expired'
+  | 'untrusted'
+  | 'hostname-mismatch'
+  | 'unexpected-chain'
+  | 'validation-failed'
+  | 'not-applicable';
+export type CircuitBreakerState = 'closed' | 'open' | 'half-open';
+
+export class DnsTransportError extends Error {
+  constructor(
+    readonly code: DnsTransportErrorCode,
+    message: string,
+    readonly retryable: boolean,
+    readonly failureKind: DnsTransportFailureKind,
+    readonly details: Record<string, unknown> = {},
+  ) {
+    super(message);
+    this.name = code;
+  }
+}
+
+export interface DnsWireMessage {
+  id: number;
+  payload: Buffer;
+  recordType?: DnsRecordType | undefined;
+}
+export interface TransportEndpoint {
+  hostname: string;
+  port: number;
+  path?: string;
+  url?: string;
+  tlsServerName?: string;
+}
+export interface TransportConnection {
+  id: string;
+  key: string;
+  transportId: string;
+  type: DnsTransportType;
+  endpoint: TransportEndpoint;
+  createdAt: number;
+  lastUsedAt: number;
+  expiresAt: number;
+  state: 'connecting' | 'open' | 'closed';
+  raw?: unknown;
+}
+export interface TransportRetryConfig {
+  maxAttempts: number;
+  initialDelayMs: number;
+  maxDelayMs: number;
+  jitterRatio: number;
+}
+export interface TransportPoolConfig {
+  maxConnections: number;
+  idleTimeoutMs: number;
+  maxLifetimeMs: number;
+  keepAlive: boolean;
+}
+export interface TransportCircuitBreakerConfig {
+  failureThreshold: number;
+  recoveryTimeoutMs: number;
+  halfOpenMaxAttempts: number;
+}
+export interface DnsTransportConfig {
+  priority: DnsTransportType[];
+  allowedTransports: DnsTransportType[];
+  disabledTransports: DnsTransportType[];
+  tls: {
+    minVersion: 'TLSv1.2' | 'TLSv1.3';
+    requireCertificateValidation: true;
+    requireHostnameVerification: true;
+  };
+  timeouts: {
+    connectMs: number;
+    readMs: number;
+    writeMs: number;
+    queryMs: number;
+    shutdownMs: number;
+  };
+  retry: TransportRetryConfig;
+  pool: TransportPoolConfig;
+  circuitBreaker: TransportCircuitBreakerConfig;
+  maxResponseBytes: number;
+  fallback: { allowPlaintextDowngrade: boolean; enabled: boolean };
+}
+export interface DnsTransportSecurityProfile {
+  id: DnsSecurityProfileId;
+  allowedTransports: DnsTransportType[];
+  requireEncrypted: boolean;
+  requireCertificateValidation: boolean;
+  requireHostnameVerification: boolean;
+  allowPlaintextFallback: boolean;
+  preferredOrder: DnsTransportType[];
+}
+export interface DnsTransportPolicy {
+  requireEncryptedDns?: boolean;
+  preferTransports?: DnsTransportType[];
+  allowTransports?: DnsTransportType[];
+  denyTransports?: DnsTransportType[];
+  requireCertificateValidation?: boolean;
+  requireResolverId?: string;
+  requireTransport?: DnsTransportType;
+  denyPlaintextDns?: boolean;
+}
+export interface DnsTransportContext {
+  resolver: DnsProvider;
+  networkState?: unknown;
+  connectivitySource?: Phase15ConnectivitySource;
+  route?: Phase15NetworkPath;
+  policy?: DnsTransportPolicy;
+  securityProfile?: DnsTransportSecurityProfile;
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  metadata?: Record<string, unknown>;
+}
+export interface DnsTransportScore {
+  security: number;
+  latency: number;
+  reliability: number;
+  availability: number;
+  networkCompatibility: number;
+  resolverCompatibility: number;
+  connectionStability: number;
+  historicalPerformance: number;
+  policyPreference: number;
+  total: number;
+}
+export interface DnsTransportCandidate {
+  transport: SecureDnsTransport;
+  endpoint: TransportEndpoint;
+  score: DnsTransportScore;
+}
+export interface RejectedDnsTransportCandidate {
+  transportId: string;
+  type: DnsTransportType;
+  reason: string;
+  policyViolation: boolean;
+  securityImplication?: string;
+}
+export interface DnsTransportDecision {
+  query: { recordType: DnsRecordType; nameHash: string };
+  resolver: { id: string; name: string };
+  candidates: DnsTransportCandidate[];
+  rejectedCandidates: RejectedDnsTransportCandidate[];
+  selectedTransport?: DnsTransportCandidate;
+  securityProfile: DnsTransportSecurityProfile;
+  policy?: DnsTransportPolicy;
+  route?: Phase15NetworkPath;
+  reason: string;
+  fallbackOrder: DnsTransportCandidate[];
+  securityImplications: string[];
+  dryRun: boolean;
+}
+export interface SecureDnsTransport {
+  id: string;
+  type: DnsTransportType;
+  capabilities: DnsTransportCapability[];
+  state: DnsTransportState;
+  supports(query: DnsWireMessage, resolver: DnsProvider, context: DnsTransportContext): boolean;
+  endpoint(resolver: DnsProvider): TransportEndpoint | undefined;
+  connect(resolver: DnsProvider, context: DnsTransportContext): Promise<TransportConnection>;
+  resolve(
+    connection: TransportConnection,
+    query: DnsWireMessage,
+    context: DnsTransportContext,
+  ): Promise<DnsWireMessage>;
+  close(connection: TransportConnection): Promise<void>;
+}
+
+export const defaultDnsTransportConfig = (): DnsTransportConfig => ({
+  priority: ['doh', 'dot', 'doq', 'tcp', 'udp', 'system'],
+  allowedTransports: ['system', 'udp', 'tcp', 'dot', 'doh', 'doq', 'dnscrypt', 'custom'],
+  disabledTransports: [],
+  tls: {
+    minVersion: 'TLSv1.2',
+    requireCertificateValidation: true,
+    requireHostnameVerification: true,
+  },
+  timeouts: { connectMs: 2000, readMs: 2000, writeMs: 2000, queryMs: 3000, shutdownMs: 1000 },
+  retry: { maxAttempts: 2, initialDelayMs: 50, maxDelayMs: 500, jitterRatio: 0.2 },
+  pool: { maxConnections: 8, idleTimeoutMs: 30000, maxLifetimeMs: 300000, keepAlive: true },
+  circuitBreaker: { failureThreshold: 3, recoveryTimeoutMs: 30000, halfOpenMaxAttempts: 1 },
+  maxResponseBytes: 4096,
+  fallback: { allowPlaintextDowngrade: false, enabled: true },
+});
+export const dnsTransportSecurityProfiles: Record<
+  Exclude<DnsSecurityProfileId, 'custom'>,
+  DnsTransportSecurityProfile
+> = {
+  strict: {
+    id: 'strict',
+    allowedTransports: ['doh', 'dot', 'doq'],
+    requireEncrypted: true,
+    requireCertificateValidation: true,
+    requireHostnameVerification: true,
+    allowPlaintextFallback: false,
+    preferredOrder: ['doh', 'dot', 'doq'],
+  },
+  secure: {
+    id: 'secure',
+    allowedTransports: ['doh', 'dot', 'doq'],
+    requireEncrypted: true,
+    requireCertificateValidation: true,
+    requireHostnameVerification: true,
+    allowPlaintextFallback: false,
+    preferredOrder: ['doh', 'dot', 'doq'],
+  },
+  balanced: {
+    id: 'balanced',
+    allowedTransports: ['doh', 'dot', 'doq', 'tcp', 'udp', 'system'],
+    requireEncrypted: false,
+    requireCertificateValidation: true,
+    requireHostnameVerification: true,
+    allowPlaintextFallback: false,
+    preferredOrder: ['doh', 'dot', 'doq', 'tcp', 'udp', 'system'],
+  },
+  compatibility: {
+    id: 'compatibility',
+    allowedTransports: ['doh', 'dot', 'doq', 'tcp', 'udp', 'system'],
+    requireEncrypted: false,
+    requireCertificateValidation: true,
+    requireHostnameVerification: true,
+    allowPlaintextFallback: true,
+    preferredOrder: ['doh', 'dot', 'tcp', 'udp', 'system', 'doq'],
+  },
+};
+
+export const encodeDnsQuery = (question: DnsQuestion): DnsWireMessage => {
+  const labels = question.name.split('.').filter(Boolean);
+  const qname = Buffer.concat(
+    labels
+      .map((l) => {
+        const b = Buffer.from(l);
+        if (b.length > 63)
+          throw new DnsTransportError(
+            'DnsMessageInvalid',
+            'DNS label exceeds 63 octets',
+            false,
+            'configuration',
+          );
+        return Buffer.concat([Buffer.from([b.length]), b]);
+      })
+      .concat(Buffer.from([0])),
+  );
+  const qtype: Record<DnsRecordType, number> = { A: 1, NS: 2, CNAME: 5, MX: 15, TXT: 16, AAAA: 28 };
+  const id = Math.floor(Math.random() * 65535);
+  const head = Buffer.alloc(12);
+  head.writeUInt16BE(id, 0);
+  head.writeUInt16BE(0x0100, 2);
+  head.writeUInt16BE(1, 4);
+  const tail = Buffer.alloc(4);
+  tail.writeUInt16BE(qtype[question.recordType], 0);
+  tail.writeUInt16BE(1, 2);
+  return { id, payload: Buffer.concat([head, qname, tail]), recordType: question.recordType };
+};
+export const validateDnsWireResponse = (
+  payload: Buffer,
+  request?: DnsWireMessage,
+  max = 4096,
+): DnsWireMessage => {
+  if (payload.length < 12)
+    throw new DnsTransportError(
+      'DnsMessageInvalid',
+      'DNS response shorter than header',
+      false,
+      'resolver',
+    );
+  if (payload.length > max)
+    throw new DnsTransportError(
+      'ResponseTooLarge',
+      'DNS response exceeds configured limit',
+      false,
+      'resolver',
+      { size: payload.length, max },
+    );
+  const id = payload.readUInt16BE(0);
+  if (request && id !== request.id)
+    throw new DnsTransportError(
+      'ProtocolError',
+      'DNS response id does not match request',
+      true,
+      'retryable-transport',
+    );
+  return { id, payload, recordType: request?.recordType };
+};
+const hashQuery = (q: DnsQuestion | DnsWireMessage): string => {
+  const s = 'payload' in q ? q.payload.toString('hex') : `${q.recordType}:${q.name}`;
+  let h = 2166136261;
+  for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0).toString(16);
+};
+export const validateDohEndpoint = (url: string): TransportEndpoint => {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    throw new DnsTransportError(
+      'ConfigurationInvalid',
+      'Invalid DoH endpoint URL',
+      false,
+      'configuration',
+    );
+  }
+  if (u.protocol !== 'https:')
+    throw new DnsTransportError(
+      'ConfigurationInvalid',
+      'DoH endpoint must use https',
+      false,
+      'configuration',
+      { scheme: u.protocol },
+    );
+  if (!u.hostname || !u.pathname || u.username || u.password)
+    throw new DnsTransportError(
+      'ConfigurationInvalid',
+      'DoH endpoint requires hostname/path and no credentials',
+      false,
+      'configuration',
+    );
+  return {
+    hostname: u.hostname,
+    port: u.port ? Number(u.port) : 443,
+    path: `${u.pathname}${u.search}`,
+    url: u.toString(),
+    tlsServerName: u.hostname,
+  };
+};
+export const validateDotEndpoint = (host: string): TransportEndpoint => {
+  if (!host || host.includes('://'))
+    throw new DnsTransportError(
+      'ConfigurationInvalid',
+      'DoT endpoint must be a hostname, not a URL',
+      false,
+      'configuration',
+    );
+  return { hostname: host, port: 853, tlsServerName: host };
+};
+
+class TransportConnectionPool {
+  private readonly entries = new Map<string, TransportConnection[]>();
+  constructor(private readonly config: TransportPoolConfig) {}
+  key(
+    resolver: DnsProvider,
+    transport: SecureDnsTransport,
+    endpoint: TransportEndpoint,
+    ctx: DnsTransportContext,
+  ): string {
+    return [
+      resolver.id,
+      transport.type,
+      endpoint.hostname,
+      endpoint.port,
+      endpoint.tlsServerName ?? '',
+      ctx.securityProfile?.id ?? 'balanced',
+      ctx.connectivitySource?.id ?? '',
+      ctx.route?.id ?? '',
+      ctx.metadata?.proxy ?? 'direct',
+    ].join('|');
+  }
+  acquire(key: string): TransportConnection | undefined {
+    const now = Date.now();
+    const list = (this.entries.get(key) ?? []).filter(
+      (c) =>
+        c.state === 'open' && c.expiresAt > now && now - c.lastUsedAt <= this.config.idleTimeoutMs,
+    );
+    this.entries.set(key, list);
+    const conn = list.shift();
+    if (conn) conn.lastUsedAt = now;
+    return conn;
+  }
+  release(conn: TransportConnection): void {
+    if (conn.state !== 'open') return;
+    const list = this.entries.get(conn.key) ?? [];
+    if (list.length < this.config.maxConnections) this.entries.set(conn.key, [...list, conn]);
+  }
+  async drain(close: (c: TransportConnection) => Promise<void>): Promise<void> {
+    const all = [...this.entries.values()].flat();
+    this.entries.clear();
+    await Promise.all(all.map(close));
+  }
+  size(): number {
+    return [...this.entries.values()].reduce((s, l) => s + l.length, 0);
+  }
+}
+class CircuitBreaker {
+  private failures = 0;
+  private openedAt = 0;
+  state: CircuitBreakerState = 'closed';
+  constructor(private readonly config: TransportCircuitBreakerConfig) {}
+  before(): void {
+    if (this.state === 'open') {
+      if (Date.now() - this.openedAt >= this.config.recoveryTimeoutMs) this.state = 'half-open';
+      else
+        throw new DnsTransportError(
+          'CircuitOpen',
+          'Transport circuit is open',
+          true,
+          'retryable-transport',
+        );
+    }
+  }
+  success(): void {
+    this.failures = 0;
+    this.state = 'closed';
+  }
+  failure(): boolean {
+    this.failures++;
+    if (this.failures >= this.config.failureThreshold) {
+      this.state = 'open';
+      this.openedAt = Date.now();
+      return true;
+    }
+    return false;
+  }
+}
+
+abstract class BaseTransport implements SecureDnsTransport {
+  state: DnsTransportState = 'available';
+  abstract id: string;
+  abstract type: DnsTransportType;
+  abstract capabilities: DnsTransportCapability[];
+  abstract endpoint(resolver: DnsProvider): TransportEndpoint | undefined;
+  supports(_q: DnsWireMessage, resolver: DnsProvider, ctx: DnsTransportContext): boolean {
+    return Boolean(this.endpoint(resolver)) && !ctx.policy?.denyTransports?.includes(this.type);
+  }
+  abstract connect(
+    resolver: DnsProvider,
+    context: DnsTransportContext,
+  ): Promise<TransportConnection>;
+  abstract resolve(
+    connection: TransportConnection,
+    query: DnsWireMessage,
+    context: DnsTransportContext,
+  ): Promise<DnsWireMessage>;
+  async close(connection: TransportConnection): Promise<void> {
+    connection.state = 'closed';
+    const raw = connection.raw;
+    if (raw && typeof (raw as { destroy?: () => void }).destroy === 'function')
+      (raw as { destroy: () => void }).destroy();
+  }
+}
+export class DnsOverTlsTransport extends BaseTransport {
+  id = 'builtin.dot';
+  type: DnsTransportType = 'dot';
+  capabilities: DnsTransportCapability[] = [
+    'encrypted',
+    'tls',
+    'certificate-validation',
+    'hostname-verification',
+    'connection-reuse',
+    'wire-format',
+  ];
+  endpoint(resolver: DnsProvider): TransportEndpoint | undefined {
+    const dot = resolver.metadata().endpoints.dot;
+    return dot ? validateDotEndpoint(dot) : undefined;
+  }
+  async connect(resolver: DnsProvider, ctx: DnsTransportContext): Promise<TransportConnection> {
+    const ep = this.endpoint(resolver);
+    if (!ep)
+      throw new DnsTransportError(
+        'TransportUnavailable',
+        'Resolver has no DoT endpoint',
+        true,
+        'retryable-transport',
+      );
+    const socket = await new Promise<TLSSocket>((resolve, reject) => {
+      const s = tlsConnect(
+        {
+          host: ep.hostname,
+          port: ep.port,
+          servername: ep.tlsServerName,
+          minVersion: 'TLSv1.2',
+          rejectUnauthorized: true,
+          timeout: ctx.timeoutMs ?? defaultDnsTransportConfig().timeouts.connectMs,
+        },
+        () => resolve(s),
+      );
+      s.once('timeout', () => {
+        s.destroy();
+        reject(
+          new DnsTransportError(
+            'ConnectionTimeout',
+            'DoT connection timed out',
+            true,
+            'retryable-transport',
+          ),
+        );
+      });
+      s.once('error', (e) =>
+        reject(
+          new DnsTransportError('TlsHandshakeFailed', e.message, false, 'non-retryable-security'),
+        ),
+      );
+      ctx.signal?.addEventListener(
+        'abort',
+        () => {
+          s.destroy();
+          reject(
+            new DnsTransportError(
+              'TransportCancelled',
+              'DoT connection cancelled',
+              false,
+              'cancelled',
+            ),
+          );
+        },
+        { once: true },
+      );
+    });
+    const cert = socket.getPeerCertificate();
+    if (!socket.authorized)
+      throw new DnsTransportError(
+        String(socket.authorizationError) === 'ERR_TLS_CERT_ALTNAME_INVALID'
+          ? 'HostnameVerificationFailed'
+          : 'CertificateValidationFailed',
+        String(socket.authorizationError ?? 'TLS validation failed'),
+        false,
+        'non-retryable-security',
+      );
+    return {
+      id: createId('dot_conn'),
+      key: '',
+      transportId: this.id,
+      type: this.type,
+      endpoint: ep,
+      createdAt: Date.now(),
+      lastUsedAt: Date.now(),
+      expiresAt: Date.now() + defaultDnsTransportConfig().pool.maxLifetimeMs,
+      state: 'open',
+      raw: socket,
+      ...(cert.valid_to ? {} : {}),
+    };
+  }
+  async resolve(
+    connection: TransportConnection,
+    query: DnsWireMessage,
+    ctx: DnsTransportContext,
+  ): Promise<DnsWireMessage> {
+    const s = connection.raw as TLSSocket;
+    const len = Buffer.alloc(2);
+    len.writeUInt16BE(query.payload.length);
+    s.write(Buffer.concat([len, query.payload]));
+    const chunks: Buffer[] = [];
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () =>
+          reject(
+            new DnsTransportError(
+              'ConnectionTimeout',
+              'DoT read timed out',
+              true,
+              'retryable-transport',
+            ),
+          ),
+        ctx.timeoutMs ?? 3000,
+      );
+      s.once('data', (d) => {
+        clearTimeout(timer);
+        chunks.push(d);
+        const b = Buffer.concat(chunks);
+        if (b.length < 2)
+          return reject(
+            new DnsTransportError(
+              'ProtocolError',
+              'DoT response missing length prefix',
+              true,
+              'retryable-transport',
+            ),
+          );
+        const n = b.readUInt16BE(0);
+        if (
+          n >
+          ((ctx.metadata?.maxResponseBytes as number | undefined) ??
+            defaultDnsTransportConfig().maxResponseBytes)
+        )
+          return reject(
+            new DnsTransportError(
+              'ResponseTooLarge',
+              'DoT response exceeds configured limit',
+              false,
+              'resolver',
+            ),
+          );
+        resolve(validateDnsWireResponse(b.subarray(2, 2 + n), query));
+      });
+      s.once('error', (e) => {
+        clearTimeout(timer);
+        reject(new DnsTransportError('ProtocolError', e.message, true, 'retryable-transport'));
+      });
+      ctx.signal?.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+          reject(
+            new DnsTransportError('TransportCancelled', 'DoT query cancelled', false, 'cancelled'),
+          );
+        },
+        { once: true },
+      );
+    });
+  }
+}
+export class DnsOverHttpsTransport extends BaseTransport {
+  id = 'builtin.doh';
+  type: DnsTransportType = 'doh';
+  capabilities: DnsTransportCapability[] = [
+    'encrypted',
+    'tls',
+    'https',
+    'certificate-validation',
+    'hostname-verification',
+    'connection-reuse',
+    'wire-format',
+  ];
+  private readonly agent = new HttpsAgent({
+    keepAlive: true,
+    maxSockets: defaultDnsTransportConfig().pool.maxConnections,
+  });
+  endpoint(resolver: DnsProvider): TransportEndpoint | undefined {
+    const doh = resolver.metadata().endpoints.doh;
+    return doh ? validateDohEndpoint(doh) : undefined;
+  }
+  async connect(resolver: DnsProvider): Promise<TransportConnection> {
+    const ep = this.endpoint(resolver);
+    if (!ep)
+      throw new DnsTransportError(
+        'TransportUnavailable',
+        'Resolver has no DoH endpoint',
+        true,
+        'retryable-transport',
+      );
+    return {
+      id: createId('doh_conn'),
+      key: '',
+      transportId: this.id,
+      type: this.type,
+      endpoint: ep,
+      createdAt: Date.now(),
+      lastUsedAt: Date.now(),
+      expiresAt: Date.now() + defaultDnsTransportConfig().pool.maxLifetimeMs,
+      state: 'open',
+      raw: this.agent,
+    };
+  }
+  async resolve(
+    connection: TransportConnection,
+    query: DnsWireMessage,
+    ctx: DnsTransportContext,
+  ): Promise<DnsWireMessage> {
+    const ep = connection.endpoint;
+    return await new Promise((resolve, reject) => {
+      const req = httpsRequest(
+        {
+          method: 'POST',
+          hostname: ep.hostname,
+          port: ep.port,
+          path: ep.path ?? '/dns-query',
+          servername: ep.tlsServerName,
+          minVersion: 'TLSv1.2',
+          rejectUnauthorized: true,
+          agent: this.agent,
+          timeout: ctx.timeoutMs ?? 3000,
+          headers: {
+            'Content-Type': 'application/dns-message',
+            Accept: 'application/dns-message',
+            'Content-Length': query.payload.length,
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (c: Buffer) => {
+            chunks.push(c);
+            if (
+              Buffer.concat(chunks).length >
+              ((ctx.metadata?.maxResponseBytes as number | undefined) ??
+                defaultDnsTransportConfig().maxResponseBytes)
+            ) {
+              req.destroy();
+              reject(
+                new DnsTransportError(
+                  'ResponseTooLarge',
+                  'DoH response exceeds configured limit',
+                  false,
+                  'resolver',
+                ),
+              );
+            }
+          });
+          res.on('end', () => {
+            if ((res.statusCode ?? 0) < 200 || (res.statusCode ?? 0) >= 300)
+              return reject(
+                new DnsTransportError(
+                  'HttpError',
+                  `DoH HTTP status ${res.statusCode}`,
+                  res.statusCode === 429 || (res.statusCode ?? 0) >= 500,
+                  'retryable-transport',
+                  { statusCode: res.statusCode },
+                ),
+              );
+            resolve(validateDnsWireResponse(Buffer.concat(chunks), query));
+          });
+        },
+      );
+      req.once('timeout', () => {
+        req.destroy();
+        reject(
+          new DnsTransportError(
+            'HttpTimeout',
+            'DoH request timed out',
+            true,
+            'retryable-transport',
+          ),
+        );
+      });
+      req.once('error', (e: Error & { code?: string }) =>
+        reject(
+          new DnsTransportError(
+            e.code === 'ERR_TLS_CERT_ALTNAME_INVALID'
+              ? 'HostnameVerificationFailed'
+              : e.message.includes('certificate')
+                ? 'CertificateValidationFailed'
+                : 'ProtocolError',
+            e.message,
+            !e.message.includes('certificate'),
+            e.message.includes('certificate') ? 'non-retryable-security' : 'retryable-transport',
+          ),
+        ),
+      );
+      ctx.signal?.addEventListener(
+        'abort',
+        () => {
+          req.destroy();
+          reject(
+            new DnsTransportError(
+              'TransportCancelled',
+              'DoH request cancelled',
+              false,
+              'cancelled',
+            ),
+          );
+        },
+        { once: true },
+      );
+      req.end(query.payload);
+    });
+  }
+  override async close(connection: TransportConnection): Promise<void> {
+    connection.state = 'closed';
+  }
+}
+export class DnsOverQuicTransport extends BaseTransport {
+  id = 'builtin.doq.extension';
+  type: DnsTransportType = 'doq';
+  capabilities: DnsTransportCapability[] = [
+    'encrypted',
+    'quic',
+    'certificate-validation',
+    'hostname-verification',
+    'wire-format',
+    'plugin-provided',
+  ];
+  endpoint(_resolver: DnsProvider): TransportEndpoint | undefined {
+    return undefined;
+  }
+  override supports(): boolean {
+    return false;
+  }
+  async connect(): Promise<TransportConnection> {
+    throw new DnsTransportError(
+      'QuicHandshakeFailed',
+      'DoQ is an extension point; no stable QUIC implementation is registered',
+      false,
+      'configuration',
+    );
+  }
+  async resolve(): Promise<DnsWireMessage> {
+    throw new DnsTransportError(
+      'QuicHandshakeFailed',
+      'DoQ is not implemented by the built-in transport',
+      false,
+      'configuration',
+    );
+  }
+}
+
+export class DnsTransportRegistry {
+  private readonly transports = new Map<string, SecureDnsTransport>();
+  register(t: SecureDnsTransport): void {
+    if (!t.id)
+      throw new DnsTransportError(
+        'ConfigurationInvalid',
+        'Transport id is required',
+        false,
+        'configuration',
+      );
+    this.transports.set(t.id, t);
+  }
+  get(id: string): SecureDnsTransport | undefined {
+    return this.transports.get(id);
+  }
+  list(): SecureDnsTransport[] {
+    return [...this.transports.values()];
+  }
+  byType(type: DnsTransportType): SecureDnsTransport[] {
+    return this.list().filter((t) => t.type === type);
+  }
+}
+export const createDefaultDnsTransportRegistry = (): DnsTransportRegistry => {
+  const r = new DnsTransportRegistry();
+  r.register(new DnsOverHttpsTransport());
+  r.register(new DnsOverTlsTransport());
+  r.register(new DnsOverQuicTransport());
+  return r;
+};
+
+export class SecureDnsTransportEngine {
+  private readonly registry: DnsTransportRegistry;
+  private readonly config: DnsTransportConfig;
+  private readonly pool: TransportConnectionPool;
+  private readonly circuits = new Map<string, CircuitBreaker>();
+  private shuttingDown = false;
+  constructor(
+    private readonly options: {
+      registry?: DnsTransportRegistry;
+      events?: Phase15EventBus;
+      metrics?: Phase15MetricsRegistry;
+      routing?: Phase15RoutingEngine;
+      kernel?: Phase15KernelRuntime;
+      principal?: Phase15Principal;
+      config?: Partial<DnsTransportConfig>;
+    } = {},
+  ) {
+    this.config = {
+      ...defaultDnsTransportConfig(),
+      ...options.config,
+      tls: { ...defaultDnsTransportConfig().tls, ...options.config?.tls },
+      timeouts: { ...defaultDnsTransportConfig().timeouts, ...options.config?.timeouts },
+      retry: { ...defaultDnsTransportConfig().retry, ...options.config?.retry },
+      pool: { ...defaultDnsTransportConfig().pool, ...options.config?.pool },
+      circuitBreaker: {
+        ...defaultDnsTransportConfig().circuitBreaker,
+        ...options.config?.circuitBreaker,
+      },
+      fallback: { ...defaultDnsTransportConfig().fallback, ...options.config?.fallback },
+    };
+    this.validateConfig();
+    this.registry = options.registry ?? createDefaultDnsTransportRegistry();
+    this.pool = new TransportConnectionPool(this.config.pool);
+    for (const t of this.registry.list())
+      void this.emit('dns.transport.registered', { transportId: t.id, type: t.type });
+  }
+  async simulateDnsTransportSelection(
+    question: DnsQuestion,
+    resolver: DnsProvider,
+    context: Partial<DnsTransportContext> = {},
+  ): Promise<DnsTransportDecision> {
+    return this.select(encodeDnsQuery(question), resolver, { resolver, ...context }, true);
+  }
+  async resolve(
+    question: DnsQuestion,
+    resolver: DnsProvider,
+    context: Partial<DnsTransportContext> = {},
+  ): Promise<DnsWireMessage> {
+    const wire = encodeDnsQuery(question);
+    const ctx: DnsTransportContext = {
+      resolver,
+      timeoutMs: this.config.timeouts.queryMs,
+      ...context,
+    };
+    const decision = await this.select(wire, resolver, ctx, false);
+    if (!decision.selectedTransport)
+      throw new DnsTransportError('TransportPolicyRejected', decision.reason, false, 'policy');
+    let last: DnsTransportError | undefined;
+    for (const c of decision.fallbackOrder) {
+      const circuit = this.circuit(c.transport.id);
+      try {
+        circuit.before();
+        await this.emit('dns.transport.selected', {
+          transportId: c.transport.id,
+          resolverId: resolver.id,
+        });
+        const out = await this.withRetry(c, wire, ctx);
+        circuit.success();
+        return out;
+      } catch (e) {
+        last = this.toTransportError(e);
+        if (
+          !last.retryable ||
+          last.failureKind === 'non-retryable-security' ||
+          last.failureKind === 'policy'
+        )
+          throw last;
+        if (circuit.failure())
+          await this.emit('dns.transport.circuit.opened', { transportId: c.transport.id });
+        await this.emit('dns.transport.failover.started', {
+          from: c.transport.id,
+          reason: last.code,
+        });
+      }
+    }
+    throw (
+      last ??
+      new DnsTransportError(
+        'TransportUnavailable',
+        'No transport succeeded',
+        true,
+        'retryable-transport',
+      )
+    );
+  }
+  private async select(
+    query: DnsWireMessage,
+    resolver: DnsProvider,
+    context: DnsTransportContext,
+    dryRun: boolean,
+  ): Promise<DnsTransportDecision> {
+    const profile = context.securityProfile ?? dnsTransportSecurityProfiles.balanced;
+    const policy = context.policy;
+    const rejected: RejectedDnsTransportCandidate[] = [];
+    const candidates: DnsTransportCandidate[] = [];
+    const route = context.route ?? (dryRun ? undefined : await this.routeFor(resolver));
+    const ctx: DnsTransportContext = {
+      ...context,
+      ...(route ? { route } : {}),
+      securityProfile: profile,
+    };
+    const types = policy?.preferTransports ?? profile.preferredOrder ?? this.config.priority;
+    for (const t of this.registry
+      .list()
+      .sort((a, b) => types.indexOf(a.type) - types.indexOf(b.type))) {
+      const ep = safeEndpoint(t, resolver, rejected);
+      if (!ep) continue;
+      const rejection = this.policyRejection(t, resolver, profile, policy);
+      if (rejection) {
+        rejected.push(rejection);
+        continue;
+      }
+      if (!t.supports(query, resolver, ctx)) {
+        rejected.push({
+          transportId: t.id,
+          type: t.type,
+          reason: 'transport does not support resolver/context',
+          policyViolation: false,
+        });
+        continue;
+      }
+      candidates.push({
+        transport: t,
+        endpoint: ep,
+        score: this.score(t, resolver, profile, policy),
+      });
+    }
+    candidates.sort((a, b) => b.score.total - a.score.total);
+    const selected = candidates[0];
+    const decision: DnsTransportDecision = {
+      query: { recordType: query.recordType ?? 'A', nameHash: hashQuery(query) },
+      resolver: { id: resolver.id, name: resolver.name },
+      candidates,
+      rejectedCandidates: rejected,
+      ...(selected ? { selectedTransport: selected } : {}),
+      securityProfile: profile,
+      ...(policy ? { policy } : {}),
+      ...(route ? { route } : {}),
+      reason: selected
+        ? `selected ${selected.transport.type} for resolver ${resolver.id}`
+        : 'no policy-compliant DNS transport available',
+      fallbackOrder: this.config.fallback.enabled ? candidates : candidates.slice(0, 1),
+      securityImplications: rejected
+        .filter((r) => r.securityImplication)
+        .map((r) => r.securityImplication as string),
+      dryRun,
+    };
+    if (!dryRun)
+      await this.emit(selected ? 'dns.transport.selected' : 'dns.transport.policy.rejected', {
+        resolverId: resolver.id,
+        selectedTransport: selected?.transport.id,
+        rejected: rejected.length,
+      });
+    return decision;
+  }
+  private policyRejection(
+    t: SecureDnsTransport,
+    resolver: DnsProvider,
+    profile: DnsTransportSecurityProfile,
+    policy?: DnsTransportPolicy,
+  ): RejectedDnsTransportCandidate | undefined {
+    const encrypted = t.capabilities.includes('encrypted');
+    if (
+      this.config.disabledTransports.includes(t.type) ||
+      !this.config.allowedTransports.includes(t.type)
+    )
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'transport disabled by configuration',
+        policyViolation: true,
+      };
+    if (!profile.allowedTransports.includes(t.type))
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: `security profile ${profile.id} disallows ${t.type}`,
+        policyViolation: true,
+        securityImplication: 'profile downgrade prevention',
+      };
+    if (
+      (profile.requireEncrypted || policy?.requireEncryptedDns || policy?.denyPlaintextDns) &&
+      !encrypted
+    )
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'encrypted DNS is required; plaintext downgrade blocked',
+        policyViolation: true,
+        securityImplication: 'plaintext downgrade prevented',
+      };
+    if (policy?.allowTransports && !policy.allowTransports.includes(t.type))
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'transport not in policy allow-list',
+        policyViolation: true,
+      };
+    if (policy?.denyTransports?.includes(t.type))
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'transport denied by policy',
+        policyViolation: true,
+      };
+    if (policy?.requireTransport && policy.requireTransport !== t.type)
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'different transport required by policy',
+        policyViolation: true,
+      };
+    if (policy?.requireResolverId && policy.requireResolverId !== resolver.id)
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'different resolver required by policy',
+        policyViolation: true,
+      };
+    if (
+      (profile.requireCertificateValidation || policy?.requireCertificateValidation) &&
+      t.capabilities.includes('tls') &&
+      !this.config.tls.requireCertificateValidation
+    )
+      return {
+        transportId: t.id,
+        type: t.type,
+        reason: 'certificate validation is mandatory',
+        policyViolation: true,
+      };
+    return undefined;
+  }
+  private score(
+    t: SecureDnsTransport,
+    resolver: DnsProvider,
+    profile: DnsTransportSecurityProfile,
+    policy?: DnsTransportPolicy,
+  ): DnsTransportScore {
+    const encrypted = t.capabilities.includes('encrypted');
+    const pref =
+      policy?.preferTransports?.indexOf(t.type) ?? profile.preferredOrder.indexOf(t.type);
+    const s = {
+      security: encrypted ? 100 : 30,
+      latency: t.type === 'doh' ? 85 : t.type === 'dot' ? 80 : 60,
+      reliability: 80,
+      availability: t.state === 'available' || t.state === 'healthy' ? 90 : 20,
+      networkCompatibility: t.type === 'doh' ? 90 : 75,
+      resolverCompatibility:
+        resolver.config.protocols.includes(t.type as ResolverProtocol) ||
+        (t.type === 'doh' && resolver.supportsDoH()) ||
+        (t.type === 'dot' && resolver.supportsDoT())
+          ? 100
+          : 60,
+      connectionStability: t.capabilities.includes('connection-reuse') ? 90 : 50,
+      historicalPerformance: 75,
+      policyPreference: pref >= 0 ? 100 - pref * 10 : 50,
+      total: 0,
+    };
+    s.total = Math.round(
+      (s.security * 2 +
+        s.latency +
+        s.reliability +
+        s.availability +
+        s.networkCompatibility +
+        s.resolverCompatibility +
+        s.connectionStability +
+        s.historicalPerformance +
+        s.policyPreference * 1.5) /
+        10.5,
+    );
+    return s;
+  }
+  private async withRetry(
+    c: DnsTransportCandidate,
+    query: DnsWireMessage,
+    ctx: DnsTransportContext,
+  ): Promise<DnsWireMessage> {
+    let last: unknown;
+    for (let i = 0; i < this.config.retry.maxAttempts; i++) {
+      try {
+        return await this.execute(c, query, ctx);
+      } catch (e) {
+        last = e;
+        const te = this.toTransportError(e);
+        if (!te.retryable || i === this.config.retry.maxAttempts - 1) throw te;
+        await new Promise((r) =>
+          setTimeout(
+            r,
+            Math.min(this.config.retry.maxDelayMs, this.config.retry.initialDelayMs * 2 ** i) *
+              (1 + Math.random() * this.config.retry.jitterRatio),
+          ),
+        );
+      }
+    }
+    throw this.toTransportError(last);
+  }
+  private async execute(
+    c: DnsTransportCandidate,
+    query: DnsWireMessage,
+    ctx: DnsTransportContext,
+  ): Promise<DnsWireMessage> {
+    if (this.shuttingDown)
+      throw new DnsTransportError(
+        'TransportUnavailable',
+        'transport engine shutting down',
+        true,
+        'retryable-transport',
+      );
+    const key = this.pool.key(ctx.resolver, c.transport, c.endpoint, ctx);
+    let conn = this.pool.acquire(key);
+    if (!conn) {
+      await this.emit('dns.transport.connection.started', { transportId: c.transport.id });
+      const start = performance.now();
+      conn = await c.transport.connect(ctx.resolver, ctx);
+      conn.key = key;
+      this.metric('dns_transport_connection_success_total', 1, { transport: c.transport.type });
+      this.metric('dns_transport_handshake_duration', performance.now() - start, {
+        transport: c.transport.type,
+      });
+      await this.emit('dns.transport.connection.established', { transportId: c.transport.id });
+    }
+    const qstart = performance.now();
+    try {
+      this.metric('dns_transport_requests_total', 1, { transport: c.transport.type });
+      const res = await c.transport.resolve(conn, query, {
+        ...ctx,
+        metadata: { ...ctx.metadata, maxResponseBytes: this.config.maxResponseBytes },
+      });
+      this.metric('dns_transport_success_total', 1, { transport: c.transport.type });
+      this.metric('dns_transport_query_duration', performance.now() - qstart, {
+        transport: c.transport.type,
+      });
+      return res;
+    } catch (e) {
+      const te = this.toTransportError(e);
+      this.metric(
+        te.code.includes('Timeout') ? 'dns_transport_timeout_total' : 'dns_transport_failure_total',
+        1,
+        { transport: c.transport.type, code: te.code },
+      );
+      throw te;
+    } finally {
+      this.pool.release(conn);
+    }
+  }
+  private async routeFor(resolver: DnsProvider): Promise<Phase15NetworkPath | undefined> {
+    if (!this.options.routing) return undefined;
+    const ep =
+      resolver.metadata().endpoints.dot ??
+      resolver.metadata().endpoints.doh ??
+      resolver.metadata().endpoints.ipv4[0];
+    if (!ep) return undefined;
+    return (
+      await this.options.routing.simulateRouting({
+        destination: phase15Destination(ep.includes('://') ? new URL(ep).hostname : ep),
+      })
+    ).selected?.path;
+  }
+  async shutdown(): Promise<void> {
+    this.shuttingDown = true;
+    await this.pool.drain((c) => this.registry.get(c.transportId)?.close(c) ?? Promise.resolve());
+  }
+  poolSize(): number {
+    return this.pool.size();
+  }
+  private circuit(id: string): CircuitBreaker {
+    const c = this.circuits.get(id) ?? new CircuitBreaker(this.config.circuitBreaker);
+    this.circuits.set(id, c);
+    return c;
+  }
+  private toTransportError(e: unknown): DnsTransportError {
+    return e instanceof DnsTransportError
+      ? e
+      : new DnsTransportError(
+          'ProtocolError',
+          e instanceof Error ? e.message : 'unknown transport error',
+          true,
+          'retryable-transport',
+        );
+  }
+  private validateConfig(): void {
+    if (
+      !this.config.tls.requireCertificateValidation ||
+      !this.config.tls.requireHostnameVerification
+    )
+      throw new DnsTransportError(
+        'ConfigurationInvalid',
+        'TLS certificate and hostname validation cannot be disabled',
+        false,
+        'configuration',
+      );
+    if (
+      this.config.pool.maxConnections < 1 ||
+      this.config.retry.maxAttempts < 1 ||
+      this.config.maxResponseBytes < 512
+    )
+      throw new DnsTransportError(
+        'ConfigurationInvalid',
+        'Invalid bounded resource configuration',
+        false,
+        'configuration',
+      );
+  }
+  private metric(name: string, value: number, labels?: Record<string, string>): void {
+    this.options.metrics?.record(name, value, labels);
+  }
+  private async emit(type: string, payload: Record<string, unknown>): Promise<void> {
+    await this.options.events?.publish({
+      id: createId('evt'),
+      type,
+      aggregateId: 'dns-transport',
+      occurredAt: new Date(),
+      payload,
+    });
+  }
+}
+const safeEndpoint = (
+  t: SecureDnsTransport,
+  r: DnsProvider,
+  rejected: RejectedDnsTransportCandidate[],
+): TransportEndpoint | undefined => {
+  try {
+    return t.endpoint(r);
+  } catch (e) {
+    const err = e instanceof Error ? e.message : 'invalid endpoint';
+    rejected.push({
+      transportId: t.id,
+      type: t.type,
+      reason: err,
+      policyViolation: true,
+      securityImplication: 'invalid endpoint rejected',
+    });
+    return undefined;
+  }
+};
