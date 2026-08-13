@@ -1,0 +1,42 @@
+{
+  "scenario": "healthy-network",
+  "timestamp": "2026-08-13T00:00:00.000Z",
+  "candidates": [
+    {
+      "id": "fiber-primary",
+      "type": "connectivity-source",
+      "capabilities": ["internet", "dns"],
+      "health": "healthy",
+      "timestamp": "2026-08-13T00:00:00.000Z",
+      "policyCompatibility": true,
+      "securityCompatibility": true,
+      "metrics": {
+        "latencyMs": 18,
+        "packetLossRatio": 0,
+        "jitterMs": 3,
+        "throughputMbps": 300,
+        "availabilityRatio": 0.999,
+        "reliabilityRatio": 0.99,
+        "recoveryCost": 5
+      }
+    },
+    {
+      "id": "lte-backup",
+      "type": "connectivity-source",
+      "capabilities": ["internet", "dns"],
+      "health": "healthy",
+      "timestamp": "2026-08-13T00:00:00.000Z",
+      "policyCompatibility": true,
+      "securityCompatibility": true,
+      "metrics": {
+        "latencyMs": 70,
+        "packetLossRatio": 0.01,
+        "jitterMs": 15,
+        "throughputMbps": 45,
+        "availabilityRatio": 0.98,
+        "reliabilityRatio": 0.95,
+        "recoveryCost": 15
+      }
+    }
+  ]
+}

@@ -15,7 +15,8 @@
     "typecheck": "turbo run typecheck",
     "prepare": "husky",
     "coverage": "turbo run test -- --coverage",
-    "validate": "node scripts/validate-repository.mjs"
+    "validate": "node scripts/validate-repository.mjs",
+    "phase19-demo": "node examples/phase-19/phase19-demo.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
