@@ -1,0 +1,472 @@
+{
+  "phase": 19,
+  "timestamp": "2026-08-13T00:00:00.000Z",
+  "scenario": "tunnel-failure",
+  "decision": {
+    "decisionId": "ab131ca6-704a-4376-996c-b3d360320668",
+    "type": "tunnelDecision",
+    "timestamp": "2026-08-13T00:00:00.000Z",
+    "selectedCandidate": {
+      "id": "tunnel-b-secure",
+      "type": "tunnel",
+      "capabilities": [
+        "tunnel",
+        "encrypted"
+      ],
+      "health": "healthy",
+      "timestamp": "2026-08-13T00:00:00.000Z",
+      "policyCompatibility": true,
+      "securityCompatibility": true,
+      "metrics": {
+        "latencyMs": 35,
+        "packetLossRatio": 0.001,
+        "jitterMs": 5,
+        "throughputMbps": 120,
+        "availabilityRatio": 0.99,
+        "reliabilityRatio": 0.98,
+        "recoveryCost": 25,
+        "tunnelHealth": 1
+      }
+    },
+    "candidates": [
+      {
+        "candidate": {
+          "id": "tunnel-b-secure",
+          "type": "tunnel",
+          "capabilities": [
+            "tunnel",
+            "encrypted"
+          ],
+          "health": "healthy",
+          "timestamp": "2026-08-13T00:00:00.000Z",
+          "policyCompatibility": true,
+          "securityCompatibility": true,
+          "metrics": {
+            "latencyMs": 35,
+            "packetLossRatio": 0.001,
+            "jitterMs": 5,
+            "throughputMbps": 120,
+            "availabilityRatio": 0.99,
+            "reliabilityRatio": 0.98,
+            "recoveryCost": 25,
+            "tunnelHealth": 1
+          }
+        },
+        "score": 0.9883965517241379,
+        "dimensions": {
+          "availability": 0.99,
+          "latency": 0.9741379310344828,
+          "packetLoss": 0.995,
+          "jitter": 1,
+          "throughput": 1,
+          "stability": 1,
+          "security": 1,
+          "policyCompliance": 1,
+          "historicalReliability": 0.9800000000000001,
+          "recoveryCost": 0.75
+        },
+        "reasons": [
+          "healthy health",
+          "policy compatible",
+          "security compatible",
+          "telemetry fresh",
+          "anomaly normal",
+          "strong availability",
+          "strong latency",
+          "strong packetLoss",
+          "strong jitter",
+          "strong throughput",
+          "strong stability",
+          "strong security",
+          "strong policyCompliance",
+          "strong historicalReliability"
+        ],
+        "negativeFactors": [],
+        "rejected": false,
+        "freshness": "fresh",
+        "anomaly": "normal",
+        "predictedOutcome": "likely healthy"
+      },
+      {
+        "candidate": {
+          "id": "tunnel-a-current",
+          "type": "tunnel",
+          "capabilities": [
+            "tunnel",
+            "encrypted"
+          ],
+          "health": "unhealthy",
+          "timestamp": "2026-08-13T00:00:00.000Z",
+          "policyCompatibility": true,
+          "securityCompatibility": true,
+          "metrics": {
+            "latencyMs": 500,
+            "packetLossRatio": 0.2,
+            "jitterMs": 120,
+            "throughputMbps": 5,
+            "availabilityRatio": 0.4,
+            "reliabilityRatio": 0.6,
+            "recoveryCost": 0,
+            "tunnelHealth": 0.2
+          }
+        },
+        "score": 0,
+        "dimensions": {
+          "availability": 0.4,
+          "latency": 0.1724137931034483,
+          "packetLoss": 0,
+          "jitter": 0,
+          "throughput": 0.05,
+          "stability": 1,
+          "security": 1,
+          "policyCompliance": 1,
+          "historicalReliability": 0.6,
+          "recoveryCost": 1
+        },
+        "reasons": [
+          "unhealthy health",
+          "policy compatible",
+          "security compatible",
+          "telemetry fresh",
+          "anomaly normal",
+          "strong stability",
+          "strong security",
+          "strong policyCompliance",
+          "strong recoveryCost"
+        ],
+        "negativeFactors": [
+          "low availability",
+          "low latency",
+          "low packetLoss",
+          "low jitter",
+          "low throughput"
+        ],
+        "rejected": true,
+        "rejectionReason": "candidate unhealthy",
+        "freshness": "fresh",
+        "anomaly": "normal",
+        "predictedOutcome": "likely degraded"
+      },
+      {
+        "candidate": {
+          "id": "tunnel-c-policy-blocked",
+          "type": "tunnel",
+          "capabilities": [
+            "tunnel",
+            "encrypted"
+          ],
+          "health": "healthy",
+          "timestamp": "2026-08-13T00:00:00.000Z",
+          "policyCompatibility": false,
+          "securityCompatibility": true,
+          "metrics": {
+            "latencyMs": 10,
+            "packetLossRatio": 0,
+            "jitterMs": 1,
+            "throughputMbps": 500,
+            "availabilityRatio": 1,
+            "reliabilityRatio": 1,
+            "recoveryCost": 1,
+            "tunnelHealth": 1
+          }
+        },
+        "score": 0,
+        "dimensions": {
+          "availability": 1,
+          "latency": 1,
+          "packetLoss": 1,
+          "jitter": 1,
+          "throughput": 1,
+          "stability": 1,
+          "security": 1,
+          "policyCompliance": 0,
+          "historicalReliability": 1,
+          "recoveryCost": 0.99
+        },
+        "reasons": [
+          "healthy health",
+          "policy incompatible",
+          "security compatible",
+          "telemetry fresh",
+          "anomaly normal",
+          "strong availability",
+          "strong latency",
+          "strong packetLoss",
+          "strong jitter",
+          "strong throughput",
+          "strong stability",
+          "strong security",
+          "strong historicalReliability",
+          "strong recoveryCost"
+        ],
+        "negativeFactors": [
+          "low policyCompliance"
+        ],
+        "rejected": true,
+        "rejectionReason": "policy violation",
+        "freshness": "fresh",
+        "anomaly": "normal",
+        "predictedOutcome": "likely healthy"
+      }
+    ],
+    "score": 0.9883965517241379,
+    "confidence": 0.825,
+    "reasons": [
+      "healthy health",
+      "policy compatible",
+      "security compatible",
+      "telemetry fresh",
+      "anomaly normal",
+      "strong availability",
+      "strong latency",
+      "strong packetLoss",
+      "strong jitter",
+      "strong throughput",
+      "strong stability",
+      "strong security",
+      "strong policyCompliance",
+      "strong historicalReliability"
+    ],
+    "rejectedCandidates": [
+      {
+        "id": "tunnel-a-current",
+        "reason": "candidate unhealthy"
+      },
+      {
+        "id": "tunnel-c-policy-blocked",
+        "reason": "policy violation"
+      }
+    ],
+    "policyValidation": {
+      "allowed": true,
+      "version": "demo-policy-v1"
+    },
+    "securityValidation": {
+      "allowed": true,
+      "version": "demo-security-v1"
+    },
+    "recommendedAction": "switch-tunnel",
+    "expiresAt": "2026-08-13T00:02:00.000Z",
+    "versions": {
+      "policyVersion": "demo-policy-v1",
+      "networkStateVersion": "demo-tunnel-failure",
+      "securityStateVersion": "demo-security-v1",
+      "routingStateVersion": "demo-routing-v1",
+      "tunnelStateVersion": "demo-tunnel-v1",
+      "dnsStateVersion": "demo-dns-v1"
+    },
+    "status": "recommended",
+    "fallbackUsed": false,
+    "explanation": "Decision ab131ca6-704a-4376-996c-b3d360320668: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
+    "predictedOutcomes": {
+      "tunnel-b-secure": "likely healthy",
+      "tunnel-a-current": "likely degraded",
+      "tunnel-c-policy-blocked": "likely healthy"
+    }
+  },
+  "candidates": [
+    {
+      "candidate": {
+        "id": "tunnel-b-secure",
+        "type": "tunnel",
+        "capabilities": [
+          "tunnel",
+          "encrypted"
+        ],
+        "health": "healthy",
+        "timestamp": "2026-08-13T00:00:00.000Z",
+        "policyCompatibility": true,
+        "securityCompatibility": true,
+        "metrics": {
+          "latencyMs": 35,
+          "packetLossRatio": 0.001,
+          "jitterMs": 5,
+          "throughputMbps": 120,
+          "availabilityRatio": 0.99,
+          "reliabilityRatio": 0.98,
+          "recoveryCost": 25,
+          "tunnelHealth": 1
+        }
+      },
+      "score": 0.9883965517241379,
+      "dimensions": {
+        "availability": 0.99,
+        "latency": 0.9741379310344828,
+        "packetLoss": 0.995,
+        "jitter": 1,
+        "throughput": 1,
+        "stability": 1,
+        "security": 1,
+        "policyCompliance": 1,
+        "historicalReliability": 0.9800000000000001,
+        "recoveryCost": 0.75
+      },
+      "reasons": [
+        "healthy health",
+        "policy compatible",
+        "security compatible",
+        "telemetry fresh",
+        "anomaly normal",
+        "strong availability",
+        "strong latency",
+        "strong packetLoss",
+        "strong jitter",
+        "strong throughput",
+        "strong stability",
+        "strong security",
+        "strong policyCompliance",
+        "strong historicalReliability"
+      ],
+      "negativeFactors": [],
+      "rejected": false,
+      "freshness": "fresh",
+      "anomaly": "normal",
+      "predictedOutcome": "likely healthy"
+    },
+    {
+      "candidate": {
+        "id": "tunnel-a-current",
+        "type": "tunnel",
+        "capabilities": [
+          "tunnel",
+          "encrypted"
+        ],
+        "health": "unhealthy",
+        "timestamp": "2026-08-13T00:00:00.000Z",
+        "policyCompatibility": true,
+        "securityCompatibility": true,
+        "metrics": {
+          "latencyMs": 500,
+          "packetLossRatio": 0.2,
+          "jitterMs": 120,
+          "throughputMbps": 5,
+          "availabilityRatio": 0.4,
+          "reliabilityRatio": 0.6,
+          "recoveryCost": 0,
+          "tunnelHealth": 0.2
+        }
+      },
+      "score": 0,
+      "dimensions": {
+        "availability": 0.4,
+        "latency": 0.1724137931034483,
+        "packetLoss": 0,
+        "jitter": 0,
+        "throughput": 0.05,
+        "stability": 1,
+        "security": 1,
+        "policyCompliance": 1,
+        "historicalReliability": 0.6,
+        "recoveryCost": 1
+      },
+      "reasons": [
+        "unhealthy health",
+        "policy compatible",
+        "security compatible",
+        "telemetry fresh",
+        "anomaly normal",
+        "strong stability",
+        "strong security",
+        "strong policyCompliance",
+        "strong recoveryCost"
+      ],
+      "negativeFactors": [
+        "low availability",
+        "low latency",
+        "low packetLoss",
+        "low jitter",
+        "low throughput"
+      ],
+      "rejected": true,
+      "rejectionReason": "candidate unhealthy",
+      "freshness": "fresh",
+      "anomaly": "normal",
+      "predictedOutcome": "likely degraded"
+    },
+    {
+      "candidate": {
+        "id": "tunnel-c-policy-blocked",
+        "type": "tunnel",
+        "capabilities": [
+          "tunnel",
+          "encrypted"
+        ],
+        "health": "healthy",
+        "timestamp": "2026-08-13T00:00:00.000Z",
+        "policyCompatibility": false,
+        "securityCompatibility": true,
+        "metrics": {
+          "latencyMs": 10,
+          "packetLossRatio": 0,
+          "jitterMs": 1,
+          "throughputMbps": 500,
+          "availabilityRatio": 1,
+          "reliabilityRatio": 1,
+          "recoveryCost": 1,
+          "tunnelHealth": 1
+        }
+      },
+      "score": 0,
+      "dimensions": {
+        "availability": 1,
+        "latency": 1,
+        "packetLoss": 1,
+        "jitter": 1,
+        "throughput": 1,
+        "stability": 1,
+        "security": 1,
+        "policyCompliance": 0,
+        "historicalReliability": 1,
+        "recoveryCost": 0.99
+      },
+      "reasons": [
+        "healthy health",
+        "policy incompatible",
+        "security compatible",
+        "telemetry fresh",
+        "anomaly normal",
+        "strong availability",
+        "strong latency",
+        "strong packetLoss",
+        "strong jitter",
+        "strong throughput",
+        "strong stability",
+        "strong security",
+        "strong historicalReliability",
+        "strong recoveryCost"
+      ],
+      "negativeFactors": [
+        "low policyCompliance"
+      ],
+      "rejected": true,
+      "rejectionReason": "policy violation",
+      "freshness": "fresh",
+      "anomaly": "normal",
+      "predictedOutcome": "likely healthy"
+    }
+  ],
+  "confidence": 0.825,
+  "explanation": "Decision ab131ca6-704a-4376-996c-b3d360320668: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
+  "policyValidation": {
+    "allowed": true,
+    "version": "demo-policy-v1"
+  },
+  "securityValidation": {
+    "allowed": true,
+    "version": "demo-security-v1"
+  },
+  "fallbackUsed": false,
+  "events": [
+    "decision.started",
+    "decision.completed"
+  ],
+  "metrics": [
+    "decision_latency",
+    "decision_confidence",
+    "decisions_success_total",
+    "decisions_total"
+  ],
+  "auditEvents": [
+    "decision"
+  ]
+}
