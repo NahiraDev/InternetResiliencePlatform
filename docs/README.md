@@ -9,3 +9,5 @@ This directory contains project documentation for architecture, decisions, secur
 - `security/` - Security model and reporting details.
 - `development/` - Local development workflows.
 - `network/` - Network resilience assumptions and terminology.
+
+- [Phase 12 Connectivity Manager](connectivity-manager.md)
