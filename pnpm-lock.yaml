@@ -233,6 +233,34 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/connectivity:
+    dependencies:
+      '@irp/events':
+        specifier: workspace:*
+        version: link:../events
+      '@irp/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@irp/network':
+        specifier: workspace:*
+        version: link:../network
+      '@irp/shared':
+        specifier: workspace:^
+        version: link:../shared
+      '@irp/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/core:
     dependencies:
       '@irp/config':
@@ -299,6 +327,18 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/kernel:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
   packages/logger:
     dependencies:
       pino:
@@ -345,8 +385,33 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
+  packages/plugin-api:
+    dependencies:
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      '@irp/security':
+        specifier: workspace:*
+        version: link:../security
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
 
-  packages/plugin-sdk:
+  packages/plugin-config:
+    dependencies:
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      '@irp/security':
+        specifier: workspace:*
+        version: link:../security
     devDependencies:
       '@types/node':
         specifier: ^22.10.7
@@ -360,6 +425,53 @@ importers:
 
   packages/plugin-events:
     dependencies:
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/plugin-loader:
+    dependencies:
+      '@irp/plugin-registry':
+        specifier: workspace:*
+        version: link:../plugin-registry
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/plugin-manager:
+    dependencies:
+      '@irp/plugin-loader':
+        specifier: workspace:*
+        version: link:../plugin-loader
+      '@irp/plugin-registry':
+        specifier: workspace:*
+        version: link:../plugin-registry
+      '@irp/plugin-runtime':
+        specifier: workspace:*
+        version: link:../plugin-runtime
+      '@irp/plugin-samples':
+        specifier: workspace:*
+        version: link:../plugin-samples
       '@irp/plugin-sdk':
         specifier: workspace:*
         version: link:../plugin-sdk
@@ -390,7 +502,76 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
 
-  packages/kernel:
+  packages/plugin-runtime:
+    dependencies:
+      '@irp/plugin-api':
+        specifier: workspace:*
+        version: link:../plugin-api
+      '@irp/plugin-config':
+        specifier: workspace:*
+        version: link:../plugin-config
+      '@irp/plugin-events':
+        specifier: workspace:*
+        version: link:../plugin-events
+      '@irp/plugin-registry':
+        specifier: workspace:*
+        version: link:../plugin-registry
+      '@irp/plugin-sandbox':
+        specifier: workspace:*
+        version: link:../plugin-sandbox
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/plugin-samples:
+    dependencies:
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/plugin-sandbox:
+    dependencies:
+      '@irp/plugin-samples':
+        specifier: workspace:*
+        version: link:../plugin-samples
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      '@irp/security':
+        specifier: workspace:*
+        version: link:../security
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/plugin-sdk:
     devDependencies:
       '@types/node':
         specifier: ^22.10.7
@@ -514,160 +695,6 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)
-  packages/plugin-api:
-    dependencies:
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-      '@irp/security':
-        specifier: workspace:*
-        version: link:../security
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-config:
-    dependencies:
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-      '@irp/security':
-        specifier: workspace:*
-        version: link:../security
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-sandbox:
-    dependencies:
-      '@irp/plugin-samples':
-        specifier: workspace:*
-        version: link:../plugin-samples
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-      '@irp/security':
-        specifier: workspace:*
-        version: link:../security
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-loader:
-    dependencies:
-      '@irp/plugin-registry':
-        specifier: workspace:*
-        version: link:../plugin-registry
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-runtime:
-    dependencies:
-      '@irp/plugin-api':
-        specifier: workspace:*
-        version: link:../plugin-api
-      '@irp/plugin-config':
-        specifier: workspace:*
-        version: link:../plugin-config
-      '@irp/plugin-events':
-        specifier: workspace:*
-        version: link:../plugin-events
-      '@irp/plugin-registry':
-        specifier: workspace:*
-        version: link:../plugin-registry
-      '@irp/plugin-sandbox':
-        specifier: workspace:*
-        version: link:../plugin-sandbox
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-manager:
-    dependencies:
-      '@irp/plugin-loader':
-        specifier: workspace:*
-        version: link:../plugin-loader
-      '@irp/plugin-registry':
-        specifier: workspace:*
-        version: link:../plugin-registry
-      '@irp/plugin-runtime':
-        specifier: workspace:*
-        version: link:../plugin-runtime
-      '@irp/plugin-samples':
-        specifier: workspace:*
-        version: link:../plugin-samples
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
-  packages/plugin-samples:
-    dependencies:
-      '@irp/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.20.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.20.1)
-
 
 packages:
 
