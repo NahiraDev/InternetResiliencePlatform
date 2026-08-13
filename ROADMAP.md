@@ -121,10 +121,10 @@ Each phase below follows the same template used for per-phase docs (`docs/phases
 **Objective:** Provider-agnostic orchestration for multiple connectivity sources with health-aware selection, safe failover/failback, recovery, simulation, auditability, and plugin-ready extension points.
 **Deliverables:** Connectivity provider abstraction, resource/source model, provider registry, scoring and explainable dry-run evaluation, transaction-like switching, bounded failover/failback/recovery, hysteresis/cooldown/flapping safeguards, simulation provider, metrics, events, and documentation.
 
-### Phase 13 — Decision Engine
+### Phase 13 — Intelligent Routing & Path Selection Engine
 
-**Objective:** The central brain that combines metrics, predictions, and rules into a routing/config decision.
-**Deliverables:** Decision pipeline, pluggable strategies, decision audit log.
+**Objective:** Select the best eligible network path for each destination from route candidates, connectivity state, health, and policy while applying changes only through the Kernel routing capability.
+**Deliverables:** Canonical route/path/candidate/plan models, provider-agnostic route discovery and normalization, IPv4/IPv6 CIDR and longest-prefix matching, policy-aware eligibility, composable scoring, deterministic selection, simulation, explainability, transaction-like kernel application, verification/rollback, failover/recovery, hysteresis/flapping protection, events, metrics, plugin extension points, tests, and documentation.
 
 ### Phase 14 — Benchmark Database
 

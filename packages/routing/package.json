@@ -1,0 +1,28 @@
+{
+  "name": "@irp/routing",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@irp/connectivity": "workspace:*",
+    "@irp/events": "workspace:*",
+    "@irp/kernel": "workspace:*",
+    "@irp/shared": "workspace:*",
+    "@irp/telemetry": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
