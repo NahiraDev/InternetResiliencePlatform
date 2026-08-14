@@ -152,7 +152,132 @@ describe('monitor history and events', () => {
     expect(monitor.health().samples).toBe(1);
   });
 });
+
+it('emits offline and threshold events, prunes stale history, and reports running health', async () => {
+  const oldTimestamp = new Date(Date.now() - 10_000).toISOString();
+  const freshTimestamp = new Date().toISOString();
+  let sample = 0;
+  const dynamicPing: PingProvider = {
+    async ping(host) {
+      if (host === 'g') return { latencyMs: 5, success: sample !== 1 };
+      return { latencyMs: sample === 0 ? 10 : 80, success: sample !== 1 };
+    },
+  };
+  const dynamicHttp: HTTPProvider = {
+    async request() {
+      return {
+        responseMs: sample === 0 ? 50 : 200,
+        statusCode: sample === 1 ? 503 : 204,
+        bytes: 10,
+      };
+    },
+    async tlsHandshake() {
+      return { handshakeMs: 20, authorized: true };
+    },
+    async publicIp() {
+      return { ip: sample === 0 ? '203.0.113.1' : '203.0.113.2', asn: 64500, isp: 'Example ISP' };
+    },
+    async bandwidth() {
+      return { mbps: sample === 0 ? 50 : 5 };
+    },
+  };
+  const sampler = new NetworkSampler(
+    { ping: dynamicPing, dns, http: dynamicHttp },
+    {
+      pingHost: 'p',
+      dnsHost: 'd',
+      httpUrl: 'h',
+      httpsUrl: 's',
+      publicIpUrl: 'ip',
+      bandwidthUrl: 'b',
+      gatewayHost: 'g',
+      pingAttempts: 2,
+      timeoutMs: 100,
+      retry: { attempts: 1, delayMs: 0 },
+      networkTypeDetector: () => 'wired',
+      now: () => (sample === 0 ? oldTimestamp : freshTimestamp),
+    },
+  );
+  const monitor = new NetworkMonitor(sampler, {
+    samplingIntervalMs: 1_000,
+    maxHistoryMs: 1_000,
+    packetLossHighThreshold: 0.1,
+    latencyChangeThresholdMs: 1,
+    qualityChangeThreshold: 1,
+    bandwidthChangeThresholdMbps: 1,
+  });
+  const offline = vi.fn();
+  const loss = vi.fn();
+  const publicIp = vi.fn();
+  const gateway = vi.fn();
+  const bandwidth = vi.fn();
+  monitor.subscribe('network.offline', offline);
+  monitor.subscribe('packetloss.high', loss);
+  monitor.subscribe('publicip.changed', publicIp);
+  monitor.subscribe('gateway.changed', gateway);
+  monitor.subscribe('bandwidth.changed', bandwidth);
+  await monitor.collect();
+  sample = 1;
+  await monitor.collect();
+  expect(offline).toHaveBeenCalledOnce();
+  expect(monitor.history('24h')).toHaveLength(1);
+});
+
+it('reports running health while started and stops cleanly', () => {
+  const monitor = new NetworkMonitor(
+    new NetworkSampler(
+      { ping, dns, http },
+      {
+        pingHost: 'p',
+        dnsHost: 'd',
+        httpUrl: 'h',
+        httpsUrl: 's',
+        publicIpUrl: 'ip',
+        bandwidthUrl: 'b',
+        gatewayHost: 'g',
+        pingAttempts: 1,
+        timeoutMs: 100,
+        retry: { attempts: 1, delayMs: 0 },
+        now: () => new Date().toISOString(),
+        networkTypeDetector: () => 'unknown',
+      },
+    ),
+  );
+  monitor.start();
+  monitor.start();
+  expect(monitor.health().running).toBe(true);
+  expect(monitor.health().latest).toBeUndefined();
+  monitor.stop();
+  expect(monitor.health().running).toBe(false);
+});
 describe('scheduler', () => {
+  it('runs immediately, suppresses overlapping scheduler executions, and supports restart', async () => {
+    vi.useFakeTimers();
+    try {
+      let release: (() => void) | undefined;
+      const task = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      );
+      const scheduler = new Scheduler(task, { intervalMs: 10, runImmediately: true });
+      scheduler.start(new AbortController().signal);
+      scheduler.start(new AbortController().signal);
+      expect(task).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(30);
+      expect(task).toHaveBeenCalledOnce();
+      release?.();
+      await vi.runOnlyPendingTimersAsync();
+      scheduler.stop();
+      expect(scheduler.isRunning()).toBe(false);
+      scheduler.start(new AbortController().signal);
+      expect(scheduler.isRunning()).toBe(true);
+      scheduler.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('starts and stops interval', () => {
     const scheduler = new Scheduler(async () => undefined, {
       intervalMs: 10,
@@ -201,7 +326,9 @@ describe('additional providers and metrics', () => {
     const server = createServer((req, res) => {
       res.setHeader('content-type', 'application/json');
       res.end(
-        req.url === '/ip' ? JSON.stringify({ ip: '127.0.0.1', asn: 64501, isp: 'Local' }) : 'hello',
+        req.url === '/ip'
+          ? JSON.stringify({ ip: '127.0.0.1', asn: 64501, org: 'Local Org' })
+          : 'hello',
       );
     });
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -215,7 +342,7 @@ describe('additional providers and metrics', () => {
         true,
       );
       expect((await provider.publicIp(`${url}/ip`, new AbortController().signal)).isp).toBe(
-        'Local',
+        'Local Org',
       );
       expect((await provider.bandwidth(url, new AbortController().signal)).mbps).toBeGreaterThan(0);
     } finally {
@@ -234,6 +361,25 @@ describe('additional providers and metrics', () => {
         { attempts: 2, delayMs: 0 },
       ),
     ).rejects.toThrow('x');
+
+    const controller = new AbortController();
+    const delayed = retry(
+      async () => {
+        throw new Error('delayed');
+      },
+      { attempts: 2, delayMs: 100 },
+      controller.signal,
+    );
+    controller.abort();
+    await expect(delayed).rejects.toThrow('Operation aborted');
+    await expect(
+      retry(
+        async () => {
+          throw 'plain';
+        },
+        { attempts: 1, delayMs: 0 },
+      ),
+    ).rejects.toThrow('plain');
     expect(new TimeoutError().name).toBe('TimeoutError');
   });
   it('emits change events and unsubscribe works', async () => {
