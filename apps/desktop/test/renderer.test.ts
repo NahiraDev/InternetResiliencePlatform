@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 describe('Phase 20 renderer shell', () => {
   const source = readFileSync(new URL('../src/renderer/renderer.ts', import.meta.url), 'utf8');
-  it('contains all required pages and demo source indicators', () => {
+  it('contains all required pages and live/demo source indicators', () => {
     for (const page of [
       'Dashboard',
       'Network',
@@ -14,7 +14,7 @@ describe('Phase 20 renderer shell', () => {
       'Diagnostics',
     ])
       expect(source).toContain(page);
-    expect(source).toContain('DEMO MODE');
+    expect(source).toContain("${snapshot.network?.source ?? 'LIVE'} MODE");
     expect(source).toContain('UNAVAILABLE');
   });
   it('uses the preload platform bridge rather than Node or shell commands', () => {
