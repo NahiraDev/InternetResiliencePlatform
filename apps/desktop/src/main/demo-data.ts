@@ -30,9 +30,9 @@ export function loadScenario(scenario: Scenario): Snapshot {
     readFileSync(join(root, 'examples/phase-20', `${scenario}.json`), 'utf8'),
   ) as Snapshot;
 }
-export function settings(): SettingsResponse {
+export function settings(source: 'LIVE' | 'DEMO' = 'DEMO'): SettingsResponse {
   return {
-    source: 'DEMO',
+    source,
     sections: [
       'General',
       'Network',
@@ -56,15 +56,18 @@ export function settings(): SettingsResponse {
     })),
   };
 }
-export function systemInfo(appVersion: string): SystemInfoResponse {
+export function systemInfo(
+  appVersion: string,
+  source: 'LIVE' | 'DEMO' = 'DEMO',
+): SystemInfoResponse {
   return {
-    source: 'DEMO',
+    source,
     appVersion,
     platform: process.platform,
     arch: process.arch,
     backendStatus: 'unavailable',
     ipcStatus: 'registered',
     serviceVersions: { desktop: appVersion },
-    lastErrors: ['Backend control API not detected; demo fixture provider active.'],
+    lastErrors: source === 'DEMO' ? ['Demo fixture provider active.'] : [],
   };
 }

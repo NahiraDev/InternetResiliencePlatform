@@ -61,6 +61,8 @@ type Workspace = Entity & {
   slug: string;
   environment: string;
 };
+type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
+type NetworkMeasurement = NetworkSnapshot['measurements'][number];
 type Session = {
   id: string;
   userId: string;
@@ -161,6 +163,15 @@ const orgs = new Store<Organization>();
 const projects = new Store<Project>();
 const workspaces = new Store<Workspace>();
 const sessions = new Map<string, Session>();
+const isProductionRuntime = () =>
+  ['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase());
+const resolveJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (secret) return secret;
+  if (isProductionRuntime())
+    throw new Error('JWT_SECRET is required for production or staging API runtime.');
+  return 'development-secret-development-secret-32';
+};
 const permissions = [
   'users:read',
   'users:write',
@@ -221,10 +232,7 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     logger: false,
     genReqId: (request) => request.headers['x-request-id']?.toString() ?? crypto.randomUUID(),
   });
-  const jwt = new JwtService(
-    process.env.JWT_SECRET ?? 'development-secret-development-secret-32',
-    'irp',
-  );
+  const jwt = new JwtService(resolveJwtSecret(), 'irp');
   const jwtAuth = new JwtAuthenticationProvider(jwt);
   const rbac = new RbacAuthorization();
   const events = new InMemoryEventBus();
@@ -316,6 +324,105 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     return networkMonitor.snapshot();
   };
   app.get('/api/v1/health/network', async () => ok(await getNetworkSnapshot()));
+
+  const summarizePlatformStatus = async () => {
+    const snapshot = await getNetworkSnapshot();
+    const latestDns = snapshot.measurements.find((m: NetworkMeasurement) => m.probeType === 'dns');
+    const latestProvider = snapshot.measurements.find(
+      (m: NetworkMeasurement) => m.probeType === 'provider',
+    );
+    const latestInterfaces = snapshot.measurements.filter(
+      (m: NetworkMeasurement) => m.probeType === 'ip',
+    );
+    const networkStatus =
+      snapshot.status === 'healthy'
+        ? 'connected'
+        : snapshot.status === 'degraded'
+          ? 'degraded'
+          : 'disconnected';
+    const statusLevel =
+      snapshot.status === 'healthy'
+        ? 'healthy'
+        : snapshot.status === 'degraded'
+          ? 'degraded'
+          : 'unavailable';
+    const updatedAt = snapshot.score.timestamp;
+    return {
+      source: 'LIVE',
+      updatedAt,
+      network: {
+        source: 'LIVE',
+        connection: networkStatus,
+        currentRoute: String(latestProvider?.metadata['provider'] ?? 'system-default'),
+        interfaces: latestInterfaces.map((m: NetworkMeasurement) => ({
+          name: String(m.metadata['probeName'] ?? m.probeType),
+          state: m.success ? 'up' : 'degraded',
+          latencyMs: m.latency ?? undefined,
+        })),
+        health: statusLevel,
+        updatedAt,
+      },
+      dns: {
+        source: 'LIVE',
+        resolver: String(
+          latestDns?.metadata['hostname'] ?? latestDns?.metadata['probeName'] ?? 'system',
+        ),
+        secureTransport: 'NOT_IMPLEMENTED',
+        health: latestDns?.success ? 'healthy' : 'unavailable',
+        latencyMs: latestDns?.latency ?? undefined,
+        policyStatus: 'observe-only',
+        leakStatus: 'unavailable',
+      },
+      routing: {
+        source: 'LIVE',
+        status: 'PARTIAL',
+        mode: 'observe-only',
+        currentRoute: 'system-default',
+      },
+      recovery: {
+        source: 'LIVE',
+        status: snapshot.issues.length ? 'degraded' : 'healthy',
+        issues: snapshot.issues,
+      },
+      tunnel: { source: 'LIVE', activeTunnel: null, tunnels: [] },
+      security: {
+        source: 'LIVE',
+        state: snapshot.status === 'unhealthy' ? 'degraded' : 'healthy',
+        protectionState: 'observe-only',
+        killSwitch: 'not-configured',
+        violations: snapshot.issues,
+        routeLeak: 'unavailable',
+        dnsLeak: 'unavailable',
+        ipv6: 'observed',
+        explanation:
+          'Live backend status is derived from safe network probes; host enforcement remains observe-only.',
+      },
+      decision: {
+        source: 'LIVE',
+        recommendation:
+          snapshot.status === 'healthy'
+            ? 'maintain-current-route'
+            : 'investigate-degraded-connectivity',
+        score: snapshot.score.score,
+        confidence: snapshot.measurements.length ? 0.75 : 0,
+        mode: 'deterministic',
+        explanation: 'Deterministic recommendation derived from live backend network health score.',
+        candidates: snapshot.measurements.map((m: NetworkMeasurement) => ({
+          name: m.probeType,
+          score: m.success ? 100 : 0,
+          accepted: m.success,
+          reason: m.error ?? 'probe succeeded',
+        })),
+        policyValidation: 'observe-only',
+        securityValidation: snapshot.issues.length ? 'review-required' : 'passed',
+        decisionAgeSeconds: Math.max(0, Math.round((Date.now() - Date.parse(updatedAt)) / 1000)),
+      },
+      eventBus: { source: 'LIVE', scope: 'in-process', status: 'healthy' },
+      observability: { source: 'LIVE', metrics: 'available', health: snapshot.status },
+    };
+  };
+  app.get('/api/v1/platform/status', async () => ok(await summarizePlatformStatus()));
+
   app.get('/api/v1/metrics/network', async () =>
     ok({
       latest: networkMonitor.snapshot().score,

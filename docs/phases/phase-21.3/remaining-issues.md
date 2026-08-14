@@ -1,0 +1,9 @@
+# Phase 21.3 Remaining Issues
+
+| ID           | Severity | Subsystem        | Issue                                                                                                                                      | Required next action                                                             |
+| ------------ | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| P213-REM-001 | P1       | Environment      | Current container is Node v20.20.2, not Node >=22.                                                                                         | Rerun full gate in Node >=22.                                                    |
+| P213-REM-002 | P1       | Secure DNS       | DoH/DoT remains unregistered in backend runtime.                                                                                           | Wire existing `@irp/dns` transport into backend with real timeout/failure tests. |
+| P213-REM-003 | P1       | Electron runtime | Full GUI runtime could not be truthfully verified here under supported non-root Electron environment.                                      | Run Xvfb/Electron smoke as non-root with Linux prerequisites.                    |
+| P213-REM-004 | P1       | Cross-system E2E | Backend-to-Electron path is wired, but complete subsystem E2E remains partial because secure DNS/tunnel/routing are not fully implemented. | Complete safe runtime registration for existing implementations.                 |
+| P213-REM-005 | P2       | Tunnel           | No real tunnel provider is configured.                                                                                                     | Keep NOT_IMPLEMENTED until a real provider exists in approved scope.             |

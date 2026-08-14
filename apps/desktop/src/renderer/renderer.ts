@@ -195,7 +195,7 @@ function pageContent() {
 }
 function render() {
   document.querySelector('#app')!.innerHTML =
-    `<aside class="sidebar"><h1>IRP</h1><div class="demo">DEMO MODE</div>${pages.map((p) => `<button class="nav ${p === current ? 'active' : ''}" data-page="${p}">${p}</button>`).join('')}</aside><main><header><div><strong>${current}</strong><span>${snapshot.network?.connection ?? 'unavailable'}</span></div><div>${badge(snapshot.network?.source)} ${badge(snapshot.security?.state)} <select id="scenario">${scenarios.map((s) => `<option>${s}</option>`).join('')}</select><button id="theme">Toggle theme</button></div></header><section class="content">${pageContent()}</section><div class="toasts"></div></main>`;
+    `<aside class="sidebar"><h1>IRP</h1><div class="demo">${snapshot.network?.source ?? 'LIVE'} MODE</div>${pages.map((p) => `<button class="nav ${p === current ? 'active' : ''}" data-page="${p}">${p}</button>`).join('')}</aside><main><header><div><strong>${current}</strong><span>${snapshot.network?.connection ?? 'unavailable'}</span></div><div>${badge(snapshot.network?.source)} ${badge(snapshot.security?.state)} <select id="scenario">${scenarios.map((s) => `<option>${s}</option>`).join('')}</select><button id="theme">Toggle theme</button></div></header><section class="content">${pageContent()}</section><div class="toasts"></div></main>`;
   document.querySelectorAll('.nav').forEach((b) =>
     b.addEventListener('click', () => {
       current = (b as HTMLElement).dataset.page as Page;

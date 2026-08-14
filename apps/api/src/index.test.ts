@@ -59,3 +59,30 @@ describe('phase 6 network intelligence API', () => {
     await app.close();
   }, 15000);
 });
+
+describe('phase 21.3 stabilization API', () => {
+  it('fails safely when production JWT_SECRET is missing', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousSecret = process.env.JWT_SECRET;
+    process.env.NODE_ENV = 'production';
+    delete process.env.JWT_SECRET;
+    await expect(buildServer()).rejects.toThrow('JWT_SECRET is required');
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  });
+
+  it('exposes live platform state for Electron without demo fixtures', async () => {
+    const app = await buildServer();
+    const status = await app.inject({ method: 'GET', url: '/api/v1/platform/status' });
+    expect(status.statusCode).toBe(200);
+    const data = status.json().data;
+    expect(data.source).toBe('LIVE');
+    expect(data.network.source).toBe('LIVE');
+    expect(data.dns.source).toBe('LIVE');
+    expect(data.decision.mode).toBe('deterministic');
+    expect(data.eventBus.scope).toBe('in-process');
+    await app.close();
+  }, 15000);
+});
