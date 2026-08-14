@@ -455,19 +455,17 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     const slug = i.slug ?? slugify(i.name);
     if (orgs.find((o) => o.slug === slug))
       throw new ConflictAppError('Organization slug already exists.');
-    return reply
-      .code(201)
-      .send(
-        created(
-          orgs.put({
-            id: crypto.randomUUID(),
-            name: i.name,
-            slug,
-            createdAt: now(),
-            updatedAt: now(),
-          }),
-        ),
-      );
+    return reply.code(201).send(
+      created(
+        orgs.put({
+          id: crypto.randomUUID(),
+          name: i.name,
+          slug,
+          createdAt: now(),
+          updatedAt: now(),
+        }),
+      ),
+    );
   });
   app.get('/api/v1/organizations/:id', async (request) => {
     await requirePermission(request, 'organizations:read');
@@ -492,21 +490,19 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     if (!orgs.get(organizationId)) throw new NotFoundAppError('organization');
     const i = nameSchema.parse(request.body);
     const slug = i.slug ?? slugify(i.name);
-    return reply
-      .code(201)
-      .send(
-        created(
-          projects.put({
-            id: crypto.randomUUID(),
-            organizationId,
-            name: i.name,
-            slug,
-            ...(i.description ? { description: i.description } : {}),
-            createdAt: now(),
-            updatedAt: now(),
-          }),
-        ),
-      );
+    return reply.code(201).send(
+      created(
+        projects.put({
+          id: crypto.randomUUID(),
+          organizationId,
+          name: i.name,
+          slug,
+          ...(i.description ? { description: i.description } : {}),
+          createdAt: now(),
+          updatedAt: now(),
+        }),
+      ),
+    );
   });
   app.get('/api/v1/projects/:id', async (request) => {
     await requirePermission(request, 'projects:read');
@@ -527,22 +523,20 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     const i = workspaceSchema.parse(request.body);
     if (i.projectId && !projects.get(i.projectId)) throw new NotFoundAppError('project');
     const slug = i.slug ?? slugify(i.name);
-    return reply
-      .code(201)
-      .send(
-        created(
-          workspaces.put({
-            id: crypto.randomUUID(),
-            organizationId,
-            ...(i.projectId ? { projectId: i.projectId } : {}),
-            name: i.name,
-            slug,
-            environment: i.environment,
-            createdAt: now(),
-            updatedAt: now(),
-          }),
-        ),
-      );
+    return reply.code(201).send(
+      created(
+        workspaces.put({
+          id: crypto.randomUUID(),
+          organizationId,
+          ...(i.projectId ? { projectId: i.projectId } : {}),
+          name: i.name,
+          slug,
+          environment: i.environment,
+          createdAt: now(),
+          updatedAt: now(),
+        }),
+      ),
+    );
   });
   app.get('/api/v1/workspaces/:id', async (request) => {
     await requirePermission(request, 'workspaces:read');

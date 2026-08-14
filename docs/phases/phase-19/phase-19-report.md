@@ -1,9 +1,11 @@
 # Phase 19 Report — AI-Assisted Network Decision Engine
 
 ## Objective
+
 Implement an advisory network decision engine that produces recommendations, scores, rankings, explanations, confidence, predicted outcomes, replay, evaluation, and simulation without performing privileged network changes.
 
 ## Implementation
+
 - Decision domain contracts: `NetworkDecisionContext`, `DecisionCandidate`, `CandidateEvaluation`, `DecisionResult`, `NetworkPerformanceProfile`, and version/freshness models.
 - `NetworkDecisionEngine` deterministic engine with `evaluate`, `rank`, `recommend`, `explain`, `simulate`, `simulateDecision`, `replay`, `revalidate`, `validateModelOutput`, and `privacyFilter`.
 - Configurable normalized weighted scoring using `DEFAULT_DECISION_WEIGHTS` and bounded `0.0–1.0` scores.
@@ -16,9 +18,11 @@ Implement an advisory network decision engine that produces recommendations, sco
 - `DecisionEvaluator` for recommendation accuracy, false positives/negatives, ranking quality, and calibration.
 
 ## Architecture
+
 See `docs/phases/phase-19/architecture.md`. Phase 19 is an advisory layer placed before policy/security validation and existing controllers; it never calls kernel execution APIs or shell commands.
 
 ## Files Changed
+
 - `packages/network-intelligence/src/decision/NetworkDecisionEngine.ts`
 - `packages/network-intelligence/src/decision/NetworkDecisionEngine.test.ts`
 - `packages/network-intelligence/src/index.ts`
@@ -28,6 +32,7 @@ See `docs/phases/phase-19/architecture.md`. Phase 19 is an advisory layer placed
 - `package.json`
 
 ## Tests
+
 - `pnpm --filter @irp/network-intelligence typecheck`: passed.
 - `pnpm --filter @irp/network-intelligence lint`: passed.
 - `pnpm --filter @irp/network-intelligence build`: passed.
@@ -40,6 +45,7 @@ See `docs/phases/phase-19/architecture.md`. Phase 19 is an advisory layer placed
 - Node/pnpm reported an environment warning: current Node v20.20.2 does not satisfy repository `>=22.0.0`; commands still completed successfully.
 
 ## Demo
+
 Command:
 
 ```bash
@@ -49,14 +55,17 @@ pnpm phase19-demo -- examples/phase-19/tunnel-failure.json
 Result: selected `tunnel-b-secure`, score `0.9883965517241379`, confidence `0.825`, status `recommended`, output `examples/phase-19/phase19-result.json`.
 
 ## Results
+
 The demo output includes phase, timestamp, scenario, decision, candidates, confidence, explanation, policy validation, security validation, fallback flag, events, metrics, and audit events.
 
 ## Known Limitations
+
 - Phase 11 is represented by adapters because no standalone `@irp/policy` package was found.
 - External AI/ML providers are only abstracted; no external provider is shipped.
 - Integration with existing controllers is advisory-contract level; Phase 19 does not execute controller actions.
 
 ## Deferred Work
+
 - Add production adapters from controller-native state models to `NetworkDecisionContext`.
 - Add persisted decision/audit storage once retention requirements are finalized.
 - Add real statistical/ML providers behind the existing validated provider contract.

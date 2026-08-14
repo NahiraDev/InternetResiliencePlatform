@@ -9,10 +9,7 @@
     "selectedCandidate": {
       "id": "tunnel-b-secure",
       "type": "tunnel",
-      "capabilities": [
-        "tunnel",
-        "encrypted"
-      ],
+      "capabilities": ["tunnel", "encrypted"],
       "health": "healthy",
       "timestamp": "2026-08-13T00:00:00.000Z",
       "policyCompatibility": true,
@@ -33,10 +30,7 @@
         "candidate": {
           "id": "tunnel-b-secure",
           "type": "tunnel",
-          "capabilities": [
-            "tunnel",
-            "encrypted"
-          ],
+          "capabilities": ["tunnel", "encrypted"],
           "health": "healthy",
           "timestamp": "2026-08-13T00:00:00.000Z",
           "policyCompatibility": true,
@@ -91,10 +85,7 @@
         "candidate": {
           "id": "tunnel-a-current",
           "type": "tunnel",
-          "capabilities": [
-            "tunnel",
-            "encrypted"
-          ],
+          "capabilities": ["tunnel", "encrypted"],
           "health": "unhealthy",
           "timestamp": "2026-08-13T00:00:00.000Z",
           "policyCompatibility": true,
@@ -151,10 +142,7 @@
         "candidate": {
           "id": "tunnel-c-policy-blocked",
           "type": "tunnel",
-          "capabilities": [
-            "tunnel",
-            "encrypted"
-          ],
+          "capabilities": ["tunnel", "encrypted"],
           "health": "healthy",
           "timestamp": "2026-08-13T00:00:00.000Z",
           "policyCompatibility": false,
@@ -199,9 +187,7 @@
           "strong historicalReliability",
           "strong recoveryCost"
         ],
-        "negativeFactors": [
-          "low policyCompliance"
-        ],
+        "negativeFactors": ["low policyCompliance"],
         "rejected": true,
         "rejectionReason": "policy violation",
         "freshness": "fresh",
@@ -269,10 +255,7 @@
       "candidate": {
         "id": "tunnel-b-secure",
         "type": "tunnel",
-        "capabilities": [
-          "tunnel",
-          "encrypted"
-        ],
+        "capabilities": ["tunnel", "encrypted"],
         "health": "healthy",
         "timestamp": "2026-08-13T00:00:00.000Z",
         "policyCompatibility": true,
@@ -327,10 +310,7 @@
       "candidate": {
         "id": "tunnel-a-current",
         "type": "tunnel",
-        "capabilities": [
-          "tunnel",
-          "encrypted"
-        ],
+        "capabilities": ["tunnel", "encrypted"],
         "health": "unhealthy",
         "timestamp": "2026-08-13T00:00:00.000Z",
         "policyCompatibility": true,
@@ -387,10 +367,7 @@
       "candidate": {
         "id": "tunnel-c-policy-blocked",
         "type": "tunnel",
-        "capabilities": [
-          "tunnel",
-          "encrypted"
-        ],
+        "capabilities": ["tunnel", "encrypted"],
         "health": "healthy",
         "timestamp": "2026-08-13T00:00:00.000Z",
         "policyCompatibility": false,
@@ -435,9 +412,7 @@
         "strong historicalReliability",
         "strong recoveryCost"
       ],
-      "negativeFactors": [
-        "low policyCompliance"
-      ],
+      "negativeFactors": ["low policyCompliance"],
       "rejected": true,
       "rejectionReason": "policy violation",
       "freshness": "fresh",
@@ -456,17 +431,12 @@
     "version": "demo-security-v1"
   },
   "fallbackUsed": false,
-  "events": [
-    "decision.started",
-    "decision.completed"
-  ],
+  "events": ["decision.started", "decision.completed"],
   "metrics": [
     "decision_latency",
     "decision_confidence",
     "decisions_success_total",
     "decisions_total"
   ],
-  "auditEvents": [
-    "decision"
-  ]
+  "auditEvents": ["decision"]
 }
