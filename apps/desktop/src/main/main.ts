@@ -47,6 +47,9 @@ app.whenReady().then(async () => {
     registerIpc(app.getVersion());
     await createWindow();
     log('application', 'Desktop app started', { mode: isDev ? 'development' : 'production' });
+    if (process.env.IRP_ELECTRON_SMOKE_TEST === '1') {
+      setTimeout(() => app.quit(), 500);
+    }
   } catch (error) {
     log('application', 'Startup failed', {
       error: error instanceof Error ? error.name : 'unknown',

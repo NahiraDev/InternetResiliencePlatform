@@ -307,7 +307,15 @@ export const buildServer = async (): Promise<FastifyInstance> => {
         networkLatencyMs.observe(labels, measurement.latency);
     }
   };
-  app.get('/api/v1/health/network', async () => ok(networkMonitor.snapshot()));
+  const getNetworkSnapshot = async () => {
+    if (networkMonitor.measurements().length === 0) {
+      const snapshot = await networkMonitor.runOnce();
+      recordNetworkTelemetry(snapshot);
+      return snapshot;
+    }
+    return networkMonitor.snapshot();
+  };
+  app.get('/api/v1/health/network', async () => ok(await getNetworkSnapshot()));
   app.get('/api/v1/metrics/network', async () =>
     ok({
       latest: networkMonitor.snapshot().score,
