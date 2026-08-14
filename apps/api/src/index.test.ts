@@ -52,6 +52,7 @@ describe('phase 6 network intelligence API', () => {
     expect(run.json().data.score.score).toBeGreaterThanOrEqual(0);
     const health = await app.inject({ method: 'GET', url: '/api/v1/health/network' });
     expect(health.statusCode).toBe(200);
+    expect(health.json().data.measurements.length).toBeGreaterThan(0);
     const measurements = await app.inject({ method: 'GET', url: '/api/v1/measurements' });
     expect(measurements.statusCode).toBe(200);
     expect(measurements.json().data.length).toBeGreaterThan(0);
