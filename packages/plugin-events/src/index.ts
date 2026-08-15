@@ -21,17 +21,22 @@ export class PluginEventBus implements PluginEventApi {
     return () => set.delete(handler as (event: TypedEvent) => Promise<void> | void);
   }
   async request<TReq, TRes>(type: string, payload: TReq, timeoutMs = 5000): Promise<TRes> {
-    let response: TRes | undefined;
-    await Promise.race([
-      this.publish(`${type}:request`, payload),
-      new Promise((_, reject) =>
-        setTimeout(
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const response = new Promise<TRes>((resolve, reject) => {
+        unsubscribe = this.subscribe<TRes>(`${type}:response`, (event) => resolve(event.payload));
+        timer = setTimeout(
           () => reject(new Error(`Plugin request ${type} timed out after ${timeoutMs}ms`)),
           timeoutMs,
-        ),
-      ),
-    ]);
-    return response as TRes;
+        );
+      });
+      await this.publish(`${type}:request`, payload);
+      return await response;
+    } finally {
+      if (timer) clearTimeout(timer);
+      unsubscribe?.();
+    }
   }
   async broadcast<T>(type: string, payload: T): Promise<void> {
     await this.publish(type, payload, 100);
