@@ -14,8 +14,8 @@ describe('InMemoryEventBus', () => {
   it('publishes only to subscribers of the matching in-process event type', async () => {
     const bus = new InMemoryEventBus();
     const seen: string[] = [];
-    bus.subscribe('network.changed', (published) => seen.push(published.type));
-    bus.subscribe('dns.changed', (published) => seen.push(`wrong:${published.type}`));
+    bus.subscribe('network.changed', (published) => { seen.push(published.type); });
+    bus.subscribe('dns.changed', (published) => { seen.push(`wrong:${published.type}`); });
 
     await bus.publish(event('network.changed'));
 
@@ -25,7 +25,7 @@ describe('InMemoryEventBus', () => {
   it('unsubscribes handlers and isolates later publishes from cleaned-up listeners', async () => {
     const bus = new InMemoryEventBus();
     const seen: string[] = [];
-    const unsubscribe = bus.subscribe('network.changed', (published) => seen.push(published.id));
+    const unsubscribe = bus.subscribe('network.changed', (published) => { seen.push(published.id); });
 
     await bus.publish(event('network.changed', 'first'));
     unsubscribe();
@@ -41,7 +41,7 @@ describe('InMemoryEventBus', () => {
       await Promise.resolve();
       seen.push('async');
     });
-    bus.subscribe('network.changed', () => seen.push('sync'));
+    bus.subscribe('network.changed', () => { seen.push('sync'); });
 
     await bus.publish(event('network.changed'));
 
