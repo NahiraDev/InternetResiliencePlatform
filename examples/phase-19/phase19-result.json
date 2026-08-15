@@ -3,7 +3,7 @@
   "timestamp": "2026-08-13T00:00:00.000Z",
   "scenario": "tunnel-failure",
   "decision": {
-    "decisionId": "ab131ca6-704a-4376-996c-b3d360320668",
+    "decisionId": "c5e3de20-ea20-4bb9-b536-06e76548399b",
     "type": "tunnelDecision",
     "timestamp": "2026-08-13T00:00:00.000Z",
     "selectedCandidate": {
@@ -243,7 +243,7 @@
     },
     "status": "recommended",
     "fallbackUsed": false,
-    "explanation": "Decision ab131ca6-704a-4376-996c-b3d360320668: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
+    "explanation": "Decision c5e3de20-ea20-4bb9-b536-06e76548399b: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
     "predictedOutcomes": {
       "tunnel-b-secure": "likely healthy",
       "tunnel-a-current": "likely degraded",
@@ -421,7 +421,7 @@
     }
   ],
   "confidence": 0.825,
-  "explanation": "Decision ab131ca6-704a-4376-996c-b3d360320668: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
+  "explanation": "Decision c5e3de20-ea20-4bb9-b536-06e76548399b: select tunnel-b-secure\nScore: 0.988\nConfidence: 0.825\nAction: switch-tunnel\nReasons: healthy health; policy compatible; security compatible; telemetry fresh; anomaly normal; strong availability; strong latency; strong packetLoss; strong jitter; strong throughput; strong stability; strong security; strong policyCompliance; strong historicalReliability\nRejected: tunnel-a-current (candidate unhealthy); tunnel-c-policy-blocked (policy violation)\nPolicy: allowed\nSecurity: allowed",
   "policyValidation": {
     "allowed": true,
     "version": "demo-policy-v1"
