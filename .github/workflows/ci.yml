@@ -51,5 +51,8 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Fresh coverage
+        run: pnpm exec turbo run test --force -- --coverage
+
       - name: Build
         run: pnpm build

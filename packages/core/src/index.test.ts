@@ -52,12 +52,12 @@ describe('core runtime', () => {
   });
   it('cancels scheduled jobs', async () => {
     const scheduler = new Scheduler(logger);
-    const cancel = scheduler.schedule(
-      { id: 'one', runAt: new Date(Date.now() + 50) },
-      () => undefined,
-    );
+    let ran = false;
+    const cancel = scheduler.schedule({ id: 'one', runAt: new Date(Date.now() + 50) }, () => {
+      ran = true;
+    });
     cancel();
     await scheduler.stop();
-    expect(true).toBe(true);
+    expect(ran).toBe(false);
   });
 });
