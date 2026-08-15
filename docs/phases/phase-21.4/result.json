@@ -1,0 +1,45 @@
+{
+  "phase": "21.4-test-quality-stabilization",
+  "branch": "phase/21.4-test-quality-stabilization",
+  "timestamp": "2026-08-15T00:00:00.000Z",
+  "environment": {
+    "nodeInitial": "v20.20.2",
+    "nodeFinalForTargetedTests": "v22.22.2",
+    "pnpm": "9.15.0"
+  },
+  "packageManager": {
+    "manager": "pnpm",
+    "npmCommandsExecuted": 1,
+    "yarnCommandsExecuted": 0,
+    "bunCommandsExecuted": 0,
+    "status": "FAIL_NVM_DEFAULT_GLOBAL_INSTALL_TRIGGERED_NPM"
+  },
+  "packageCount": 36,
+  "packageClassification": "docs/phases/phase-21.4/test-inventory.md",
+  "packagesWithTests": [
+    "@irp/events",
+    "@irp/queue",
+    "@irp/shared",
+    "@irp/auth",
+    "@irp/telemetry",
+    "@irp/utils"
+  ],
+  "packagesWithoutTests": "see docs/phases/phase-21.4/test-inventory.md",
+  "meaningfulTestCount": 15,
+  "testFileCount": 6,
+  "build": "NOT_RUN",
+  "typecheck": "NOT_RUN",
+  "lint": "NOT_RUN",
+  "formatting": "NOT_RUN",
+  "tests": "PARTIAL_TARGETED_PASS",
+  "freshCoverage": "NOT_RUN",
+  "validation": "NOT_RUN",
+  "runtime": "PARTIAL",
+  "integration": "PARTIAL",
+  "security": "PARTIAL",
+  "p0": 1,
+  "p1": 4,
+  "p2": 3,
+  "p3": 0,
+  "status": "NO-GO"
+}
