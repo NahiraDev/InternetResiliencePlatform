@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -37,6 +37,15 @@ for (const expected of ['apps/*', 'packages/*'])
 const packages = files.filter((f) =>
   relative(root, f).match(/^(apps|packages)\/[^/]+\/package\.json$/),
 );
+const noTestExceptionsPath = join(root, 'docs/testing/no-test-exceptions.json');
+const noTestExceptions = readJson(noTestExceptionsPath)?.exceptions ?? [];
+const noTestExceptionNames = new Set(noTestExceptions.map((entry) => entry.package));
+for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb'])
+  if (existsSync(join(root, artifact)))
+    errors.push(`forbidden package-manager artifact present: ${artifact}`);
+const rootPackage = readJson(join(root, 'package.json'));
+if (!rootPackage?.engines?.node?.includes('>=22.0.0'))
+  errors.push('package.json must require Node >=22.0.0');
 const names = new Map();
 for (const file of packages) {
   const pkg = readJson(file);
@@ -48,6 +57,20 @@ for (const file of packages) {
   names.set(pkg.name, rel);
   for (const script of ['build', 'lint', 'test', 'typecheck'])
     if (!pkg.scripts?.[script]) errors.push(`${rel} missing ${script} script`);
+  const packageRoot = join(root, rel.replace(/\/package\.json$/, ''));
+  const packageFiles = files.filter((candidate) => candidate.startsWith(`${packageRoot}/`));
+  const testFiles = packageFiles.filter((candidate) =>
+    /(^|\/)(src|test|tests)\/.*\.(test|spec)\.(ts|tsx|js)$/.test(relative(packageRoot, candidate)),
+  );
+  const testScript = pkg.scripts?.test ?? '';
+  if (testScript.includes('--passWithNoTests'))
+    errors.push(`${pkg.name} uses unexplained --passWithNoTests in test script: ${testScript}`);
+  if (testScript.includes('--typecheck=false'))
+    errors.push(`${pkg.name} uses unexplained --typecheck=false in test script: ${testScript}`);
+  if (testFiles.length === 0 && !noTestExceptionNames.has(pkg.name))
+    errors.push(`${pkg.name} has no test files and no docs/testing/no-test-exceptions.json entry`);
+  if (testFiles.length > 0 && testScript !== 'vitest run')
+    errors.push(`${pkg.name} has tests but non-standard test script: ${testScript}`);
   for (const section of ['dependencies', 'devDependencies', 'peerDependencies'])
     for (const dep of Object.keys(pkg[section] ?? {}))
       if (

@@ -75,21 +75,8 @@ console.log('');
 
 walk(ROOT);
 
-// Only remove the authoritative root lockfile.
-// Do NOT recursively delete nested lockfiles.
-const rootLockfile = join(ROOT, 'pnpm-lock.yaml');
-
-if (existsSync(rootLockfile)) {
-  try {
-    rmSync(rootLockfile, { force: true });
-    console.log(`✓ Removed: ${rootLockfile}`);
-    removedCount += 1;
-  } catch (error) {
-    console.error(`✗ Failed to remove: ${rootLockfile}`);
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  }
-}
+// Keep the authoritative root lockfile so `pnpm clean && pnpm install --frozen-lockfile`
+// remains a reproducible clean-state verification path.
 
 console.log('');
 console.log(
