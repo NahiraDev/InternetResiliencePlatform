@@ -48,6 +48,35 @@ describe('auth security contracts', () => {
     vi.useRealTimers();
   });
 
+  it('rejects malformed tokens, unsupported algorithms, and incomplete claims deterministically', () => {
+    const jwt = new JwtService(secret);
+    expect(() => jwt.verify('not.a.jwt', 'access')).toThrow('Invalid token');
+    const token = jwt.sign({
+      sub: 'user-1',
+      roles: [],
+      scopes: [],
+      type: 'access',
+      ttlSeconds: 60,
+    });
+    const [, payload, signature] = token.split('.');
+    const noneHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString(
+      'base64url',
+    );
+    expect(() => jwt.verify(`${noneHeader}.${payload}.${signature}`, 'access')).toThrow(
+      'Invalid token algorithm',
+    );
+    const hsHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString(
+      'base64url',
+    );
+    const incompletePayload = Buffer.from(
+      JSON.stringify({ iss: 'internet-resilience-platform', exp: 9_999_999_999, type: 'access' }),
+    ).toString('base64url');
+    const badSignature = Buffer.from('short').toString('base64url');
+    expect(() => jwt.verify(`${hsHeader}.${incompletePayload}.${badSignature}`, 'access')).toThrow(
+      'Invalid token signature',
+    );
+  });
+
   it('enforces RBAC permissions and platform admin override', async () => {
     const rbac = new RbacAuthorization();
     await expect(

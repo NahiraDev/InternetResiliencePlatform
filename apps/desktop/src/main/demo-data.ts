@@ -8,6 +8,7 @@ import type {
   SettingsResponse,
   SystemInfoResponse,
   TunnelStatusResponse,
+  DataSource,
 } from '../shared/ipc-contracts.js';
 export type Scenario =
   | 'healthy'
@@ -30,7 +31,7 @@ export function loadScenario(scenario: Scenario): Snapshot {
     readFileSync(join(root, 'examples/phase-20', `${scenario}.json`), 'utf8'),
   ) as Snapshot;
 }
-export function settings(source: 'LIVE' | 'DEMO' = 'DEMO'): SettingsResponse {
+export function settings(source: DataSource = 'DEMO'): SettingsResponse {
   return {
     source,
     sections: [
@@ -56,10 +57,7 @@ export function settings(source: 'LIVE' | 'DEMO' = 'DEMO'): SettingsResponse {
     })),
   };
 }
-export function systemInfo(
-  appVersion: string,
-  source: 'LIVE' | 'DEMO' = 'DEMO',
-): SystemInfoResponse {
+export function systemInfo(appVersion: string, source: DataSource = 'DEMO'): SystemInfoResponse {
   return {
     source,
     appVersion,

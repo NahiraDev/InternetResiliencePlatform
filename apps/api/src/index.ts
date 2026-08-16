@@ -432,6 +432,28 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     };
   };
   app.get('/api/v1/platform/status', async () => ok(await summarizePlatformStatus()));
+
+  app.get('/api/v1/platform/metrics/stream', async (_request, reply) => {
+    const snapshot = await getNetworkSnapshot();
+    const metrics = snapshot.measurements.map((measurement: NetworkMeasurement) => ({
+      timestamp: measurement.timestamp,
+      probeType: measurement.probeType,
+      latencyMs: measurement.latency,
+      success: measurement.success,
+      packetLossPct:
+        measurement.probeType === 'packet_loss' &&
+        typeof measurement.metadata['lossRatio'] === 'number'
+          ? Number(measurement.metadata['lossRatio']) * 100
+          : undefined,
+      dnsPerformanceMs: measurement.probeType === 'dns' ? measurement.latency : undefined,
+    }));
+    return reply.type('text/event-stream').send(
+      `event: platform.metrics
+data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, metrics })}
+
+`,
+    );
+  });
   const resilienceRuntime = new ResilienceRuntime();
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);

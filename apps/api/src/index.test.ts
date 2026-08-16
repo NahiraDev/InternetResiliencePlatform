@@ -73,6 +73,16 @@ describe('phase 21.3 stabilization API', () => {
     else process.env.JWT_SECRET = previousSecret;
   });
 
+  it('streams Phase 24 live visualization metrics as server-sent events', async () => {
+    const app = await buildServer();
+    const response = await app.inject({ method: 'GET', url: '/api/v1/platform/metrics/stream' });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('text/event-stream');
+    expect(response.body).toContain('event: platform.metrics');
+    expect(response.body).toContain('latencyMs');
+    await app.close();
+  }, 15000);
+
   it('exposes live platform state for Electron without demo fixtures', async () => {
     const app = await buildServer();
     const status = await app.inject({ method: 'GET', url: '/api/v1/platform/status' });
