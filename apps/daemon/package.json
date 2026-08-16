@@ -14,7 +14,8 @@
   "dependencies": {
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
-    "@irp/logger": "workspace:*"
+    "@irp/logger": "workspace:*",
+    "@irp/resilience-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

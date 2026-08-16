@@ -17,6 +17,10 @@ import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
 import { InMemoryDecisionStore, InMemoryIncidentStore } from './stores/memory.js';
 import { InMemoryEventSink } from './events/events.js';
+import {
+  createDefaultRuntimeAdapterRegistry,
+  type RuntimeAdapterRegistry,
+} from './adapter-registry.js';
 import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
 import type { ObservationProvider } from './ports/ports.js';
 export class ResilienceRuntime {
@@ -38,9 +42,42 @@ export class ResilienceRuntime {
   readonly decisions = new InMemoryDecisionStore();
   readonly incidents = new InMemoryIncidentStore();
   readonly state = new RuntimeStateMachine('idle', this.events);
+  readonly runtimeId: string;
+  readonly instanceId: string;
+  readonly adapters: RuntimeAdapterRegistry;
+  private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
+  private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
-  constructor(private readonly providers: readonly ObservationProvider[] = []) {}
+  constructor(
+    private readonly providers: readonly ObservationProvider[] = [],
+    options: { runtimeId?: string; instanceId?: string; adapters?: RuntimeAdapterRegistry } = {},
+  ) {
+    this.runtimeId = options.runtimeId ?? 'runtime-default';
+    this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
+    this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry();
+  }
+  capabilities() {
+    return this.adapters.list();
+  }
+  async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {
+    return this.cycle(input);
+  }
   async cycle(
+    input: Partial<RuntimeContext> & { idempotencyKey?: string } = {},
+  ): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
+    if (input.idempotencyKey && this.idempotency.has(input.idempotencyKey))
+      return this.idempotency.get(input.idempotencyKey)!;
+    if (this.inFlight) throw new Error('runtime cycle already active');
+    this.inFlight = this.executeCycle(input);
+    try {
+      const record = await this.inFlight;
+      if (input.idempotencyKey) this.idempotency.set(input.idempotencyKey, record);
+      return record;
+    } finally {
+      this.inFlight = undefined;
+    }
+  }
+  private async executeCycle(
     input: Partial<RuntimeContext> = {},
   ): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
     const start = Date.now();
@@ -89,6 +126,10 @@ export class ResilienceRuntime {
       });
       await this.decisions.put(record);
       this.last = record;
+      await this.events.emit('runtime.decision.recorded', {
+        correlationId: context.correlationId,
+        decisionId: record.decisionId,
+      });
       return record;
     }
     await this.state.transition('validating', context.correlationId);
@@ -111,6 +152,10 @@ export class ResilienceRuntime {
       });
       await this.decisions.put(record);
       this.last = record;
+      await this.events.emit('runtime.decision.recorded', {
+        correlationId: context.correlationId,
+        decisionId: record.decisionId,
+      });
       return record;
     }
     let outcome: DecisionOutcome = 'simulated';
@@ -193,7 +238,14 @@ export class ResilienceRuntime {
       recoveryStatus: this.last?.recoveryResult,
       lastDecision: this.last,
       health: {
-        status: this.state.current() === 'failed' ? 'failed' : this.last ? 'healthy' : 'unknown',
+        status:
+          this.state.current() === 'blocked'
+            ? 'degraded'
+            : this.state.current() === 'failed'
+              ? 'failed'
+              : this.last
+                ? 'healthy'
+                : 'unknown',
         reason: this.last ? 'last cycle recorded' : 'no evidence yet',
       },
       uptimeMs: Date.now() - this.started,

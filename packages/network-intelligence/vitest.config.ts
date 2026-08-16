@@ -8,11 +8,6 @@ export default defineProject({
 
   test: {
     include: ['src/**/*.{test,spec}.ts'],
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/coverage/**',
-      '**/.turbo/**',
-    ],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/.turbo/**'],
   },
 });

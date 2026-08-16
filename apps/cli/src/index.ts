@@ -76,27 +76,56 @@ export const createProgram = (): Command => {
   const runtimeInstance = () => new ResilienceRuntime();
   runtime
     .command('status')
+    .option('--json', 'print JSON output')
     .description('Show resilience runtime status')
-    .action(async () => printJson({ state: (await runtimeInstance().getRuntimeSnapshot()).state }));
+    .action(async () => {
+      const rt = runtimeInstance();
+      const snapshot = await rt.getRuntimeSnapshot();
+      printJson({
+        runtimeId: rt.runtimeId,
+        instanceId: rt.instanceId,
+        state: snapshot.state,
+        mode: snapshot.mode,
+        health: snapshot.health,
+      });
+    });
+  runtime
+    .command('capabilities')
+    .option('--json', 'print JSON output')
+    .description('List resilience runtime capabilities')
+    .action(async () => printJson(runtimeInstance().capabilities()));
   runtime
     .command('snapshot')
+    .option('--json', 'print JSON output')
     .description('Show resilience runtime snapshot')
     .action(async () => printJson(await runtimeInstance().getRuntimeSnapshot()));
   runtime
     .command('decisions')
+    .option('--json', 'print JSON output')
     .description('List resilience runtime decisions')
     .action(async () => printJson(await runtimeInstance().decisions.list()));
   runtime
     .command('incidents')
+    .option('--json', 'print JSON output')
     .description('List resilience runtime incidents')
     .action(async () => printJson(await runtimeInstance().incidents.list()));
   runtime
     .command('cycle')
     .description('Run a resilience runtime cycle')
     .option('--simulate', 'force simulation mode')
-    .action(async (opts: { simulate?: boolean }) => {
+    .option('--safe', 'run safe mode')
+    .option(
+      '--live',
+      'request live mode; requires runtime authorization and is blocked by local CLI',
+    )
+    .option('--json', 'print JSON output')
+    .action(async (opts: { simulate?: boolean; safe?: boolean; live?: boolean }) => {
+      if (opts.live)
+        throw new Error(
+          'live runtime cycle requires API authorization and cannot be bypassed by CLI',
+        );
       const rt = runtimeInstance();
-      const record = await rt.cycle({ mode: opts.simulate === false ? 'safe' : 'simulation' });
+      const record = await rt.cycle({ mode: opts.safe ? 'safe' : 'simulation' });
       printJson(record);
     });
   program
