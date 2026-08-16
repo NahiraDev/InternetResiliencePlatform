@@ -181,6 +181,9 @@ importers:
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@irp/resilience-runtime':
+        specifier: workspace:*
+        version: link:../../packages/resilience-runtime
     devDependencies:
       '@types/node':
         specifier: ^22.10.7

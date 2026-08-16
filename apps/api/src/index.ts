@@ -36,7 +36,7 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
-import { ResilienceRuntime } from '@irp/resilience-runtime';
+import { ResilienceRuntime, runtimeEnvelope } from '@irp/resilience-runtime';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -117,6 +117,9 @@ const workspaceSchema = nameSchema.extend({
   projectId: z.string().uuid().optional(),
   environment: z.enum(['development', 'staging', 'production']).default('production'),
 });
+const runtimeCycleSchema = z.object({
+  mode: z.enum(['simulation', 'safe', 'live']).default('simulation'),
+});
 const idParams = z.object({ id: z.string().uuid() });
 class Store<T extends Entity> {
   private readonly rows = new Map<string, T>();
@@ -182,6 +185,12 @@ const permissions = [
   'projects:write',
   'workspaces:read',
   'workspaces:write',
+  'runtime.read',
+  'runtime.inspect',
+  'runtime.simulate',
+  'runtime.execute',
+  'runtime.recover',
+  'runtime.admin',
 ];
 const requireAuth = async (request: FastifyRequest): Promise<Principal> => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
@@ -424,15 +433,66 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   };
   app.get('/api/v1/platform/status', async () => ok(await summarizePlatformStatus()));
   const resilienceRuntime = new ResilienceRuntime();
-  app.get('/api/v1/runtime/status', async () =>
-    ok({ state: (await resilienceRuntime.getRuntimeSnapshot()).state }),
-  );
-  app.get('/api/v1/runtime/snapshot', async () => ok(await resilienceRuntime.getRuntimeSnapshot()));
-  app.get('/api/v1/runtime/decisions', async () => ok(await resilienceRuntime.decisions.list()));
-  app.get('/api/v1/runtime/incidents', async () => ok(await resilienceRuntime.incidents.list()));
-  app.post('/api/v1/runtime/cycle', async () =>
-    ok(await resilienceRuntime.cycle({ mode: 'simulation' })),
-  );
+  const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
+    runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
+  app.get('/api/v1/runtime/status', async (request) => {
+    await requirePermission(request, 'runtime.read');
+    const snapshot = await resilienceRuntime.getRuntimeSnapshot();
+    return runtimeResponse(request, {
+      runtimeId: resilienceRuntime.runtimeId,
+      instanceId: resilienceRuntime.instanceId,
+      state: snapshot.state,
+      mode: snapshot.mode,
+      health: snapshot.health,
+      uptimeMs: snapshot.uptimeMs,
+    });
+  });
+  app.get('/api/v1/runtime/snapshot', async (request) => {
+    await requirePermission(request, 'runtime.inspect');
+    return runtimeResponse(request, {
+      ...(await resilienceRuntime.getRuntimeSnapshot()),
+      runtimeId: resilienceRuntime.runtimeId,
+      instanceId: resilienceRuntime.instanceId,
+    });
+  });
+  app.get('/api/v1/runtime/decisions', async (request) => {
+    await requirePermission(request, 'runtime.read');
+    return runtimeResponse(request, await resilienceRuntime.decisions.list());
+  });
+  app.get('/api/v1/runtime/incidents', async (request) => {
+    await requirePermission(request, 'runtime.read');
+    return runtimeResponse(request, await resilienceRuntime.incidents.list());
+  });
+  app.get('/api/v1/runtime/policies', async (request) => {
+    await requirePermission(request, 'runtime.inspect');
+    return runtimeResponse(request, (await resilienceRuntime.getRuntimeSnapshot()).policySnapshot);
+  });
+  app.get('/api/v1/runtime/capabilities', async (request) => {
+    await requirePermission(request, 'runtime.inspect');
+    return runtimeResponse(request, resilienceRuntime.capabilities());
+  });
+  app.post('/api/v1/runtime/cycle', async (request, reply) => {
+    const input = runtimeCycleSchema.parse(request.body ?? {});
+    const required = input.mode === 'live' ? 'runtime.execute' : 'runtime.simulate';
+    await requirePermission(request, required);
+    if (input.mode !== 'simulation' && !request.headers['idempotency-key']) {
+      reply.status(409);
+      return runtimeResponse(request, { code: 'IDEMPOTENCY_KEY_REQUIRED', retryable: true });
+    }
+    if (input.mode === 'live') {
+      reply.status(403);
+      return runtimeResponse(request, { code: 'LIVE_MODE_DISABLED', retryable: false });
+    }
+    return runtimeResponse(
+      request,
+      await resilienceRuntime.runCycle({
+        mode: input.mode,
+        ...(request.headers['idempotency-key']
+          ? { idempotencyKey: request.headers['idempotency-key'].toString() }
+          : {}),
+      }),
+    );
+  });
 
   app.get('/api/v1/metrics/network', async () =>
     ok({

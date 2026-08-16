@@ -17,3 +17,7 @@ export * from './events/events.js';
 export * from './telemetry/telemetry.js';
 export * from './adapters/adapters.js';
 export * from './runtime.js';
+export * from './contracts.js';
+export * from './adapter-registry.js';
+export * from './observation-providers.js';
+export * from './scheduler.js';
