@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: irp
+      POSTGRES_PASSWORD: irp_dev_password
+      POSTGRES_DB: irp
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+      JWT_SECRET: development-secret-development-secret-32
+      DATABASE_URL: postgresql://irp:irp_dev_password@postgres:5432/irp
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm/store
+      - api-node-modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+volumes:
+  postgres-dev-data:
+  pnpm-store:
+  api-node-modules:

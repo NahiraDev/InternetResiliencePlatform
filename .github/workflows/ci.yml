@@ -56,3 +56,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Build Docker image
+        run: docker build .
