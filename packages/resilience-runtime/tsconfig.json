@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "..",
+    "paths": {
+      "@irp/events": ["../events/src/index.ts"],
+      "@irp/telemetry": ["../telemetry/src/index.ts"],
+      "@irp/failover": ["../failover/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -18,7 +18,8 @@
     "commander": "^12.1.0",
     "@irp/network": "workspace:*",
     "@irp/telemetry": "workspace:*",
-    "@irp/dns": "workspace:*"
+    "@irp/dns": "workspace:*",
+    "@irp/resilience-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

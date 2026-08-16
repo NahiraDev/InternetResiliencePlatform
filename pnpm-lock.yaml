@@ -95,6 +95,9 @@ importers:
       '@irp/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@irp/resilience-runtime':
+        specifier: workspace:*
+        version: link:../../packages/resilience-runtime
       '@irp/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -147,6 +150,9 @@ importers:
       '@irp/network':
         specifier: workspace:*
         version: link:../../packages/network
+      '@irp/resilience-runtime':
+        specifier: workspace:*
+        version: link:../../packages/resilience-runtime
       '@irp/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -623,6 +629,31 @@ importers:
       '@types/node':
         specifier: ^22.10.7
         version: 22.20.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/resilience-runtime:
+    dependencies:
+      '@irp/events':
+        specifier: workspace:*
+        version: link:../events
+      '@irp/failover':
+        specifier: workspace:*
+        version: link:../failover
+      '@irp/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.20.1
+      '@vitest/coverage-v8':
+        specifier: ^2.1.8
+        version: 2.1.9(vitest@2.1.9(@types/node@22.20.1))
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

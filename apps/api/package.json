@@ -32,7 +32,8 @@
     "prom-client": "^15.1.3",
     "zod": "^3.25.76",
     "@irp/database": "workspace:*",
-    "@irp/network": "workspace:*"
+    "@irp/network": "workspace:*",
+    "@irp/resilience-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
