@@ -447,8 +447,12 @@ export const buildServer = async (): Promise<FastifyInstance> => {
           : undefined,
       dnsPerformanceMs: measurement.probeType === 'dns' ? measurement.latency : undefined,
     }));
+    reply.header('cache-control', 'no-cache, no-transform');
+    reply.header('connection', 'keep-alive');
+    reply.header('x-accel-buffering', 'no');
     return reply.type('text/event-stream').send(
-      `event: platform.metrics
+      `retry: 10000
+event: platform.metrics
 data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, metrics })}
 
 `,
