@@ -5,6 +5,7 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
+import { ResilienceRuntime } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -70,6 +71,33 @@ export const createProgram = (): Command => {
         status: snapshot.status,
         detectedIssues: snapshot.issues,
       });
+    });
+  const runtime = program.command('runtime').description('Resilience runtime commands');
+  const runtimeInstance = () => new ResilienceRuntime();
+  runtime
+    .command('status')
+    .description('Show resilience runtime status')
+    .action(async () => printJson({ state: (await runtimeInstance().getRuntimeSnapshot()).state }));
+  runtime
+    .command('snapshot')
+    .description('Show resilience runtime snapshot')
+    .action(async () => printJson(await runtimeInstance().getRuntimeSnapshot()));
+  runtime
+    .command('decisions')
+    .description('List resilience runtime decisions')
+    .action(async () => printJson(await runtimeInstance().decisions.list()));
+  runtime
+    .command('incidents')
+    .description('List resilience runtime incidents')
+    .action(async () => printJson(await runtimeInstance().incidents.list()));
+  runtime
+    .command('cycle')
+    .description('Run a resilience runtime cycle')
+    .option('--simulate', 'force simulation mode')
+    .action(async (opts: { simulate?: boolean }) => {
+      const rt = runtimeInstance();
+      const record = await rt.cycle({ mode: opts.simulate === false ? 'safe' : 'simulation' });
+      printJson(record);
     });
   program
     .command('doctor')

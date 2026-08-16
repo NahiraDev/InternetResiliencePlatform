@@ -36,6 +36,7 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
+import { ResilienceRuntime } from '@irp/resilience-runtime';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -422,6 +423,16 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     };
   };
   app.get('/api/v1/platform/status', async () => ok(await summarizePlatformStatus()));
+  const resilienceRuntime = new ResilienceRuntime();
+  app.get('/api/v1/runtime/status', async () =>
+    ok({ state: (await resilienceRuntime.getRuntimeSnapshot()).state }),
+  );
+  app.get('/api/v1/runtime/snapshot', async () => ok(await resilienceRuntime.getRuntimeSnapshot()));
+  app.get('/api/v1/runtime/decisions', async () => ok(await resilienceRuntime.decisions.list()));
+  app.get('/api/v1/runtime/incidents', async () => ok(await resilienceRuntime.incidents.list()));
+  app.post('/api/v1/runtime/cycle', async () =>
+    ok(await resilienceRuntime.cycle({ mode: 'simulation' })),
+  );
 
   app.get('/api/v1/metrics/network', async () =>
     ok({

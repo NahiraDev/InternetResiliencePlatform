@@ -1,0 +1,28 @@
+{
+  "name": "@irp/resilience-runtime",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/resilience-runtime/src/index.js",
+  "types": "dist/resilience-runtime/src/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "coverage": "vitest run --config vitest.config.ts --coverage"
+  },
+  "dependencies": {
+    "@irp/events": "workspace:*",
+    "@irp/telemetry": "workspace:*",
+    "@irp/failover": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8"
+  }
+}
