@@ -47,8 +47,13 @@ export interface JwtClaims {
   jti: string;
 }
 const b64url = (input: Buffer | string): string => Buffer.from(input).toString('base64url');
-const parseJson = <T>(value: string): T =>
-  JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as T;
+const parseJson = <T>(value: string): T => {
+  try {
+    return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as T;
+  } catch {
+    throw new Error('Invalid token payload.');
+  }
+};
 export class JwtService {
   constructor(
     private readonly secret: string,
@@ -70,14 +75,30 @@ export class JwtService {
     return `${body}.${createHmac('sha256', this.secret).update(body).digest('base64url')}`;
   }
   verify(token: string, type?: JwtClaims['type']): JwtClaims {
-    const [header, payload, signature] = token.split('.');
+    const parts = token.split('.');
+    if (parts.length !== 3) throw new Error('Invalid token format.');
+    const [header, payload, signature] = parts;
     if (!header || !payload || !signature) throw new Error('Invalid token format.');
+    const decodedHeader = parseJson<{ alg?: unknown; typ?: unknown }>(header);
+    if (decodedHeader.alg !== 'HS256' || decodedHeader.typ !== 'JWT')
+      throw new Error('Invalid token algorithm.');
     const expected = createHmac('sha256', this.secret)
       .update(`${header}.${payload}`)
       .digest('base64url');
-    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected)))
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(signatureBuffer, expectedBuffer)
+    )
       throw new Error('Invalid token signature.');
     const claims = parseJson<JwtClaims & { iss: string }>(payload);
+    if (
+      typeof claims.sub !== 'string' ||
+      !Array.isArray(claims.roles) ||
+      !Array.isArray(claims.scopes)
+    )
+      throw new Error('Invalid token claims.');
     if (claims.iss !== this.issuer) throw new Error('Invalid token issuer.');
     if (claims.exp <= Math.floor(Date.now() / 1000)) throw new Error('Token expired.');
     if (type && claims.type !== type) throw new Error('Invalid token type.');

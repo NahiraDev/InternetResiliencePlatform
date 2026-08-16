@@ -11,8 +11,15 @@ import {
 import { BackendConnector } from './backend-connector.js';
 import { loadScenario, settings, systemInfo, type Scenario } from './demo-data.js';
 import { log } from './logger.js';
+type DesktopMode = 'LIVE' | 'DEMO' | 'TEST';
 let scenario: Scenario = 'healthy';
-const mode = (process.env.IRP_DESKTOP_MODE ?? 'LIVE').toUpperCase() === 'DEMO' ? 'DEMO' : 'LIVE';
+export function resolveDesktopMode(value = process.env.IRP_DESKTOP_MODE): DesktopMode {
+  const normalized = (value ?? 'LIVE').toUpperCase();
+  if (normalized === 'LIVE' || normalized === 'DEMO' || normalized === 'TEST') return normalized;
+  throw new Error(`Invalid IRP_DESKTOP_MODE: ${value}`);
+}
+const mode = resolveDesktopMode();
+const modeSource = (value: DesktopMode) => (value === 'TEST' ? 'UNAVAILABLE' : value);
 const connector = new BackendConnector();
 const allowlist = registeredDesktopChannels();
 function envelope<T>(data: T) {
@@ -26,6 +33,10 @@ function broadcast(event: DesktopEvent) {
 }
 async function platformStatus() {
   if (mode === 'DEMO') return loadScenario(scenario);
+  if (mode === 'TEST') {
+    const snapshot = loadScenario(scenario);
+    return { ...snapshot, source: 'UNAVAILABLE' as const };
+  }
   return connector.status();
 }
 export function registeredChannels() {
@@ -52,10 +63,10 @@ export function registerIpc(appVersion: string) {
   register(channels.tunnelGetStatus, async () => (await platformStatus()).tunnel);
   register(channels.dnsGetStatus, async () => (await platformStatus()).dns);
   register(channels.aiGetDecision, async () => (await platformStatus()).decision);
-  register(channels.settingsGet, () => settings(mode));
+  register(channels.settingsGet, () => settings(modeSource(mode)));
   register(channels.systemGetInfo, () => ({
-    ...systemInfo(appVersion, mode),
-    backendStatus: connector.cache() ? 'connected' : mode === 'DEMO' ? 'unavailable' : 'connecting',
+    ...systemInfo(appVersion, modeSource(mode)),
+    backendStatus: connector.cache() ? 'connected' : mode === 'LIVE' ? 'connecting' : 'unavailable',
     lastErrors: connector.error() ? [connector.error() as string] : [],
   }));
   register(channels.diagnosticsExport, async () => ({
@@ -63,7 +74,7 @@ export function registerIpc(appVersion: string) {
     exportedAt: new Date().toISOString(),
     redacted: true,
     bundle: redactSecrets({
-      system: systemInfo(appVersion, mode),
+      system: systemInfo(appVersion, modeSource(mode)),
       snapshot: await platformStatus(),
       token: 'example',
     }),
@@ -74,7 +85,7 @@ export function registerIpc(appVersion: string) {
     broadcast({
       name: 'connectivity.changed',
       timestamp: new Date().toISOString(),
-      source: 'DEMO',
+      source: mode === 'TEST' ? 'UNAVAILABLE' : 'DEMO',
       payload: { scenario, connection: snapshot.network.connection },
     });
     return snapshot;

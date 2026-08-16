@@ -5,6 +5,7 @@ import {
   registeredDesktopChannels,
   validateRequest,
 } from '../src/shared/ipc-contracts.js';
+import { resolveDesktopMode } from '../src/main/ipc.js';
 describe('Phase 20 desktop IPC security', () => {
   it('keeps an explicit allowlist without shell-like channels', () => {
     expect(registeredDesktopChannels()).toEqual(Object.values(channels));
@@ -21,6 +22,12 @@ describe('Phase 20 desktop IPC security', () => {
     expect(validateRequest(channels.demoSetScenario, { scenario: '../etc/passwd' })?.code).toBe(
       'IPC_VALIDATION',
     );
+  });
+  it('keeps LIVE, DEMO, and TEST modes explicit and fail-closed', () => {
+    expect(resolveDesktopMode(undefined)).toBe('LIVE');
+    expect(resolveDesktopMode('demo')).toBe('DEMO');
+    expect(resolveDesktopMode('TEST')).toBe('TEST');
+    expect(() => resolveDesktopMode('offline')).toThrow('Invalid IRP_DESKTOP_MODE');
   });
   it('redacts diagnostic secrets', () => {
     expect(redactSecrets({ token: 'abc', nested: { privateKey: 'def', safe: 'ok' } })).toEqual({
