@@ -1,34 +1,36 @@
+import { Pool } from 'pg';
+
 export type DatabaseClient = {
   $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown>;
   $disconnect(): Promise<void>;
 };
-type PrismaClientConstructor = new (options?: {
-  datasources?: { db: { url: string } };
-}) => DatabaseClient;
+
+const createMemoryDatabaseClient = (): DatabaseClient => ({
+  async $queryRaw(): Promise<unknown> {
+    return [{ ok: 1 }];
+  },
+  async $disconnect(): Promise<void> {
+    return undefined;
+  },
+});
+
 export const createPrismaClient = (databaseUrl = process.env.DATABASE_URL): DatabaseClient => {
+  if (!databaseUrl) return createMemoryDatabaseClient();
+  const pool = new Pool({ connectionString: databaseUrl, max: 5 });
   return {
-    async $queryRaw(): Promise<unknown> {
-      if (!databaseUrl) return [{ ok: 1 }];
-      return [{ ok: 1 }];
+    async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {
+      const text = strings.reduce((sql, part, index) => `${sql}${part}${index < values.length ? `$${index + 1}` : ''}`, '');
+      const result = await pool.query(text, values);
+      return result.rows;
     },
     async $disconnect(): Promise<void> {
-      return undefined;
+      await pool.end();
     },
   };
 };
 export const createGeneratedPrismaClient = async (
   databaseUrl = process.env.DATABASE_URL,
-): Promise<DatabaseClient> => {
-  const prisma = await import('@prisma/client');
-  const clientModule = prisma as unknown as { PrismaClient?: PrismaClientConstructor };
-  if (!clientModule.PrismaClient)
-    throw new Error(
-      'PrismaClient has not been generated. Run prisma generate for packages/database/prisma/schema.prisma.',
-    );
-  return new clientModule.PrismaClient({
-    ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
-  });
-};
+): Promise<DatabaseClient> => createPrismaClient(databaseUrl);
 export interface DatabaseHealth {
   ok: boolean;
   latencyMs: number;

@@ -288,20 +288,20 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   });
   await app.register(swaggerUi, { routePrefix: '/docs' });
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
-  app.get('/api/v1/ready', async () => {
+  app.get('/api/v1/ready', async (_request, reply) => {
     let database: 'healthy' | 'degraded' = 'healthy';
     try {
       await checkDatabaseHealth(db);
     } catch {
       database = 'degraded';
     }
-    return ok(
-      createHealthStatus({
-        api: 'healthy',
-        database,
-        queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
-      }),
-    );
+    const health = createHealthStatus({
+      api: 'healthy',
+      database,
+      queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
+    });
+    if (database !== 'healthy') reply.status(503);
+    return ok(health);
   });
   app.get('/api/v1/live', async () => ok(createHealthStatus({ process: 'healthy' })));
   app.get('/api/v1/version', async () =>
@@ -756,10 +756,19 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     if (!w) throw new NotFoundAppError('workspace');
     return ok(w);
   });
+  app.addHook('onClose', async () => {
+    await db.$disconnect();
+  });
   return app;
 };
 if (process.argv[1]?.endsWith('index.js')) {
   const config = loadConfig();
   const server = await buildServer();
+  const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+  for (const signal of signals) {
+    process.once(signal, () => {
+      void server.close().finally(() => process.exit(0));
+    });
+  }
   await server.listen({ host: config.api.host, port: config.api.port });
 }
