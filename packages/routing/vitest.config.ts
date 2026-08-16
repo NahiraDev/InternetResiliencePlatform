@@ -1,9 +1,12 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { defineProject } from 'vitest/config';
 
+const root = fileURLToPath(new URL('.', import.meta.url));
 const r = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
-export default defineConfig({
+export default defineProject({
+  root,
+
   resolve: {
     alias: {
       '@irp/connectivity': r('../connectivity/src/index.ts'),
@@ -12,5 +15,15 @@ export default defineConfig({
       '@irp/shared': r('../shared/src/index.ts'),
       '@irp/telemetry': r('../telemetry/src/index.ts'),
     },
+  },
+
+  test: {
+    include: ['src/**/*.{test,spec}.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '**/.turbo/**',
+    ],
   },
 });

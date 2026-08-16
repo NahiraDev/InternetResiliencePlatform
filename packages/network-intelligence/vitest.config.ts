@@ -1,12 +1,18 @@
-import { defineConfig } from 'vitest/config';
-export default defineConfig({
+import { fileURLToPath } from 'node:url';
+import { defineProject } from 'vitest/config';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+
+export default defineProject({
+  root,
+
   test: {
-    coverage: {
-      provider: 'v8',
-      reporter: ['text'],
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts'],
-      thresholds: { statements: 90, branches: 80, functions: 90, lines: 90 },
-    },
+    include: ['src/**/*.{test,spec}.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '**/.turbo/**',
+    ],
   },
 });
