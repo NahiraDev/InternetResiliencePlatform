@@ -10,12 +10,17 @@ on:
 
 permissions:
   contents: read
+  packages: write
   id-token: write
   attestations: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   validate:
@@ -55,7 +60,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # ============================================================
-      # Repository integrity
+      # Repository validation
       # ============================================================
 
       - name: Validate repository integrity
@@ -103,10 +108,40 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       # ============================================================
-      # Docker image build
+      # GHCR login
+      # ============================================================
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================
+      # Docker image metadata
+      # ============================================================
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+
+      # ============================================================
+      # Build Docker image
       #
-      # The image is built locally for CI validation.
-      # It is not pushed by this workflow.
+      # PR:
+      #   build only, no push
+      #
+      # Push to main / phase branch:
+      #   build + push to GHCR
       # ============================================================
 
       - name: Build Docker image
@@ -114,59 +149,42 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
-          load: true
-          tags: internet-resilience-platform:${{ github.sha }}
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          sbom: false
 
       # ============================================================
-      # Docker image inspection
+      # Docker image inspection for pull requests
       # ============================================================
 
       - name: Inspect Docker image
+        if: github.event_name == 'pull_request'
         run: |
           docker image inspect \
-            internet-resilience-platform:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
 
       # ============================================================
-      # Verify image architecture
-      # ============================================================
-
-      - name: Verify Docker image metadata
-        run: |
-          docker image inspect \
-            internet-resilience-platform:${{ github.sha }} \
-            --format '
-          Architecture: {{.Architecture}}
-          OS: {{.Os}}
-          Entrypoint: {{json .Config.Entrypoint}}
-          Cmd: {{json .Config.Cmd}}
-          User: {{json .Config.User}}
-          '
-
-      # ============================================================
-      # Docker runtime smoke test
+      # Docker runtime smoke test for pull requests
       # ============================================================
 
       - name: Start Docker smoke test container
+        if: github.event_name == 'pull_request'
         run: |
           docker run \
             --detach \
             --name irp-ci-smoke \
-            internet-resilience-platform:${{ github.sha }}
-
-      # ============================================================
-      # Wait for container startup
-      # ============================================================
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
 
       - name: Wait for Docker container startup
+        if: github.event_name == 'pull_request'
         run: |
           sleep 5
 
-      # ============================================================
-      # Verify container is running
-      # ============================================================
-
       - name: Verify Docker container
+        if: github.event_name == 'pull_request'
         run: |
           STATUS="$(docker inspect \
             --format='{{.State.Status}}' \
@@ -177,13 +195,11 @@ jobs:
           test "${STATUS}" = "running"
 
       # ============================================================
-      # Verify container user
-      #
-      # Production containers must not run as root unless
-      # explicitly required by the application.
+      # Verify non-root runtime
       # ============================================================
 
-      - name: Verify container user
+      - name: Verify Docker container user
+        if: github.event_name == 'pull_request'
         run: |
           USER_ID="$(docker exec irp-ci-smoke id -u)"
 
@@ -192,13 +208,11 @@ jobs:
           test "${USER_ID}" != "0"
 
       # ============================================================
-      # Verify filesystem permissions
-      #
-      # This specifically protects against the known Corepack/pnpm
-      # runtime EACCES failure.
+      # Verify runtime filesystem
       # ============================================================
 
       - name: Verify runtime filesystem permissions
+        if: github.event_name == 'pull_request'
         run: |
           docker exec irp-ci-smoke sh -c '
             set -eu
@@ -213,48 +227,42 @@ jobs:
             ls -ld .
 
             if [ -d "/app/.cache" ]; then
-              echo "/app/.cache permissions:"
+              echo "/app/.cache:"
               ls -ld /app/.cache
             fi
 
             if [ -d "/app/.cache/node" ]; then
-              echo "/app/.cache/node permissions:"
+              echo "/app/.cache/node:"
               ls -ld /app/.cache/node
             fi
 
             if [ -d "/app/.cache/node/corepack" ]; then
-              echo "/app/.cache/node/corepack permissions:"
+              echo "/app/.cache/node/corepack:"
               ls -ld /app/.cache/node/corepack
             fi
           '
 
       # ============================================================
       # Verify pnpm/Corepack runtime
-      #
-      # The command must not trigger an EACCES failure.
       # ============================================================
 
       - name: Verify pnpm runtime
+        if: github.event_name == 'pull_request'
         run: |
           docker exec irp-ci-smoke sh -c '
             set -eu
 
             if command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm path:"
+              echo "pnpm:"
               command -v pnpm
-
-              echo "pnpm version:"
               pnpm --version
+            elif command -v corepack >/dev/null 2>&1; then
+              echo "Corepack:"
+              command -v corepack
+              corepack --version
             else
-              echo "pnpm is not installed in the runtime image."
-
-              if command -v corepack >/dev/null 2>&1; then
-                echo "Corepack path:"
-                command -v corepack
-
-                echo "Corepack version:"
-                corepack --version
-              fi
+              echo "Neither pnpm nor Corepack is available in the runtime image."
+              exit 1
             fi
           '
 
@@ -263,57 +271,54 @@ jobs:
       # ============================================================
 
       - name: Show Docker logs
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         run: |
           docker logs irp-ci-smoke || true
 
       # ============================================================
-      # Stop Docker container
+      # Stop Docker smoke test
       # ============================================================
 
       - name: Stop Docker smoke test container
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         run: |
           docker stop \
             irp-ci-smoke \
             || true
 
       # ============================================================
-      # Remove Docker container
+      # Remove Docker smoke test container
       # ============================================================
 
       - name: Remove Docker smoke test container
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         run: |
           docker rm \
             irp-ci-smoke \
             || true
 
       # ============================================================
-      # Build provenance
+      # Build provenance attestation
       #
-      # NOTE:
-      # Build provenance attestation is meaningful when attached to
-      # a publishable image/artifact with a stable digest.
-      #
-      # This CI workflow therefore keeps local Docker validation
-      # separate from artifact publication.
+      # Only for images pushed to GHCR.
+      # The digest comes directly from build-push-action.
       # ============================================================
 
       - name: Attest Build Provenance
-        if: false
+        if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v4.2.2
         with:
-          subject-name: internet-resilience-platform
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.docker-build.outputs.digest }}
+          push-to-registry: true
 
       # ============================================================
       # Docker cleanup
       # ============================================================
 
       - name: Remove Docker image
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         run: |
           docker image rm \
-            internet-resilience-platform:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
             || true
