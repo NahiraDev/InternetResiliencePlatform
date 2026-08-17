@@ -3,7 +3,6 @@
 
 # High-risk CI/CD and security controls require maintainer review.
 .github/workflows/* @NahiraDev
-.github/dependabot.yml @NahiraDev
 SECURITY.md @NahiraDev
 Dockerfile @NahiraDev
 compose.yaml @NahiraDev
