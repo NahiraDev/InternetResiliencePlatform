@@ -9,6 +9,7 @@ import type {
   SystemInfoResponse,
   TunnelStatusResponse,
   DataSource,
+  AutopilotStatusResponse,
 } from '../shared/ipc-contracts.js';
 export type Scenario =
   | 'healthy'
@@ -24,12 +25,28 @@ export interface Snapshot {
   tunnel: TunnelStatusResponse;
   dns: DnsStatusResponse;
   decision: DecisionResponse;
+  autopilot: AutopilotStatusResponse;
 }
 const root = new URL('../../../..', import.meta.url).pathname;
 export function loadScenario(scenario: Scenario): Snapshot {
-  return JSON.parse(
+  const base = JSON.parse(
     readFileSync(join(root, 'examples/phase-20', `${scenario}.json`), 'utf8'),
-  ) as Snapshot;
+  ) as Omit<Snapshot, 'autopilot'>;
+  return {
+    ...base,
+    autopilot: {
+      source: 'DEMO',
+      enabled: false,
+      mode: 'OBSERVE_ONLY',
+      circuitBreaker: 'CLOSED',
+      activeIncidents: scenario === 'healthy' ? 0 : 1,
+      pendingApprovals: scenario === 'healthy' ? 0 : 1,
+      activeActions: 0,
+      verificationState: 'UNKNOWN',
+      rollbackState: 'NOT_REQUIRED',
+      recentOutcomes: scenario === 'healthy' ? ['NOOP'] : ['SHADOW'],
+    },
+  };
 }
 export function settings(source: DataSource = 'DEMO'): SettingsResponse {
   return {

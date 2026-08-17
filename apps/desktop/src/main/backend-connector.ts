@@ -4,6 +4,7 @@ import type {
   NetworkStatusResponse,
   SecurityStatusResponse,
   TunnelStatusResponse,
+  AutopilotStatusResponse,
 } from '../shared/ipc-contracts.js';
 
 export interface BackendPlatformStatus {
@@ -14,6 +15,7 @@ export interface BackendPlatformStatus {
   tunnel: TunnelStatusResponse;
   dns: DnsStatusResponse;
   decision: DecisionResponse;
+  autopilot: AutopilotStatusResponse;
 }
 
 export class BackendConnector {

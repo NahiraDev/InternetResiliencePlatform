@@ -63,6 +63,7 @@ export function registerIpc(appVersion: string) {
   register(channels.tunnelGetStatus, async () => (await platformStatus()).tunnel);
   register(channels.dnsGetStatus, async () => (await platformStatus()).dns);
   register(channels.aiGetDecision, async () => (await platformStatus()).decision);
+  register(channels.autopilotGetStatus, async () => (await platformStatus()).autopilot);
   register(channels.settingsGet, () => settings(modeSource(mode)));
   register(channels.systemGetInfo, () => ({
     ...systemInfo(appVersion, modeSource(mode)),
