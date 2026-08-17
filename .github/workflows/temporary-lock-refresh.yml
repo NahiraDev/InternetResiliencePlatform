@@ -1,0 +1,60 @@
+name: Temporary lockfile refresh
+
+on:
+  push:
+    branches:
+      - fix/security-electron-extract-zip
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-lock-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(ci): refresh Electron lockfile') }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Refresh lockfile
+        run: pnpm install --lockfile-only --ignore-scripts
+
+      - name: Verify high-severity audit
+        run: pnpm audit --audit-level high
+
+      - name: Commit lockfile and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/temporary-lock-refresh.yml
+          git add pnpm-lock.yaml .github/workflows/temporary-lock-refresh.yml
+          if git diff --cached --quiet; then
+            echo 'No lockfile changes were generated.'
+            exit 0
+          fi
+          git commit -m 'chore(ci): refresh Electron lockfile'
+          git push origin HEAD:fix/security-electron-extract-zip
