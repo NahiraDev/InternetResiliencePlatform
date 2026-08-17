@@ -1,37 +1,80 @@
 name: Bug report
-description: Report incorrect or unexpected behavior.
-title: 'bug: '
+description: Report incorrect, unexpected, or degraded behavior.
+title: "bug: "
 labels:
   - bug
 body:
   - type: markdown
     attributes:
-      value: Thank you for helping improve the Internet Resilience Platform.
+      value: |
+        Thanks for helping improve the Internet Resilience Platform.
+        Please search existing issues before submitting a new report.
+
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What happened?
+      description: Describe the problem clearly and concisely.
+      placeholder: What happened?
     validations:
       required: true
+
   - type: textarea
-    id: steps
+    id: reproduction
     attributes:
       label: Steps to reproduce
-      description: Provide the smallest reproducible example.
+      description: Provide the smallest deterministic reproduction you can.
       placeholder: |
         1. Run ...
-        2. Observe ...
+        2. Configure ...
+        3. Observe ...
     validations:
       required: true
+
   - type: textarea
     id: expected
     attributes:
       label: Expected behavior
+      description: What should have happened instead?
     validations:
       required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead? Include relevant error messages.
+      render: shell
+    validations:
+      required: true
+
   - type: textarea
     id: environment
     attributes:
       label: Environment
-      description: OS, shell, commit SHA, and any relevant tooling versions.
+      description: Provide OS, Node.js, pnpm, Docker, and relevant commit/version information.
+      placeholder: |
+        OS:
+        Node.js:
+        pnpm:
+        Docker:
+        Commit SHA:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste sanitized logs or stack traces. Remove secrets and credentials.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, related issues, configuration details, or other useful context.
+    validations:
+      required: false
