@@ -163,8 +163,7 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             --paginate \
-            --jq '.[] | select(.body | contains($marker)) | .id' \
-            -f marker="${SUMMARY_MARKER}" \
+            --jq '.[] | select((.body // "") | contains("<!-- irp:ai-issue-summary -->")) | .id' \
             "/repos/${REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
             | tail -n 1)"
 
