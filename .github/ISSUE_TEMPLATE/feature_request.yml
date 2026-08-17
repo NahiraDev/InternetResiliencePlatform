@@ -1,28 +1,52 @@
 name: Feature request
-description: Suggest an improvement or new capability.
-title: 'feat: '
+description: Suggest an improvement, capability, or architectural enhancement.
+title: "feat: "
 labels:
   - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing an improvement to the Internet Resilience Platform.
+        Please search existing issues before submitting a duplicate request.
+
   - type: textarea
     id: problem
     attributes:
       label: Problem
-      description: What problem should this solve?
+      description: What user, engineering, reliability, or operational problem should this solve?
+      placeholder: Describe the problem and who is affected.
     validations:
       required: true
+
   - type: textarea
     id: proposal
     attributes:
-      label: Proposal
-      description: Describe the desired behavior or outcome.
+      label: Proposed solution
+      description: Describe the desired behavior, API, UX, or architecture.
     validations:
       required: true
+
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives considered
+      description: Describe other approaches you considered and why they are not preferred.
+    validations:
+      required: false
+
   - type: textarea
     id: impact
     attributes:
       label: Security, reliability, and operational impact
+      description: Explain expected impact on security, availability, performance, compatibility, and operations.
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation notes
+      description: Include relevant package boundaries, interfaces, migration concerns, or rollout considerations.
+    validations:
+      required: false
