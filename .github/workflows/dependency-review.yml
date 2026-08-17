@@ -22,7 +22,7 @@ jobs:
   review:
     name: Dependency review
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -41,13 +41,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Run repository validation
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm validate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate repository
+        run: pnpm validate
+
+      - name: Audit installed dependencies
+        run: pnpm audit --audit-level high
 
       - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
           deny-licenses: GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0

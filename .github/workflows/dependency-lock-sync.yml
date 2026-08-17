@@ -1,0 +1,58 @@
+name: Dependency Lockfile Sync
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependency-lock-sync-main
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Refresh pnpm lockfile
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(deps): refresh lockfile') }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Refresh lockfile
+        run: pnpm install --lockfile-only --ignore-scripts
+
+      - name: Commit refreshed lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo 'pnpm-lock.yaml is already up to date.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml
+          git commit -m 'chore(deps): refresh lockfile'
+          git push origin HEAD:main
