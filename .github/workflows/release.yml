@@ -67,19 +67,19 @@ jobs:
               "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
             export CHECKS_JSON
 
-            RESULT="$(node --input-type=module <<'NODE'
-            const checks = JSON.parse(process.env.CHECKS_JSON);
-            const matches = checks.check_runs.filter((run) => run.name === 'Validate repository');
-            if (matches.some((run) => run.conclusion === 'success')) {
-              process.stdout.write('success');
-              process.exit(0);
-            }
-            if (matches.some((run) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(run.conclusion))) {
-              process.stdout.write('failure');
-              process.exit(0);
-            }
-            process.stdout.write('pending');
-            NODE
+            RESULT="$(
+              node --input-type=module <<'NODE'
+const checks = JSON.parse(process.env.CHECKS_JSON);
+const matches = checks.check_runs.filter((run) => run.name === 'Validate repository');
+
+if (matches.some((run) => run.conclusion === 'success')) {
+  process.stdout.write('success');
+} else if (matches.some((run) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(run.conclusion))) {
+  process.stdout.write('failure');
+} else {
+  process.stdout.write('pending');
+}
+NODE
             )"
 
             case "${RESULT}" in
