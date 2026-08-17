@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +22,18 @@ jobs:
     name: Validate repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
     steps:
+      # ============================================================
+      # Source
+      # ============================================================
+
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ============================================================
+      # Node.js / pnpm
+      # ============================================================
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -36,11 +47,23 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # ============================================================
+      # Dependencies
+      # ============================================================
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ============================================================
+      # Repository integrity
+      # ============================================================
+
       - name: Validate repository integrity
         run: pnpm validate
+
+      # ============================================================
+      # Static analysis
+      # ============================================================
 
       - name: Lint
         run: pnpm lint
@@ -48,17 +71,249 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # ============================================================
+      # Tests
+      # ============================================================
+
       - name: Test
         run: pnpm test
 
       - name: Fresh coverage
         run: pnpm exec turbo run test --force -- --coverage
 
+      # ============================================================
+      # Application build
+      # ============================================================
+
       - name: Build
         run: pnpm build
+
+      # ============================================================
+      # Docker Compose validation
+      # ============================================================
 
       - name: Validate Docker Compose
         run: docker compose config
 
+      # ============================================================
+      # Docker Buildx
+      # ============================================================
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ============================================================
+      # Docker image build
+      #
+      # The image is built locally for CI validation.
+      # It is not pushed by this workflow.
+      # ============================================================
+
       - name: Build Docker image
-        run: docker build .
+        id: docker-build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: internet-resilience-platform:${{ github.sha }}
+
+      # ============================================================
+      # Docker image inspection
+      # ============================================================
+
+      - name: Inspect Docker image
+        run: |
+          docker image inspect \
+            internet-resilience-platform:${{ github.sha }}
+
+      # ============================================================
+      # Verify image architecture
+      # ============================================================
+
+      - name: Verify Docker image metadata
+        run: |
+          docker image inspect \
+            internet-resilience-platform:${{ github.sha }} \
+            --format '
+          Architecture: {{.Architecture}}
+          OS: {{.Os}}
+          Entrypoint: {{json .Config.Entrypoint}}
+          Cmd: {{json .Config.Cmd}}
+          User: {{json .Config.User}}
+          '
+
+      # ============================================================
+      # Docker runtime smoke test
+      # ============================================================
+
+      - name: Start Docker smoke test container
+        run: |
+          docker run \
+            --detach \
+            --name irp-ci-smoke \
+            internet-resilience-platform:${{ github.sha }}
+
+      # ============================================================
+      # Wait for container startup
+      # ============================================================
+
+      - name: Wait for Docker container startup
+        run: |
+          sleep 5
+
+      # ============================================================
+      # Verify container is running
+      # ============================================================
+
+      - name: Verify Docker container
+        run: |
+          STATUS="$(docker inspect \
+            --format='{{.State.Status}}' \
+            irp-ci-smoke)"
+
+          echo "Container status: ${STATUS}"
+
+          test "${STATUS}" = "running"
+
+      # ============================================================
+      # Verify container user
+      #
+      # Production containers must not run as root unless
+      # explicitly required by the application.
+      # ============================================================
+
+      - name: Verify container user
+        run: |
+          USER_ID="$(docker exec irp-ci-smoke id -u)"
+
+          echo "Container UID: ${USER_ID}"
+
+          test "${USER_ID}" != "0"
+
+      # ============================================================
+      # Verify filesystem permissions
+      #
+      # This specifically protects against the known Corepack/pnpm
+      # runtime EACCES failure.
+      # ============================================================
+
+      - name: Verify runtime filesystem permissions
+        run: |
+          docker exec irp-ci-smoke sh -c '
+            set -eu
+
+            echo "Current user:"
+            id
+
+            echo "Working directory:"
+            pwd
+
+            echo "Working directory permissions:"
+            ls -ld .
+
+            if [ -d "/app/.cache" ]; then
+              echo "/app/.cache permissions:"
+              ls -ld /app/.cache
+            fi
+
+            if [ -d "/app/.cache/node" ]; then
+              echo "/app/.cache/node permissions:"
+              ls -ld /app/.cache/node
+            fi
+
+            if [ -d "/app/.cache/node/corepack" ]; then
+              echo "/app/.cache/node/corepack permissions:"
+              ls -ld /app/.cache/node/corepack
+            fi
+          '
+
+      # ============================================================
+      # Verify pnpm/Corepack runtime
+      #
+      # The command must not trigger an EACCES failure.
+      # ============================================================
+
+      - name: Verify pnpm runtime
+        run: |
+          docker exec irp-ci-smoke sh -c '
+            set -eu
+
+            if command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm path:"
+              command -v pnpm
+
+              echo "pnpm version:"
+              pnpm --version
+            else
+              echo "pnpm is not installed in the runtime image."
+
+              if command -v corepack >/dev/null 2>&1; then
+                echo "Corepack path:"
+                command -v corepack
+
+                echo "Corepack version:"
+                corepack --version
+              fi
+            fi
+          '
+
+      # ============================================================
+      # Docker logs
+      # ============================================================
+
+      - name: Show Docker logs
+        if: always()
+        run: |
+          docker logs irp-ci-smoke || true
+
+      # ============================================================
+      # Stop Docker container
+      # ============================================================
+
+      - name: Stop Docker smoke test container
+        if: always()
+        run: |
+          docker stop \
+            irp-ci-smoke \
+            || true
+
+      # ============================================================
+      # Remove Docker container
+      # ============================================================
+
+      - name: Remove Docker smoke test container
+        if: always()
+        run: |
+          docker rm \
+            irp-ci-smoke \
+            || true
+
+      # ============================================================
+      # Build provenance
+      #
+      # NOTE:
+      # Build provenance attestation is meaningful when attached to
+      # a publishable image/artifact with a stable digest.
+      #
+      # This CI workflow therefore keeps local Docker validation
+      # separate from artifact publication.
+      # ============================================================
+
+      - name: Attest Build Provenance
+        if: false
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: internet-resilience-platform
+          subject-digest: ${{ steps.docker-build.outputs.digest }}
+
+      # ============================================================
+      # Docker cleanup
+      # ============================================================
+
+      - name: Remove Docker image
+        if: always()
+        run: |
+          docker image rm \
+            internet-resilience-platform:${{ github.sha }} \
+            || true
