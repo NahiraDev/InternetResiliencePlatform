@@ -26,6 +26,17 @@ const readJson = (file) => {
   }
 };
 
+const isGitHubTokenRelevantPath = (rel) =>
+  rel.startsWith('.github/') ||
+  /\.(?:cjs|js|mjs|ts|tsx|json|ya?ml|sql|prisma|sh)$/.test(rel);
+
+const githubTokenLegacyAssumptions = [
+  /(?:GITHUB_TOKEN|GH_TOKEN|github.{0,40}token|installation.{0,40}token)[^\n]{0,160}\.length\s*(?:===|!==|==|!=)\s*40\b/i,
+  /(?:GITHUB_TOKEN|GH_TOKEN|github.{0,40}token|installation.{0,40}token)[^\n]{0,160}(?:slice|substring|substr)\(\s*0\s*,\s*40\s*\)/i,
+  /(?:GITHUB_TOKEN|GH_TOKEN|github.{0,40}token|installation.{0,40}token)[^\n]{0,160}(?:maxLength|minLength|length)\s*[:=]\s*40\b/i,
+  /(?:github.{0,40}token|installation.{0,40}token)[^\n]{0,160}@db\.VarChar\(\s*40\s*\)/i,
+];
+
 walk(root);
 
 for (const file of files) {
@@ -40,6 +51,18 @@ for (const file of files) {
   }
 
   if (rel.endsWith('.json')) readJson(file);
+
+  // GitHub App installation tokens are evolving from fixed-length stateful
+  // tokens to opaque stateless tokens that can be substantially longer.
+  // Reject legacy 40-character assumptions in executable/configuration files.
+  if (isGitHubTokenRelevantPath(rel)) {
+    for (const pattern of githubTokenLegacyAssumptions) {
+      if (pattern.test(text)) {
+        errors.push(`${rel} contains a legacy GitHub token length/truncation assumption; treat GitHub tokens as opaque values`);
+        break;
+      }
+    }
+  }
 }
 
 const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
