@@ -245,3 +245,4 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.docker-build.outputs.digest }}
           push-to-registry: true
+          create-storage-record: false
