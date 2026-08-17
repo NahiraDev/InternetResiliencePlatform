@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
     url: https://github.com/NahiraDev/InternetResiliencePlatform/security/advisories/new
-    about: Please report suspected vulnerabilities privately.
+    about: Report suspected security vulnerabilities privately through GitHub Security Advisories.
