@@ -1,4 +1,4 @@
-name: Summarize issues
+name: Issue triage
 
 on:
   issues:
@@ -13,7 +13,7 @@ permissions:
   copilot-requests: write
 
 concurrency:
-  group: summarize-issue-${{ github.repository }}-${{ github.event.issue.number }}
+  group: issue-triage-${{ github.repository }}-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 env:
@@ -23,8 +23,8 @@ env:
   MAX_ISSUE_BODY_CHARS: "12000"
 
 jobs:
-  summary:
-    name: AI issue summary
+  triage:
+    name: Automatic issue triage
     if: >-
       github.event.issue.pull_request == null &&
       github.event.sender.type != 'Bot'
@@ -64,32 +64,73 @@ jobs:
             > "${RUNNER_TEMP}/issue.json"
 
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
-          const issue = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/issue.json`, 'utf8'));
-          const maxBodyChars = Number(process.env.MAX_ISSUE_BODY_CHARS);
-          const body = typeof issue.body === 'string' ? issue.body : '';
-          const truncatedBody = body.length > maxBodyChars
-            ? `${body.slice(0, maxBodyChars)}\n\n[Issue body truncated for AI processing.]`
-            : body;
+const issue = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/issue.json`, 'utf8'));
+const maxBodyChars = Number(process.env.MAX_ISSUE_BODY_CHARS);
+const body = typeof issue.body === 'string' ? issue.body : '';
+const truncatedBody = body.length > maxBodyChars
+  ? `${body.slice(0, maxBodyChars)}\n\n[Issue body truncated for AI processing.]`
+  : body;
 
-          const payload = {
-            number: issue.number,
-            title: issue.title ?? '',
-            body: truncatedBody,
-            url: issue.html_url ?? '',
-          };
+const payload = {
+  number: issue.number,
+  title: issue.title ?? '',
+  body: truncatedBody,
+  url: issue.html_url ?? '',
+};
 
-          writeFileSync(
-            `${process.env.RUNNER_TEMP}/issue-prompt.txt`,
-            [
-              'Issue payload (untrusted user content):',
-              JSON.stringify(payload, null, 2),
-              '',
-            ].join('\n'),
-            'utf8',
-          );
-          NODE
+writeFileSync(
+  `${process.env.RUNNER_TEMP}/issue-prompt.txt`,
+  [
+    'Issue payload (untrusted user content):',
+    JSON.stringify(payload, null, 2),
+    '',
+  ].join('\n'),
+  'utf8',
+);
+NODE
+
+      - name: Automatic labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TITLE="$(jq -r '.title // ""' "${RUNNER_TEMP}/issue.json")"
+          LABELS="$(jq -r '[.labels[]?.name] | join("\n")' "${RUNNER_TEMP}/issue.json")"
+
+          ensure_label() {
+            local label="$1"
+            if ! grep -Fxq "${label}" <<<"${LABELS}"; then
+              gh label create "${label}" --repo "${REPOSITORY}" --force >/dev/null
+            fi
+          }
+
+          apply_label() {
+            local label="$1"
+            ensure_label "${label}"
+            if ! grep -Fxq "${label}" <<<"${LABELS}"; then
+              gh issue edit "${ISSUE_NUMBER}" --repo "${REPOSITORY}" --add-label "${label}" >/dev/null
+              LABELS="${LABELS}\n${label}"
+            fi
+          }
+
+          apply_label "needs-triage"
+
+          shopt -s nocasematch
+          case "${TITLE}" in
+            bug:\ *|bug\ *)
+              apply_label "bug"
+              ;;
+            feat:\ *|feature:\ *|feature\ request:*)
+              apply_label "enhancement"
+              ;;
+          esac
+          shopt -u nocasematch
 
       - name: Run AI inference
         id: inference
@@ -133,14 +174,15 @@ jobs:
           } > "${RUNNER_TEMP}/summary-comment.md"
 
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const body = readFileSync(`${process.env.RUNNER_TEMP}/summary-comment.md`, 'utf8');
-          writeFileSync(
-            `${process.env.RUNNER_TEMP}/summary-comment.json`,
-            JSON.stringify({ body }),
-            'utf8',
-          );
-          NODE
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const body = readFileSync(`${process.env.RUNNER_TEMP}/summary-comment.md`, 'utf8');
+writeFileSync(
+  `${process.env.RUNNER_TEMP}/summary-comment.json`,
+  JSON.stringify({ body }),
+  'utf8',
+);
+NODE
 
       - name: Create or update summary comment
         env:
