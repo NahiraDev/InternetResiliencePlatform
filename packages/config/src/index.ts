@@ -38,7 +38,7 @@ export const ConfigSchema = z.object({
         .object({ name: z.string(), recordType: z.enum(['A', 'AAAA', 'CNAME', 'TXT', 'MX', 'NS']) })
         .default({ name: 'example.com', recordType: 'A' }),
     })
-    .default({}),
+    .default({ intervalMs: 60_000, question: { name: 'example.com', recordType: 'A' } }),
   dns: z
     .object({
       strategy: z
@@ -58,24 +58,29 @@ export const ConfigSchema = z.object({
           recoveryThreshold: z.number().int().min(1).default(2),
           cooldownMs: z.number().int().min(0).default(30_000),
         })
-        .default({}),
+        .default({ failureThreshold: 2, recoveryThreshold: 2, cooldownMs: 30_000 }),
       dnssec: z
         .object({
           enabled: z.boolean().default(true),
           requireValidation: z.boolean().default(false),
         })
-        .default({}),
+        .default({ enabled: true, requireValidation: false }),
       cache: z
         .object({
           ttlMs: z.number().int().min(1000).default(300_000),
           warmDomains: z.array(z.string()).default(['example.com']),
         })
-        .default({}),
+        .default({ ttlMs: 300_000, warmDomains: ['example.com'] }),
     })
-    .default({}),
+    .default({
+      strategy: 'balanced',
+      failover: { failureThreshold: 2, recoveryThreshold: 2, cooldownMs: 30_000 },
+      dnssec: { enabled: true, requireValidation: false },
+      cache: { ttlMs: 300_000, warmDomains: ['example.com'] },
+    }),
   plugins: z
     .object({ directory: z.string().default('plugins'), enabled: z.boolean().default(true) })
-    .default({}),
+    .default({ directory: 'plugins', enabled: true }),
 });
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
