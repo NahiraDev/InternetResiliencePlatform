@@ -1,16 +1,18 @@
-name: Run Datadog Synthetic tests
+name: Datadog Synthetics
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: datadog-synthetics-${{ github.workflow }}-${{ github.ref }}
+  group: datadog-synthetics-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -18,12 +20,28 @@ env:
   PNPM_VERSION: "9.15.0"
 
 jobs:
-  build:
+  synthetics:
+    name: Run Datadog Synthetic tests
+    if: >-
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
+      - name: Checkout validated commit
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
       - name: Checkout repository
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v6
 
       - name: Setup pnpm
@@ -46,27 +64,21 @@ jobs:
         run: pnpm validate
 
       - name: Check Datadog credentials
-        id: datadog-credentials
+        id: credentials
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        shell: bash
         run: |
           set -euo pipefail
           if [[ -n "${DD_API_KEY}" && -n "${DD_APP_KEY}" ]]; then
             echo "configured=true" >> "${GITHUB_OUTPUT}"
-            echo "Datadog credentials are configured."
           else
             echo "configured=false" >> "${GITHUB_OUTPUT}"
-            echo "Datadog credentials are not configured; skipping Synthetic tests."
+            echo "Datadog credentials are not configured; Synthetic tests will be skipped."
           fi
 
-      - name: Install Datadog CI CLI
-        if: steps.datadog-credentials.outputs.configured == 'true'
-        run: pnpm dlx @datadog/datadog-ci@latest --version
-
       - name: Run Datadog Synthetic tests
-        if: steps.datadog-credentials.outputs.configured == 'true'
+        if: steps.credentials.outputs.configured == 'true'
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
