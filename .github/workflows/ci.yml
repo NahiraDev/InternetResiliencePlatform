@@ -42,17 +42,12 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-
       - name: Validate repository integrity
         run: pnpm validate
-
-      # ============================================================
-      # Static analysis
-      # ============================================================
 
       - name: Lint
         run: pnpm lint
@@ -60,26 +55,14 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      # ============================================================
-      # Tests
-      # ============================================================
-
       - name: Test
         run: pnpm test
 
       - name: Fresh coverage
         run: pnpm exec turbo run test --force -- --coverage
 
-      # ============================================================
-      # Application build
-      # ============================================================
-
       - name: Build
         run: pnpm build
-
-      # ============================================================
-      # Docker Compose validation
-      # ============================================================
 
       - name: Validate Docker Compose
         run: docker compose config
@@ -94,7 +77,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -118,19 +101,21 @@ jobs:
           provenance: false
           sbom: false
 
-      - name: Inspect Docker image
+      - name: Verify Docker image
         if: github.event_name == 'pull_request'
         run: |
-          docker image inspect \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          docker image inspect "${IMAGE_TAG}"
 
       - name: Start Docker smoke test container
         if: github.event_name == 'pull_request'
         run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+
           docker run \
             --detach \
             --name irp-ci-smoke \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            "${IMAGE_TAG}"
 
       - name: Wait for Docker container startup
         if: github.event_name == 'pull_request'
@@ -148,7 +133,7 @@ jobs:
 
           test "${STATUS}" = "running"
 
-      - name: Verify Docker container user
+      - name: Verify Docker container is non-root
         if: github.event_name == 'pull_request'
         run: |
           USER_ID="$(docker exec irp-ci-smoke id -u)"
@@ -188,25 +173,32 @@ jobs:
             fi
           '
 
-      - name: Verify pnpm runtime
+      - name: Verify pnpm or Corepack runtime
         if: github.event_name == 'pull_request'
         run: |
           docker exec irp-ci-smoke sh -c '
             set -eu
 
             if command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm:"
+              echo "pnpm executable:"
               command -v pnpm
+              echo "pnpm version:"
               pnpm --version
-            elif command -v corepack >/dev/null 2>&1; then
-              echo "Corepack:"
-              command -v corepack
-              corepack --version
-            else
-              echo "Neither pnpm nor Corepack is available in the runtime image."
-              exit 1
+              exit 0
             fi
+
+            if command -v corepack >/dev/null 2>&1; then
+              echo "Corepack executable:"
+              command -v corepack
+              echo "Corepack version:"
+              corepack --version
+              exit 0
+            fi
+
+            echo "Neither pnpm nor Corepack is available in the runtime image."
+            exit 1
           '
+
       - name: Show Docker logs
         if: always() && github.event_name == 'pull_request'
         run: |
@@ -215,16 +207,12 @@ jobs:
       - name: Stop Docker smoke test container
         if: always() && github.event_name == 'pull_request'
         run: |
-          docker stop \
-            irp-ci-smoke \
-            || true
+          docker stop irp-ci-smoke || true
 
       - name: Remove Docker smoke test container
         if: always() && github.event_name == 'pull_request'
         run: |
-          docker rm \
-            irp-ci-smoke \
-            || true
+          docker rm irp-ci-smoke || true
 
       - name: Attest Build Provenance
         if: github.event_name != 'pull_request'
@@ -237,6 +225,5 @@ jobs:
       - name: Remove Docker image
         if: always() && github.event_name == 'pull_request'
         run: |
-          docker image rm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} \
-            || true
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          docker image rm "${IMAGE_TAG}" || true
