@@ -98,6 +98,17 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
+      - name: Resolve Docker image tag
+        if: github.event_name == 'pull_request'
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="$(printf '%s\n' '${{ steps.meta.outputs.tags }}' | grep -E '/[^:]+:sha-[[:xdigit:]]+$' | head -n1)"
+          test -n "${IMAGE_TAG}"
+          echo "tag=${IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "Using Docker image tag: ${IMAGE_TAG}"
+
       - name: Build Docker image
         id: docker-build
         uses: docker/build-push-action@v7
@@ -113,7 +124,7 @@ jobs:
       - name: Verify Docker image
         if: github.event_name == 'pull_request'
         env:
-          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
           set -euo pipefail
           docker image inspect "${IMAGE_TAG}"
@@ -121,7 +132,7 @@ jobs:
       - name: Start Docker smoke test container
         if: github.event_name == 'pull_request'
         env:
-          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
           set -euo pipefail
           docker run \
@@ -234,7 +245,7 @@ jobs:
       - name: Remove Docker image
         if: always() && github.event_name == 'pull_request'
         env:
-          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
           docker image rm "${IMAGE_TAG}" || true
 
