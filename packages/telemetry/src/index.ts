@@ -51,15 +51,21 @@ export interface HealthStatus {
   checks: Record<string, HealthState>;
   updatedAt: string;
 }
-export const createHealthStatus = (checks: Record<string, HealthState>): HealthStatus => ({
-  state: Object.values(checks).includes('unhealthy')
+export const createHealthStatus = (checks: Record<string, HealthState>): HealthStatus => {
+  const values = Object.values(checks);
+  const state: HealthState = values.includes('unhealthy')
     ? 'unhealthy'
-    : Object.values(checks).includes('degraded')
-      ? 'degraded'
-      : 'healthy',
-  checks,
-  updatedAt: new Date().toISOString(),
-});
+    : values.includes('draining')
+      ? 'draining'
+      : values.includes('starting')
+        ? 'starting'
+        : values.includes('degraded')
+          ? 'degraded'
+          : values.includes('unknown')
+            ? 'unknown'
+            : 'healthy';
+  return { state, checks, updatedAt: new Date().toISOString() };
+};
 export const prometheusRegister = new client.Registry();
 client.collectDefaultMetrics({ register: prometheusRegister });
 export const httpRequestDuration = new client.Histogram({

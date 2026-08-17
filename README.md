@@ -1034,3 +1034,8 @@ Phase 26 adds the first governed Network Autopilot control loop in `@irp/resilie
 The executable loop follows `OBSERVE -> MEASURE -> DETECT -> DIAGNOSE -> DECIDE -> POLICY_CHECK -> PLAN -> APPLY -> VERIFY`, with rollback and recovery when verification fails. Actions are typed and must be registered in the action catalog; no arbitrary command execution interface exists.
 
 API routes are exposed under `/api/v1/autopilot/*` for status, runs, actions, policies, health, approvals, rollbacks, and circuit-breaker reset. CLI inspection commands are available under `irp autopilot`.
+
+
+## Phase 27 production readiness
+
+Phase 27 preserves the current pnpm workspace architecture while hardening production runtime behavior. The production Docker image runs the API as the non-root `irp` user, prepares pnpm during image build, uses explicit owned writable paths for Corepack/pnpm cache compatibility, waits for PostgreSQL readiness before migrations, and exposes readiness/liveness/metrics endpoints for compose health checks. See [docs/phases/phase-27.md](docs/phases/phase-27.md) for the audit, compatibility notes, Docker smoke coverage, and future cleanup candidates.

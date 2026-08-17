@@ -15,6 +15,8 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.50
   api:
     build:
       context: .
@@ -23,6 +25,9 @@ services:
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:-change-me-only-for-local-compose-32}
       DATABASE_URL: postgresql://irp:irp_dev_password@postgres:5432/irp
+      DATABASE_READY_TIMEOUT_MS: 60000
+      DATABASE_READY_INTERVAL_MS: 1000
+      COREPACK_HOME: /app/.cache/node/corepack
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,5 +40,7 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.00
 volumes:
   postgres-data:
