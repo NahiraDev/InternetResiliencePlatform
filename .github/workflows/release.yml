@@ -12,10 +12,6 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NODE_VERSION: "24"
-  PNPM_VERSION: "9.15.0"
-
 jobs:
   release:
     name: Create GitHub release
@@ -31,13 +27,13 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: ${{ env.PNPM_VERSION }}
+          version: 9.15.0
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -71,9 +67,13 @@ jobs:
 
           node --input-type=module <<'NODE'
           const checks = JSON.parse(process.env.CHECKS_JSON);
-          const ciRuns = checks.check_runs.filter((run) => run.name === 'Validate repository');
-          if (!ciRuns.some((run) => run.conclusion === 'success')) {
-            console.error('The CI quality gate has not succeeded for this release commit.');
+          const required = ['Validate repository'];
+          const failed = required.filter((name) => {
+            const matches = checks.check_runs.filter((run) => run.name === name);
+            return matches.length === 0 || !matches.some((run) => run.conclusion === 'success');
+          });
+          if (failed.length) {
+            console.error(`Required checks missing or unsuccessful: ${failed.join(', ')}`);
             process.exit(1);
           }
           NODE
