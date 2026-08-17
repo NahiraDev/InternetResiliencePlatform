@@ -16,7 +16,7 @@ jobs:
   release:
     name: Create GitHub release
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -52,31 +52,54 @@ jobs:
           [[ "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$(git rev-parse "${TAG}^{commit}")" = "${GITHUB_SHA}"
 
-      - name: Verify CI quality gate
+      - name: Wait for CI quality gate
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          CHECKS_JSON="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
-          export CHECKS_JSON
 
-          node --input-type=module <<'NODE'
-          const checks = JSON.parse(process.env.CHECKS_JSON);
-          const required = ['Validate repository'];
-          const failed = required.filter((name) => {
-            const matches = checks.check_runs.filter((run) => run.name === name);
-            return matches.length === 0 || !matches.some((run) => run.conclusion === 'success');
-          });
-          if (failed.length) {
-            console.error(`Required checks missing or unsuccessful: ${failed.join(', ')}`);
-            process.exit(1);
-          }
-          NODE
+          for attempt in $(seq 1 40); do
+            CHECKS_JSON="$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
+            export CHECKS_JSON
+
+            RESULT="$(node --input-type=module <<'NODE'
+            const checks = JSON.parse(process.env.CHECKS_JSON);
+            const matches = checks.check_runs.filter((run) => run.name === 'Validate repository');
+            if (matches.some((run) => run.conclusion === 'success')) {
+              process.stdout.write('success');
+              process.exit(0);
+            }
+            if (matches.some((run) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(run.conclusion))) {
+              process.stdout.write('failure');
+              process.exit(0);
+            }
+            process.stdout.write('pending');
+            NODE
+            )"
+
+            case "${RESULT}" in
+              success)
+                echo 'CI quality gate succeeded.'
+                exit 0
+                ;;
+              failure)
+                echo 'CI quality gate failed or was cancelled.'
+                exit 1
+                ;;
+              pending)
+                echo "CI quality gate is still pending (attempt ${attempt}/40)."
+                sleep 15
+                ;;
+            esac
+          done
+
+          echo 'Timed out waiting for CI quality gate.'
+          exit 1
 
       - name: Create GitHub release
         env:
