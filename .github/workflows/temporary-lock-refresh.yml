@@ -1,9 +1,10 @@
 name: Temporary lockfile refresh
 
 on:
-  push:
-    branches:
-      - fix/security-electron-extract-zip
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 permissions:
   contents: write
@@ -14,14 +15,17 @@ concurrency:
 
 jobs:
   refresh:
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore(ci): refresh Electron lockfile') }}"
+    if: >-
+      github.event.pull_request.head.ref == 'fix/security-electron-extract-zip' &&
+      !startsWith(github.event.pull_request.head.label, 'NahiraDev:chore(ci): refresh Electron lockfile')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Checkout branch
+      - name: Checkout PR branch
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           persist-credentials: true
 
