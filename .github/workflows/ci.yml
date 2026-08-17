@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - phase-0-bootstrap
   pull_request:
   workflow_dispatch:
 
@@ -29,16 +28,8 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # ============================================================
-      # Source
-      # ============================================================
-
       - name: Checkout
         uses: actions/checkout@v4
-
-      # ============================================================
-      # Node.js / pnpm
-      # ============================================================
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -51,17 +42,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-
-      # ============================================================
-      # Dependencies
-      # ============================================================
-
+          
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # ============================================================
-      # Repository validation
-      # ============================================================
 
       - name: Validate repository integrity
         run: pnpm validate
@@ -100,16 +84,8 @@ jobs:
       - name: Validate Docker Compose
         run: docker compose config
 
-      # ============================================================
-      # Docker Buildx
-      # ============================================================
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # ============================================================
-      # GHCR login
-      # ============================================================
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -118,11 +94,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # ============================================================
-      # Docker image metadata
-      # ============================================================
-
+          
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -133,16 +105,6 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=tag
-
-      # ============================================================
-      # Build Docker image
-      #
-      # PR:
-      #   build only, no push
-      #
-      # Push to main / phase branch:
-      #   build + push to GHCR
-      # ============================================================
 
       - name: Build Docker image
         id: docker-build
@@ -156,19 +118,11 @@ jobs:
           provenance: false
           sbom: false
 
-      # ============================================================
-      # Docker image inspection for pull requests
-      # ============================================================
-
       - name: Inspect Docker image
         if: github.event_name == 'pull_request'
         run: |
           docker image inspect \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
-
-      # ============================================================
-      # Docker runtime smoke test for pull requests
-      # ============================================================
 
       - name: Start Docker smoke test container
         if: github.event_name == 'pull_request'
@@ -194,10 +148,6 @@ jobs:
 
           test "${STATUS}" = "running"
 
-      # ============================================================
-      # Verify non-root runtime
-      # ============================================================
-
       - name: Verify Docker container user
         if: github.event_name == 'pull_request'
         run: |
@@ -206,10 +156,6 @@ jobs:
           echo "Container UID: ${USER_ID}"
 
           test "${USER_ID}" != "0"
-
-      # ============================================================
-      # Verify runtime filesystem
-      # ============================================================
 
       - name: Verify runtime filesystem permissions
         if: github.event_name == 'pull_request'
@@ -242,10 +188,6 @@ jobs:
             fi
           '
 
-      # ============================================================
-      # Verify pnpm/Corepack runtime
-      # ============================================================
-
       - name: Verify pnpm runtime
         if: github.event_name == 'pull_request'
         run: |
@@ -265,19 +207,10 @@ jobs:
               exit 1
             fi
           '
-
-      # ============================================================
-      # Docker logs
-      # ============================================================
-
       - name: Show Docker logs
         if: always() && github.event_name == 'pull_request'
         run: |
           docker logs irp-ci-smoke || true
-
-      # ============================================================
-      # Stop Docker smoke test
-      # ============================================================
 
       - name: Stop Docker smoke test container
         if: always() && github.event_name == 'pull_request'
@@ -286,23 +219,12 @@ jobs:
             irp-ci-smoke \
             || true
 
-      # ============================================================
-      # Remove Docker smoke test container
-      # ============================================================
-
       - name: Remove Docker smoke test container
         if: always() && github.event_name == 'pull_request'
         run: |
           docker rm \
             irp-ci-smoke \
             || true
-
-      # ============================================================
-      # Build provenance attestation
-      #
-      # Only for images pushed to GHCR.
-      # The digest comes directly from build-push-action.
-      # ============================================================
 
       - name: Attest Build Provenance
         if: github.event_name != 'pull_request'
@@ -311,10 +233,6 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.docker-build.outputs.digest }}
           push-to-registry: true
-
-      # ============================================================
-      # Docker cleanup
-      # ============================================================
 
       - name: Remove Docker image
         if: always() && github.event_name == 'pull_request'
