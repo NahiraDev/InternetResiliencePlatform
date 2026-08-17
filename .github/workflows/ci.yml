@@ -4,22 +4,19 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*.*.*'
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
-  id-token: write
-  attestations: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
   NODE_VERSION: "24"
   PNPM_VERSION: "9.15.0"
 
@@ -44,6 +41,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Show runtime versions
         run: |
@@ -79,83 +77,42 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=ref,event=tag
-
-      - name: Resolve Docker image tag
+      - name: Build Docker image for PR smoke test
         if: github.event_name == 'pull_request'
-        id: image
-        shell: bash
-        run: |
-          set -euo pipefail
-          IMAGE_TAG="$(printf '%s\n' '${{ steps.meta.outputs.tags }}' | grep -E '/[^:]+:sha-[[:xdigit:]]+$' | head -n1)"
-          test -n "${IMAGE_TAG}"
-          echo "tag=${IMAGE_TAG}" >> "${GITHUB_OUTPUT}"
-          echo "Using Docker image tag: ${IMAGE_TAG}"
-
-      - name: Build Docker image
-        id: docker-build
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          load: ${{ github.event_name == 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          tags: irp-ci-smoke:pr
           provenance: false
           sbom: false
 
-      - name: Verify Docker image
-        if: github.event_name == 'pull_request'
-        env:
-          IMAGE_TAG: ${{ steps.image.outputs.tag }}
-        run: |
-          set -euo pipefail
-          docker image inspect "${IMAGE_TAG}"
-
       - name: Start Docker smoke test container
         if: github.event_name == 'pull_request'
-        env:
-          IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
           set -euo pipefail
-          docker run \
-            --detach \
-            --name irp-ci-smoke \
-            "${IMAGE_TAG}"
+          docker run --detach --name irp-ci-smoke irp-ci-smoke:pr
 
       - name: Wait for Docker container startup
         if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
-          timeout 30 bash -c '
-            until [ "$(docker inspect --format="{{.State.Status}}" irp-ci-smoke 2>/dev/null || true)" = "running" ]; do
-              sleep 1
-            done
-          '
+          for _ in $(seq 1 60); do
+            STATUS="$(docker inspect --format='{{.State.Status}}' irp-ci-smoke 2>/dev/null || true)"
+            case "${STATUS}" in
+              running) exit 0 ;;
+              exited|dead) docker logs irp-ci-smoke || true; exit 1 ;;
+            esac
+            sleep 1
+          done
+          docker logs irp-ci-smoke || true
+          exit 1
 
       - name: Verify Docker container
         if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
           STATUS="$(docker inspect --format='{{.State.Status}}' irp-ci-smoke)"
-          echo "Container status: ${STATUS}"
           test "${STATUS}" = "running"
 
       - name: Verify Docker container is non-root
@@ -163,7 +120,6 @@ jobs:
         run: |
           set -euo pipefail
           USER_ID="$(docker exec irp-ci-smoke id -u)"
-          echo "Container UID: ${USER_ID}"
           test "${USER_ID}" != "0"
 
       - name: Verify runtime filesystem permissions
@@ -172,12 +128,6 @@ jobs:
           set -euo pipefail
           docker exec irp-ci-smoke sh -c '
             set -eu
-            echo "Runtime identity:"
-            id
-            echo "Working directory:"
-            pwd
-            ls -ld .
-            echo "Application cache hierarchy:"
             for path in \
               /app/.cache \
               /app/.cache/node \
@@ -186,8 +136,6 @@ jobs:
             do
               if [ -e "${path}" ]; then
                 ls -ld "${path}"
-              else
-                echo "${path}: not present"
               fi
             done
             CACHE_DIR="/app/.cache/node/corepack/v1"
@@ -195,65 +143,19 @@ jobs:
               TEST_FILE="${CACHE_DIR}/.irp-ci-write-test"
               touch "${TEST_FILE}"
               rm -f "${TEST_FILE}"
-              echo "Corepack cache is writable."
             fi
           '
 
-      - name: Verify pnpm and Corepack runtime
+      - name: Verify pnpm runtime
         if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
-          docker exec irp-ci-smoke sh -c '
-            set -eu
-            if command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm executable:"
-              command -v pnpm
-              echo "pnpm version:"
-              pnpm --version
-            else
-              echo "pnpm is not available in runtime."
-              exit 1
-            fi
-            if command -v corepack >/dev/null 2>&1; then
-              echo "Corepack executable:"
-              command -v corepack
-              echo "Corepack version:"
-              corepack --version
-            fi
-          '
-
-      - name: Show Docker container state
-        if: always() && github.event_name == 'pull_request'
-        run: |
-          docker inspect irp-ci-smoke || true
+          docker exec irp-ci-smoke sh -c 'pnpm --version'
 
       - name: Show Docker logs
         if: always() && github.event_name == 'pull_request'
-        run: |
-          docker logs irp-ci-smoke || true
-
-      - name: Stop Docker smoke test container
-        if: always() && github.event_name == 'pull_request'
-        run: |
-          docker stop irp-ci-smoke || true
+        run: docker logs irp-ci-smoke || true
 
       - name: Remove Docker smoke test container
         if: always() && github.event_name == 'pull_request'
-        run: |
-          docker rm irp-ci-smoke || true
-
-      - name: Remove Docker image
-        if: always() && github.event_name == 'pull_request'
-        env:
-          IMAGE_TAG: ${{ steps.image.outputs.tag }}
-        run: |
-          docker image rm "${IMAGE_TAG}" || true
-
-      - name: Attest Build Provenance
-        if: github.event_name != 'pull_request' && steps.docker-build.outputs.digest != ''
-        uses: actions/attest-build-provenance@v4.2.2
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.docker-build.outputs.digest }}
-          push-to-registry: true
-          create-storage-record: false
+        run: docker rm -f irp-ci-smoke || true
