@@ -36,7 +36,12 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
-import { ResilienceRuntime, runtimeEnvelope } from '@irp/resilience-runtime';
+import {
+  ResilienceRuntime,
+  NetworkAutopilot,
+  createAutopilotPolicy,
+  runtimeEnvelope,
+} from '@irp/resilience-runtime';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -191,6 +196,10 @@ const permissions = [
   'runtime.execute',
   'runtime.recover',
   'runtime.admin',
+  'autopilot.read',
+  'autopilot.execute',
+  'autopilot.approve',
+  'autopilot.admin',
 ];
 const requireAuth = async (request: FastifyRequest): Promise<Principal> => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
@@ -407,6 +416,18 @@ export const buildServer = async (): Promise<FastifyInstance> => {
         explanation:
           'Live backend status is derived from safe network probes; host enforcement remains observe-only.',
       },
+      autopilot: {
+        source: 'LIVE',
+        enabled: false,
+        mode: 'OBSERVE_ONLY',
+        circuitBreaker: 'CLOSED',
+        activeIncidents: snapshot.issues.length ? 1 : 0,
+        pendingApprovals: snapshot.issues.length ? 1 : 0,
+        activeActions: 0,
+        verificationState: 'UNKNOWN',
+        rollbackState: 'NOT_REQUIRED',
+        recentOutcomes: snapshot.issues.length ? ['ADVISORY'] : ['NOOP'],
+      },
       decision: {
         source: 'LIVE',
         recommendation:
@@ -461,6 +482,95 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   const resilienceRuntime = new ResilienceRuntime();
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
+
+  const autopilot = new NetworkAutopilot(
+    [],
+    createAutopilotPolicy({
+      enabled: process.env.AUTOPILOT_ENABLED === 'true',
+      mode:
+        (process.env.AUTOPILOT_MODE as
+          ReturnType<typeof createAutopilotPolicy>['mode'] | undefined) ?? 'OBSERVE_ONLY',
+    }),
+  );
+  app.get('/api/v1/autopilot/status', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, autopilot.status());
+  });
+  app.get('/api/v1/autopilot/runs', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, autopilot.listRuns());
+  });
+  app.get('/api/v1/autopilot/runs/:id', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    const params = z.object({ id: z.string().min(1) }).parse(request.params);
+    const run = autopilot.getRun(params.id);
+    if (!run) throw new NotFoundAppError('autopilot run');
+    return runtimeResponse(request, run);
+  });
+  app.post('/api/v1/autopilot/runs', async (request) => {
+    await requirePermission(request, 'autopilot.execute');
+    const body = z
+      .object({
+        dryRun: z.boolean().default(false),
+        shadow: z.boolean().default(false),
+        forceVerificationFailure: z.boolean().default(false),
+      })
+      .parse(request.body ?? {});
+    return runtimeResponse(request, await autopilot.run(body));
+  });
+  app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
+    await requirePermission(request, 'autopilot.admin');
+    return runtimeResponse(request, {
+      id: z.object({ id: z.string() }).parse(request.params).id,
+      status: 'cancel-requested',
+    });
+  });
+  app.post('/api/v1/autopilot/actions/:id/approve', async (request) => {
+    await requirePermission(request, 'autopilot.approve');
+    return runtimeResponse(request, {
+      actionId: z.object({ id: z.string() }).parse(request.params).id,
+      status: 'approved',
+    });
+  });
+  app.post('/api/v1/autopilot/actions/:id/reject', async (request) => {
+    await requirePermission(request, 'autopilot.approve');
+    return runtimeResponse(request, {
+      actionId: z.object({ id: z.string() }).parse(request.params).id,
+      status: 'rejected',
+    });
+  });
+  app.post('/api/v1/autopilot/actions/:id/rollback', async (request) => {
+    await requirePermission(request, 'autopilot.admin');
+    return runtimeResponse(request, {
+      actionId: z.object({ id: z.string() }).parse(request.params).id,
+      status: 'rollback-requested',
+    });
+  });
+  app.get('/api/v1/autopilot/policies', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, autopilot.policies());
+  });
+  app.get('/api/v1/autopilot/actions', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, autopilot.actions());
+  });
+  app.get('/api/v1/autopilot/health', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, {
+      status: autopilot.status().circuitBreaker === 'OPEN' ? 'degraded' : 'healthy',
+      autopilot: autopilot.status(),
+    });
+  });
+  app.get('/api/v1/autopilot/circuit-breaker', async (request) => {
+    await requirePermission(request, 'autopilot.read');
+    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+  });
+  app.post('/api/v1/autopilot/circuit-breaker/reset', async (request) => {
+    await requirePermission(request, 'autopilot.admin');
+    autopilot.resetCircuitBreaker();
+    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+  });
+
   app.get('/api/v1/runtime/status', async (request) => {
     await requirePermission(request, 'runtime.read');
     const snapshot = await resilienceRuntime.getRuntimeSnapshot();

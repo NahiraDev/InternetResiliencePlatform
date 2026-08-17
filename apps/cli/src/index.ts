@@ -5,7 +5,7 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import { ResilienceRuntime } from '@irp/resilience-runtime';
+import { NetworkAutopilot, ResilienceRuntime } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -128,6 +128,54 @@ export const createProgram = (): Command => {
       const record = await rt.cycle({ mode: opts.safe ? 'safe' : 'simulation' });
       printJson(record);
     });
+
+  const autopilot = program.command('autopilot').description('Network Autopilot commands');
+  const autopilotInstance = () => new NetworkAutopilot();
+  autopilot
+    .command('status')
+    .description('Show autopilot status')
+    .action(() => printJson(autopilotInstance().status()));
+  autopilot
+    .command('runs')
+    .description('List autopilot runs')
+    .action(() => printJson(autopilotInstance().listRuns()));
+  autopilot
+    .command('run <id>')
+    .description('Show autopilot run by id')
+    .action((id: string) =>
+      printJson(autopilotInstance().getRun(id) ?? { error: 'not found', id }),
+    );
+  autopilot
+    .command('actions')
+    .description('List governed autopilot action catalog')
+    .action(() => printJson(autopilotInstance().actions()));
+  autopilot
+    .command('policy')
+    .description('Show autopilot policy')
+    .action(() => printJson(autopilotInstance().policies()));
+  autopilot
+    .command('approve <action>')
+    .description('Approve pending autopilot action through API workflow')
+    .action((action: string) =>
+      printJson({ action, status: 'approval must be submitted to authenticated API' }),
+    );
+  autopilot
+    .command('reject <action>')
+    .description('Reject pending autopilot action through API workflow')
+    .action((action: string) =>
+      printJson({ action, status: 'rejection must be submitted to authenticated API' }),
+    );
+  autopilot
+    .command('rollback <action>')
+    .description('Request governed rollback through API workflow')
+    .action((action: string) =>
+      printJson({ action, status: 'rollback must be submitted to authenticated API' }),
+    );
+  autopilot
+    .command('circuit-breaker')
+    .description('Show autopilot circuit breaker')
+    .action(() => printJson({ state: autopilotInstance().status().circuitBreaker }));
+
   program
     .command('doctor')
     .option('--full', 'run full diagnostics')

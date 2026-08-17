@@ -10,7 +10,8 @@ export type DesktopEventName =
   | 'security.state.changed'
   | 'security.violation.detected'
   | 'decision.completed'
-  | 'notification.created';
+  | 'notification.created'
+  | 'autopilot.changed';
 export interface IpcError {
   code: string;
   message: string;
@@ -72,6 +73,18 @@ export interface DecisionResponse {
   securityValidation: string;
   decisionAgeSeconds: number;
 }
+export interface AutopilotStatusResponse {
+  source: DataSource;
+  enabled: boolean;
+  mode: string;
+  circuitBreaker: string;
+  activeIncidents: number;
+  pendingApprovals: number;
+  activeActions: number;
+  verificationState: string;
+  rollbackState: string;
+  recentOutcomes: string[];
+}
 export interface SystemInfoResponse {
   source: DataSource;
   appVersion: string;
@@ -123,6 +136,7 @@ export const channels = {
   tunnelGetStatus: 'tunnel:getStatus',
   dnsGetStatus: 'dns:getStatus',
   aiGetDecision: 'ai:getDecision',
+  autopilotGetStatus: 'autopilot:getStatus',
   systemGetInfo: 'system:getInfo',
   settingsGet: 'settings:get',
   diagnosticsExport: 'diagnostics:export',
@@ -136,6 +150,7 @@ const emptyChannels = new Set<Channel>([
   channels.tunnelGetStatus,
   channels.dnsGetStatus,
   channels.aiGetDecision,
+  channels.autopilotGetStatus,
   channels.systemGetInfo,
   channels.settingsGet,
   channels.diagnosticsExport,
