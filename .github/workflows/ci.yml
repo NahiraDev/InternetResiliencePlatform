@@ -20,34 +20,63 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: "24"
+  PNPM_VERSION: "9.15.0"
 
 jobs:
   validate:
     name: Validate repository
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # ------------------------------------------------------------
+      # Source
+      # ------------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # ------------------------------------------------------------
+      # Runtime
+      # ------------------------------------------------------------
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
-          version: 9.15.0
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+
+      - name: Show runtime versions
+        run: |
+          node --version
+          pnpm --version
+          docker --version
+          docker compose version
+
+      # ------------------------------------------------------------
+      # Dependencies
+      # ------------------------------------------------------------
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ------------------------------------------------------------
+      # Repository integrity
+      # ------------------------------------------------------------
+
       - name: Validate repository integrity
         run: pnpm validate
+
+      # ------------------------------------------------------------
+      # Static analysis
+      # ------------------------------------------------------------
 
       - name: Lint
         run: pnpm lint
@@ -55,32 +84,56 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # ------------------------------------------------------------
+      # Tests
+      # ------------------------------------------------------------
+
       - name: Test
         run: pnpm test
 
       - name: Fresh coverage
         run: pnpm exec turbo run test --force -- --coverage
 
+      # ------------------------------------------------------------
+      # Application build
+      # ------------------------------------------------------------
+
       - name: Build
         run: pnpm build
+
+      # ------------------------------------------------------------
+      # Docker configuration validation
+      # ------------------------------------------------------------
 
       - name: Validate Docker Compose
         run: docker compose config
 
+      # ------------------------------------------------------------
+      # Docker Buildx
+      # ------------------------------------------------------------
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
+
+      # ------------------------------------------------------------
+      # GHCR authentication
+      # ------------------------------------------------------------
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ------------------------------------------------------------
+      # Docker image metadata
+      # ------------------------------------------------------------
+
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -89,9 +142,19 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
+      # ------------------------------------------------------------
+      # Docker build
+      #
+      # Pull requests:
+      #   build locally and load into Docker
+      #
+      # main:
+      #   build and push to GHCR
+      # ------------------------------------------------------------
+
       - name: Build Docker image
         id: docker-build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -101,16 +164,29 @@ jobs:
           provenance: false
           sbom: false
 
+      # ------------------------------------------------------------
+      # Docker image verification
+      # ------------------------------------------------------------
+
       - name: Verify Docker image
         if: github.event_name == 'pull_request'
+        env:
+          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
         run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          set -euo pipefail
+
           docker image inspect "${IMAGE_TAG}"
+
+      # ------------------------------------------------------------
+      # Docker runtime smoke test
+      # ------------------------------------------------------------
 
       - name: Start Docker smoke test container
         if: github.event_name == 'pull_request'
+        env:
+          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
         run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
+          set -euo pipefail
 
           docker run \
             --detach \
@@ -120,11 +196,19 @@ jobs:
       - name: Wait for Docker container startup
         if: github.event_name == 'pull_request'
         run: |
-          sleep 5
+          set -euo pipefail
+
+          timeout 30 bash -c '
+            until [ "$(docker inspect --format="{{.State.Status}}" irp-ci-smoke 2>/dev/null || true)" = "running" ]; do
+              sleep 1
+            done
+          '
 
       - name: Verify Docker container
         if: github.event_name == 'pull_request'
         run: |
+          set -euo pipefail
+
           STATUS="$(docker inspect \
             --format='{{.State.Status}}' \
             irp-ci-smoke)"
@@ -133,76 +217,144 @@ jobs:
 
           test "${STATUS}" = "running"
 
+      # ------------------------------------------------------------
+      # Non-root runtime verification
+      # ------------------------------------------------------------
+
       - name: Verify Docker container is non-root
         if: github.event_name == 'pull_request'
         run: |
+          set -euo pipefail
+
           USER_ID="$(docker exec irp-ci-smoke id -u)"
 
           echo "Container UID: ${USER_ID}"
 
           test "${USER_ID}" != "0"
 
+      # ------------------------------------------------------------
+      # Runtime filesystem verification
+      #
+      # Explicitly checks the Corepack cache path involved in the
+      # previous EACCES crash-loop.
+      # ------------------------------------------------------------
+
       - name: Verify runtime filesystem permissions
         if: github.event_name == 'pull_request'
         run: |
+          set -euo pipefail
+
           docker exec irp-ci-smoke sh -c '
             set -eu
 
-            echo "Current user:"
+            echo "========================================"
+            echo "Runtime identity"
+            echo "========================================"
             id
 
-            echo "Working directory:"
+            echo "========================================"
+            echo "Working directory"
+            echo "========================================"
             pwd
-
-            echo "Working directory permissions:"
             ls -ld .
 
-            if [ -d "/app/.cache" ]; then
-              echo "/app/.cache:"
-              ls -ld /app/.cache
-            fi
+            echo "========================================"
+            echo "Application cache hierarchy"
+            echo "========================================"
 
-            if [ -d "/app/.cache/node" ]; then
-              echo "/app/.cache/node:"
-              ls -ld /app/.cache/node
-            fi
+            for path in \
+              /app/.cache \
+              /app/.cache/node \
+              /app/.cache/node/corepack \
+              /app/.cache/node/corepack/v1
+            do
+              if [ -e "${path}" ]; then
+                echo "--- ${path}"
+                ls -ld "${path}"
+              else
+                echo "--- ${path}: not present"
+              fi
+            done
 
-            if [ -d "/app/.cache/node/corepack" ]; then
-              echo "/app/.cache/node/corepack:"
-              ls -ld /app/.cache/node/corepack
+            echo "========================================"
+            echo "Writable cache verification"
+            echo "========================================"
+
+            CACHE_DIR="/app/.cache/node/corepack/v1"
+
+            if [ -d "${CACHE_DIR}" ]; then
+              TEST_FILE="${CACHE_DIR}/.irp-ci-write-test"
+
+              touch "${TEST_FILE}"
+              rm -f "${TEST_FILE}"
+
+              echo "Corepack cache is writable."
+            else
+              echo "Corepack cache directory does not exist."
+              echo "This is acceptable only if the runtime does not"
+              echo "attempt to bootstrap Corepack into this location."
             fi
           '
 
-      - name: Verify pnpm or Corepack runtime
+      # ------------------------------------------------------------
+      # pnpm / Corepack runtime verification
+      # ------------------------------------------------------------
+
+      - name: Verify pnpm and Corepack runtime
         if: github.event_name == 'pull_request'
         run: |
+          set -euo pipefail
+
           docker exec irp-ci-smoke sh -c '
             set -eu
+
+            echo "========================================"
+            echo "pnpm"
+            echo "========================================"
 
             if command -v pnpm >/dev/null 2>&1; then
               echo "pnpm executable:"
               command -v pnpm
+
               echo "pnpm version:"
               pnpm --version
-              exit 0
+            else
+              echo "pnpm is not available in runtime."
+              exit 1
             fi
+
+            echo "========================================"
+            echo "Corepack"
+            echo "========================================"
 
             if command -v corepack >/dev/null 2>&1; then
               echo "Corepack executable:"
               command -v corepack
+
               echo "Corepack version:"
               corepack --version
-              exit 0
+            else
+              echo "Corepack executable is not available."
             fi
-
-            echo "Neither pnpm nor Corepack is available in the runtime image."
-            exit 1
           '
+
+      # ------------------------------------------------------------
+      # Container diagnostics
+      # ------------------------------------------------------------
+
+      - name: Show Docker container state
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          docker inspect irp-ci-smoke || true
 
       - name: Show Docker logs
         if: always() && github.event_name == 'pull_request'
         run: |
           docker logs irp-ci-smoke || true
+
+      # ------------------------------------------------------------
+      # Cleanup
+      # ------------------------------------------------------------
 
       - name: Stop Docker smoke test container
         if: always() && github.event_name == 'pull_request'
@@ -214,16 +366,24 @@ jobs:
         run: |
           docker rm irp-ci-smoke || true
 
+      - name: Remove Docker image
+        if: always() && github.event_name == 'pull_request'
+        env:
+          IMAGE_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+        run: |
+          docker image rm "${IMAGE_TAG}" || true
+
+      # ------------------------------------------------------------
+      # Build provenance
+      #
+      # Only pushed images are attested.
+      # The digest is taken directly from build-push-action.
+      # ------------------------------------------------------------
+
       - name: Attest Build Provenance
-        if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v4.2.2
+        if: github.event_name != 'pull_request' && steps.docker-build.outputs.digest != ''
+        uses: actions/attest-build-provenance@v4.1.0
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.docker-build.outputs.digest }}
           push-to-registry: true
-
-      - name: Remove Docker image
-        if: always() && github.event_name == 'pull_request'
-        run: |
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}"
-          docker image rm "${IMAGE_TAG}" || true
