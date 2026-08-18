@@ -6,7 +6,6 @@ on:
       - opened
       - edited
       - reopened
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,7 +13,7 @@ permissions:
   copilot-requests: write
 
 concurrency:
-  group: issue-triage-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
+  group: issue-triage-${{ github.repository }}-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 env:
@@ -27,8 +26,8 @@ jobs:
   triage:
     name: Automatic issue triage
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.issue.pull_request == null && github.event.sender.type != 'Bot')
+      github.event.issue.pull_request == null &&
+      github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -57,11 +56,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo 'workflow_dispatch does not provide an issue payload; exiting cleanly.'
-            exit 0
-          fi
-
           gh api \
             --method GET \
             -H 'Accept: application/vnd.github+json' \
@@ -70,35 +64,34 @@ jobs:
             > "${RUNNER_TEMP}/issue.json"
 
           node --input-type=module <<'NODE'
-import { readFileSync, writeFileSync } from 'node:fs';
+          import { readFileSync, writeFileSync } from 'node:fs';
 
-const issue = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/issue.json`, 'utf8'));
-const maxBodyChars = Number(process.env.MAX_ISSUE_BODY_CHARS);
-const body = typeof issue.body === 'string' ? issue.body : '';
-const truncatedBody = body.length > maxBodyChars
-  ? `${body.slice(0, maxBodyChars)}\n\n[Issue body truncated for AI processing.]`
-  : body;
+          const issue = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/issue.json`, 'utf8'));
+          const maxBodyChars = Number(process.env.MAX_ISSUE_BODY_CHARS);
+          const body = typeof issue.body === 'string' ? issue.body : '';
+          const truncatedBody = body.length > maxBodyChars
+            ? `${body.slice(0, maxBodyChars)}\n\n[Issue body truncated for AI processing.]`
+            : body;
 
-const payload = {
-  number: issue.number,
-  title: issue.title ?? '',
-  body: truncatedBody,
-  url: issue.html_url ?? '',
-};
+          const payload = {
+            number: issue.number,
+            title: issue.title ?? '',
+            body: truncatedBody,
+            url: issue.html_url ?? '',
+          };
 
-writeFileSync(
-  `${process.env.RUNNER_TEMP}/issue-prompt.txt`,
-  [
-    'Issue payload (untrusted user content):',
-    JSON.stringify(payload, null, 2),
-    '',
-  ].join('\n'),
-  'utf8',
-);
-NODE
+          writeFileSync(
+            `${process.env.RUNNER_TEMP}/issue-prompt.txt`,
+            [
+              'Issue payload (untrusted user content):',
+              JSON.stringify(payload, null, 2),
+              '',
+            ].join('\n'),
+            'utf8',
+          );
+          NODE
 
       - name: Automatic labels
-        if: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -141,7 +134,6 @@ NODE
 
       - name: Run AI inference
         id: inference
-        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: actions/ai-inference@v3
         with:
           model: gpt-4.1
@@ -166,7 +158,6 @@ NODE
           prompt-file: ${{ runner.temp }}/issue-prompt.txt
 
       - name: Prepare summary comment
-        if: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           RESPONSE_FILE: ${{ steps.inference.outputs.response-file }}
         shell: bash
@@ -183,18 +174,17 @@ NODE
           } > "${RUNNER_TEMP}/summary-comment.md"
 
           node --input-type=module <<'NODE'
-import { readFileSync, writeFileSync } from 'node:fs';
+          import { readFileSync, writeFileSync } from 'node:fs';
 
-const body = readFileSync(`${process.env.RUNNER_TEMP}/summary-comment.md`, 'utf8');
-writeFileSync(
-  `${process.env.RUNNER_TEMP}/summary-comment.json`,
-  JSON.stringify({ body }),
-  'utf8',
-);
-NODE
+          const body = readFileSync(`${process.env.RUNNER_TEMP}/summary-comment.md`, 'utf8');
+          writeFileSync(
+            `${process.env.RUNNER_TEMP}/summary-comment.json`,
+            JSON.stringify({ body }),
+            'utf8',
+          );
+          NODE
 
       - name: Create or update summary comment
-        if: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
