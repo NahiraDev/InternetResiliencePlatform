@@ -47,4 +47,4 @@ USER irp
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node scripts/healthcheck.mjs http://127.0.0.1:8080/api/v1/ready
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "node scripts/wait-for-database.mjs && pnpm --filter @irp/database prisma:migrate:deploy && node apps/api/dist/index.js"]
+CMD ["node", "scripts/runtime-entrypoint.mjs"]
