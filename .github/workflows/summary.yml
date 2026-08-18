@@ -147,6 +147,9 @@ jobs:
         continue-on-error: true
         if: steps.copilot_cli.outcome == 'success'
         uses: actions/ai-inference@v3
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           model: gpt-4.1
           token: ${{ github.token }}
