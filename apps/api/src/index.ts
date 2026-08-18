@@ -452,7 +452,22 @@ export const buildServer = async (): Promise<FastifyInstance> => {
       observability: { source: 'LIVE', metrics: 'available', health: snapshot.status },
     };
   };
-  app.get('/api/v1/platform/status', async () => ok(await summarizePlatformStatus()));
+  app.get('/api/v1/platform/status', async () => {
+    const status = await summarizePlatformStatus();
+    let database: 'healthy' | 'degraded' = 'healthy';
+    try {
+      await checkDatabaseHealth(db);
+    } catch {
+      database = 'degraded';
+    }
+    return ok({
+      ...status,
+      dependencies: {
+        database,
+        queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
+      },
+    });
+  });
 
   app.get('/api/v1/platform/metrics/stream', async (_request, reply) => {
     const snapshot = await getNetworkSnapshot();

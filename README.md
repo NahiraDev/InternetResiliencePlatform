@@ -1035,7 +1035,12 @@ The executable loop follows `OBSERVE -> MEASURE -> DETECT -> DIAGNOSE -> DECIDE 
 
 API routes are exposed under `/api/v1/autopilot/*` for status, runs, actions, policies, health, approvals, rollbacks, and circuit-breaker reset. CLI inspection commands are available under `irp autopilot`.
 
-
 ## Phase 27 production readiness
 
 Phase 27 preserves the current pnpm workspace architecture while hardening production runtime behavior. The production Docker image runs the API as the non-root `irp` user, prepares pnpm during image build, uses explicit owned writable paths for Corepack/pnpm cache compatibility, waits for PostgreSQL readiness before migrations, and exposes readiness/liveness/metrics endpoints for compose health checks. See [docs/phases/phase-27.md](docs/phases/phase-27.md) for the audit, compatibility notes, Docker smoke coverage, and future cleanup candidates.
+
+## Phase 28 production runtime verification
+
+Phase 28 adds a production runtime entrypoint and compose smoke verification for the full lifecycle: clean build, PostgreSQL readiness, production-safe Prisma migration deploy, API readiness, endpoint checks, non-root permission checks, API restart, PostgreSQL restart recovery, full-stack restart, and graceful shutdown. The API container remains non-root and the compose runtime uses a read-only root filesystem with explicit tmpfs mounts for `/tmp`, `/app/tmp`, `/app/.cache/node/corepack/v1`, and `/app/.local/share/pnpm`.
+
+Use `bash scripts/docker-smoke.sh` after the standard pnpm validation pipeline to verify the production-like Docker runtime. See [docs/phases/phase-28.md](docs/phases/phase-28.md) for required environment variables, health endpoint semantics, migration behavior, writable paths, and troubleshooting.

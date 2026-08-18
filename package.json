@@ -18,9 +18,9 @@
     "validate": "node scripts/validate-repository.mjs",
     "phase19-demo": "node examples/phase-19/phase19-demo.mjs",
     "clean": "node scripts/clean.mjs",
-    "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts"
+    "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
+    "docker:smoke": "bash scripts/docker-smoke.sh"
   },
-
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
