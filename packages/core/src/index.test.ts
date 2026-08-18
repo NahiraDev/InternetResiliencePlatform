@@ -6,7 +6,7 @@ const config: AppConfig = {
   app: { name: 'test', version: '1.0.0', environment: 'test' },
   api: { host: '127.0.0.1', port: 8080 },
   logger: { level: 'info', json: true, color: false },
-  telemetry: { enabled: true, prometheus: true },
+  telemetry: { enabled: true, prometheus: true, serviceName: 'irp-test', sampleRatio: 0.1 },
   providers: {},
   benchmark: { intervalMs: 60_000, question: { name: 'example.com', recordType: 'A' } },
   dns: {

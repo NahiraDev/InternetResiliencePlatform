@@ -2,14 +2,22 @@ import pino, { type Logger as PinoLogger } from 'pino';
 import { appendFileSync, mkdirSync, renameSync, statSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
 export interface LogRecord {
   timestamp: string;
   level: LogLevel;
   message: string;
-  traceId?: string;
+  service?: string;
+  environment?: string;
   requestId?: string;
+  traceId?: string;
+  spanId?: string;
+  component?: string;
+  operation?: string;
+  duration?: number;
+  status?: string | number;
+  error?: { type: string; message: string; code?: string; category?: string; stack?: string };
   context?: Record<string, unknown>;
 }
 
@@ -32,6 +40,49 @@ const colors: Record<LogLevel, string> = {
   info: '\u001B[32m',
   warn: '\u001B[33m',
   error: '\u001B[31m',
+  fatal: '\u001B[35m',
+};
+
+const sensitiveKey =
+  /(password|secret|token|authorization|cookie|api[-_]?key|database_url|jwt|session)/i;
+const redact = (value: unknown): unknown => {
+  if (value instanceof Error) {
+    return {
+      type: value.name,
+      message: value.message,
+      ...(value.stack ? { stack: value.stack } : {}),
+    };
+  }
+  if (Array.isArray(value)) return value.map(redact);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+        key,
+        sensitiveKey.test(key) ? '[REDACTED]' : redact(item),
+      ]),
+    );
+  }
+  return value;
+};
+const normalizeError = (value: unknown): LogRecord['error'] | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Error)
+    return {
+      type: value.name,
+      message: value.message,
+      ...(value.stack ? { stack: value.stack } : {}),
+    };
+  if (typeof value === 'object') {
+    const record = redact(value) as Record<string, unknown>;
+    return {
+      type: String(record.type ?? record.name ?? 'Error'),
+      message: String(record.message ?? 'unknown error'),
+      ...(typeof record.code === 'string' ? { code: record.code } : {}),
+      ...(typeof record.category === 'string' ? { category: record.category } : {}),
+      ...(typeof record.stack === 'string' ? { stack: record.stack } : {}),
+    };
+  }
+  return { type: 'Error', message: String(value) };
 };
 
 class PinoTransport implements Transport {
@@ -79,7 +130,13 @@ class FileTransport implements Transport {
 }
 
 export class Logger {
-  private readonly rank: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
+  private readonly rank: Record<LogLevel, number> = {
+    debug: 10,
+    info: 20,
+    warn: 30,
+    error: 40,
+    fatal: 50,
+  };
 
   constructor(
     private readonly transports: Transport[] = [new ConsoleTransport()],
@@ -90,13 +147,24 @@ export class Logger {
   private log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
     if (this.rank[level] < this.rank[this.minLevel]) return;
 
-    const merged = { ...this.baseContext, ...context };
+    const merged = redact({ ...this.baseContext, ...context }) as Record<string, unknown>;
+    const error = normalizeError(merged.error);
     const record: LogRecord = {
       timestamp: new Date().toISOString(),
       level,
       message,
-      ...(typeof merged.traceId === 'string' ? { traceId: merged.traceId } : {}),
+      ...(typeof merged.service === 'string' ? { service: merged.service } : {}),
+      ...(typeof merged.environment === 'string' ? { environment: merged.environment } : {}),
       ...(typeof merged.requestId === 'string' ? { requestId: merged.requestId } : {}),
+      ...(typeof merged.traceId === 'string' ? { traceId: merged.traceId } : {}),
+      ...(typeof merged.spanId === 'string' ? { spanId: merged.spanId } : {}),
+      ...(typeof merged.component === 'string' ? { component: merged.component } : {}),
+      ...(typeof merged.operation === 'string' ? { operation: merged.operation } : {}),
+      ...(typeof merged.duration === 'number' ? { duration: merged.duration } : {}),
+      ...(typeof merged.status === 'string' || typeof merged.status === 'number'
+        ? { status: merged.status }
+        : {}),
+      ...(error ? { error } : {}),
       ...(Object.keys(merged).length ? { context: merged } : {}),
     };
 
@@ -119,6 +187,10 @@ export class Logger {
     this.log('error', m, c);
   }
 
+  fatal(m: string, c?: Record<string, unknown>): void {
+    this.log('fatal', m, c);
+  }
+
   child(context: Record<string, unknown>): Logger {
     return new Logger(this.transports, this.minLevel, { ...this.baseContext, ...context });
   }
@@ -134,7 +206,7 @@ export const createLogger = (options: LoggerOptions | LogLevel = {}): Logger => 
       base: { service: normalized.service ?? 'internet-resilience-platform' },
       transport: { target: 'pino-pretty', options: { colorize: true, singleLine: true } },
     });
-    return new Logger([new PinoTransport(instance)], level);
+    return new Logger([new PinoTransport(instance)], level, { service: normalized.service });
   }
 
   const transports: Transport[] = [new ConsoleTransport(normalized)];
@@ -142,5 +214,5 @@ export const createLogger = (options: LoggerOptions | LogLevel = {}): Logger => 
     transports.push(new FileTransport(normalized.file, normalized.rotation));
   }
 
-  return new Logger(transports, level);
+  return new Logger(transports, level, { service: normalized.service });
 };

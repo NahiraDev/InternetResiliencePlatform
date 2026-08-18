@@ -105,3 +105,48 @@ describe('phase 21.3 stabilization API', () => {
     await app.close();
   }, 15000);
 });
+
+describe('phase 29 observability API', () => {
+  it('propagates request ids and records bounded HTTP metrics', async () => {
+    const app = await buildServer();
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/health?token=secret',
+      headers: { 'x-request-id': 'phase29-request' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['x-request-id']).toBe('phase29-request');
+    const metrics = await app.inject({ method: 'GET', url: '/api/v1/metrics' });
+    expect(metrics.statusCode).toBe(200);
+    expect(metrics.headers['content-type']).toContain('text/plain');
+    expect(metrics.body).toContain('irp_http_requests_total');
+    expect(metrics.body).toContain('route="/api/v1/health"');
+    expect(metrics.body).not.toContain('token=secret');
+    await app.close();
+  });
+
+  it('reports telemetry diagnostics on readiness', async () => {
+    const app = await buildServer();
+    const ready = await app.inject({ method: 'GET', url: '/api/v1/ready' });
+    expect(ready.statusCode).toBe(200);
+    const body = ready.json();
+    expect(body.data.diagnostics.service).toBe('irp-api');
+    expect(body.data.diagnostics.telemetry).toMatchObject({ tracerName: 'irp-api' });
+    expect(body.data.diagnostics).not.toHaveProperty('DATABASE_URL');
+    await app.close();
+  });
+
+  it('emits sanitized classified errors without leaking authorization secrets to clients', async () => {
+    const app = await buildServer();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers: { authorization: 'Bearer secret' },
+      payload: { email: 'not-an-email', password: 'secret' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.body).not.toContain('Bearer secret');
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+    await app.close();
+  });
+});
