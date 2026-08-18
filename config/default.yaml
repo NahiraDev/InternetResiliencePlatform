@@ -12,6 +12,8 @@ logger:
 telemetry:
   enabled: true
   prometheus: true
+  serviceName: irp-api
+  sampleRatio: 0.1
 benchmark:
   intervalMs: 60000
   question:

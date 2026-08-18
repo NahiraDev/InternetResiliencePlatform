@@ -18,7 +18,7 @@ export const ConfigSchema = z.object({
   }),
   api: z.object({ host: z.string(), port: z.coerce.number().int().min(1).max(65535) }),
   logger: z.object({
-    level: z.enum(['debug', 'info', 'warn', 'error']),
+    level: z.enum(['debug', 'info', 'warn', 'error', 'fatal']),
     file: z.string().optional(),
     json: z.boolean().default(true),
     color: z.boolean().default(false),
@@ -29,7 +29,13 @@ export const ConfigSchema = z.object({
       })
       .optional(),
   }),
-  telemetry: z.object({ enabled: z.boolean(), prometheus: z.boolean().default(true) }),
+  telemetry: z.object({
+    enabled: z.boolean(),
+    prometheus: z.boolean().default(true),
+    serviceName: z.string().min(1).default('irp-api'),
+    otlpEndpoint: z.string().url().optional(),
+    sampleRatio: z.coerce.number().min(0).max(1).default(0.1),
+  }),
   providers: z.record(z.string(), ProviderConfigSchema).default({}),
   benchmark: z
     .object({
@@ -132,6 +138,9 @@ export class ConfigLoader {
       logger: { level: env.LOG_LEVEL, file: env.LOG_FILE },
       telemetry: {
         enabled: env.TELEMETRY_ENABLED === undefined ? undefined : env.TELEMETRY_ENABLED === 'true',
+        serviceName: env.OTEL_SERVICE_NAME ?? env.TELEMETRY_SERVICE_NAME,
+        otlpEndpoint: env.OTEL_EXPORTER_OTLP_ENDPOINT,
+        sampleRatio: env.TELEMETRY_SAMPLE_RATIO,
       },
       dns: {
         strategy: env.DNS_STRATEGY,

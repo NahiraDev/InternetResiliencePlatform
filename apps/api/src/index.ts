@@ -16,13 +16,23 @@ import {
 } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import {
+  activeTraceContext,
+  bootstrapOpenTelemetry,
+  classifyError,
   createHealthStatus,
+  httpActiveRequests,
   httpRequestDuration,
+  httpRequestTotal,
   networkHealthScore,
   networkLatencyMs,
   probeFailureTotal,
   probeSuccessTotal,
+  observeDependency,
+  prometheusContentType,
   renderPrometheusMetrics,
+  runWithSpan,
+  statusClass,
+  traceContextFromHeaders,
 } from '@irp/telemetry';
 import { NetworkMonitoringService, type NetworkProbe } from '@irp/network';
 import {
@@ -223,11 +233,28 @@ declare module 'fastify' {
   interface FastifyRequest {
     jwtAuth: JwtAuthenticationProvider;
     rbac: RbacAuthorization;
+    observabilityContext: { requestId: string; traceId?: string; spanId?: string };
   }
 }
 export const buildServer = async (): Promise<FastifyInstance> => {
   const config = loadConfig();
-  const logger = createLogger({ level: config.logger.level, pretty: false, service: 'irp-api' });
+  const serviceName = config.telemetry.serviceName;
+  const telemetryState = bootstrapOpenTelemetry({
+    enabled: config.telemetry.enabled,
+    serviceName,
+    serviceVersion: config.app.version,
+    environment: config.app.environment,
+    ...(config.telemetry.otlpEndpoint ? { otlpEndpoint: config.telemetry.otlpEndpoint } : {}),
+    sampleRatio: config.telemetry.sampleRatio,
+    prometheus: config.telemetry.prometheus,
+  });
+  const logger = createLogger({
+    level: config.logger.level,
+    pretty: false,
+    service: serviceName,
+  }).child({
+    environment: config.app.environment,
+  });
   const testProbe: NetworkProbe = {
     name: 'test-dns',
     type: 'dns',
@@ -259,32 +286,61 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   const db = createPrismaClient(process.env.DATABASE_URL);
   app.decorateRequest('jwtAuth', undefined as unknown as JwtAuthenticationProvider);
   app.decorateRequest('rbac', undefined as unknown as RbacAuthorization);
+  app.decorateRequest(
+    'observabilityContext',
+    undefined as unknown as { requestId: string; traceId?: string; spanId?: string },
+  );
   app.setErrorHandler((error, _request, reply) => {
+    const category = error instanceof z.ZodError ? 'validation' : classifyError(error);
     const mapped =
       error instanceof z.ZodError
         ? mapErrorToHttp(new ValidationAppError('Invalid request', { issues: error.issues }))
         : mapErrorToHttp(error);
+    logger.error('request failed', {
+      ..._request.observabilityContext,
+      requestId: _request.id,
+      component: 'api',
+      operation: `${_request.method} ${_request.routeOptions.url ?? _request.url.split('?')[0]}`,
+      status: mapped.statusCode,
+      error: {
+        type: error instanceof Error ? error.name : 'Error',
+        message: error instanceof Error ? error.message : String(error),
+        category,
+      },
+    });
     reply.status(mapped.statusCode).send(mapped.body);
   });
-  app.addHook('onRequest', async (request) => {
+  app.addHook('onRequest', async (request, reply) => {
     request.jwtAuth = jwtAuth;
     request.rbac = rbac;
     request.headers['x-correlation-id'] = request.headers['x-correlation-id'] ?? request.id;
+    reply.header('x-request-id', request.id);
+    reply.header('x-correlation-id', request.headers['x-correlation-id']);
+    request.observabilityContext = {
+      requestId: request.id,
+      ...traceContextFromHeaders(request.headers),
+    };
+    const route = request.routeOptions.url ?? request.url.split('?')[0] ?? 'unmatched';
+    httpActiveRequests.inc({ method: request.method, route });
   });
   app.addHook('onResponse', async (request, reply) => {
+    const route = request.routeOptions.url ?? request.url.split('?')[0] ?? 'unmatched';
+    const sc = statusClass(reply.statusCode);
+    httpActiveRequests.dec({ method: request.method, route });
+    httpRequestTotal.inc({ method: request.method, route, status_class: sc });
     httpRequestDuration.observe(
-      {
-        method: request.method,
-        route: request.routeOptions.url ?? request.url,
-        status_code: String(reply.statusCode),
-      },
+      { method: request.method, route, status_code: String(reply.statusCode), status_class: sc },
       reply.elapsedTime / 1000,
     );
     logger.info('request completed', {
+      ...request.observabilityContext,
       requestId: request.id,
+      component: 'http',
+      operation: `${request.method} ${route}`,
+      duration: Math.round(reply.elapsedTime),
+      status: reply.statusCode,
       method: request.method,
-      url: request.url,
-      statusCode: reply.statusCode,
+      route,
     });
   });
   await app.register(cors);
@@ -299,16 +355,39 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
   app.get('/api/v1/ready', async (_request, reply) => {
     let database: 'healthy' | 'degraded' = 'healthy';
+    let dbLatencyMs: number | undefined;
     try {
-      await checkDatabaseHealth(db);
-    } catch {
+      const health = await observeDependency('postgresql', 'readiness', () =>
+        checkDatabaseHealth(db),
+      );
+      dbLatencyMs = health.latencyMs;
+    } catch (error) {
       database = 'degraded';
+      logger.warn('database readiness check failed', {
+        component: 'database',
+        operation: 'readiness',
+        error: {
+          type: error instanceof Error ? error.name : 'Error',
+          message: error instanceof Error ? error.message : String(error),
+          category: classifyError(error),
+        },
+      });
     }
-    const health = createHealthStatus({
-      api: 'healthy',
-      database,
-      queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
-    });
+    const health = createHealthStatus(
+      {
+        api: 'healthy',
+        database,
+        queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
+      },
+      {
+        service: serviceName,
+        version: config.app.version,
+        environment: config.app.environment,
+        telemetry: telemetryState,
+        uptimeSeconds: Math.round(process.uptime()),
+        ...(dbLatencyMs !== undefined ? { databaseLatencyMs: dbLatencyMs } : {}),
+      },
+    );
     if (database !== 'healthy') reply.status(503);
     return ok(health);
   });
@@ -317,7 +396,7 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     ok({ name: config.app.name, version: config.app.version, environment: config.app.environment }),
   );
   app.get('/api/v1/metrics', async (_r, reply) =>
-    reply.type('text/plain').send(await renderPrometheusMetrics()),
+    reply.type(prometheusContentType()).send(await renderPrometheusMetrics()),
   );
   const recordNetworkTelemetry = (
     snapshot: Awaited<ReturnType<NetworkMonitoringService['runOnce']>>,
@@ -449,22 +528,43 @@ export const buildServer = async (): Promise<FastifyInstance> => {
         decisionAgeSeconds: Math.max(0, Math.round((Date.now() - Date.parse(updatedAt)) / 1000)),
       },
       eventBus: { source: 'LIVE', scope: 'in-process', status: 'healthy' },
-      observability: { source: 'LIVE', metrics: 'available', health: snapshot.status },
+      observability: {
+        source: 'LIVE',
+        metrics: 'available',
+        health: snapshot.status,
+        telemetry: telemetryState,
+      },
     };
   };
   app.get('/api/v1/platform/status', async () => {
     const status = await summarizePlatformStatus();
     let database: 'healthy' | 'degraded' = 'healthy';
+    let dbLatencyMs: number | undefined;
     try {
-      await checkDatabaseHealth(db);
-    } catch {
+      const health = await observeDependency('postgresql', 'readiness', () =>
+        checkDatabaseHealth(db),
+      );
+      dbLatencyMs = health.latencyMs;
+    } catch (error) {
       database = 'degraded';
+      logger.warn('database readiness check failed', {
+        component: 'database',
+        operation: 'readiness',
+        error: {
+          type: error instanceof Error ? error.name : 'Error',
+          message: error instanceof Error ? error.message : String(error),
+          category: classifyError(error),
+        },
+      });
     }
     return ok({
       ...status,
       dependencies: {
         database,
         queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
+      },
+      diagnostics: {
+        ...(dbLatencyMs !== undefined ? { databaseLatencyMs: dbLatencyMs } : {}),
       },
     });
   });
@@ -663,9 +763,16 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     });
   });
   app.post('/api/v1/probes/run', async () => {
-    const snapshot = await networkMonitor.runOnce();
+    const snapshot = await runWithSpan(
+      'network.probes.run',
+      { component: 'network', operation: 'probes.run' },
+      async () => networkMonitor.runOnce(),
+    );
     recordNetworkTelemetry(snapshot);
     logger.info('network probes completed', {
+      ...activeTraceContext(),
+      component: 'network',
+      operation: 'probes.run',
       status: snapshot.status,
       score: snapshot.score.score,
       issues: snapshot.issues,
