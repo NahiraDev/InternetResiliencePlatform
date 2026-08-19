@@ -50,9 +50,6 @@ export interface RegistryOptions {
 const clamp = (value: number, min = 0, max = 100): number =>
   Math.min(max, Math.max(min, value));
 
-const finiteOr = (value: number | undefined, fallback: number): number =>
-  value !== undefined && Number.isFinite(value) ? value : fallback;
-
 const observationScore = (observation: EndpointObservation): number => {
   const availability = observation.available ? 100 : 0;
   const latency =
@@ -70,11 +67,16 @@ const validateObservation = (observation: EndpointObservation): void => {
   if (!observation.endpointId) throw new Error('endpointId is required');
   if (!observation.observedAt || Number.isNaN(Date.parse(observation.observedAt)))
     throw new Error('observedAt must be a valid ISO timestamp');
-  if (observation.latencyMs !== undefined && (!Number.isFinite(observation.latencyMs) || observation.latencyMs < 0))
+  if (
+    observation.latencyMs !== undefined &&
+    (!Number.isFinite(observation.latencyMs) || observation.latencyMs < 0)
+  )
     throw new Error('latencyMs must be a non-negative finite number');
   if (
     observation.packetLossPercent !== undefined &&
-    (!Number.isFinite(observation.packetLossPercent) || observation.packetLossPercent < 0 || observation.packetLossPercent > 100)
+    (!Number.isFinite(observation.packetLossPercent) ||
+      observation.packetLossPercent < 0 ||
+      observation.packetLossPercent > 100)
   )
     throw new Error('packetLossPercent must be between 0 and 100');
 };
