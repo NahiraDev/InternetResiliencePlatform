@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  NODE_VERSION: '22'
-  PNPM_VERSION: '9.15.0'
+  NODE_VERSION: '24'
+  PNPM_VERSION: 'latest'
 
 jobs:
   validate:
@@ -40,8 +40,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Show runtime versions
         run: |
@@ -50,8 +48,8 @@ jobs:
           docker --version
           docker compose version
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies without lockfile
+        run: pnpm install --no-lockfile
 
       - name: Validate repository integrity
         run: pnpm validate
