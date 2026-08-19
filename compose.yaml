@@ -43,8 +43,8 @@ services:
     tmpfs:
       - /tmp
       - /app/tmp
-      - /app/.cache/node/corepack/v1
-      - /app/.local/share/pnpm
+      - /app/.cache/node/corepack:uid=1001,gid=1001,mode=700
+      - /app/.local/share/pnpm:uid=1001,gid=1001,mode=700
     restart: unless-stopped
     mem_limit: 768m
     cpus: 1.00
