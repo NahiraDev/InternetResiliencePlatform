@@ -22,3 +22,25 @@ Configuration and provider definitions are schema validated. Plugin loading is i
 - Add signed plugin manifests and an out-of-process plugin sandbox.
 - Add real wire-format DoH/DoT implementations with DNSSEC validation.
 - Persist benchmark history for long-term scoring.
+
+## Phase 33 — Automatic Optimization
+
+Automatic optimization is deliberately **disabled by default**. Enabling it is an explicit operator decision and must still pass the existing resilience-runtime policy and trust gates.
+
+Recommended configuration mapping:
+
+| Key | Default | Constraint |
+| --- | ---: | --- |
+| `AUTO_OPTIMIZATION_ENABLED` | `false` | must be explicitly enabled |
+| `AUTO_OPTIMIZATION_MIN_CONFIDENCE` | `90` | `0..100` |
+| `AUTO_OPTIMIZATION_MAX_RISK` | `25` | `0..100` |
+| `AUTO_OPTIMIZATION_MIN_BENEFIT` | `60` | `0..100` |
+| `AUTO_OPTIMIZATION_COOLDOWN_MS` | `30000` | `>= 0` |
+| `AUTO_OPTIMIZATION_BUDGET_WINDOW_MS` | `3600000` | `> 0` |
+| `AUTO_OPTIMIZATION_MAX_ACTIONS_PER_WINDOW` | `6` | integer `>= 0` |
+| `AUTO_OPTIMIZATION_DRY_RUN` | `false` | dry-run never mutates |
+| `AUTO_OPTIMIZATION_ROLLBACK_ON_VERIFY_FAILURE` | `true` | fail closed when rollback is unavailable |
+
+Invalid values must fail validation rather than silently selecting a permissive fallback.
+
+See [Phase 33](phases/phase-33.md) for the complete automatic-optimization safety contract.

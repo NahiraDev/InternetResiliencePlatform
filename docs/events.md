@@ -22,3 +22,21 @@ Configuration and provider definitions are schema validated. Plugin loading is i
 - Add signed plugin manifests and an out-of-process plugin sandbox.
 - Add real wire-format DoH/DoT implementations with DNSSEC validation.
 - Persist benchmark history for long-term scoring.
+
+## Phase 33 — Automatic Optimization Events
+
+The `@irp/auto-optimization` package emits lifecycle events through the existing `EventSink`. Event payloads are operational metadata only and must not contain credentials, request bodies, raw network payloads, or other user-sensitive data.
+
+| Event | Meaning |
+| --- | --- |
+| `auto_optimization.evaluated` | Eligibility evaluation completed. |
+| `auto_optimization.blocked` | Recommendation was rejected by a safety/policy gate or pre-execution validation. |
+| `auto_optimization.dry_run` | Recommendation passed policy but execution was intentionally suppressed because dry-run is enabled. |
+| `auto_optimization.applied` | Runtime action executor completed successfully. |
+| `auto_optimization.verified` | All configured postconditions were verified. |
+| `auto_optimization.rolled_back` | Verification failed and the applied action was successfully rolled back. |
+| `auto_optimization.failed` | Execution, verification, or rollback did not complete successfully. |
+
+Common envelope fields are `eventId`, `occurredAt`, and `source=auto-optimization`, plus recommendation/action identifiers and technical outcome information.
+
+The package does not create a new event bus or metrics registry; it uses the existing runtime observability ports.

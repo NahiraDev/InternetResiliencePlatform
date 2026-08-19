@@ -11,3 +11,4 @@ This directory contains project documentation for architecture, decisions, secur
 - `network/` - Network resilience assumptions and terminology.
 
 - [Phase 12 Connectivity Manager](connectivity-manager.md)
+- [Phase 33 Automatic Optimization](phases/phase-33.md)
