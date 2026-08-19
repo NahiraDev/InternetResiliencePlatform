@@ -21,6 +21,9 @@
     "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
     "docker:smoke": "bash scripts/docker-smoke.sh"
   },
+  "dependencies": {
+    "prisma": "6.19.3"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
@@ -32,7 +35,6 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "prettier": "^3.4.2",
-    "prisma": "6.19.3",
     "turbo": "^2.3.4",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0",
