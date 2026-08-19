@@ -221,7 +221,7 @@ export class EndpointRegistry {
   private clone(endpoint: EndpointRecord): EndpointRecord {
     return {
       ...endpoint,
-      tags: endpoint.tags ? [...endpoint.tags] : undefined,
+      ...(endpoint.tags ? { tags: [...endpoint.tags] } : {}),
       health: { ...endpoint.health },
     };
   }
