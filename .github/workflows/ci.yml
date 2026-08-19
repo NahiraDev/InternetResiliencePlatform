@@ -18,7 +18,7 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
-  PNPM_VERSION: 'latest'
+  PNPM_VERSION: '11.21.0'
 
 jobs:
   validate:
@@ -40,6 +40,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Show runtime versions
         run: |
