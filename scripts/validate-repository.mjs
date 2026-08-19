@@ -43,18 +43,12 @@ for (const file of files) {
   const rel = relative(root, file);
   const text = readFileSync(file, 'utf8');
 
-  // Detect only actual Git merge-conflict marker lines. Do not flag
-  // ordinary occurrences of repeated characters inside source code,
-  // configuration values, documentation, or validation logic itself.
   if (/(^|\r?\n)(?:<{7}|={7}|>{7})(?:\r?\n|$)/.test(text)) {
     errors.push(`${rel} contains merge-conflict markers`);
   }
 
   if (rel.endsWith('.json')) readJson(file);
 
-  // GitHub App installation tokens are evolving from fixed-length stateful
-  // tokens to opaque stateless tokens that can be substantially longer.
-  // Reject legacy 40-character assumptions in executable/configuration files.
   if (isGitHubTokenRelevantPath(rel)) {
     for (const pattern of githubTokenLegacyAssumptions) {
       if (pattern.test(text)) {
@@ -164,10 +158,18 @@ for (const file of workflows) {
     workflowNames.set(match[1], rel);
   }
 
-  // Accept maintained major versions instead of coupling repository
-  // validation to one historical GitHub Action release.
-  if (!/uses:\s*actions\/checkout@v(?:4|5|6)(?:\b|$)/m.test(text)) {
-    errors.push(`${rel} missing supported actions/checkout action`);
+  // Standard workflows checkout the repository. Security-sensitive workflows
+  // may instead consume a trusted artifact produced by an upstream run. That
+  // pattern must be explicit and is accepted here because forcing checkout in
+  // a privileged workflow would reintroduce the CodeQL untrusted-checkout risk.
+  const hasCheckout = /uses:\s*actions\/checkout@v(?:4|5|6)(?:\b|$)/m.test(text);
+  const hasTrustedArtifactHandoff =
+    /uses:\s*actions\/download-artifact@v(?:4|5|6)(?:\b|$)/m.test(text) &&
+    /run-id:\s*\$\{\{\s*github\.event\.workflow_run\.id\s*\}\}/m.test(text) &&
+    /irp-source-\$\{\{\s*github\.event\.workflow_run\.head_sha\s*\}\}/m.test(text);
+
+  if (!hasCheckout && !hasTrustedArtifactHandoff) {
+    errors.push(`${rel} missing supported actions/checkout action or approved trusted artifact handoff`);
   }
 
   if (!/uses:\s*actions\/setup-node@v(?:4|5|6|7)(?:\b|$)/m.test(text)) {
