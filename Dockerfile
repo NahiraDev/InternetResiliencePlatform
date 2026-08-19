@@ -20,7 +20,6 @@ FROM deps AS build
 COPY . .
 RUN pnpm --filter @irp/database prisma:generate
 RUN pnpm build
-RUN pnpm prune --prod
 
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production \
