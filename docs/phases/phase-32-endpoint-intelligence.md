@@ -8,7 +8,7 @@ This phase does **not** bypass access controls or implement censorship circumven
 
 ## Implemented
 
-- `@irp/endpoint-intelligence` workspace package.
+- Endpoint registry and health scoring module in `@irp/telemetry` (`src/endpoint-registry.ts`).
 - Endpoint registry keyed by stable endpoint IDs.
 - Endpoint metadata: address, hostname, protocol, port, region, provider, ASN, tags.
 - Observation ingestion with validation.
