@@ -289,6 +289,8 @@ export const networkLatencyMs = new client.Histogram({
 export const networkHealthScore = new client.Gauge({
   name: 'irp_network_health_score',
   help: 'Aggregated network health score',
+  labelNames: ['probe_type'],
   registers: [prometheusRegister],
 });
 export * from './slo.js';
+export * from './endpoint-registry.js';
