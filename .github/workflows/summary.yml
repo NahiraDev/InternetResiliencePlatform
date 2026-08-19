@@ -17,7 +17,7 @@ concurrency:
 
 env:
   NODE_VERSION: "24"
-  PNPM_VERSION: "9.15.0"
+  PNPM_VERSION: "latest"
   SUMMARY_MARKER: "<!-- irp:issue-summary -->"
   MAX_ISSUE_BODY_CHARS: "12000"
 
@@ -44,8 +44,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Resolve issue payload
         env:
