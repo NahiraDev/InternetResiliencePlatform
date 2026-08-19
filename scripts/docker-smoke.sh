@@ -45,6 +45,7 @@ docker exec "$api_container" sh -c '
     test -w "$path"
   done
   pnpm --version >/dev/null
+  pnpm exec prisma --version >/dev/null
 '
 ! docker compose -f "$compose_file" logs --no-color api | grep -Ei 'EACCES.*corepack|password|JWT_SECRET|DATABASE_URL' >/dev/null
 
