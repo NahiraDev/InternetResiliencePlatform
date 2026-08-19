@@ -42,7 +42,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-      - /app/tmp
+      - /app/tmp:uid=1001,gid=1001,mode=700
       - /app/.cache/node/corepack:uid=1001,gid=1001,mode=700
       - /app/.local/share/pnpm:uid=1001,gid=1001,mode=700
     restart: unless-stopped
