@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:22-slim AS base
+FROM node:24-slim AS base
 ENV PNPM_HOME=/pnpm \
     COREPACK_HOME=/pnpm/corepack \
     PATH=/pnpm:$PATH
@@ -8,20 +8,20 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates dumb-init \
   && rm -rf /var/lib/apt/lists/* \
   && corepack enable \
-  && corepack prepare pnpm@9.15.0 --activate
+  && corepack prepare pnpm@latest --activate
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --no-lockfile
 
 FROM deps AS build
 COPY . .
 RUN pnpm --filter @irp/database prisma:generate
 RUN pnpm build
 
-FROM node:22-slim AS runtime
+FROM node:24-slim AS runtime
 ENV NODE_ENV=production \
     PNPM_HOME=/pnpm \
     COREPACK_HOME=/app/.cache/node/corepack \
@@ -36,7 +36,7 @@ RUN apt-get update \
   && mkdir -p /app/.cache/node/corepack /app/.local/share/pnpm /app/tmp \
   && chown -R irp:irp /app/.cache /app/.local /app/tmp
 COPY --from=base --chown=irp:irp /pnpm /pnpm
-COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/turbo.json ./
+COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/turbo.json ./
 COPY --from=build --chown=irp:irp /app/node_modules ./node_modules
 COPY --from=build --chown=irp:irp /app/apps ./apps
 COPY --from=build --chown=irp:irp /app/packages ./packages
