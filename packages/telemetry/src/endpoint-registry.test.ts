@@ -16,10 +16,12 @@ describe('EndpointRegistry', () => {
   it('registers endpoints without exposing mutable state', () => {
     const registry = new EndpointRegistry({ now: () => new Date('2026-08-19T00:00:00.000Z') });
     const record = registry.register({ ...endpoint, tags: ['public'] });
-    record.tags?.push('mutated');
+    const stored = registry.get(endpoint.id);
 
+    expect(record.tags).toEqual(['public']);
+    expect(stored?.tags).toEqual(['public']);
+    expect(record.tags).not.toBe(stored?.tags);
     expect(registry.size()).toBe(1);
-    expect(registry.get(endpoint.id)?.tags).toEqual(['public']);
     expect(registry.get(endpoint.id)?.health.status).toBe('new');
   });
 
@@ -62,24 +64,43 @@ describe('EndpointRegistry', () => {
     const registry = new EndpointRegistry();
     registry.register({ ...endpoint, id: 'healthy' });
     registry.register({ ...endpoint, id: 'degraded' });
-    registry.observe({ endpointId: 'healthy', observedAt: new Date().toISOString(), available: true, latencyMs: 20 });
-    registry.observe({ endpointId: 'degraded', observedAt: new Date().toISOString(), available: false, packetLossPercent: 100 });
+    registry.observe({
+      endpointId: 'healthy',
+      observedAt: new Date().toISOString(),
+      available: true,
+      latencyMs: 20,
+    });
+    registry.observe({
+      endpointId: 'degraded',
+      observedAt: new Date().toISOString(),
+      available: false,
+      packetLossPercent: 100,
+    });
 
     expect(registry.rank()[0]?.id).toBe('healthy');
   });
 
   it('rejects unknown endpoints and invalid observations', () => {
     const registry = new EndpointRegistry();
-    expect(() => registry.observe({ endpointId: 'missing', observedAt: new Date().toISOString(), available: true })).toThrow(
-      'unknown endpoint',
-    );
+    expect(() =>
+      registry.observe({
+        endpointId: 'missing',
+        observedAt: new Date().toISOString(),
+        available: true,
+      }),
+    ).toThrow('unknown endpoint');
     registry.register(endpoint);
-    expect(() => registry.observe({ endpointId: endpoint.id, observedAt: 'invalid', available: true })).toThrow(
-      'valid ISO timestamp',
-    );
-    expect(() => registry.observe({ endpointId: endpoint.id, observedAt: new Date().toISOString(), available: true, packetLossPercent: 101 })).toThrow(
-      'between 0 and 100',
-    );
+    expect(() =>
+      registry.observe({ endpointId: endpoint.id, observedAt: 'invalid', available: true }),
+    ).toThrow('valid ISO timestamp');
+    expect(() =>
+      registry.observe({
+        endpointId: endpoint.id,
+        observedAt: new Date().toISOString(),
+        available: true,
+        packetLossPercent: 101,
+      }),
+    ).toThrow('between 0 and 100');
   });
 
   it('keeps the aggregate score bounded', () => {
