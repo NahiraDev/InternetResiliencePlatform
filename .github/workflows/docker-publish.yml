@@ -19,7 +19,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   NODE_VERSION: "24"
-  PNPM_VERSION: "latest"
+  PNPM_VERSION: "11.21.0"
 
 jobs:
   publish:
@@ -62,6 +62,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
 
       - name: Install dependencies without lockfile
         run: pnpm install --no-lockfile
