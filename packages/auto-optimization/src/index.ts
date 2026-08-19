@@ -447,8 +447,10 @@ export class AutoOptimizationEngine {
           ? 0
           : current.actionsInWindow,
       windowStartedAt: resetWindow ? now : current.windowStartedAt,
-      lastAppliedAt: countAgainstBudget ? now : current.lastAppliedAt,
-      lastOutcome: outcome,
+      ...(countAgainstBudget || current.lastAppliedAt !== undefined
+        ? { lastAppliedAt: countAgainstBudget ? now : current.lastAppliedAt }
+        : {}),
+      ...(outcome !== undefined ? { lastOutcome: outcome } : {}),
       lastRecommendationId: recommendationId,
     });
   }
