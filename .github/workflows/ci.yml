@@ -49,7 +49,7 @@ jobs:
           docker compose version
 
       - name: Install dependencies without lockfile
-        run: pnpm install --no-lockfile --allow-build=@prisma/engines --allow-build=esbuild --allow-build=prisma
+        run: pnpm install --no-lockfile
 
       - name: Validate repository integrity
         run: pnpm validate
