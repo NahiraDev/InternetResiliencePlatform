@@ -17,7 +17,7 @@ concurrency:
 
 env:
   NODE_VERSION: "24"
-  PNPM_VERSION: "latest"
+  PNPM_VERSION: "11.21.0"
   SUMMARY_MARKER: "<!-- irp:issue-summary -->"
   MAX_ISSUE_BODY_CHARS: "12000"
 
