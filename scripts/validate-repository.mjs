@@ -72,15 +72,15 @@ const noTestExceptionsPath = join(root, 'docs/testing/no-test-exceptions.json');
 const noTestExceptions = readJson(noTestExceptionsPath)?.exceptions ?? [];
 const noTestExceptionNames = new Set(noTestExceptions.map((entry) => entry.package));
 
-for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb']) {
+for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb', 'pnpm-lock.yaml']) {
   if (existsSync(join(root, artifact))) {
     errors.push(`forbidden package-manager artifact present: ${artifact}`);
   }
 }
 
 const rootPackage = readJson(join(root, 'package.json'));
-if (!rootPackage?.engines?.node?.includes('>=22.0.0')) {
-  errors.push('package.json must require Node >=22.0.0');
+if (!rootPackage?.engines?.node?.includes('>=24.0.0')) {
+  errors.push('package.json must require Node >=24.0.0');
 }
 
 const names = new Map();
@@ -158,10 +158,6 @@ for (const file of workflows) {
     workflowNames.set(match[1], rel);
   }
 
-  // Standard workflows checkout the repository. Security-sensitive workflows
-  // may instead consume a trusted artifact produced by an upstream run. That
-  // pattern must be explicit and is accepted here because forcing checkout in
-  // a privileged workflow would reintroduce the CodeQL untrusted-checkout risk.
   const hasCheckout = /uses:\s*actions\/checkout@v(?:4|5|6)(?:\b|$)/m.test(text);
   const hasTrustedArtifactHandoff =
     /uses:\s*actions\/download-artifact@v(?:4|5|6)(?:\b|$)/m.test(text) &&
@@ -183,7 +179,6 @@ for (const file of workflows) {
 
 for (const required of [
   'package.json',
-  'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
   'turbo.json',
   'tsconfig.base.json',
