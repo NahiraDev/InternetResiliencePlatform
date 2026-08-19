@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -34,11 +35,22 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout validated commit
+      - name: Download trusted source artifact
         if: github.event_name == 'workflow_run'
-        uses: actions/checkout@v6
+        uses: actions/download-artifact@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          name: irp-source-${{ github.event.workflow_run.head_sha }}
+          path: ${{ runner.temp }}/source-artifact
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Extract trusted source artifact
+        if: github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf "${RUNNER_TEMP}/source-artifact/irp-source.tar.gz" -C "${GITHUB_WORKSPACE}"
 
       - name: Checkout repository
         if: github.event_name == 'workflow_dispatch'
