@@ -177,7 +177,6 @@ export const activeTraceContext = (): Pick<RequestContext, 'traceId' | 'spanId'>
     ? { traceId: spanContext.traceId, spanId: spanContext.spanId }
     : {};
 };
-
 export const traceContextFromHeaders = (
   headers: Record<string, string | string[] | undefined>,
 ): Pick<RequestContext, 'traceId' | 'spanId'> => {
@@ -188,7 +187,6 @@ export const traceContextFromHeaders = (
     ? { traceId: match[1], spanId: match[2] }
     : activeTraceContext();
 };
-
 export const spanContextFields = (span?: Span): Pick<RequestContext, 'traceId' | 'spanId'> => {
   const spanContext: SpanContext | undefined = span?.spanContext();
   return spanContext && trace.isSpanContextValid(spanContext)
@@ -293,3 +291,4 @@ export const networkHealthScore = new client.Gauge({
   help: 'Aggregated network health score',
   registers: [prometheusRegister],
 });
+export * from './slo.js';
