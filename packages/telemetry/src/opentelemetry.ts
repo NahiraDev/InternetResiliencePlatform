@@ -1,4 +1,4 @@
-import { metrics } from '@opentelemetry/api';
+import { metrics, type Counter, type Histogram, type ObservableGauge } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
@@ -92,10 +92,10 @@ const createTraceExporter = (config: OpenTelemetryConfig): OTLPTraceExporter | u
 };
 
 class MetricsBridge {
-  private readonly counterInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createCounter']>>();
-  private readonly histogramInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createHistogram']>>();
+  private readonly counterInstruments = new Map<string, Counter>();
+  private readonly histogramInstruments = new Map<string, Histogram>();
   private readonly gauges = new Map<string, { value: number; attributes: Record<string, string> }>();
-  private readonly gaugeInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createObservableGauge']>>();
+  private readonly gaugeInstruments = new Map<string, ObservableGauge>();
   private readonly meter = metrics.getMeter('irp.internal-metrics', '0.1.0');
 
   constructor(private readonly bus: InternalMetricsBus) {}
@@ -105,7 +105,7 @@ class MetricsBridge {
     return this.bus.subscribe((point) => this.record(point));
   }
 
-  private ensureInstrument(definition: MetricDefinition) {
+  private ensureInstrument(definition: MetricDefinition): Counter | Histogram | ObservableGauge {
     if (definition.type === 'counter') {
       const existing = this.counterInstruments.get(definition.name);
       if (existing) return existing;
