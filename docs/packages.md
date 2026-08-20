@@ -22,7 +22,15 @@ Defines DNS resolver, provider, health check, and benchmark abstractions for lat
 
 ## @irp/telemetry
 
-Collects metrics snapshots and aggregates component health with a Prometheus-compatible direction.
+Collects metrics snapshots, endpoint observations, and component health with a Prometheus-compatible direction.
+
+## @irp/auto-optimization
+
+Provides the opt-in automatic optimization safety pipeline. It evaluates recommendations against trust, policy, confidence, risk, cooldown, and budget guardrails before delegating validation, execution, verification, and rollback to the resilience runtime.
+
+## @irp/historical-analysis
+
+Provides bounded historical measurement queries, aggregate and per-probe reports, latency percentiles, metric-aware trend analysis, and deterministic JSON/CSV exports over the existing benchmark data.
 
 ## @irp/types
 
