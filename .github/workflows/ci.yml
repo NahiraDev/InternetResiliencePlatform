@@ -82,11 +82,11 @@ jobs:
         run: docker compose down --volumes --remove-orphans || true
 
       - name: Create trusted source artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         run: git archive --format=tar.gz --output="${RUNNER_TEMP}/irp-source.tar.gz" "${GITHUB_SHA}"
 
       - name: Upload trusted source artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: irp-source-${{ github.sha }}
