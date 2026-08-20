@@ -107,6 +107,8 @@ const { buildServer } = await import('../apps/api/dist/index.js');
 const telemetryModule = await import('../packages/telemetry/dist/index.js');
 
 const metricLabels = (labels) => (labels && typeof labels === 'object' ? { ...labels } : {});
+const recordMetric = (name, value, labels) =>
+  metrics.record(name, value, { labels: metricLabels(labels) });
 const wrapPrometheusMetric = (metric, type) => {
   if (!metric || metric.__irpOpenTelemetryWrapped) return;
   const name = metric.name;
@@ -121,7 +123,7 @@ const wrapPrometheusMetric = (metric, type) => {
       const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
       const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue ?? 1;
       originalInc(labelsOrValue, maybeValue);
-      metrics.record(name, value, labels);
+      recordMetric(name, value, labels);
       return metric;
     };
     return;
@@ -133,7 +135,7 @@ const wrapPrometheusMetric = (metric, type) => {
       const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
       const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue;
       originalObserve(labelsOrValue, maybeValue);
-      if (typeof value === 'number') metrics.record(name, value, labels);
+      if (typeof value === 'number') recordMetric(name, value, labels);
       return metric;
     };
     return;
@@ -147,7 +149,7 @@ const wrapPrometheusMetric = (metric, type) => {
     const current = gaugeState.get(key) ?? 0;
     const next = absolute ? delta : current + delta;
     gaugeState.set(key, next);
-    metrics.record(name, next, normalized);
+    recordMetric(name, next, normalized);
   };
   const originalSet = metric.set.bind(metric);
   const originalInc = metric.inc.bind(metric);
