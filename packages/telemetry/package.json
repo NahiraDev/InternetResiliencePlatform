@@ -19,6 +19,7 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@irp/metrics": "workspace:*",
     "@irp/types": "workspace:*",
     "prom-client": "^15.1.3",
     "@opentelemetry/api": "^1.9.1",
@@ -27,6 +28,7 @@
     "@opentelemetry/resources": "^2.10.0",
     "@opentelemetry/sdk-node": "^0.221.0",
     "@opentelemetry/sdk-metrics": "^2.10.0",
+    "@opentelemetry/sdk-trace-base": "^2.10.0",
     "@opentelemetry/semantic-conventions": "^1.43.0"
   }
 }
