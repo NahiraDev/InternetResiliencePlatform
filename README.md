@@ -1,1046 +1,919 @@
 # Internet Resilience Platform
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-supported-F69220.svg?logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D24-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-11.21.0-F69220.svg?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-first-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Turborepo](https://img.shields.io/badge/Turborepo-monorepo-000000.svg)](https://turbo.build/repo)
+[![Docker](https://img.shields.io/badge/Docker-production--runtime-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF.svg?logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
-The **Internet Resilience Platform (IRP)** is an open-source, modular platform for measuring, modeling, monitoring, and improving the reliability of Internet-facing systems.
+**Internet Resilience Platform (IRP)** is an open-source, TypeScript-first platform for **understanding, measuring, diagnosing, and improving Internet connectivity under real-world failure conditions**.
 
-The project is designed as a long-term engineering foundation rather than a single-purpose application. It provides a structured monorepo, shared backend infrastructure, network intelligence primitives, observability, security controls, automation, and extensible interfaces that can evolve into desktop, mobile, distributed-node, and intelligent routing capabilities.
+IRP is being built for people and systems that cannot simply assume that “the Internet is working.” DNS can fail. Routes can degrade. TCP connections can reset. TLS can fail. A service can return an error even when the underlying network is healthy. IPv4 and IPv6 can behave differently. Connectivity can be intermittent or path-dependent.
 
-> **Project status:** Active development.
-> The repository is being built incrementally through versioned implementation phases. Features are only considered production-ready after their corresponding validation and integration requirements have been satisfied.
+The purpose of IRP is to turn those failures into **measurable signals, actionable diagnoses, and eventually automated, verified recovery decisions**.
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Goals](#goals)
-- [Design Principles](#design-principles)
-- [Architecture](#architecture)
-- [Repository Structure](#repository-structure)
-- [Core Capabilities](#core-capabilities)
-- [Backend API](#backend-api)
-- [Network Intelligence](#network-intelligence)
-- [Security Model](#security-model)
-- [Observability](#observability)
-- [Development](#development)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Environment Configuration](#environment-configuration)
-- [Quality Gates](#quality-gates)
-- [Testing Strategy](#testing-strategy)
-- [Database](#database)
-- [API Conventions](#api-conventions)
-- [CLI](#cli)
-- [Documentation](#documentation)
-- [CI/CD](#cicd)
-- [Project Phases](#project-phases)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Security Reporting](#security-reporting)
-- [License](#license)
+> **Project status:** Active development. The repository is being implemented through a controlled 48-phase roadmap. A capability is not considered production-ready merely because its code exists; it must pass the applicable typecheck, lint, test, build, runtime, security, and integration gates.
 
 ---
 
-## Overview
+## What is IRP?
 
-Internet connectivity is not a binary property.
+IRP is intended to become a **network resilience control plane** rather than another simple speed-test or monitoring dashboard.
 
-A system may be technically connected while simultaneously experiencing:
+At a high level, it combines:
 
-- High latency
-- DNS degradation
-- Packet loss
-- IPv4 or IPv6 failures
-- Unstable TCP connections
-- HTTP availability problems
-- Throughput degradation
-- Provider-specific failures
-- Intermittent connectivity
-- Regional or path-dependent instability
+- Continuous network observation
+- Multi-layer connectivity measurement
+- Failure classification and diagnosis
+- Historical network intelligence
+- Deterministic local decision-making
+- Policy-controlled automation
+- Failover and recovery orchestration
+- Verification and rollback
+- Structured telemetry and auditability
+- Extensible plugins and probes
+- API, CLI, desktop, and distributed-node capabilities
 
-IRP provides the infrastructure required to **observe these conditions, measure them consistently, aggregate the results, and expose them through stable application interfaces**.
+The long-term operating model is:
 
-The platform is intentionally modular. Network measurement logic is separated from API, CLI, storage, authentication, and presentation layers so that new capabilities can be introduced without coupling unrelated components.
+```text
+OBSERVE
+   ↓
+MEASURE
+   ↓
+DETECT
+   ↓
+DIAGNOSE
+   ↓
+DECIDE
+   ↓
+POLICY / SAFETY CHECK
+   ↓
+PLAN
+   ↓
+APPLY
+   ↓
+VERIFY
+   ↓
+SUCCESS ───────────────→ CONTINUE
+   │
+   └── FAILURE ────────→ ROLLBACK / RECOVERY
+                               │
+                               ↓
+                           TELEMETRY
+```
 
----
-
-## Goals
-
-The primary goals of the project are:
-
-1. **Reliability**
-
-   - Build resilient infrastructure that can operate under unstable network conditions.
-   - Detect degradation rather than relying on a single connectivity signal.
-   - Support continuous measurement and historical analysis.
-
-2. **Modularity**
-
-   - Keep network capabilities behind explicit contracts.
-   - Allow independent services, plugins, probes, and clients to evolve separately.
-   - Minimize coupling between infrastructure layers.
-
-3. **Security**
-
-   - Apply secure-by-default authentication and authorization.
-   - Maintain explicit trust boundaries.
-   - Avoid insecure credential fallbacks and implicit privilege escalation.
-
-4. **Observability**
-
-   - Make system state measurable.
-   - Expose health, readiness, metrics, and operational signals.
-   - Support structured telemetry and long-term monitoring.
-
-5. **Auditability**
-
-   - Make architectural decisions explicit.
-   - Preserve development history and validation results.
-   - Use deterministic repository and CI checks.
-
-6. **Maintainability**
-
-   - Favor typed interfaces, stable contracts, automated validation, and clear ownership boundaries.
-   - Keep implementation details replaceable where practical.
+This closed-loop model is the central direction of the project.
 
 ---
 
-## Design Principles
+## The Problem
 
-IRP follows several architectural principles:
+Internet availability is not binary.
 
-### Separation of Concerns
+A device may report that it is connected while an important destination is effectively unusable. Conversely, a single failed request does not necessarily mean that the entire Internet connection is broken.
 
-Application logic, domain logic, network measurement, persistence, authentication, observability, and client interfaces should not be unnecessarily coupled.
+Common failure modes include:
 
-### Contract-First Design
+- DNS resolution failures
+- Slow or unreliable DNS resolvers
+- TCP connection timeouts
+- Connection resets
+- TLS negotiation failures
+- HTTP failures
+- Intermittent packet loss
+- High latency and jitter
+- IPv4/IPv6 asymmetry
+- Route instability
+- Provider-specific degradation
+- Service-specific reachability problems
+- Local network failures
+- Database or backend dependency failures
+- Container/runtime failures
 
-Shared contracts and API schemas should be defined before implementation details become dependencies across packages.
+A professional resilience system must distinguish these cases instead of treating everything as “Internet down.”
 
-### Secure by Default
+### About HTTP 403 and blocked services
 
-Security-sensitive functionality must fail closed rather than silently falling back to unsafe behavior.
+An HTTP `403` is an **application-layer response**, not a universal diagnosis. It can originate from access-control policy, authentication, a service configuration, a CDN/WAF, regional policy, an intermediary, or another application-layer condition.
 
-### Measurement Before Automation
+IRP therefore does not treat `403` as proof of one particular cause. It measures the surrounding network signals and reports the most defensible diagnosis supported by evidence.
 
-The platform should establish reliable measurement and diagnosis primitives before introducing higher-level automation and decision systems.
+IRP is designed to improve reliability through **authorized, user-configured connectivity mechanisms**. It does not promise to defeat access controls, censorship systems, provider policies, or legal restrictions.
 
-### Explicit Lifecycle Management
+---
 
-Resources such as users, sessions, tokens, projects, workspaces, and network measurements should have explicit lifecycle semantics.
+## What IRP is trying to achieve
 
-### Deterministic Validation
+The end-user experience we are building toward is simple:
 
-The repository should be continuously verifiable through reproducible local and CI checks.
+> **When connectivity degrades, the user should not have to become a network engineer to understand what happened or manually troubleshoot every layer.**
 
-### Incremental Delivery
+The system should be able to continuously observe the connection, identify degradation early, determine the most likely failure domain, evaluate available recovery options, apply an authorized action when policy permits it, verify the result, and roll back when the action makes the situation worse.
 
-The project is developed through implementation phases. Each phase should leave the repository in a coherent, testable state.
+The objective is not merely to collect metrics. The objective is **reliable decision-making under uncertainty**.
+
+---
+
+# Core Principles
+
+## 1. Measure before deciding
+
+Every consequential network decision should be grounded in current measurements and explicit health signals.
+
+## 2. Fast decisions must be local
+
+The critical connectivity path must not depend on an external LLM or remote AI service.
+
+Latency-sensitive decisions should use local, deterministic algorithms so that the system can continue operating even when Internet access is degraded.
+
+AI/ML can be used outside the critical path for tasks such as historical analysis, anomaly detection, pattern discovery, policy optimization, and operator assistance.
+
+## 3. Detect degradation before complete failure
+
+The platform should continuously monitor health so it can recognize deterioration before an application request becomes a hard failure.
+
+```text
+Healthy
+   ↓
+Degrading
+   ↓
+Critical
+   ↓
+Failed
+```
+
+Where possible, recovery preparation should begin during the degradation stage rather than waiting for a full outage.
+
+## 4. Verify every recovery action
+
+An action is not successful because it executed successfully.
+
+It is successful only when the resulting connectivity state has been independently verified.
+
+## 5. Roll back unsafe or ineffective changes
+
+Recovery mechanisms must have explicit rollback semantics and circuit-breaker behavior.
+
+## 6. Fail closed on security-sensitive operations
+
+Security and authorization boundaries must not silently fall back to unsafe behavior.
+
+## 7. Production correctness over demo behavior
+
+A feature is not considered complete because it works in a happy-path demonstration. It must survive failure injection and runtime verification appropriate to its scope.
 
 ---
 
 # Architecture
 
-IRP is designed as a **TypeScript-first modular monorepo**.
-
-At a high level:
+IRP is a modular monorepo built around TypeScript, Node.js, PostgreSQL, Turborepo, pnpm, Docker, and a plugin-oriented network intelligence architecture.
 
 ```text
-                         Internet Resilience Platform
+                         ┌──────────────────────────┐
+                         │      User / Operator      │
+                         └────────────┬─────────────┘
                                       │
-              ┌───────────────────────┼────────────────────────┐
-              │                       │                        │
-         Client Layer           Application Layer       Observability
-              │                       │                        │
-      ┌───────┼────────┐       ┌──────┼─────────┐       ┌──────┼──────┐
-      │       │        │       │      │         │       │      │      │
-    CLI    Electron   Mobile   API   Auth     Network   Logs  Metrics Traces
-                             │
-                     ┌───────┼────────┐
-                     │       │        │
-                  Domain   Services  Plugins
-                     │       │        │
-                     └───────┼────────┘
-                             │
-                     Persistence Layer
-                             │
-                          PostgreSQL
+                  ┌───────────────────┼───────────────────┐
+                  │                   │                   │
+               Desktop              CLI                 API
+                  │                   │                   │
+                  └───────────────────┼───────────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │     Application Layer    │
+                         │ Auth / API / Policies    │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │ Connectivity Intelligence│
+                         ├──────────────────────────┤
+                         │ DNS / TCP / TLS / HTTP   │
+                         │ IPv4 / IPv6 / Routing    │
+                         │ Loss / Latency / Stability│
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │     Diagnosis Engine     │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │   Fast Decision Engine   │
+                         │ Local / Deterministic    │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │ Policy / Safety / Audit  │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │ Recovery / Failover      │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │ Verify / Rollback        │
+                         └────────────┬─────────────┘
+                                      ↓
+                         ┌──────────────────────────┐
+                         │ Telemetry / History      │
+                         └──────────────────────────┘
+                                      │
+                                      ↓
+                                  PostgreSQL
 ```
 
-The architecture is intentionally extensible toward:
+The architecture deliberately separates:
 
-- Desktop clients
-- Mobile clients
-- Distributed measurement nodes
-- Plugin-based network probes
-- Intelligent routing
-- Automatic failover and recovery
-- Connectivity orchestration
-- Additional observability backends
+- User interfaces
+- API and application services
+- Network measurement
+- Diagnosis
+- Decision-making
+- Policy enforcement
+- Recovery actions
+- Persistence
+- Observability
+- Security
 
-These capabilities are introduced progressively and should not be assumed to be production-ready merely because the architecture supports them.
-
----
-
-# Repository Structure
-
-The repository is organized as a monorepo:
-
-```text
-.
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   ├── dependabot.yml
-│   └── workflows/
-│
-├── apps/
-│   ├── ...                     # Applications and user-facing clients
-│   └── ...
-│
-├── packages/
-│   ├── api/
-│   ├── auth/
-│   ├── cli/
-│   ├── config/
-│   ├── connectivity/
-│   ├── database/
-│   ├── network/
-│   └── ...
-│
-├── docs/
-│   ├── architecture/
-│   ├── adr/
-│   ├── development/
-│   ├── network/
-│   └── security/
-│
-├── scripts/
-│   ├── bootstrap.sh
-│   ├── lint.sh
-│   ├── test.sh
-│   └── ...
-│
-├── package.json
-├── pnpm-workspace.yaml
-├── turbo.json
-├── pnpm-lock.yaml
-├── tsconfig.json
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── LICENSE
-└── README.md
-```
-
-> The exact package and application inventory evolves with the implementation phases. The repository should be treated as the authoritative source for the current package graph.
-
----
-
-# Core Capabilities
-
-The platform currently establishes the following foundational capabilities.
-
-## Repository Foundation
-
-- Monorepo architecture
-- Shared TypeScript tooling
-- Reproducible package management with `pnpm`
-- Repository validation
-- Development scripts
-- GitHub Actions automation
-- Dependency update automation
-- Architecture documentation
-- ADR-based decision tracking
-
-## Core Backend
-
-The backend exposes versioned APIs under:
-
-```text
-/api/v1
-```
-
-The current foundation includes:
-
-- Authentication
-- HMAC-signed JWT access tokens
-- Refresh-token lifecycle
-- Role-based access control
-- Permission checks
-- Session lifecycle
-- Standardized API responses
-- Standardized error responses
-- Pagination metadata
-- Health endpoints
-- Readiness endpoints
-- Metrics endpoints
-- User APIs
-- Organization APIs
-- Project APIs
-- Workspace APIs
-
-## Data Layer
-
-The database model is defined in:
-
-```text
-packages/database/prisma/schema.prisma
-```
-
-The model currently covers:
-
-- Users
-- Organizations
-- Projects
-- Workspaces
-- Memberships
-- Roles
-- Permissions
-- Sessions
-- Tokens
-- Audit logs
-- Outbox events
-- Cache entries
-
-The schema uses:
-
-- UUID primary keys
-- Explicit foreign keys
-- Timestamps
-- Constraints
-- Indexes
-- Lifecycle-aware deletion semantics
-- Soft-delete fields where required
-
----
-
-# Backend API
-
-The backend uses a versioned API namespace:
-
-```text
-/api/v1
-```
-
-Versioning is intentional and provides a stable boundary between clients and server-side implementation changes.
-
-## Response Model
-
-Successful responses should follow the repository's standard response envelope.
-
-Conceptually:
-
-```json
-{
-  "success": true,
-  "data": {},
-  "meta": {}
-}
-```
-
-Errors should follow a consistent structure:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message"
-  },
-  "meta": {}
-}
-```
-
-The exact schema is defined by the backend contracts and should be treated as authoritative over examples in this document.
-
-## Health and Operational Endpoints
-
-Core health surfaces include:
-
-```text
-GET /api/v1/health
-GET /api/v1/health/ready
-GET /api/v1/health/network
-GET /api/v1/metrics
-GET /api/v1/metrics/network
-```
-
-These endpoints exist to support operational monitoring, diagnostics, orchestration, and automated validation.
+This separation allows individual subsystems to evolve without turning the platform into a single tightly coupled service.
 
 ---
 
 # Network Intelligence
 
-The network intelligence subsystem is designed as a **measurement-first subsystem**.
+Network intelligence is the technical core of IRP.
 
-Its responsibility is to observe network conditions and produce normalized measurements.
-
-It does not require a single monolithic network implementation.
-
-## Current Measurement Capabilities
-
-The network subsystem supports modular probes for:
-
-- DNS latency
-- TCP latency
-- HTTP availability
-- Packet-loss estimation
-- Connection stability
-- Basic throughput estimation
-- IPv4 availability
-- IPv6 availability
-- Locally available provider information
-
-The probing layer is designed around a plugin-style contract so additional measurements can be added without changing API or CLI consumers.
-
-Conceptually:
+The platform models connectivity as multiple observable layers rather than one Boolean value.
 
 ```text
-Probe Contract
-      │
-      ├── DNS Probe
-      ├── TCP Probe
-      ├── HTTP Probe
-      ├── Packet Loss Probe
-      ├── Stability Probe
-      ├── Throughput Probe
-      ├── IPv4 Probe
-      ├── IPv6 Probe
-      └── Provider Probe
+Destination
+    │
+    ├── DNS
+    │     └── resolution / latency / consistency
+    │
+    ├── TCP
+    │     └── connection / timeout / reset / latency
+    │
+    ├── TLS
+    │     └── negotiation / certificate / handshake
+    │
+    ├── HTTP
+    │     └── status / latency / availability
+    │
+    └── Application
+          └── service-level reachability
 ```
 
-## Network API
+Measurements are normalized into health signals that can be compared over time and across destinations.
 
-Current network-related operational surfaces include:
+### Planned intelligence capabilities
 
-```text
-GET  /api/v1/health/network
-GET  /api/v1/metrics/network
-GET  /api/v1/measurements
-POST /api/v1/probes/run
-```
-
-## Network CLI
-
-The CLI exposes a network diagnostic command:
-
-```bash
-irp network check
-```
-
-The command is intended to summarize:
-
-- DNS status
-- Measured latency
-- Connectivity score
-- Detected issues
-
-The CLI should consume the same contracts and measurement semantics as the API rather than maintaining a separate implementation.
+- Continuous probes
+- Multi-destination health scoring
+- Historical baselines
+- Failure classification
+- Anomaly detection
+- Degradation detection
+- Provider/path comparison
+- IPv4/IPv6 comparison
+- Latency and packet-loss analysis
+- Stability scoring
+- Recovery verification
+- Decision confidence
 
 ---
 
-# Security Model
+# Network Autopilot
 
-Security is a first-class architectural concern.
+IRP already has the architectural foundation for a governed Network Autopilot control loop.
 
-## Authentication
+The current design is intentionally conservative. Observation and decisioning can operate without applying consequential changes, while autonomous actions require explicit policy authorization.
 
-The backend uses:
-
-- HMAC-signed JWT access tokens
-- Refresh-token lifecycle management
-- Session tracking
-- Explicit token invalidation semantics
-
-Production authentication paths must fail safely and must not silently fall back to insecure defaults.
-
-## Authorization
-
-Access control is based on:
+The target lifecycle is:
 
 ```text
-User
-  └── Membership
-        └── Role
-              └── Permissions
+OBSERVE
+  → MEASURE
+  → DETECT
+  → DIAGNOSE
+  → DECIDE
+  → POLICY_CHECK
+  → PLAN
+  → APPLY
+  → VERIFY
+  → RECOVER / ROLLBACK
 ```
 
-Authorization should be evaluated at the application boundary and enforced consistently across protected resources.
+Actions are intended to be typed, registered, policy-controlled, auditable, and independently verifiable. Arbitrary command execution is not the design goal.
 
-## Auditability
+### Why this matters
 
-Security-relevant state changes should be represented through auditable records where appropriate, including:
+A monitoring system tells you:
 
-- Authentication events
-- Session lifecycle events
-- Permission-sensitive operations
-- Administrative changes
-- Other security-relevant domain mutations
+> “Something is wrong.”
 
-## Security Boundaries
+A resilience system should eventually be able to tell you:
 
-The platform should preserve clear boundaries between:
+> “Connectivity is degrading, the evidence points to this failure domain, this authorized recovery option has the highest expected value, it was applied, and verification confirms whether it worked.”
 
-- External clients
-- API handlers
-- Authentication
-- Authorization
-- Domain services
-- Database access
-- Network measurement infrastructure
-- Operational tooling
+That is the transition from monitoring to resilience automation.
+
+---
+
+# Fast Decision Engine
+
+Decision speed is a first-class requirement.
+
+The critical path is designed to remain local:
+
+```text
+Network signal
+      ↓
+Local state
+      ↓
+Deterministic classifier
+      ↓
+Policy evaluation
+      ↓
+Recovery decision
+```
+
+The architecture explicitly avoids putting an LLM in this path.
+
+The target performance model is:
+
+| Operation | Architectural target |
+|---|---:|
+| Initial local failure classification | < 100 ms |
+| Deterministic decision evaluation | < 10 ms |
+| Recovery action selection | < 10 ms |
+| Recovery initiation | < 50 ms |
+| Initial recovery verification | < 500 ms |
+
+These are engineering targets for the local control loop, not guarantees about end-to-end Internet recovery time. External networks, providers, destinations, and authorized recovery mechanisms can impose substantially larger delays.
+
+---
+
+# Preemptive Recovery
+
+IRP is designed to recover **before total failure whenever evidence permits it**.
+
+Instead of:
+
+```text
+request
+  ↓
+long timeout
+  ↓
+failure
+  ↓
+diagnosis
+  ↓
+recovery
+```
+
+The target behavior is:
+
+```text
+continuous health monitoring
+          ↓
+     degradation detected
+          ↓
+  evaluate alternatives
+          ↓
+     verify candidate
+          ↓
+      switch/recover
+          ↓
+        verify
+```
+
+This is one of the main differences between IRP and a conventional connectivity checker.
+
+---
+
+# Safety and Control
+
+Autonomous networking requires strong boundaries.
+
+IRP therefore follows these rules:
+
+- No arbitrary shell execution as a recovery primitive
+- Explicit action catalogs
+- Explicit authorization policies
+- Dry-run and observe-only modes
+- Audit records for consequential decisions
+- Circuit breakers
+- Verification after actions
+- Rollback where supported
+- Bounded retries
+- Rate limiting and backoff
+- Clear failure states
+- No silent privilege escalation
+
+The system should prefer **doing nothing safely** over taking an uncontrolled action with uncertain consequences.
+
+---
+
+# Security
+
+Security is a core subsystem, not an afterthought.
+
+The project uses explicit authentication, authorization, session, token, and audit boundaries.
+
+Security requirements include:
+
+- Secure-by-default configuration
+- Explicit trust boundaries
+- Production-safe authentication behavior
+- Role and permission enforcement
+- Token/session lifecycle management
+- Auditability of security-sensitive operations
+- Secret hygiene
+- Dependency validation
+- Container hardening
+- Non-root runtime operation where supported
+- Fail-closed behavior for security-sensitive paths
+
+See [SECURITY.md](SECURITY.md) for the project's security reporting policy.
 
 ---
 
 # Observability
 
-Observability is designed around three complementary signals:
+IRP treats observability as part of the product itself.
+
+The platform is designed around:
 
 ```text
-Logs
-Metrics
-Traces
+Logs + Metrics + Traces + Health + Historical Measurements
 ```
 
-## Metrics
+Operational signals should answer:
 
-Network telemetry includes metrics such as:
+- Is the system running?
+- Is it ready?
+- Is the network healthy?
+- Which layer is failing?
+- When did degradation begin?
+- What action did the system take?
+- Why did it take that action?
+- Did the action work?
+- Was rollback required?
 
-```text
-probe_success_total
-probe_failure_total
-network_latency_ms
-network_health_score
-```
-
-The exact metric inventory may expand as new subsystems are implemented.
-
-## Health
-
-Health endpoints distinguish between application availability and subsystem readiness where appropriate.
-
-## Future Telemetry
-
-The architecture is prepared for broader use of:
-
-- OpenTelemetry
-- Prometheus
-- Distributed tracing
-- Structured logging
-- Measurement history
-- System-wide health aggregation
+The observability stack is designed to integrate with OpenTelemetry, Prometheus-style metrics, structured logging, and distributed tracing as the relevant phases mature.
 
 ---
 
-# Development
+# Production Runtime
+
+Production-like runtime behavior is treated as a separate engineering concern from source-code correctness.
+
+The Docker architecture is designed around:
+
+- Multi-stage production images
+- Non-root API execution
+- Explicit writable paths
+- PostgreSQL readiness
+- Migration lifecycle management
+- Container health checks
+- Readiness/liveness semantics
+- Restart recovery
+- Controlled shutdown
+- Runtime smoke testing
+
+The project includes a production-oriented Docker smoke workflow intended to verify the complete lifecycle rather than only whether an image builds.
+
+A container that compiles but cannot start correctly is considered a failed implementation.
+
+---
+
+# Monorepo
+
+IRP uses pnpm workspaces and Turborepo.
+
+The repository contains modular packages covering areas such as:
+
+```text
+packages/
+├── api
+├── auth
+├── auto-optimization
+├── cli
+├── config
+├── connectivity
+├── core
+├── daemon
+├── database
+├── dns
+├── events
+├── failover
+├── historical-analysis
+├── kernel
+├── logger
+├── metrics
+├── network
+├── network-intelligence
+├── plugin-api
+├── plugin-config
+├── plugin-events
+├── plugin-loader
+├── plugin-manager
+├── plugin-registry
+├── plugin-runtime
+├── plugin-samples
+├── plugin-sandbox
+├── plugin-sdk
+├── queue
+├── resilience-runtime
+├── routing
+├── security
+├── shared
+├── telemetry
+├── tunnel
+├── types
+└── utils
+```
+
+The exact package graph is authoritative in the repository. Packages are added or reorganized as the roadmap progresses.
+
+---
+
+# Technology Stack
+
+| Area | Technology |
+|---|---|
+| Language | TypeScript |
+| Runtime | Node.js 24+ |
+| Package manager | pnpm 11.21+ |
+| Monorepo | pnpm workspaces + Turborepo |
+| Backend | Node.js / TypeScript |
+| Database | PostgreSQL |
+| ORM | Prisma |
+| Testing | Vitest |
+| Linting | ESLint |
+| Formatting | Prettier |
+| Containers | Docker / Compose |
+| CI/CD | GitHub Actions |
+| Observability | OpenTelemetry / Prometheus-oriented architecture |
+| Desktop direction | Electron |
+
+---
+
+# Getting Started
 
 ## Prerequisites
 
-The development environment requires:
+Current repository requirements are:
 
-- Node.js compatible with the repository's supported version
-- `pnpm`
+- Node.js `>= 24.0.0`
+- pnpm `>= 11.21.0`
 - Git
-- PostgreSQL for database-backed development
-- A Unix-like shell for repository helper scripts
+- Docker and Docker Compose for runtime verification
+- PostgreSQL for database-backed local development when not using Compose
 
-Verify the local toolchain:
+Verify the toolchain:
 
 ```bash
 node --version
 pnpm --version
 git --version
+docker --version
 ```
 
-Do not use `npm` for repository package-management workflows when a `pnpm` equivalent exists.
-
----
-
-# Installation
-
-Clone the repository:
+## Install
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/NahiraDev/InternetResiliencePlatform.git
 cd InternetResiliencePlatform
-```
-
-Install dependencies:
-
-```bash
 pnpm install
 ```
 
-Run the repository bootstrap script when required:
+## Validate the repository
+
+Run the standard quality gates:
 
 ```bash
-./scripts/bootstrap.sh
-```
-
-Then run the standard validation commands:
-
-```bash
+pnpm validate
+pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
 ```
 
-Repository-specific helper scripts may also be available:
+For production-like Docker verification:
 
 ```bash
-./scripts/lint.sh
-./scripts/test.sh
+pnpm docker:smoke
 ```
+
+Do not use `npm` for repository package-management workflows when an equivalent `pnpm` command exists.
 
 ---
 
-# Environment Configuration
+# Development Workflow
 
-Environment configuration must be supplied through environment variables or approved local environment files.
-
-Sensitive values must never be committed to source control.
-
-Typical configuration categories include:
+A normal development cycle should look like:
 
 ```text
-DATABASE_URL
-JWT configuration
-Application secrets
-Service configuration
-Observability configuration
-Runtime configuration
+Change
+  ↓
+Format
+  ↓
+Typecheck
+  ↓
+Lint
+  ↓
+Unit / Integration tests
+  ↓
+Build
+  ↓
+Runtime verification
+  ↓
+Commit
+  ↓
+CI
 ```
 
-The repository's environment examples and configuration packages are authoritative for the current variable names and validation rules.
-
-Do not copy production credentials into development files or commit generated secrets.
+For changes affecting networking, containers, authentication, database behavior, or autonomous decision-making, additional phase-specific validation is required.
 
 ---
 
 # Quality Gates
 
-Every implementation phase should preserve a consistent quality pipeline.
+The repository uses multiple independent gates because “it builds” is not sufficient evidence of correctness.
 
-The minimum expected validation set is:
+### Static correctness
 
 ```bash
+pnpm typecheck
 pnpm lint
-pnpm test
-pnpm build
-```
-
-Repository-specific validation may additionally include:
-
-```bash
 pnpm validate
 ```
 
-Depending on the active phase, validation can also include:
+### Functional correctness
 
-- Type checking
-- Package-level tests
-- Integration tests
-- Database validation
-- API contract validation
-- Repository structure validation
-- CI workflow validation
-- Runtime verification
-- Security checks
+```bash
+pnpm test
+```
 
-A change should not be considered complete merely because it compiles. It should satisfy the applicable phase-level validation requirements.
+### Build correctness
+
+```bash
+pnpm build
+```
+
+### Runtime correctness
+
+```bash
+pnpm docker:smoke
+```
+
+### Security correctness
+
+Security-sensitive changes should additionally pass the applicable repository security and dependency checks.
+
+A phase is complete only when its required gates are green.
 
 ---
 
 # Testing Strategy
 
-IRP follows a layered testing strategy.
+IRP follows a layered testing model.
 
-## Unit Tests
+## Unit tests
 
-Validate isolated:
+Used for:
 
 - Domain logic
+- Network classifiers
 - Utility functions
-- Probes
-- Parsers
-- Validators
+- Configuration validation
 - Security primitives
+- Decision rules
+- Recovery policies
 
-## Integration Tests
+## Integration tests
 
-Validate interactions between:
+Used for:
 
-- API and database
-- Authentication and sessions
-- Services and repositories
-- Network probes and aggregation layers
-
-## Contract Tests
-
-Validate stable boundaries such as:
-
-- API response contracts
-- Shared package interfaces
+- API/database interaction
+- Authentication/session lifecycle
+- Service boundaries
+- Network intelligence aggregation
 - Plugin contracts
-- Configuration contracts
 
-## Runtime Verification
+## End-to-end tests
 
-Phase-level runtime checks verify that implemented components actually operate together rather than only passing isolated unit tests.
+Used for:
 
----
-
-# Database
-
-The persistence layer uses PostgreSQL with Prisma.
-
-Schema location:
-
-```text
-packages/database/prisma/schema.prisma
-```
-
-Typical development commands are defined by the repository scripts and package configuration.
-
-Database migrations must be treated as versioned infrastructure changes.
-
-Schema changes should consider:
-
-- Backward compatibility
-- Data migration requirements
-- Index impact
-- Constraint behavior
-- Soft-delete semantics
-- Transaction boundaries
-- Auditability
-- Rollback strategy
-
----
-
-# API Conventions
-
-The API follows several general conventions.
-
-## Versioning
-
-All public application endpoints are versioned:
-
-```text
-/api/v1/...
-```
-
-## Naming
-
-Resources should use stable, predictable names and avoid exposing internal implementation details.
-
-## Pagination
-
-Collection endpoints should provide explicit pagination metadata.
-
-## Errors
-
-Clients should consume stable error codes rather than attempting to parse human-readable messages.
-
-## Idempotency
-
-Operations with retry-sensitive side effects should define explicit idempotency semantics where necessary.
-
-## Validation
-
-Input validation occurs at the application boundary before domain operations are executed.
-
----
-
-# CLI
-
-The CLI provides an operational interface to platform capabilities.
-
-Example:
-
-```bash
-irp network check
-```
-
-The CLI should follow the same service contracts used by other clients where possible.
-
-CLI commands should:
-
-- Return meaningful exit codes
-- Produce machine-readable output where appropriate
-- Remain safe to execute repeatedly
-- Avoid leaking secrets
-- Clearly distinguish errors from successful measurements
-
----
-
-# Documentation
-
-Documentation is part of the architecture.
-
-The repository maintains documentation for:
-
-```text
-docs/
-├── architecture/
-├── adr/
-├── development/
-├── network/
-└── security/
-```
-
-## Architecture Decision Records
-
-Architectural decisions should be recorded as ADRs when they materially affect:
-
-- System structure
-- Dependencies
-- Security boundaries
-- Data models
+- Complete API flows
+- Autopilot lifecycle
 - Runtime behavior
-- Deployment architecture
-- Compatibility guarantees
+- Database readiness
+- Recovery verification
 
-An ADR should explain the decision, context, alternatives, and consequences.
+## Failure injection / chaos testing
 
----
+Later phases explicitly require controlled failures such as:
 
-# CI/CD
+- DNS failure
+- TCP timeout
+- Connection reset
+- TLS failure
+- Database unavailability
+- Container restart
+- Dependency failure
+- Partial network degradation
 
-GitHub Actions provides automated repository validation.
-
-CI is responsible for maintaining repeatable checks such as:
-
-- Dependency installation
-- Linting
-- Type validation
-- Tests
-- Builds
-- Repository validation
-- Security-oriented checks where applicable
-
-CI configuration lives under:
-
-```text
-.github/workflows/
-```
-
-Dependabot configuration is maintained under:
-
-```text
-.github/dependabot.yml
-```
-
-CI should remain deterministic and should use the repository-supported package manager and runtime versions.
-
----
-
-# Project Phases
-
-IRP is developed incrementally.
-
-The initial foundation established:
-
-### Phase 0 — Repository Bootstrap
-
-- Repository structure
-- Governance
-- Documentation foundation
-- Development conventions
-- Initial automation
-
-### Phase 1 — Monorepo Foundation
-
-- Workspace structure
-- Shared configuration
-- Package boundaries
-- TypeScript foundation
-- Shared development tooling
-
-### Phase 2 — Quality Infrastructure
-
-- Linting
-- Testing foundations
-- Formatting conventions
-- Validation tooling
-- Repository quality gates
-
-### Phase 3 — CI/CD Foundation
-
-- GitHub Actions
-- Automated validation
-- Dependency automation
-- Repeatable CI workflows
-
-### Phase 4 — Core Architecture
-
-- Domain boundaries
-- Shared contracts
-- Core service architecture
-- Architectural documentation
-- Initial infrastructure abstractions
-
-### Phase 5 — Core Backend
-
-- Authentication
-- Authorization
-- Sessions
-- JWT lifecycle
-- Standardized responses
-- Health/readiness
-- Metrics
-- User APIs
-- Organization APIs
-- Project APIs
-- Workspace APIs
-- Core database model
-
-### Phase 6 — Network Intelligence Core
-
-- Network probe contracts
-- DNS measurement
-- TCP measurement
-- HTTP availability
-- Packet-loss estimation
-- Connection stability
-- Throughput estimation
-- IPv4/IPv6 availability
-- Provider information
-- Network health aggregation
-- Network measurement API
-- Network CLI
-
-Subsequent phases build on these foundations.
+The purpose is to prove that recovery behavior works under failure rather than only in ideal conditions.
 
 ---
 
 # Roadmap
 
-The long-term roadmap is organized around independent but composable capabilities.
+IRP is being developed through **48 controlled phases**.
 
-Planned areas include:
+The roadmap is intentionally long because reliability software needs infrastructure, observability, security, runtime verification, and failure testing in addition to feature development.
 
-- Network intelligence expansion
-- Smart DNS engine
-- Multi-source connectivity management
-- Intelligent routing
-- Automatic failover and recovery
-- VPN/proxy abstraction
-- Intelligent decision engines
-- Electron desktop client
-- Mobile clients
-- Backend control plane
-- Distributed measurement nodes
-- Advanced observability
-- Security hardening
-- Production release engineering
-- Operational tooling
-- Historical measurement and analytics
+## Foundation and platform
 
-Roadmap items are not considered implemented until they are present in the repository and pass their corresponding validation gates.
+**Phase 0–10** establish the monorepo, quality infrastructure, CI/CD, core architecture, shared services, network foundation, and network intelligence primitives.
 
----
+## Intelligence and automation
 
-# Contributing
+**Phase 11–20** expand network intelligence, Smart DNS, connectivity management, routing, failover, VPN/proxy abstraction, decision systems, clients, API control, and observability.
 
-Contributions are welcome.
+## Runtime and resilience
 
-Before creating an issue or pull request, read:
+**Phase 21–30** focus on runtime verification, production hardening, security, Docker reliability, Network Autopilot, and production-oriented validation.
 
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [SECURITY.md](SECURITY.md)
-- Relevant architecture documentation
-- Relevant ADRs
+## Stabilization and autonomous resilience
 
-A contribution should:
+The final eight phases are:
 
-- Follow repository conventions
-- Keep package boundaries clear
-- Include appropriate tests
-- Update documentation when behavior or architecture changes
-- Avoid introducing unnecessary dependencies
-- Preserve existing API contracts where compatibility is required
-- Pass all applicable validation and CI checks
+| Phase | Objective |
+|---|---|
+| **41** | Platform Stabilization — eliminate remaining CI, lockfile, type, dependency, and repository-integrity failures |
+| **42** | Production Docker & Runtime Hardening — image correctness, non-root operation, dependency completeness, startup, migrations, health, and restart behavior |
+| **43** | Connectivity Observation Engine — continuous DNS/TCP/TLS/HTTP and network health probing |
+| **44** | Network Diagnosis Engine — evidence-based classification of failures and degradation |
+| **45** | Fast Decision Engine — low-latency, local, deterministic recovery decisions |
+| **46** | Autonomous Recovery Engine — policy-controlled recovery, verification, failover, rollback, and circuit breakers |
+| **47** | Connectivity Agent / Network Autopilot — integration of observation, diagnosis, decision, policy, recovery, and telemetry into one control loop |
+| **48** | Production Validation & Chaos Testing — failure injection, load testing, recovery SLOs, runtime certification, and release validation |
 
-For larger architectural changes, add or update an ADR before implementation becomes irreversible.
+### Definition of “done”
 
----
+The project is not considered finished when all source files exist.
 
-# Security Reporting
+The target completion standard is:
 
-Do not report security vulnerabilities through public GitHub issues.
-
-Follow the responsible disclosure process documented in:
-
-[SECURITY.md](SECURITY.md)
-
-Security-sensitive changes should be reviewed with particular attention to:
-
-- Authentication
-- Authorization
-- Token handling
-- Secrets
-- Database access
-- Network operations
-- Process execution
-- Client-to-server trust boundaries
-- Privilege boundaries
-- Supply-chain dependencies
+```text
+Feature implemented
+      ↓
+Unit tests
+      ↓
+Integration tests
+      ↓
+Typecheck / lint
+      ↓
+Build
+      ↓
+Production-like runtime
+      ↓
+Failure injection
+      ↓
+Recovery verification
+      ↓
+Security review
+      ↓
+CI green
+      ↓
+Release certification
+```
 
 ---
 
-# License
+# Current Development Reality
 
-Internet Resilience Platform is licensed under the **Apache License 2.0**.
+IRP is an ambitious project and is still under active development.
 
-See [LICENSE](LICENSE) for the full license text.
+The repository contains substantial architecture and implementation work, but some subsystems are still being stabilized. In particular, CI, dependency integrity, TypeScript strictness, Docker runtime behavior, and production smoke verification are treated as engineering work that must be completed before declaring the platform production-ready.
 
----
+This README intentionally does **not** claim that every planned capability is already available to end users.
 
-# Project Status
-
-IRP is under active development.
-
-The repository is intentionally implemented in phases so that each layer can be validated before higher-level functionality depends on it.
-
-The current codebase should therefore be interpreted according to the capabilities actually present in the repository, its tests, CI workflows, and phase documentation—not solely according to the future roadmap described above.
+That distinction matters: the roadmap describes the destination; the repository and its passing validation gates determine what is actually ready today.
 
 ---
 
-## Maintainers
+# Repository Layout
 
-Internet Resilience Platform is maintained as an open-source engineering project.
-
-For project governance, development standards, security reporting, and contribution rules, refer to the repository documentation and policy files.
+```text
+.
+├── .github/                 # CI, security, repository automation
+├── apps/                    # Deployable applications
+├── packages/                # Modular platform packages
+├── docs/                    # Architecture, phases, operations, security
+├── examples/                # Demonstrations and phase examples
+├── scripts/                 # Validation, runtime, and maintenance tooling
+├── Dockerfile               # Production container build
+├── Dockerfile.dev           # Development container build
+├── docker-compose.yml       # Local/production-like composition
+├── package.json             # Workspace scripts and toolchain
+├── pnpm-workspace.yaml      # Workspace definition
+├── pnpm-lock.yaml           # Dependency lockfile
+├── turbo.json               # Turborepo configuration
+├── tsconfig.json            # TypeScript configuration
+├── ROADMAP.md               # Detailed phase roadmap
+├── CONTRIBUTING.md          # Contribution workflow
+├── SECURITY.md              # Security policy
+├── LICENSE                  # Apache-2.0 license
+└── README.md               # Project overview
+```
 
 ---
 
-## Links
+# Documentation
 
-- [Repository](https://github.com/NahiraDev/InternetResiliencePlatform)
+Important project documents include:
+
+- [Roadmap](ROADMAP.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
 - [License](LICENSE)
 - [Documentation](docs/)
 
-## Phase 26 Network Autopilot
+Phase-specific implementation documents are maintained under `docs/phases/` as the project progresses.
 
-Phase 26 adds the first governed Network Autopilot control loop in `@irp/resilience-runtime`. The default posture is conservative: `enabled=false` and `mode=OBSERVE_ONLY`, so observations, measurement, detection, diagnosis, deterministic decisioning, policy evaluation, planning, audit, dry-run, and shadow decisions can run without applying consequential changes. Autonomous application requires an explicit policy created with `createAutopilotPolicy({ enabled: true, mode: 'AUTONOMOUS', allowedActions: [...] })`.
+---
 
-The executable loop follows `OBSERVE -> MEASURE -> DETECT -> DIAGNOSE -> DECIDE -> POLICY_CHECK -> PLAN -> APPLY -> VERIFY`, with rollback and recovery when verification fails. Actions are typed and must be registered in the action catalog; no arbitrary command execution interface exists.
+# Contributing
 
-API routes are exposed under `/api/v1/autopilot/*` for status, runs, actions, policies, health, approvals, rollbacks, and circuit-breaker reset. CLI inspection commands are available under `irp autopilot`.
+Contributions are welcome when they improve the project's reliability, correctness, security, maintainability, or user experience.
 
-## Phase 27 production readiness
+Before submitting a change:
 
-Phase 27 preserves the current pnpm workspace architecture while hardening production runtime behavior. The production Docker image runs the API as the non-root `irp` user, prepares pnpm during image build, uses explicit owned writable paths for Corepack/pnpm cache compatibility, waits for PostgreSQL readiness before migrations, and exposes readiness/liveness/metrics endpoints for compose health checks. See [docs/phases/phase-27.md](docs/phases/phase-27.md) for the audit, compatibility notes, Docker smoke coverage, and future cleanup candidates.
+1. Understand the relevant package boundaries.
+2. Check the roadmap and existing architecture decisions.
+3. Keep changes scoped and testable.
+4. Preserve TypeScript strictness.
+5. Add or update tests for behavior changes.
+6. Run the applicable quality gates locally.
+7. Do not commit secrets, generated credentials, or machine-specific configuration.
 
-## Phase 28 production runtime verification
+See [CONTRIBUTING.md](CONTRIBUTING.md) for repository-specific contribution rules.
 
-Phase 28 adds a production runtime entrypoint and compose smoke verification for the full lifecycle: clean build, PostgreSQL readiness, production-safe Prisma migration deploy, API readiness, endpoint checks, non-root permission checks, API restart, PostgreSQL restart recovery, full-stack restart, and graceful shutdown. The API container remains non-root and the compose runtime uses a read-only root filesystem with explicit tmpfs mounts for `/tmp`, `/app/tmp`, `/app/.cache/node/corepack/v1`, and `/app/.local/share/pnpm`.
+---
 
-Use `bash scripts/docker-smoke.sh` after the standard pnpm validation pipeline to verify the production-like Docker runtime. See [docs/phases/phase-28.md](docs/phases/phase-28.md) for required environment variables, health endpoint semantics, migration behavior, writable paths, and troubleshooting.
+# Security Reporting
+
+Do not disclose security vulnerabilities in public issues.
+
+Follow the process in [SECURITY.md](SECURITY.md).
+
+Security reports should include enough technical evidence to reproduce and validate the issue without exposing unnecessary sensitive information.
+
+---
+
+# License
+
+Internet Resilience Platform is licensed under the [Apache License 2.0](LICENSE).
+
+---
+
+# Project Vision
+
+The long-term vision is straightforward:
+
+> **Build an Internet resilience system that understands connectivity as a continuously changing state, detects problems before users have to diagnose them manually, makes fast and explainable decisions locally, and verifies every recovery action.**
+
+The project is not intended to hide complexity behind a superficial dashboard. It is intended to build the engineering machinery required to make unreliable connectivity **observable, diagnosable, recoverable, and measurable**.
+
+```text
+             Internet is changing continuously
+                          │
+                          ↓
+                    Observe it
+                          │
+                          ↓
+                    Understand it
+                          │
+                          ↓
+                   Decide quickly
+                          │
+                          ↓
+                  Recover safely
+                          │
+                          ↓
+                    Verify result
+                          │
+                          ↓
+                  Learn from history
+                          │
+                          └──────────────→ repeat
+```
+
+That is the purpose of the Internet Resilience Platform.
