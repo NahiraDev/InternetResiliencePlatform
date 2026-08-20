@@ -10,6 +10,8 @@ const ProviderConfigSchema = z.object({
   protocols: z.array(z.enum(['udp', 'tcp', 'doh', 'dot'])).default(['udp', 'tcp']),
 });
 
+const telemetryHeadersSchema = z.record(z.string(), z.string()).optional();
+
 export const ConfigSchema = z.object({
   app: z.object({
     name: z.string(),
@@ -34,7 +36,12 @@ export const ConfigSchema = z.object({
     prometheus: z.boolean().default(true),
     serviceName: z.string().min(1).default('irp-api'),
     otlpEndpoint: z.string().url().optional(),
+    otlpTracesEndpoint: z.string().url().optional(),
+    otlpMetricsEndpoint: z.string().url().optional(),
+    otlpHeaders: telemetryHeadersSchema,
     sampleRatio: z.coerce.number().min(0).max(1).default(0.1),
+    exportIntervalMs: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
+    exportTimeoutMs: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
   }),
   providers: z.record(z.string(), ProviderConfigSchema).default({}),
   benchmark: z
@@ -96,6 +103,20 @@ export interface ConfigLoaderOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+const parseTelemetryHeaders = (value: string | undefined): Record<string, string> | undefined => {
+  if (!value?.trim()) return undefined;
+  const headers: Record<string, string> = {};
+  for (const part of value.split(',')) {
+    const separator = part.indexOf('=');
+    if (separator <= 0) throw new Error('OTEL_EXPORTER_OTLP_HEADERS must contain comma-separated key=value pairs');
+    const key = part.slice(0, separator).trim();
+    const headerValue = part.slice(separator + 1).trim();
+    if (!key || !headerValue) throw new Error('OTEL_EXPORTER_OTLP_HEADERS contains an empty key or value');
+    headers[key] = headerValue;
+  }
+  return headers;
+};
+
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const findConfigDir = (startDir: string): string => {
   let current = startDir;
@@ -132,6 +153,7 @@ export class ConfigLoader {
       readYaml(join(configDir, 'default.yaml')),
       readYaml(join(configDir, `${environment}.yaml`)),
     );
+    const telemetryHeaders = parseTelemetryHeaders(env.OTEL_EXPORTER_OTLP_HEADERS);
     const envConfig = {
       app: { name: env.APP_NAME, version: env.APP_VERSION, environment },
       api: { host: env.API_HOST, port: env.API_PORT },
@@ -140,7 +162,12 @@ export class ConfigLoader {
         enabled: env.TELEMETRY_ENABLED === undefined ? undefined : env.TELEMETRY_ENABLED === 'true',
         serviceName: env.OTEL_SERVICE_NAME ?? env.TELEMETRY_SERVICE_NAME,
         otlpEndpoint: env.OTEL_EXPORTER_OTLP_ENDPOINT,
+        otlpTracesEndpoint: env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+        otlpMetricsEndpoint: env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
+        otlpHeaders: telemetryHeaders,
         sampleRatio: env.TELEMETRY_SAMPLE_RATIO,
+        exportIntervalMs: env.OTEL_METRIC_EXPORT_INTERVAL ?? env.OTEL_EXPORT_INTERVAL_MS,
+        exportTimeoutMs: env.OTEL_EXPORT_TIMEOUT,
       },
       dns: {
         strategy: env.DNS_STRATEGY,
