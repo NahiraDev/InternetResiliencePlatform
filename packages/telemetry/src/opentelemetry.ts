@@ -1,7 +1,7 @@
 import { metrics } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-import { resourceFromAttributes } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
@@ -37,7 +37,6 @@ export interface OpenTelemetryState {
 
 export interface OpenTelemetryRuntime {
   state: OpenTelemetryState;
-  forceFlush: () => Promise<void>;
   shutdown: () => Promise<void>;
   unsubscribeMetrics?: () => void;
 }
@@ -64,7 +63,7 @@ const validateConfig = (config: OpenTelemetryConfig): void => {
     throw new Error(`OTEL_EXPORT_TIMEOUT_MS must be between ${MIN_EXPORT_TIMEOUT_MS} and ${MAX_EXPORT_TIMEOUT_MS}`);
   if (timeout >= interval)
     throw new Error('OTEL_EXPORT_TIMEOUT_MS must be smaller than OTEL_EXPORT_INTERVAL_MS');
-}
+};
 
 const withSignalPath = (endpoint: string | undefined, signal: 'traces' | 'metrics'): string | undefined => {
   if (!endpoint) return undefined;
@@ -93,7 +92,10 @@ const createTraceExporter = (config: OpenTelemetryConfig): OTLPTraceExporter | u
 };
 
 class MetricsBridge {
-  private readonly instruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createCounter']>>();
+  private readonly counterInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createCounter']>>();
+  private readonly histogramInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createHistogram']>>();
+  private readonly gauges = new Map<string, { value: number; attributes: Record<string, string> }>();
+  private readonly gaugeInstruments = new Map<string, ReturnType<ReturnType<typeof metrics.getMeter>['createObservableGauge']>>();
   private readonly meter = metrics.getMeter('irp.internal-metrics', '0.1.0');
 
   constructor(private readonly bus: InternalMetricsBus) {}
@@ -104,34 +106,53 @@ class MetricsBridge {
   }
 
   private ensureInstrument(definition: MetricDefinition) {
-    const existing = this.instruments.get(definition.name);
+    if (definition.type === 'counter') {
+      const existing = this.counterInstruments.get(definition.name);
+      if (existing) return existing;
+      const instrument = this.meter.createCounter(definition.name, {
+        description: definition.description,
+        unit: definition.unit,
+      });
+      this.counterInstruments.set(definition.name, instrument);
+      return instrument;
+    }
+    if (definition.type === 'histogram') {
+      const existing = this.histogramInstruments.get(definition.name);
+      if (existing) return existing;
+      const instrument = this.meter.createHistogram(definition.name, {
+        description: definition.description,
+        unit: definition.unit,
+      });
+      this.histogramInstruments.set(definition.name, instrument);
+      return instrument;
+    }
+    const existing = this.gaugeInstruments.get(definition.name);
     if (existing) return existing;
-    const instrument =
-      definition.type === 'counter'
-        ? this.meter.createCounter(definition.name, {
-            description: definition.description,
-            unit: definition.unit,
-          })
-        : definition.type === 'gauge'
-          ? this.meter.createUpDownCounter(definition.name, {
-              description: definition.description,
-              unit: definition.unit,
-            })
-          : this.meter.createHistogram(definition.name, {
-              description: definition.description,
-              unit: definition.unit,
-            });
-    this.instruments.set(definition.name, instrument);
+    const instrument = this.meter.createObservableGauge(definition.name, {
+      description: definition.description,
+      unit: definition.unit,
+    });
+    instrument.addCallback((observableResult) => {
+      for (const [key, latest] of this.gauges) {
+        if (key.startsWith(`${definition.name}|`)) observableResult.observe(latest.value, latest.attributes);
+      }
+    });
+    this.gaugeInstruments.set(definition.name, instrument);
     return instrument;
   }
 
   private record(point: MetricPoint): void {
     const definition = this.bus.registry.get(point.name);
     if (!definition) return;
-    const instrument = this.ensureInstrument(definition);
-    if (definition.type === 'counter') instrument.add(point.value, point.labels);
-    else if (definition.type === 'gauge') instrument.add(point.value, point.labels);
-    else instrument.record(point.value, point.labels);
+    this.ensureInstrument(definition);
+    if (definition.type === 'counter') {
+      this.counterInstruments.get(point.name)?.add(point.value, point.labels);
+    } else if (definition.type === 'histogram') {
+      this.histogramInstruments.get(point.name)?.record(point.value, point.labels);
+    } else {
+      const labelKey = `${point.name}|${JSON.stringify(point.labels)}`;
+      this.gauges.set(labelKey, { value: point.value, attributes: { ...point.labels } });
+    }
   }
 }
 
@@ -154,7 +175,6 @@ export const initializeOpenTelemetry = (
         exportIntervalMs: config.exportIntervalMs ?? DEFAULT_EXPORT_INTERVAL_MS,
         exportTimeoutMs: config.exportTimeoutMs ?? DEFAULT_EXPORT_TIMEOUT_MS,
       },
-      forceFlush: async () => undefined,
       shutdown: async () => undefined,
     };
   }
@@ -165,16 +185,18 @@ export const initializeOpenTelemetry = (
   const metricExporter = createMetricExporter(config);
   const exportIntervalMs = config.exportIntervalMs ?? DEFAULT_EXPORT_INTERVAL_MS;
   const exportTimeoutMs = config.exportTimeoutMs ?? DEFAULT_EXPORT_TIMEOUT_MS;
-  const resource = resourceFromAttributes({
-    [ATTR_SERVICE_NAME]: config.serviceName,
-    [ATTR_SERVICE_VERSION]: config.serviceVersion,
-    'deployment.environment.name': config.environment,
-  });
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
+      [ATTR_SERVICE_NAME]: config.serviceName,
+      [ATTR_SERVICE_VERSION]: config.serviceVersion,
+      'deployment.environment.name': config.environment,
+    }),
+  );
 
   const sdk = new NodeSDK({
     resource,
     sampler: new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(config.sampleRatio) }),
-    ...(traceExporter ? { traceExporter } : {}),
+    ...(traceExporter ? { traceExporter } : { spanProcessors: [] }),
     ...(metricExporter
       ? {
           metricReader: new PeriodicExportingMetricReader({
@@ -204,10 +226,6 @@ export const initializeOpenTelemetry = (
 
   const runtime: OpenTelemetryRuntime = {
     state,
-    forceFlush: async () => {
-      await sdk.shutdown();
-      activeRuntime = undefined;
-    },
     shutdown: async () => {
       unsubscribeMetrics?.();
       await sdk.shutdown();
