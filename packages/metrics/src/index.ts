@@ -123,6 +123,10 @@ export class RetainedMetricStore {
     this.prune(point.timestamp);
   }
 
+  clear(): void {
+    this.points = [];
+  }
+
   query(query: MetricsQuery = {}): MetricPoint[] {
     const from = query.from ?? Number.NEGATIVE_INFINITY;
     const to = query.to ?? Number.POSITIVE_INFINITY;
@@ -222,9 +226,7 @@ export class InternalMetricsBus {
   }
 
   clear(): void {
-    const policy = this.store.getRetentionPolicy();
-    this.store.setRetentionPolicy({ maxSamples: policy.maxSamples, maxAgeMs: 1 });
-    this.store.setRetentionPolicy(policy);
+    this.store.clear();
   }
 }
 
