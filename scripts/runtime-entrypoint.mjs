@@ -104,6 +104,91 @@ try {
 }
 
 const { buildServer } = await import('../apps/api/dist/index.js');
+const telemetryModule = await import('../packages/telemetry/dist/index.js');
+
+const metricLabels = (labels) => (labels && typeof labels === 'object' ? { ...labels } : {});
+const wrapPrometheusMetric = (metric, type) => {
+  if (!metric || metric.__irpOpenTelemetryWrapped) return;
+  const name = metric.name;
+  const description = metric.help ?? `Prometheus ${type} metric ${name}`;
+  metrics.define({ name, type, description });
+  const marker = '__irpOpenTelemetryWrapped';
+  Object.defineProperty(metric, marker, { value: true });
+
+  if (type === 'counter') {
+    const originalInc = metric.inc.bind(metric);
+    metric.inc = (labelsOrValue, maybeValue) => {
+      const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
+      const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue ?? 1;
+      originalInc(labelsOrValue, maybeValue);
+      metrics.record(name, value, labels);
+      return metric;
+    };
+    return;
+  }
+
+  if (type === 'histogram') {
+    const originalObserve = metric.observe.bind(metric);
+    metric.observe = (labelsOrValue, maybeValue) => {
+      const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
+      const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue;
+      originalObserve(labelsOrValue, maybeValue);
+      if (typeof value === 'number') metrics.record(name, value, labels);
+      return metric;
+    };
+    return;
+  }
+
+  const gaugeState = new Map();
+  const keyFor = (labels) => JSON.stringify(metricLabels(labels));
+  const updateGauge = (labels, delta, absolute = false) => {
+    const normalized = metricLabels(labels);
+    const key = keyFor(normalized);
+    const current = gaugeState.get(key) ?? 0;
+    const next = absolute ? delta : current + delta;
+    gaugeState.set(key, next);
+    metrics.record(name, next, normalized);
+  };
+  const originalSet = metric.set.bind(metric);
+  const originalInc = metric.inc.bind(metric);
+  const originalDec = metric.dec.bind(metric);
+  metric.set = (labelsOrValue, maybeValue) => {
+    const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
+    const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue;
+    originalSet(labelsOrValue, maybeValue);
+    if (typeof value === 'number') updateGauge(labels, value, true);
+    return metric;
+  };
+  metric.inc = (labelsOrValue, maybeValue) => {
+    const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
+    const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue ?? 1;
+    originalInc(labelsOrValue, maybeValue);
+    updateGauge(labels, value);
+    return metric;
+  };
+  metric.dec = (labelsOrValue, maybeValue) => {
+    const labels = typeof labelsOrValue === 'number' ? {} : metricLabels(labelsOrValue);
+    const value = typeof labelsOrValue === 'number' ? labelsOrValue : maybeValue ?? 1;
+    originalDec(labelsOrValue, maybeValue);
+    updateGauge(labels, -value);
+    return metric;
+  };
+};
+
+if (telemetry.state.metricExporterConfigured) {
+  wrapPrometheusMetric(telemetryModule.httpRequestTotal, 'counter');
+  wrapPrometheusMetric(telemetryModule.httpActiveRequests, 'gauge');
+  wrapPrometheusMetric(telemetryModule.httpRequestDuration, 'histogram');
+  wrapPrometheusMetric(telemetryModule.dependencyFailuresTotal, 'counter');
+  wrapPrometheusMetric(telemetryModule.dependencyLatencyMs, 'histogram');
+  wrapPrometheusMetric(telemetryModule.telemetryFailuresTotal, 'counter');
+  wrapPrometheusMetric(telemetryModule.probeSuccessTotal, 'counter');
+  wrapPrometheusMetric(telemetryModule.probeFailureTotal, 'counter');
+  wrapPrometheusMetric(telemetryModule.networkLatencyMs, 'histogram');
+  wrapPrometheusMetric(telemetryModule.networkHealthScore, 'gauge');
+  wrapPrometheusMetric(telemetryModule.runtimeEventLoopLagMs, 'gauge');
+}
+
 const server = await buildServer();
 let shuttingDown = false;
 const shutdown = async (signal) => {
