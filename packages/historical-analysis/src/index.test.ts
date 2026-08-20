@@ -66,7 +66,7 @@ describe('@irp/historical-analysis', () => {
     expect(report.trends.find((trend) => trend.metric === 'latency')?.direction).toBe('worsening');
     expect(report.trends.find((trend) => trend.metric === 'availability')?.direction).toBe('worsening');
     expect(report.series).toHaveLength(1);
-    expect(report.series[0].probeType).toBe('https');
+    expect(report.series[0]!.probeType).toBe('https');
   });
 
   it('selects coarser buckets for longer ranges', async () => {
