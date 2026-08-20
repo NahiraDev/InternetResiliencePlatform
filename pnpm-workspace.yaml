@@ -12,10 +12,10 @@ overrides:
   effect: 3.20.0
   deepmerge-ts: 8.0.0
 
-# pnpm 11 replaces the legacy onlyBuiltDependencies setting with allowBuilds.
-# Keep this allowlist explicit so native lifecycle scripts run only for the
-# dependencies that are required by the repository toolchain.
+# pnpm 11 uses allowBuilds for explicit lifecycle-script permissions.
+# Keep this allowlist minimal and deterministic for CI.
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  protobufjs: true

@@ -23,6 +23,7 @@
     "@irp/dns": "workspace:*",
     "@irp/events": "workspace:*",
     "@irp/logger": "workspace:*",
+    "@irp/metrics": "workspace:*",
     "@irp/network": "workspace:*",
     "@irp/queue": "workspace:*",
     "@irp/resilience-runtime": "workspace:*",

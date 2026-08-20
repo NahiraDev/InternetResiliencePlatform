@@ -294,3 +294,4 @@ export const networkHealthScore = new client.Gauge({
 });
 export * from './slo.js';
 export * from './endpoint-registry.js';
+export * from './opentelemetry.js';

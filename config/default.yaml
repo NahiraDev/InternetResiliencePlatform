@@ -14,6 +14,8 @@ telemetry:
   prometheus: true
   serviceName: irp-api
   sampleRatio: 0.1
+  exportIntervalMs: 60000
+  exportTimeoutMs: 30000
 benchmark:
   intervalMs: 60000
   question:
