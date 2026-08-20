@@ -2,7 +2,8 @@
 import { spawn } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
 import { loadConfig } from '../packages/config/dist/index.js';
-import { buildServer } from '../apps/api/dist/index.js';
+import { createMetricsPlatform } from '../packages/metrics/dist/index.js';
+import { initializeOpenTelemetry } from '../packages/telemetry/dist/index.js';
 
 const log = (level, msg, extra = {}) => console.log(JSON.stringify({ level, msg, ...extra }));
 const fail = (msg, extra = {}) => {
@@ -60,6 +61,49 @@ try {
   });
 }
 
+const metrics = createMetricsPlatform();
+metrics.define({
+  name: 'irp_runtime_startup_total',
+  type: 'counter',
+  description: 'Successful production runtime startup attempts',
+});
+metrics.record('irp_runtime_startup_total', 1);
+
+let telemetry;
+try {
+  telemetry = initializeOpenTelemetry(
+    {
+      enabled: config.telemetry.enabled,
+      serviceName: config.telemetry.serviceName,
+      serviceVersion: config.app.version,
+      environment: config.app.environment,
+      ...(config.telemetry.otlpEndpoint ? { otlpEndpoint: config.telemetry.otlpEndpoint } : {}),
+      ...(config.telemetry.otlpTracesEndpoint
+        ? { otlpTracesEndpoint: config.telemetry.otlpTracesEndpoint }
+        : {}),
+      ...(config.telemetry.otlpMetricsEndpoint
+        ? { otlpMetricsEndpoint: config.telemetry.otlpMetricsEndpoint }
+        : {}),
+      ...(config.telemetry.otlpHeaders ? { otlpHeaders: config.telemetry.otlpHeaders } : {}),
+      sampleRatio: config.telemetry.sampleRatio,
+      exportIntervalMs: config.telemetry.exportIntervalMs,
+      exportTimeoutMs: config.telemetry.exportTimeoutMs,
+    },
+    metrics,
+  );
+  log('info', 'OpenTelemetry initialized', {
+    enabled: telemetry.state.enabled,
+    traceExporterConfigured: telemetry.state.traceExporterConfigured,
+    metricExporterConfigured: telemetry.state.metricExporterConfigured,
+    serviceName: telemetry.state.serviceName,
+  });
+} catch (error) {
+  fail('OpenTelemetry initialization failed', {
+    error: error instanceof Error ? error.message : String(error),
+  });
+}
+
+const { buildServer } = await import('../apps/api/dist/index.js');
 const server = await buildServer();
 let shuttingDown = false;
 const shutdown = async (signal) => {
@@ -68,6 +112,7 @@ const shutdown = async (signal) => {
   log('info', 'shutdown requested', { signal });
   try {
     await server.close();
+    await telemetry.shutdown();
     log('info', 'shutdown complete');
     process.exit(0);
   } catch (error) {
