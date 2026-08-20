@@ -76,7 +76,7 @@ const createMetricExporter = (config: OpenTelemetryConfig): OTLPMetricExporter |
   if (!endpoint) return undefined;
   return new OTLPMetricExporter({
     url: endpoint,
-    headers: config.otlpHeaders,
+    ...(config.otlpHeaders ? { headers: config.otlpHeaders } : {}),
     timeoutMillis: config.exportTimeoutMs ?? DEFAULT_EXPORT_TIMEOUT_MS,
   });
 };
@@ -86,7 +86,7 @@ const createTraceExporter = (config: OpenTelemetryConfig): OTLPTraceExporter | u
   if (!endpoint) return undefined;
   return new OTLPTraceExporter({
     url: endpoint,
-    headers: config.otlpHeaders,
+    ...(config.otlpHeaders ? { headers: config.otlpHeaders } : {}),
     timeoutMillis: config.exportTimeoutMs ?? DEFAULT_EXPORT_TIMEOUT_MS,
   });
 };
@@ -109,29 +109,32 @@ class MetricsBridge {
     if (definition.type === 'counter') {
       const existing = this.counterInstruments.get(definition.name);
       if (existing) return existing;
-      const instrument = this.meter.createCounter(definition.name, {
+      const options = {
         description: definition.description,
-        unit: definition.unit,
-      });
+        ...(definition.unit ? { unit: definition.unit } : {}),
+      };
+      const instrument = this.meter.createCounter(definition.name, options);
       this.counterInstruments.set(definition.name, instrument);
       return instrument;
     }
     if (definition.type === 'histogram') {
       const existing = this.histogramInstruments.get(definition.name);
       if (existing) return existing;
-      const instrument = this.meter.createHistogram(definition.name, {
+      const options = {
         description: definition.description,
-        unit: definition.unit,
-      });
+        ...(definition.unit ? { unit: definition.unit } : {}),
+      };
+      const instrument = this.meter.createHistogram(definition.name, options);
       this.histogramInstruments.set(definition.name, instrument);
       return instrument;
     }
     const existing = this.gaugeInstruments.get(definition.name);
     if (existing) return existing;
-    const instrument = this.meter.createObservableGauge(definition.name, {
+    const options = {
       description: definition.description,
-      unit: definition.unit,
-    });
+      ...(definition.unit ? { unit: definition.unit } : {}),
+    };
+    const instrument = this.meter.createObservableGauge(definition.name, options);
     instrument.addCallback((observableResult) => {
       for (const [key, latest] of this.gauges) {
         if (key.startsWith(`${definition.name}|`)) observableResult.observe(latest.value, latest.attributes);
