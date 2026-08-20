@@ -59,6 +59,8 @@ Phase 35 is the canonical metric model:
 
 Phase 36 maps these definitions into OpenTelemetry instruments through a metrics-bus adapter. Counters use `Counter.add`, histograms use `Histogram.record`, and gauges use `ObservableGauge` backed by the latest value per bounded label set.
 
+During the Phase 36 transition, the production runtime also wraps the existing `prom-client` application metric methods and forwards their observations into the same Phase 35 bus. This keeps the current `/api/v1/metrics` endpoint intact while ensuring the OpenTelemetry exporter sees the existing HTTP, dependency, probe, and network signals without requiring duplicate application instrumentation.
+
 Existing Prometheus-specific metric families remain available during the transition so Phase 36 does not regress current dashboards or health endpoints. Phase 37 will consume the same Phase 35 bus through a Prometheus exposition adapter rather than duplicating instrumentation.
 
 ## Existing Prometheus metrics
