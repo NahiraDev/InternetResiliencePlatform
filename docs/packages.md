@@ -24,6 +24,10 @@ Defines DNS resolver, provider, health check, and benchmark abstractions for lat
 
 Collects metrics snapshots, endpoint observations, and component health with a Prometheus-compatible direction.
 
+## @irp/metrics
+
+Provides the provider-agnostic internal metrics schema, definition registry, publish/subscribe bus, bounded retention store, and deterministic metric query/snapshot API used as the foundation for later observability exporters.
+
 ## @irp/auto-optimization
 
 Provides the opt-in automatic optimization safety pipeline. It evaluates recommendations against trust, policy, confidence, risk, cooldown, and budget guardrails before delegating validation, execution, verification, and rollback to the resilience runtime.
