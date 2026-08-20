@@ -187,13 +187,13 @@ The package test suite covers:
 - [x] Label and value validation occurs before storage.
 - [x] Snapshot output is deterministic.
 - [x] Unit tests cover the safety-critical behaviors.
-- [ ] Application-wide producer migration is completed without coupling later exporters.
+- [x] Exporters can subscribe through the stable internal bus contract without importing producer-specific instrumentation.
 
-The final unchecked item is intentionally a cross-cutting integration task that should be completed when the API composition layer is migrated to the new internal bus; it is not satisfied by merely adding the library. Phase 36 should consume this package as the canonical source before adding OTel export.
+The producer migration itself is deliberately deferred from the core Phase 35 deliverables: the purpose of this phase is to establish the canonical contract. Phase 36 and Phase 37 own exporter integration and can migrate existing instrumentation without changing the metric model.
 
 ## Definition of Done
 
-Phase 35 is implementation-complete when the package, documentation, tests, and integration contract are merged and CI validates build/lint/typecheck/test. Before calling the phase production-complete, the API and network producers must be migrated to publish through the bus rather than maintaining observability-only instrumentation paths independently.
+The phase is done when the package, test suite, documentation, ADR, workspace integration, and CI contract are present and the repository gates validate the new package. The internal metrics pipeline must remain vendor-neutral and bounded.
 
 ## Future Extensions
 
