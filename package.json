@@ -21,6 +21,9 @@
     "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
     "docker:smoke": "bash scripts/docker-smoke.sh"
   },
+  "dependencies": {
+    "pg": "8.23.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
@@ -29,6 +32,7 @@
     "@vitest/coverage-v8": "3.2.7",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
+    "@types/pg": "8.21.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "prettier": "^3.4.2",
