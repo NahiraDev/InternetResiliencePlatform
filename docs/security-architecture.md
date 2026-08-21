@@ -1,27 +1,76 @@
 # Security Architecture
 
-Phase 8 introduces a zero-trust security foundation in `@irp/security`. Every principal, device, node, API request, and service token is verified explicitly, authorized by declared endpoint permissions, and audited through tamper-evident records.
+**Status:** current implementation reference for `main` at Phase 39.
 
-## RBAC Guide
+## Security boundary
 
-Roles are `Admin`, `Power User`, `User`, `Read Only`, `Plugin`, `Daemon`, and `Node`. Permissions include `network.read`, `network.write`, `dns.modify`, `vpn.connect`, `proxy.modify`, `node.manage`, `cluster.manage`, `plugin.install`, `plugin.remove`, `settings.read`, `settings.write`, `audit.read`, `audit.export`, and `security.manage`. Register every endpoint with `EndpointRegistry` and a non-empty permissions list.
+Security is layered across `apps/api`, `@irp/auth`, `@irp/core`, `@irp/telemetry`, container/runtime controls and CI security gates.
 
-## Authentication Flow
+The primary API authentication path is:
 
-`TokenService` issues typed JWT-compatible tokens for access, refresh, device, session, API, service, and plugin use cases. Claims carry subject, roles, permissions, device identity, expiry, issuer, and unique token IDs to preserve OAuth and SSO compatibility.
+```text
+HTTP request
+  -> JWT access-token authentication
+  -> Principal construction
+  -> RBAC permission check
+  -> route-specific operation
+  -> structured audit/telemetry without bearer secrets
+```
 
-## Certificate Lifecycle
+Authentication and authorization are fail-closed. Protected routes must not silently fall back to anonymous access.
 
-`CertificateAuthority` creates, validates, renews, and checks expiration for signed certificate records. The record format includes subject, issuer, public key, serial, validity window, and signature for future mTLS trust chains.
+## JWT
 
-## Secret Management Guide
+`@irp/auth` currently provides an HMAC-SHA256 JWT implementation with:
 
-`SecretManager` stores API keys, tokens, private keys, certificates, passwords, and encryption keys as AES-256-GCM encrypted records. Plaintext is only returned by explicit `reveal` calls and metadata excludes ciphertext and secret values.
+- explicit issuer validation;
+- algorithm/type validation;
+- signature verification using constant-time comparison;
+- access/refresh token type separation;
+- expiry enforcement;
+- subject, role, scope, organization and session identifiers;
+- production enforcement of `JWT_SECRET`.
 
-## Threat Model
+JWT access tokens are short-lived. Refresh handling is a stateful security boundary and must reject revoked, expired or replayed credentials.
 
-The base detector emits events for repeated failures, token abuse, permission escalation, replay attempts, invalid certificates, and unexpected node behavior. Security events centralize unauthorized access, expired tokens or certificates, invalid signatures, brute force attempts, suspicious traffic, tamper detection, and replay attempts.
+## RBAC
 
-## Security Best Practices
+`RbacAuthorization` evaluates explicit permissions from the authenticated principal. Platform administration is an explicit role capability rather than an anonymous fallback.
 
-Use secure production environment validation, rotate keys with grace-period backups, never log passwords/private keys/secrets/tokens, require request nonces and timestamps, enable request signatures for sensitive endpoints, and keep audit exports permission-gated with `audit.export`.
+Runtime and autopilot mutation permissions are intentionally separate from read/inspection permissions.
+
+## Phase 39 remote-client security
+
+`@irp/auth` now contains reusable primitives for future Android/iOS/remote-machine clients:
+
+- high-entropy opaque device credentials;
+- keyed credential digests rather than persisted raw secrets;
+- constant-time verification;
+- independent device revocation;
+- one-time rotating opaque refresh-token storage;
+- bounded remote-client scope allow-list;
+- bounded security-audit events with recursive secret redaction.
+
+The implementation is deliberately transport-independent. API route integration is a Phase 39 completion gate and must not be described as complete before it is wired into the actual login/refresh/device lifecycle.
+
+## API abuse protection
+
+The API also has shared rate/resource-abuse controls. Authentication, expensive runtime/autopilot operations and other sensitive operations must remain behind the repository's rate-limit policy. HTTP `429` handling must remain standards-compliant and must not be weakened to make tests pass.
+
+## SSRF and network-probe safety
+
+Server-side URL fetching and network-probe functionality must remain bounded. Probes are measurement primitives, not an unrestricted external scanner. SSRF controls must reject loopback, private, link-local and metadata destinations, account for IPv4/IPv6 and redirects, and fail closed on ambiguous resolution.
+
+## Secrets and telemetry
+
+Bearer tokens, refresh tokens, device secrets, passwords, private keys and equivalent credentials must never appear in logs, traces, metrics, health responses, diagnostics or audit metadata.
+
+Phase 39 audit metadata uses recursive redaction and bounded retention. Observability labels must remain low-cardinality.
+
+## Container and supply chain
+
+Production containers run as non-root and preserve the existing explicit writable-path/tmpfs contract. GitHub Actions permissions remain least-privilege, and GitHub tokens are treated as opaque values with no fixed-length assumptions.
+
+## Security invariant
+
+A feature is not security-complete because the library primitive exists. The transport integration, failure paths, tests and production runtime verification must all pass before the capability is considered operational.
