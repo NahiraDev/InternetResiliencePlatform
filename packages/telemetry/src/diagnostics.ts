@@ -54,19 +54,30 @@ const recommendationFor = (check: DiagnosticCheck): string | undefined => {
   return `Investigate the ${check.name} diagnostic check and its structured details.`;
 };
 
+const cloneCheck = (check: DiagnosticCheck): DiagnosticCheck => ({
+  name: check.name,
+  state: check.state,
+  ...(check.latencyMs !== undefined ? { latencyMs: check.latencyMs } : {}),
+  ...(check.httpStatus !== undefined ? { httpStatus: check.httpStatus } : {}),
+  ...(check.details !== undefined ? { details: { ...check.details } } : {}),
+});
+
 export const buildOperationalDiagnosticReport = (
   input: OperationalDiagnosticInput,
   generatedAt = new Date().toISOString(),
 ): OperationalDiagnosticReport => {
-  const checks = input.checks.map((check) => ({ ...check, details: check.details ? { ...check.details } : undefined }));
-  const worst = checks.reduce<DiagnosticState>((current, check) =>
-    severity[check.state] > severity[current] ? check.state : current,
-  'healthy');
+  const checks = input.checks.map(cloneCheck);
+  const worst = checks.reduce<DiagnosticState>(
+    (current, check) => (severity[check.state] > severity[current] ? check.state : current),
+    'healthy',
+  );
   const platform = input.platformStatus ?? {};
   const dependencies = (platform.dependencies as Record<string, unknown> | undefined) ?? {};
   const decision = (platform.decision as Record<string, unknown> | undefined) ?? {};
   const observability = (platform.observability as Record<string, unknown> | undefined) ?? {};
-  const recommendations = checks.map(recommendationFor).filter((value): value is string => Boolean(value));
+  const recommendations = checks
+    .map(recommendationFor)
+    .filter((value): value is string => Boolean(value));
   return {
     schemaVersion: 1,
     generatedAt,
@@ -76,7 +87,12 @@ export const buildOperationalDiagnosticReport = (
     dependencies,
     decision,
     observability: {
-      metrics: input.metricsAvailable === true ? 'available' : input.metricsAvailable === false ? 'unavailable' : 'unknown',
+      metrics:
+        input.metricsAvailable === true
+          ? 'available'
+          : input.metricsAvailable === false
+            ? 'unavailable'
+            : 'unknown',
       ...(observability.telemetry !== undefined ? { telemetry: observability.telemetry } : {}),
     },
     recommendations: [...new Set(recommendations)],
