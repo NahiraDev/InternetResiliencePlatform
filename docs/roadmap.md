@@ -1,23 +1,18 @@
-# GuardianDNS Roadmap
+# Roadmap Documentation Pointer
 
-## Sprint 0 - Foundation
+The authoritative product roadmap is the repository-root [`ROADMAP.md`](../ROADMAP.md).
 
-- Repository structure
-- Engineering documentation
-- Development workflow
-- Initial CI setup
+This file intentionally does not duplicate the phase roadmap. Keeping two independent phase lists caused documentation drift in earlier implementation cycles.
 
-## Future
+## Current phase
 
-- Telemetry collection
-- Resolver evaluation engine
-- Policy automation
-- Adaptive orchestration
+**Phase 39 — Remote/Mobile Client Connectivity & Security Hardening**
 
-## Phase 15 — Secure DNS Transport & Encrypted Resolver Layer
+The current phase extends the existing control-plane authentication architecture with reusable remote-client security primitives. It does not imply that Android/iOS clients or active host enforcement already exist.
 
-Implemented in `@irp/dns` as the secure resolver transport layer consumed after Phase 14 resolver selection. It adds DoH and DoT transports, a DoQ extension point, security profiles, downgrade protection, selection simulation, pooling, retry/backoff, circuit breaking, privacy-safe telemetry, and event/audit hooks while preserving the 40-phase roadmap and deferring proxy/VPN/tunnel/AI work to later phases. See `docs/secure-dns-transport.md`.
+See:
 
-## Phase 19 — AI-Assisted Network Decision Engine
-
-Implemented as an advisory decision-support layer in `@irp/network-intelligence`. Phase 19 provides deterministic scoring, candidate ranking, hard policy/security gates, confidence, anomaly detection, replay, evaluation, simulation-only demo scenarios, and verification artifacts. It does not modify routes, DNS, tunnels, interfaces, firewall, recovery state, or kernel state. See `docs/phases/phase-19/`.
+- [`docs/current-architecture.md`](current-architecture.md) — implementation truth
+- [`docs/phases/README.md`](phases/README.md) — phase status index
+- [`docs/phases/phase-39.md`](phases/phase-39.md) — Phase 39 implementation and verification contract
+- [`../PROJECT_STATE.md`](../PROJECT_STATE.md) — repository state
