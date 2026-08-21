@@ -59,8 +59,8 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 | Extensibility | 19–21 | Plugin SDK and connectivity-provider integrations |
 | Adaptive Access | 22–27 | Headless agent, route orchestration and access control plane |
 | Learning & Optimization | 28–33 | Historical modelling, prediction and automatic optimization |
-| Observability | 34–37 | Metrics, OpenTelemetry and Prometheus |
-| Client & Production | 38–40 | Remote/mobile connectivity, hardening and end-to-end release validation |
+| Observability | 34–38 | Metrics, OpenTelemetry, Prometheus and operational diagnostics |
+| Client & Production | 39–40 | Remote/mobile connectivity and production validation |
 
 ## Phase Map
 
@@ -116,17 +116,17 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - **Phase 32 — Decision Explainability & Audit:** explain why a route was selected and what evidence supported it.
 - **Phase 33 — Resilience Benchmarking:** continuous comparative evaluation of providers, routes and policies.
 
-### Observability — 34–37
+### Observability — 34–38
 
 - **Phase 34 — Metrics Platform:** canonical internal telemetry model.
 - **Phase 35 — OpenTelemetry:** standardized traces and metric export.
-- **Phase 36 — Prometheus:** production scrape endpoint and metric contracts.
-- **Phase 37 — Operational Diagnostics:** machine-readable operational reports and automation hooks; no dashboard requirement.
+- **Phase 36 — OpenTelemetry Runtime Integration:** production Node SDK lifecycle, OTLP exporters, resource identity and sampling.
+- **Phase 37 — Prometheus Integration:** canonical metrics bridge, standard scrape exposition and bounded label/cardinality semantics.
+- **Phase 38 — Operational Diagnostics:** machine-readable operational reports and automation hooks; no dashboard requirement.
 
-### Client & Production — 38–40
+### Client & Production — 39–40
 
-- **Phase 38 — Remote/Mobile Client Connectivity:** secure headless client/data-plane connectivity for Android/iOS/remote machines without turning the project into a UI product.
-- **Phase 39 — Security & Production Hardening:** threat model, least privilege, integrity, secrets, sandboxing, auditability and dependency security.
+- **Phase 39 — Remote/Mobile Client Connectivity & Security Hardening:** secure headless client/data-plane connectivity for Android/iOS/remote machines plus least privilege, integrity, secrets, sandboxing and auditability.
 - **Phase 40 — End-to-End Internet Resilience Validation:** validate the complete Observe→Measure→Decide→Apply→Verify→Recover loop under degraded, changing and destination-specific network conditions.
 
 ## Definition of Success
