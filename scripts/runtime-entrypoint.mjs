@@ -103,18 +103,31 @@ try {
   });
 }
 
-const { buildServer } = await import('../apps/api/dist/index.js');
 const telemetryModule = await import('../packages/telemetry/dist/index.js');
+let unsubscribePrometheus;
+if (config.telemetry.prometheus) {
+  const prometheusBridge = telemetryModule.createPrometheusBridge(
+    metrics,
+    telemetryModule.prometheusRegister,
+  );
+  unsubscribePrometheus = prometheusBridge.subscribe();
+  log('info', 'Prometheus bridge initialized', {
+    enabled: true,
+    endpoint: '/api/v1/metrics',
+  });
+}
+
+const { buildServer } = await import('../apps/api/dist/index.js');
 
 const metricLabels = (labels) => (labels && typeof labels === 'object' ? { ...labels } : {});
 const recordMetric = (name, value, labels) =>
   metrics.record(name, value, { labels: metricLabels(labels) });
 const wrapPrometheusMetric = (metric, type) => {
-  if (!metric || metric.__irpOpenTelemetryWrapped) return;
+  if (!metric || metric.__irpPrometheusWrapped) return;
   const name = metric.name;
   const description = metric.help ?? `Prometheus ${type} metric ${name}`;
   metrics.define({ name, type, description });
-  const marker = '__irpOpenTelemetryWrapped';
+  const marker = '__irpPrometheusWrapped';
   Object.defineProperty(metric, marker, { value: true });
 
   if (type === 'counter') {
@@ -177,7 +190,7 @@ const wrapPrometheusMetric = (metric, type) => {
   };
 };
 
-if (telemetry.state.metricExporterConfigured) {
+if (config.telemetry.prometheus) {
   wrapPrometheusMetric(telemetryModule.httpRequestTotal, 'counter');
   wrapPrometheusMetric(telemetryModule.httpActiveRequests, 'gauge');
   wrapPrometheusMetric(telemetryModule.httpRequestDuration, 'histogram');
@@ -188,7 +201,6 @@ if (telemetry.state.metricExporterConfigured) {
   wrapPrometheusMetric(telemetryModule.probeFailureTotal, 'counter');
   wrapPrometheusMetric(telemetryModule.networkLatencyMs, 'histogram');
   wrapPrometheusMetric(telemetryModule.networkHealthScore, 'gauge');
-  wrapPrometheusMetric(telemetryModule.runtimeEventLoopLagMs, 'gauge');
 }
 
 const server = await buildServer();
@@ -199,6 +211,7 @@ const shutdown = async (signal) => {
   log('info', 'shutdown requested', { signal });
   try {
     await server.close();
+    if (unsubscribePrometheus) unsubscribePrometheus();
     await telemetry.shutdown();
     log('info', 'shutdown complete');
     process.exit(0);
