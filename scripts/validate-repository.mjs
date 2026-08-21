@@ -72,7 +72,7 @@ const noTestExceptionsPath = join(root, 'docs/testing/no-test-exceptions.json');
 const noTestExceptions = readJson(noTestExceptionsPath)?.exceptions ?? [];
 const noTestExceptionNames = new Set(noTestExceptions.map((entry) => entry.package));
 
-for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb', 'pnpm-lock.yaml']) {
+for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb']) {
   if (existsSync(join(root, artifact))) {
     errors.push(`forbidden package-manager artifact present: ${artifact}`);
   }
