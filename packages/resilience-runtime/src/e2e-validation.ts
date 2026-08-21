@@ -1,8 +1,4 @@
-import {
-  createAdapterExecution,
-  createAdapterVerification,
-  DeterministicRuntimeAdapter,
-} from './adapter-registry.js';
+import { createAdapterExecution, createAdapterVerification, DeterministicRuntimeAdapter } from './adapter-registry.js';
 import { createCapabilitySnapshot, createPolicySnapshot, createRuntimeContext, defaultPolicy } from './context/context.js';
 import type {
   ActionExecution,
@@ -23,7 +19,6 @@ export type Phase40ScenarioName =
   | 'dns-degradation'
   | 'provider-recovery'
   | 'destination-specific';
-
 export type Phase40Stage =
   | 'observe'
   | 'measure'
@@ -44,7 +39,6 @@ export interface Phase40ScenarioStep {
   readonly recoveryStatus?: string;
   readonly verificationStatus?: string;
 }
-
 export interface Phase40ValidationReport {
   readonly schemaVersion: 1;
   readonly status: 'passed' | 'failed';
@@ -53,13 +47,11 @@ export interface Phase40ValidationReport {
   readonly acceptance: Readonly<Record<string, boolean>>;
   readonly failedCriteria: readonly string[];
 }
-
 export interface Phase40FaultPlan {
   readonly execution: 'success' | 'failed';
   readonly verification: ActionVerification['status'];
   readonly recovery: RecoveryPlan['status'];
 }
-
 export interface Phase40ExecutionHarness {
   readonly execute: (plan: ActionPlan, context: RuntimeContext, faults: Phase40FaultPlan) => Promise<ActionExecution>;
   readonly verify: (
@@ -180,8 +172,9 @@ class FailureInjectingAdapter extends DeterministicRuntimeAdapter {
   }
 
   override async execute(plan: ActionPlan, runtimeContext: RuntimeContext): Promise<ActionExecution> {
-    if (this.fault.execution === 'failed') return createAdapterExecution(plan, runtimeContext, false, 'failed');
-    return createAdapterExecution(plan, runtimeContext, false, 'success');
+    return this.fault.execution === 'failed'
+      ? createAdapterExecution(plan, runtimeContext, false, 'failed')
+      : createAdapterExecution(plan, runtimeContext, false, 'success');
   }
 }
 
@@ -209,7 +202,7 @@ export const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => ({
   verify: async (plan, _execution, runtimeContext, faults) =>
     createAdapterVerification(plan, runtimeContext, faults.verification),
   recover: async (plan, reason, runtimeContext, faults) => {
-    if (faults.recovery === 'failed')
+    if (faults.recovery === 'failed') {
       return {
         id: `phase40-recovery-${runtimeContext.correlationId}`,
         schemaVersion: 1,
@@ -221,6 +214,7 @@ export const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => ({
         status: 'failed',
         reason,
       };
+    }
     return new FailoverRecoveryProvider().recover(plan, reason, runtimeContext);
   },
 });
@@ -286,6 +280,20 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
     incidents: degradedRecord.incidents.map((i) => i.rootCause),
   });
 
+  const providerRuntime = new ResilienceRuntime([
+    provider('provider', [
+      phase40Observation('provider-down', 'provider', 'degraded', { persistent: true }),
+    ]),
+  ]);
+  const providerRecord = await providerRuntime.cycle(
+    createRuntimeContext({
+      correlationId: 'phase40-provider-recovery',
+      mode: 'simulation',
+      securityContext: { trusted: true },
+      capabilitySnapshot: createCapabilitySnapshot([], true),
+      policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['health_reprobe'] }),
+    }),
+  );
   const providerRecovery = await validateControlledLoop({
     execution: 'success',
     verification: 'failed',
@@ -294,16 +302,16 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
   scenarios.push({
     name: 'provider-recovery',
     stages: stageOrder,
-    decisionIds: ['phase40-controlled-provider-recovery'],
+    decisionIds: [providerRecord.decisionId],
     outcomes: [providerRecovery.recovery?.status ?? providerRecovery.execution.status],
-    incidents: ['persistent_degradation'],
+    incidents: providerRecord.incidents.map((i) => i.rootCause),
     verificationStatus: providerRecovery.verification.status,
     recoveryStatus: providerRecovery.recovery?.status,
   });
 
   const destinationSpecific = new ResilienceRuntime([
-    provider('destination-direct', [phase40Observation('direct-healthy', 'dns', 'healthy')]),
-    provider('destination-alternate', [phase40Observation('alternate-degraded', 'provider', 'degraded')]),
+    provider('destination-direct', [phase40Observation('direct-healthy', 'dns', 'healthy', { destination: 'direct' })]),
+    provider('destination-alternate', [phase40Observation('alternate-degraded', 'provider', 'degraded', { destination: 'alternate' })]),
   ]);
   const destinationRecord = await destinationSpecific.cycle(
     createRuntimeContext({
