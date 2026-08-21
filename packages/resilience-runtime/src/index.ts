@@ -21,5 +21,6 @@ export * from './contracts.js';
 export * from './adapter-registry.js';
 export * from './observation-providers.js';
 export * from './scheduler.js';
+export * from './e2e-validation.js';
 
 export * from './autopilot/autopilot.js';
