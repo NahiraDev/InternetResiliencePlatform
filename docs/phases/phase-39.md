@@ -1,71 +1,80 @@
 # Phase 39 — Remote/Mobile Client Connectivity & Security Hardening
 
+**Status:** IMPLEMENTED / VERIFICATION PENDING
+
 ## Goal
 
-Provide a reusable, headless security foundation for Android/iOS/remote-machine clients that consume the existing control/data plane without introducing a mobile or desktop UI.
+Provide a reusable, transport-independent security foundation for Android/iOS/remote-machine clients that consume the existing control plane without prematurely introducing a mobile or desktop UI.
 
-## Implemented
+## Implemented on `main`
 
-- Opaque per-device credentials with high-entropy secrets, bounded lifetime and explicit revocation.
-- Constant-time credential verification using server-side HMAC digests; raw device secrets are never persisted in the credential record.
-- A reusable rotating opaque refresh-token store with one-time-use semantics and replay rejection.
-- Preservation of the original refresh-token absolute expiry during rotation; rotation cannot extend a session lifetime.
-- Bounded remote-client scope allow-list. Remote clients default to read/inspection/status capabilities and do not implicitly receive runtime mutation privileges.
-- Bounded in-memory security audit log with recursive redaction of authorization headers, cookies, passwords, secrets, tokens, credentials and private-key material.
+- Opaque per-device credentials with high-entropy secrets and bounded lifetime.
+- Server-side keyed digests; raw device secrets are not persisted.
+- Constant-time credential verification.
+- Independent device and credential revocation.
+- One-time rotating opaque refresh-token storage with replay rejection.
+- Preservation of original refresh-token absolute expiry during rotation.
+- Bounded remote-client scope allow-list; mutation privileges are not granted implicitly.
+- Bounded in-memory security audit log.
+- Recursive redaction of authorization headers, cookies, passwords, secrets, tokens, credentials and private-key material.
 - Platform metadata for Android, iOS, Linux, macOS, Windows and unknown clients.
-- Deterministic unit coverage for issue/authenticate/revoke/expiry, refresh rotation and replay rejection, scope validation, audit-log bounds and secret redaction.
+- Unit coverage for credential lifecycle, refresh replay, scope validation, audit bounds and secret redaction.
 
-## Security Contract
+## Required API integration
+
+The existing Fastify API still contains its earlier JWT/session implementation. The Phase 39 library primitives therefore cannot be declared operational until the API authentication lifecycle is migrated to them.
+
+Required integration:
+
+1. Login issues a short-lived access token plus a stateful opaque refresh token.
+2. Refresh consumes the current refresh token exactly once and returns a replacement refresh token with the same absolute expiry.
+3. Refresh replay is rejected and the affected session/device can be revoked.
+4. Logout revokes the current session/credential state.
+5. Device enrollment and revocation use the device-credential service rather than ad-hoc UUID secrets.
+6. Remote-client scopes are validated against the bounded allow-list before a principal is created.
+7. Authentication failures and authorization denials produce safe audit metadata without bearer material.
+8. API tests exercise invalid, expired, revoked and replayed credentials through actual HTTP routes.
+
+## Security contract
 
 ```text
 Enroll device
   -> issue opaque credential
-  -> authenticate device credential
-  -> exchange/associate with short-lived access token
+  -> authenticate credential
+  -> issue short-lived access token
+  -> issue opaque refresh token
   -> rotate refresh token on renewal
   -> revoke device/session on logout or compromise
 ```
 
-The reusable security layer is deliberately independent of transport. Existing Fastify routes remain the control-plane integration boundary; no graphical client is introduced.
+## Verification gate
 
-### Non-negotiable properties
-
-- Access credentials must be short-lived and fail closed.
-- Refresh credentials are opaque, stored only as keyed digests, and single-use after rotation.
-- Device credentials are revocable independently of user identity.
-- Remote clients receive an explicit bounded scope set; mutation privileges require separate authorization.
-- Security telemetry must not persist bearer tokens or equivalent secret material.
-- Audit storage is bounded and must not become an unbounded memory sink.
-- Credential and token comparisons use constant-time equality.
-- Rotation must never extend the original absolute session expiry.
-
-## Current Integration Boundary
-
-The repository already exposes the authenticated Fastify control plane through `/api/v1/*` and the existing `@irp/auth` package. Phase 39 adds the reusable device/refresh/audit primitives to that package so API and future Android/iOS/remote clients share one security contract.
-
-API route wiring remains subject to the repository verification gate; the phase must not be called complete merely because the library implementation exists.
-
-## Verification Gate
-
-Required before advancing to Phase 40:
+Phase 39 cannot advance to Phase 40 until all of the following pass on the resulting commit:
 
 ```text
 pnpm install --frozen-lockfile
 pnpm validate
-pnpm typecheck
 pnpm lint
+pnpm typecheck
 pnpm test
 pnpm build
+
+docker compose config
+docker compose build
+bash scripts/docker-smoke.sh
 ```
 
-Additionally verify security failure paths with deterministic tests and API/runtime checks where the server is available:
+Security failure-path verification must cover:
 
-- invalid device credential → reject
-- expired device credential → reject
-- revoked device credential → reject
-- refresh-token replay → reject
-- refresh rotation → preserve original expiry
-- disallowed remote-client scope → reject
-- audit metadata → no bearer/credential leakage
+- invalid device credential → reject;
+- expired device credential → reject;
+- revoked device credential → reject;
+- refresh-token replay → reject;
+- refresh rotation → preserve original expiry;
+- disallowed remote-client scope → reject;
+- logout/session revocation → reject subsequent refresh;
+- audit metadata → no bearer/credential leakage.
 
-No README or UI changes are part of this phase.
+## Documentation rule
+
+Historical Phase 19–28 reports remain available for traceability but are not current architecture. Current behavior is defined by `docs/current-architecture.md`, `docs/security-architecture.md`, `docs/phases/README.md`, `PROJECT_STATE.md` and the repository-root `ROADMAP.md`.
