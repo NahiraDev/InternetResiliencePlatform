@@ -141,3 +141,5 @@ export const verifyPassword = (password: string, hash: string): boolean => {
   const candidate = scryptSync(password, salt, 64);
   return timingSafeEqual(candidate, Buffer.from(digest, 'hex'));
 };
+
+export * from './client-security.js';
