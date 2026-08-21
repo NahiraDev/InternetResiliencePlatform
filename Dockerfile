@@ -8,7 +8,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates dumb-init \
   && rm -rf /var/lib/apt/lists/* \
   && corepack enable \
-  && corepack prepare pnpm@latest --activate
+  && corepack prepare pnpm@11.21.0 --activate
 
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
@@ -34,7 +34,9 @@ RUN apt-get update \
   && groupadd --system --gid 1001 irp \
   && useradd --system --uid 1001 --gid irp --home-dir /app --shell /usr/sbin/nologin irp \
   && mkdir -p /app/.cache/node/corepack /app/.local/share/pnpm /app/tmp \
-  && chown -R irp:irp /app/.cache /app/.local /app/tmp
+  && chown -R irp:irp /app/.cache /app/.local /app/tmp \
+  && corepack enable \
+  && corepack prepare pnpm@11.21.0 --activate
 COPY --from=base --chown=irp:irp /pnpm /pnpm
 COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/turbo.json ./
 COPY --from=build --chown=irp:irp /app/node_modules ./node_modules
