@@ -48,8 +48,16 @@ jobs:
           docker --version
           docker compose version
 
-      - name: Install dependencies without lockfile
-        run: pnpm install --no-lockfile
+      - name: Require checked-in pnpm lockfile
+        run: |
+          test -f pnpm-lock.yaml || {
+            echo '::error::pnpm-lock.yaml is missing.'
+            echo 'Generate it with pnpm install --lockfile-only and commit the resulting lockfile before enabling frozen installs.'
+            exit 1
+          }
+
+      - name: Install dependencies with frozen lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Validate repository integrity
         run: pnpm validate
