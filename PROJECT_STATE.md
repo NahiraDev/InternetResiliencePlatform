@@ -4,9 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 37 — Prometheus Integration
-- **Phase status:** In progress; implementation fix committed, CI verification required
-- **Next phase:** Phase 38 — Operational Diagnostics
+- **Current phase:** Phase 38 — Operational Diagnostics
+- **Phase status:** Implementation applied; repository CI/runtime verification pending
+- **Next phase:** Phase 39 — Remote/Mobile Client Connectivity & Security Hardening
 - **Roadmap:** 40 phases total
 - **Product mode:** Headless/core-first
 - **UI/Desktop scope:** Removed; do not reintroduce unless explicitly requested
@@ -14,29 +14,34 @@
 
 ## Phase 37 Result
 
-Phase 37 establishes the Prometheus integration layer with:
+Phase 37 — Prometheus Integration is considered implemented and the user has reported that CI/CD is now passing. The previous telemetry TypeScript narrowing failure was fixed in `packages/telemetry/src/prometheus.ts`.
 
-- canonical Prometheus metric registration
-- standard scrape exposition
-- metric-type validation
-- label-schema consistency checks
-- bounded metric labels/cardinality semantics
-- bridge subscription to the internal metrics bus
-- default runtime metrics support
+## Phase 38 Result
 
-### Latest CI failure and fix
+Phase 38 adds a production-oriented operational diagnostics layer:
 
-The CI `pnpm lint` job reached the telemetry package and failed TypeScript compilation in `packages/telemetry/src/prometheus.ts` because the union type `Metric` was not narrowed sufficiently for `inc`, `set`, and `observe` operations.
+- versioned machine-readable diagnostic report model
+- deterministic healthy/degraded/unhealthy/unknown severity aggregation
+- actionable failure classification and recommendations
+- liveness, readiness, network, platform and metrics checks
+- correlation with platform dependencies, route decision evidence and telemetry state
+- safe, observational automation only
+- strict non-zero exit semantics for unhealthy/degraded automation runs
+- bounded HTTP probing with explicit timeouts
+- deterministic unit tests
+- no UI/dashboard implementation
 
-The fix was applied directly to `packages/telemetry/src/prometheus.ts` in commit:
+### Phase 38 implementation
 
-`37ed4fcb6b5c14fcb8ed8c540b102e67fd14f25f`
-
-The fix keeps runtime metric-type checks and explicitly narrows the concrete Prometheus metric before calling its type-specific operation.
+- `packages/telemetry/src/diagnostics.ts` — report model and deterministic report builder
+- `packages/telemetry/src/diagnostics.test.ts` — classification/report tests
+- `scripts/operational-diagnostics.mjs` — machine-readable operational diagnostics CLI
+- `package.json` — `diagnostics` and `diagnostics:strict` automation hooks
+- `docs/phases/phase-38.md` — scope, safety and acceptance criteria
 
 ## Verification Gate
 
-Phase 37 must not be marked complete until all applicable repository gates pass, including at minimum:
+Phase 38 must not be marked complete until all applicable repository gates pass, including at minimum:
 
 ```text
 pnpm install --frozen-lockfile
@@ -47,9 +52,14 @@ pnpm build
 pnpm validate
 ```
 
-If CI reports a new failure, fix the root cause rather than weakening or bypassing the gate.
+Additionally, when the API runtime is available, execute:
 
-The Turborepo warning about a missing/unparseable `pnpm-lock.yaml` must also be investigated. A clean production repository must have a valid lockfile and CI must use frozen-lockfile installation semantics.
+```text
+pnpm diagnostics
+pnpm diagnostics:strict
+```
+
+If CI reports a failure, fix the root cause rather than weakening or bypassing the gate. Do not advance the roadmap merely because source files exist.
 
 ## Continuation Rules
 
@@ -79,17 +89,6 @@ The objective is reliable, adaptive, headless internet connectivity that can sel
 
 ## Next Phase Brief
 
-### Phase 38 — Operational Diagnostics
+### Phase 39 — Remote/Mobile Client Connectivity & Security Hardening
 
-Focus on machine-readable operational diagnostics and automation hooks. No dashboard is required.
-
-Expected direction:
-
-- structured diagnostic reports
-- health/readiness/dependency reporting
-- actionable failure classification
-- correlation with telemetry and route decisions
-- safe diagnostic automation hooks
-- deterministic tests
-- production runtime verification
-- no UI implementation
+Focus on secure headless client/data-plane connectivity and production security hardening. No mobile/desktop dashboard should be introduced.
