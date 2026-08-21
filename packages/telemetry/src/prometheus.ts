@@ -15,6 +15,8 @@ export interface PrometheusBridge {
 
 type Metric = Counter<string> | Gauge<string> | Histogram<string>;
 
+export const canonicalPrometheusRegistry = new client.Registry();
+
 const sanitizeHelp = (value: string): string =>
   value.replace(/[\r\n]+/g, ' ').trim() || 'InternetResiliencePlatform metric';
 
@@ -44,7 +46,7 @@ const createMetric = (
 
 export const createPrometheusBridge = (
   bus: InternalMetricsBus,
-  registry: Registry = new client.Registry(),
+  registry: Registry = canonicalPrometheusRegistry,
 ): PrometheusBridge => {
   const metrics = new Map<string, Metric>();
   const metricLabels = new Map<string, string[]>();
@@ -90,6 +92,20 @@ export const createDefaultPrometheusRegistry = (): Registry => {
   const registry = new client.Registry();
   client.collectDefaultMetrics({ register: registry, prefix: 'irp_' });
   return registry;
+};
+
+export const renderCombinedPrometheusMetrics = async (
+  baseRegistry: Registry,
+  canonicalRegistry: Registry = canonicalPrometheusRegistry,
+): Promise<string> => {
+  const baseMetrics = await baseRegistry.getMetricsAsJSON();
+  const baseNames = new Set(baseMetrics.map((metric) => metric.name));
+  const canonicalMetrics = (await canonicalRegistry.getMetricsAsJSON()).filter(
+    (metric) => !baseNames.has(metric.name),
+  );
+  const combined = new client.Registry();
+  for (const metric of [...baseMetrics, ...canonicalMetrics]) combined.registerMetric(metric as never);
+  return combined.metrics();
 };
 
 export const renderPrometheusRegistry = async (registry: Registry): Promise<string> => registry.metrics();
