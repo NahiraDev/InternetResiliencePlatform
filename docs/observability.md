@@ -1,6 +1,6 @@
 # Observability Architecture
 
-InternetResiliencePlatform uses `@irp/logger`, `@irp/metrics`, `@irp/telemetry`, API health endpoints, and network probe services as the observability foundation. Phase 35 provides the canonical vendor-neutral metrics bus. Phase 36 adds the OpenTelemetry runtime/export layer. Phase 37 owns the native Prometheus exporter migration, and Phase 38 owns packaged Grafana dashboards.
+InternetResiliencePlatform uses `@irp/logger`, `@irp/metrics`, `@irp/telemetry`, API health endpoints, and network probe services as the observability foundation. Phase 35 provides the canonical vendor-neutral metrics bus. Phase 36 provides the OpenTelemetry runtime/export layer. Phase 37 provides the Prometheus exposition bridge. Phase 38 owns machine-readable operational diagnostics and automation hooks; no dashboard is required.
 
 ## Structured logging
 
@@ -59,13 +59,17 @@ Phase 35 is the canonical metric model:
 
 Phase 36 maps these definitions into OpenTelemetry instruments through a metrics-bus adapter. Counters use `Counter.add`, histograms use `Histogram.record`, and gauges use `ObservableGauge` backed by the latest value per bounded label set.
 
-During the Phase 36 transition, the production runtime also wraps the existing `prom-client` application metric methods and forwards their observations into the same Phase 35 bus. This keeps the current `/api/v1/metrics` endpoint intact while ensuring the OpenTelemetry exporter sees the existing HTTP, dependency, probe, and network signals without requiring duplicate application instrumentation.
+Phase 37 provides a parallel Prometheus consumer through `createPrometheusBridge()`. This bridge preserves counter, gauge and histogram semantics, uses the Phase 35 label validation as the authoritative cardinality guard, and rejects label-schema drift for an existing metric family.
 
-Existing Prometheus-specific metric families remain available during the transition so Phase 36 does not regress current dashboards or health endpoints. Phase 37 will consume the same Phase 35 bus through a Prometheus exposition adapter rather than duplicating instrumentation.
+## Prometheus exposition
 
-## Existing Prometheus metrics
+The API exposes `/api/v1/metrics` using the local `prom-client` registry. This endpoint is a scrape surface only and performs no outbound network operations. It does not require an OpenTelemetry Collector or a Prometheus server to be running.
 
-The API currently exposes `/api/v1/metrics` using the existing `prom-client` registry. Controlled-cardinality labels remain mandatory: HTTP metrics use normalized routes and bounded status classes; request ids, query strings, raw URLs, user ids, IP addresses, secrets, and error messages are not metric labels.
+Prometheus metric names are validated against the standard metric-name grammar and help text is normalized to a single-line description. The bridge learns label keys from the first observation for each metric and rejects subsequent observations with a different key schema.
+
+Counter observations are accumulated, gauge observations replace the latest value for a label set, and histogram observations are recorded as histogram samples. Default Node/process metrics remain available with the `irp_` prefix.
+
+Controlled-cardinality labels remain mandatory. HTTP metrics use normalized routes and bounded status classes; request ids, query strings, raw URLs, user ids, IP addresses, secrets, and error messages are not metric labels.
 
 Implemented metric families include:
 
@@ -94,7 +98,7 @@ Database readiness is measured with latency and failure counters. Network probes
 
 ## Failure isolation
 
-Telemetry initialization validates local configuration and starts without requiring a collector. Export work is outside the request path. Bounded export timeouts prevent exporter configuration from creating an unbounded wait. Collector outages therefore do not make API readiness or ordinary request handling depend on the collector.
+Telemetry initialization validates local configuration and starts without requiring a collector. Prometheus exposition is local-only and does not depend on the collector. A scrape failure therefore cannot make ordinary request handling depend on an external observability service.
 
 ## Troubleshooting
 
