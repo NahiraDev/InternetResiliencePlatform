@@ -15,6 +15,8 @@ export interface PrometheusBridge {
 
 type Metric = Counter<string> | Gauge<string> | Histogram<string>;
 
+type MetricLabels = Record<string, string>;
+
 const sanitizeHelp = (value: string): string =>
   value.replace(/[\r\n]+/g, ' ').trim() || 'InternetResiliencePlatform metric';
 
@@ -91,19 +93,23 @@ export const createPrometheusBridge = (
       const definition = bus.registry.get(point.name);
       if (!definition) throw new Error(`Metric is not registered: ${point.name}`);
       const metric = ensureMetric(definition, point);
+      const labels = point.labels as MetricLabels;
 
       if (definition.type === 'counter') {
         if (!(metric instanceof client.Counter))
           throw new Error(`Prometheus metric type conflict: ${point.name}`);
-        metric.inc(point.labels, point.value);
+        const counter = metric as Counter<string>;
+        counter.inc(labels, point.value);
       } else if (definition.type === 'gauge') {
         if (!(metric instanceof client.Gauge))
           throw new Error(`Prometheus metric type conflict: ${point.name}`);
-        metric.set(point.labels, point.value);
+        const gauge = metric as Gauge<string>;
+        gauge.set(labels, point.value);
       } else {
         if (!(metric instanceof client.Histogram))
           throw new Error(`Prometheus metric type conflict: ${point.name}`);
-        metric.observe(point.labels, point.value);
+        const histogram = metric as Histogram<string>;
+        histogram.observe(labels, point.value);
       }
     },
     subscribe() {
