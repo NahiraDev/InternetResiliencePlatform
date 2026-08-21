@@ -1,10 +1,10 @@
 # Phase 41 — External Regional Validation
 
-**Status:** PLANNED / INITIAL TOOLING IMPLEMENTED
+**Status:** INITIAL TOOLING IMPLEMENTED / IRANIAN VANTAGE PENDING
 
 ## Goal
 
-Add an explicit online validation layer that can prove where a network probe actually egresses and can display the result as machine-readable evidence. The first required regional case is Iran (`IR`).
+Add an explicit online validation layer that can prove where a network probe actually egresses and display the result as versioned machine-readable evidence. The first required regional case is Iran (`IR`).
 
 ## Why this is separate from deterministic Phase 40
 
@@ -14,20 +14,24 @@ A GitHub runner or developer workstation outside Iran cannot be treated as an Ir
 
 ## Implemented tooling
 
-`pnpm regional:online`
+```bash
+pnpm regional:online
+```
 
-Implementation: `scripts/regional-online-test.mjs`
+Implementation: `scripts/regional-online-test.mjs`.
 
 The command:
 
-- requires an HTTPS probe endpoint;
+- requires an explicit HTTPS regional probe endpoint;
 - accepts a configurable expected country, default `IR`;
 - applies a bounded timeout;
 - rejects redirects;
-- requires an observed public IP;
-- requires an observed country/country_code;
+- requires an observed egress IP;
+- requires an observed `country`/`country_code`;
 - prints structured JSON containing status, egress IP, country and optional region/ASN/organization metadata;
 - exits `0` on country match, `2` on country mismatch and `1` on transport/validation failure.
+
+There is intentionally no default public geolocation endpoint. A public geolocation service may be used by the regional probe itself, but the project runner must not treat a generic public API response as evidence of an Iranian vantage point.
 
 ## Actual Iran-origin test contract
 
@@ -43,16 +47,20 @@ The endpoint must return at least:
 
 ```json
 {
-  "ip": "203.0.113.10",
+  "ip": "<observed-egress-ip>",
   "country": "IR"
 }
 ```
 
-The example IP above is documentation-only and must never be used as test data for real routing.
+## GitHub Actions automation
+
+`.github/workflows/regional-validation.yml` provides a manual `workflow_dispatch` job. It requires the operator to supply the explicit probe URL and expected country, prints the structured result into `$GITHUB_STEP_SUMMARY`, and uploads the JSON evidence as a workflow artifact.
+
+This workflow is intentionally not part of the normal repository CI gate because a missing/unavailable external regional vantage point is an environmental validation failure, not a source-code failure.
 
 ## Evidence model
 
-An external result is considered valid only when it contains:
+An external result is valid only when it contains:
 
 - probe identity/label;
 - observed public egress IP;
@@ -62,19 +70,7 @@ An external result is considered valid only when it contains:
 - optional region/ASN/organization metadata;
 - pass/mismatch/failure state.
 
-The result must not be interpreted as proof of service availability by itself. Service verification is a separate measurement dimension.
-
-## Safety and privacy
-
-- Never require a user to expose private LAN addresses.
-- Do not log bearer tokens, credentials or cookies.
-- Prefer a dedicated regional probe endpoint rather than arbitrary URL fetching.
-- Keep the number of remote destinations bounded.
-- Regional location is evidence for policy evaluation, not a guarantee of exact physical location; IP geolocation can be coarse or wrong, especially for mobile networks. Recent research documents substantial geolocation error variability across network types and regions. citeturn492492academia31
-
-## Online sanity-check evidence
-
-As an external cross-check, public lookup records currently identify `85.185.85.208` as Tehran, Iran (`IR`) and AS58224, while `2.184.173.224` is identified as Yasuj, Iran and AS58224. These are third-party geolocation records for example IPs, not proof that the current project runner is located in Iran. citeturn309235search5turn309235search2
+Regional identity is evidence for policy evaluation, not an absolute guarantee of physical location. IP geolocation can be coarse or wrong, especially for mobile and carrier networks.
 
 ## Completion criteria
 
@@ -82,4 +78,4 @@ As an external cross-check, public lookup records currently identify `85.185.85.
 - [ ] `pnpm regional:online` returns `status=passed` with `country=IR` from that vantage point.
 - [ ] Service-level reachability checks are added for an explicit bounded target set.
 - [ ] Results are captured as versioned evidence without secret leakage.
-- [ ] CI/automation can consume regional evidence without treating remote failure as a local code failure.
+- [ ] Regional evidence can be consumed by automation without treating remote environmental failure as a local code failure.
