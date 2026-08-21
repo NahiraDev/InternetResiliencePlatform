@@ -48,8 +48,9 @@ describe('Prometheus bridge', () => {
     const bridge = createPrometheusBridge(bus, new client.Registry());
     bridge.subscribe();
     bus.record('irp_test_metric', 1, { labels: { method: 'GET' } });
-    expect(() => bus.record('irp_test_metric', 1, { labels: { route: '/health' } })).not.toThrow();
-    expect(() => bridge.record(bus.query({ name: 'irp_test_metric' })[1]!)).toThrow('label schema conflict');
+    expect(() => bus.record('irp_test_metric', 1, { labels: { route: '/health' } })).toThrow(
+      'Prometheus label schema conflict',
+    );
   });
 
   it('provides standard Prometheus registry metadata', async () => {
