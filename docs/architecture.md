@@ -1,26 +1,18 @@
 # Architecture
 
-InternetResiliencePlatform is a pnpm/TurboRepo monorepo targeting Node.js 22 LTS. The foundation separates runnable applications from reusable packages so future DNS resilience features can be added without coupling UI, daemon, and API concerns.
+The authoritative architecture description is [`current-architecture.md`](current-architecture.md).
 
-## Applications
+This file remains as the stable entry point for links that historically referenced `docs/architecture.md`.
 
-- `apps/cli`: Commander-based operator CLI with placeholder commands for version, diagnostics, status, configuration, and benchmarking.
-- `apps/daemon`: background service skeleton responsible for configuration loading, lifecycle management, scheduling hooks, health monitoring hooks, and plugin initialization.
-- `apps/api`: Fastify REST API exposing `/health`, `/version`, and `/status`.
+## Current implementation
 
-## Packages
+- pnpm/Turbo monorepo targeting the repository's current Node.js runtime contract.
+- `apps/api` provides the Fastify control plane, authentication/RBAC boundary, network health and measurement endpoints, runtime/autopilot routes, diagnostics and observability.
+- `@irp/auth` provides JWT/RBAC plus the Phase 39 remote-client security primitives.
+- `@irp/network`, endpoint intelligence and historical analysis provide bounded network measurement and analysis.
+- `@irp/resilience-runtime` owns the observe/decide/policy/apply/verify/recovery runtime contract.
+- `@irp/metrics` and `@irp/telemetry` provide internal metrics, Prometheus exposition and OpenTelemetry integration.
+- PostgreSQL/Prisma is the persistence boundary; in-memory API stores are not documented as production persistence.
+- Docker production runtime is non-root and retains the explicit writable-path/tmpfs contract introduced by the runtime hardening phases.
 
-- `@irp/core`: dependency injection container, application lifecycle, plugin contract, and composition primitives.
-- `@irp/config`: YAML and environment configuration loader with validation and hot-reload extension point.
-- `@irp/logger`: structured JSON logging with console and file transports.
-- `@irp/network`: network interface discovery, connectivity monitor placeholder, IP capability detection, and latency helpers.
-- `@irp/dns`: resolver, provider, health check, and benchmark interfaces.
-- `@irp/telemetry`: metrics registry, health status aggregation, and performance counter foundation.
-- `@irp/types`: shared platform types.
-- `@irp/utils`: small shared utility helpers.
-
-## Decisions
-
-- Strict TypeScript is enabled across all workspaces.
-- Runtime packages expose ESM modules.
-- Product behavior remains skeletal in Phase 1; DNS switching and production scheduling are deferred.
+See [`current-architecture.md`](current-architecture.md) for boundaries, non-goals and the Phase 39 integration status.
