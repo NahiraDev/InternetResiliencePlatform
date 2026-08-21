@@ -15,36 +15,31 @@ export interface PrometheusBridge {
 
 type Metric = Counter<string> | Gauge<string> | Histogram<string>;
 
-const sanitizeHelp = (value: string): string => value.replace(/[\r\n]+/g, ' ').trim() || 'InternetResiliencePlatform metric';
+const sanitizeHelp = (value: string): string =>
+  value.replace(/[\r\n]+/g, ' ').trim() || 'InternetResiliencePlatform metric';
 
 const safeName = (name: string): string => {
-  if (!/^[a-zA-Z_:][a-zA-Z0-9_:]*$/.test(name)) throw new Error(`Invalid Prometheus metric name: ${name}`);
+  if (!/^[a-zA-Z_:][a-zA-Z0-9_:]*$/.test(name))
+    throw new Error(`Invalid Prometheus metric name: ${name}`);
   return name;
 };
 
-const labelNames = (point: MetricPoint): string[] => Object.keys(point.labels).sort();
+const labelsForPoint = (point: MetricPoint): string[] => Object.keys(point.labels).sort();
+const sameLabelSchema = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
 
-const createMetric = (registry: Registry, definition: MetricDefinition): Metric => {
+const createMetric = (
+  registry: Registry,
+  definition: MetricDefinition,
+  labels: string[],
+): Metric => {
   const name = safeName(definition.name);
   const help = sanitizeHelp(definition.description);
-  const labels = definition.type === 'counter' || definition.type === 'gauge' || definition.type === 'histogram'
-    ? [] as string[]
-    : [] as string[];
-
-  // Labels are discovered from the first point for each metric. The Metrics Bus
-  // already bounds and validates label names/values; registering a metric with
-  // zero labels here is intentionally deferred until the first observation.
-  return labels.length === 0
-    ? definition.type === 'counter'
-      ? new client.Counter({ name, help, registers: [registry] })
-      : definition.type === 'gauge'
-        ? new client.Gauge({ name, help, registers: [registry] })
-        : new client.Histogram({ name, help, registers: [registry] })
-    : definition.type === 'counter'
-      ? new client.Counter({ name, help, labelNames: labels, registers: [registry] })
-      : definition.type === 'gauge'
-        ? new client.Gauge({ name, help, labelNames: labels, registers: [registry] })
-        : new client.Histogram({ name, help, labelNames: labels, registers: [registry] });
+  if (definition.type === 'counter')
+    return new client.Counter({ name, help, labelNames: labels, registers: [registry] });
+  if (definition.type === 'gauge')
+    return new client.Gauge({ name, help, labelNames: labels, registers: [registry] });
+  return new client.Histogram({ name, help, labelNames: labels, registers: [registry] });
 };
 
 export const createPrometheusBridge = (
@@ -53,36 +48,17 @@ export const createPrometheusBridge = (
 ): PrometheusBridge => {
   const metrics = new Map<string, Metric>();
   const metricLabels = new Map<string, string[]>();
-  const cumulativeCounterKeys = new Set<string>();
-  const gaugeValues = new Map<string, number>();
 
-  const ensureMetric = (definition: MetricDefinition, point?: MetricPoint): Metric => {
+  const ensureMetric = (definition: MetricDefinition, point: MetricPoint): Metric => {
+    const labels = labelsForPoint(point);
+    const existingLabels = metricLabels.get(definition.name);
+    if (existingLabels && !sameLabelSchema(existingLabels, labels)) {
+      throw new Error(`Prometheus label schema conflict: ${definition.name}`);
+    }
     const existing = metrics.get(definition.name);
     if (existing) return existing;
-
-    const labels = point ? labelNames(point) : [];
-    if (metricLabels.has(definition.name)) {
-      const expected = metricLabels.get(definition.name)!;
-      if (JSON.stringify(expected) !== JSON.stringify(labels)) {
-        throw new Error(`Prometheus label schema conflict: ${definition.name}`);
-      }
-    } else {
-      metricLabels.set(definition.name, labels);
-    }
-
-    if (labels.length === 0) {
-      const metric = createMetric(registry, definition);
-      metrics.set(definition.name, metric);
-      return metric;
-    }
-
-    const name = safeName(definition.name);
-    const help = sanitizeHelp(definition.description);
-    const metric = definition.type === 'counter'
-      ? new client.Counter({ name, help, labelNames: labels, registers: [registry] })
-      : definition.type === 'gauge'
-        ? new client.Gauge({ name, help, labelNames: labels, registers: [registry] })
-        : new client.Histogram({ name, help, labelNames: labels, registers: [registry] });
+    metricLabels.set(definition.name, labels);
+    const metric = createMetric(registry, definition, labels);
     metrics.set(definition.name, metric);
     return metric;
   };
@@ -90,27 +66,16 @@ export const createPrometheusBridge = (
   const bridge: PrometheusBridge = {
     registry,
     registerDefinition(definition) {
-      if (!metrics.has(definition.name) && !metricLabels.has(definition.name)) {
-        metricLabels.set(definition.name, []);
-      }
-      // Instrument creation is lazy because labels are part of the runtime contract.
+      safeName(definition.name);
+      sanitizeHelp(definition.description);
     },
     record(point) {
       const definition = bus.registry.get(point.name);
       if (!definition) throw new Error(`Metric is not registered: ${point.name}`);
-      const metric = ensureMetric(definition, point) as Counter | Gauge | Histogram;
-      const labels = point.labels;
-      const key = `${point.name}|${JSON.stringify(labels)}`;
-
-      if (definition.type === 'counter') {
-        cumulativeCounterKeys.add(key);
-        metric.inc(labels, point.value);
-      } else if (definition.type === 'gauge') {
-        gaugeValues.set(key, point.value);
-        metric.set(labels, point.value);
-      } else {
-        metric.observe(labels, point.value);
-      }
+      const metric = ensureMetric(definition, point);
+      if (definition.type === 'counter') metric.inc(point.labels, point.value);
+      else if (definition.type === 'gauge') metric.set(point.labels, point.value);
+      else metric.observe(point.labels, point.value);
     },
     subscribe() {
       for (const definition of bus.registry.list()) bridge.registerDefinition(definition);
