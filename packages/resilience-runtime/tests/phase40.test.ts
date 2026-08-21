@@ -14,9 +14,30 @@ describe('Phase 40 end-to-end resilience validation', () => {
       healthyPathRecorded: true,
       degradedPathDetected: true,
       persistentDegradationDetected: true,
+      applyFailureInjectionAvailable: true,
+      verificationFailureTriggersRecovery: true,
       destinationIsolationRepresented: true,
       decisionsAreUnique: true,
     });
+  });
+
+  it('records the complete controlled recovery path', async () => {
+    const report = await runPhase40Validation();
+    const scenario = report.scenarios.find((item) => item.name === 'provider-recovery');
+
+    expect(scenario?.stages).toEqual([
+      'observe',
+      'measure',
+      'detect',
+      'diagnose',
+      'decide',
+      'policy',
+      'apply',
+      'verify',
+      'recover',
+    ]);
+    expect(scenario?.verificationStatus).toBe('failed');
+    expect(scenario?.recoveryStatus).toBe('success');
   });
 
   it('reproduces the same scenario shape across repeated runs', async () => {
