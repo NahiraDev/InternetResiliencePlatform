@@ -1,0 +1,66 @@
+name: Regional Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_country:
+        description: Expected egress country code
+        required: false
+        default: IR
+        type: string
+      probe_url:
+        description: HTTPS endpoint reachable through the target regional vantage point
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  regional-validation:
+    name: Online regional validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Run regional probe
+        id: probe
+        env:
+          IRP_REGIONAL_PROBE_URL: ${{ inputs.probe_url }}
+          IRP_EXPECTED_COUNTRY: ${{ inputs.expected_country }}
+        run: |
+          set -o pipefail
+          pnpm regional:online | tee regional-validation.json
+
+      - name: Publish regional result to step summary
+        if: always()
+        run: |
+          {
+            echo '## Regional Validation Result'
+            echo
+            echo '```json'
+            cat regional-validation.json 2>/dev/null || echo '{"status":"no-result"}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload regional evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regional-validation-${{ github.run_id }}
+          path: regional-validation.json
+          if-no-files-found: error
+          retention-days: 14
