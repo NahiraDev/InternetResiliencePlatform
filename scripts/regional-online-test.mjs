@@ -2,7 +2,6 @@
 
 import { argv, env, exit } from 'node:process';
 
-const DEFAULT_ENDPOINT = 'https://ipapi.co/json/';
 const DEFAULT_EXPECTED_COUNTRY = 'IR';
 const DEFAULT_TIMEOUT_MS = 8000;
 const MAX_TIMEOUT_MS = 30_000;
@@ -13,7 +12,7 @@ const getArg = (name) => {
   return index >= 0 ? argv[index + 1] : undefined;
 };
 
-const endpoint = getArg('--endpoint') || env.IRP_REGIONAL_PROBE_URL || DEFAULT_ENDPOINT;
+const endpoint = getArg('--endpoint') || env.IRP_REGIONAL_PROBE_URL;
 const expectedCountry = (getArg('--country') || env.IRP_EXPECTED_COUNTRY || DEFAULT_EXPECTED_COUNTRY).toUpperCase();
 const timeoutMs = Math.min(
   Math.max(Number(getArg('--timeout') || env.IRP_REGIONAL_TIMEOUT_MS || DEFAULT_TIMEOUT_MS), 1000),
@@ -23,13 +22,13 @@ const label = (getArg('--label') || env.IRP_REGIONAL_PROBE_LABEL || 'regional-on
 
 const startedAt = Date.now();
 
-const fail = (message, details = {}) => {
+const fail = (message, details = {}, code = 1) => {
   const result = {
     schemaVersion: 1,
     status: 'failed',
     deterministic: false,
     label,
-    endpoint,
+    endpoint: endpoint ?? null,
     expectedCountry,
     observed: null,
     durationMs: Date.now() - startedAt,
@@ -37,8 +36,12 @@ const fail = (message, details = {}) => {
     ...details,
   };
   console.log(JSON.stringify(result, null, 2));
-  exit(1);
+  exit(code);
 };
+
+if (!endpoint) {
+  fail('A regional probe endpoint is required. Do not use the public geolocation service as an Iranian-vantage substitute.');
+}
 
 let url;
 try {
@@ -72,7 +75,11 @@ try {
     payload = { ip: (await response.text()).trim() };
   }
 
-  const ip = typeof payload?.ip === 'string' ? payload.ip.trim() : '';
+  const ip = typeof payload?.ip === 'string'
+    ? payload.ip.trim()
+    : typeof payload?.ip_address === 'string'
+      ? payload.ip_address.trim()
+      : '';
   const country = typeof payload?.country === 'string'
     ? payload.country.trim().toUpperCase()
     : typeof payload?.country_code === 'string'
