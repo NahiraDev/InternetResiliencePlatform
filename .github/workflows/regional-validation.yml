@@ -10,7 +10,8 @@ on:
         type: string
       probe_url:
         description: HTTPS endpoint reachable through the target regional vantage point
-        required: true
+        required: false
+        default: https://api.ipmyp.ir
         type: string
 
 permissions:
