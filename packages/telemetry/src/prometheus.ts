@@ -64,7 +64,12 @@ export const createPrometheusBridge = (
     if (registered) {
       metrics.set(definition.name, registered);
       metricLabels.set(definition.name, labels);
-      const expectedType = definition.type === 'histogram' ? 'Histogram' : definition.type === 'counter' ? 'Counter' : 'Gauge';
+      const expectedType =
+        definition.type === 'histogram'
+          ? 'Histogram'
+          : definition.type === 'counter'
+            ? 'Counter'
+            : 'Gauge';
       if (metricType(registered) !== expectedType)
         throw new Error(`Prometheus metric type conflict: ${definition.name}`);
       return registered;
@@ -86,9 +91,20 @@ export const createPrometheusBridge = (
       const definition = bus.registry.get(point.name);
       if (!definition) throw new Error(`Metric is not registered: ${point.name}`);
       const metric = ensureMetric(definition, point);
-      if (definition.type === 'counter') metric.inc(point.labels, point.value);
-      else if (definition.type === 'gauge') metric.set(point.labels, point.value);
-      else metric.observe(point.labels, point.value);
+
+      if (definition.type === 'counter') {
+        if (!(metric instanceof client.Counter))
+          throw new Error(`Prometheus metric type conflict: ${point.name}`);
+        metric.inc(point.labels, point.value);
+      } else if (definition.type === 'gauge') {
+        if (!(metric instanceof client.Gauge))
+          throw new Error(`Prometheus metric type conflict: ${point.name}`);
+        metric.set(point.labels, point.value);
+      } else {
+        if (!(metric instanceof client.Histogram))
+          throw new Error(`Prometheus metric type conflict: ${point.name}`);
+        metric.observe(point.labels, point.value);
+      }
     },
     subscribe() {
       for (const definition of bus.registry.list()) bridge.registerDefinition(definition);
