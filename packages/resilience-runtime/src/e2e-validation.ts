@@ -6,10 +6,10 @@ import type {
   ActionVerification,
   CandidateAction,
   Observation,
-  ObservationProvider,
   RecoveryPlan,
   RuntimeContext,
 } from './domain/types.js';
+import type { ObservationProvider } from './ports/ports.js';
 import { StaticObservationProvider } from './observations/observations.js';
 import { ResilienceRuntime } from './runtime.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
@@ -305,8 +305,12 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
     decisionIds: [providerRecord.decisionId],
     outcomes: [providerRecovery.recovery?.status ?? providerRecovery.execution.status],
     incidents: providerRecord.incidents.map((i) => i.rootCause),
-    verificationStatus: providerRecovery.verification.status,
-    recoveryStatus: providerRecovery.recovery?.status,
+    ...(providerRecovery.verification.status !== undefined
+      ? { verificationStatus: providerRecovery.verification.status }
+      : {}),
+    ...(providerRecovery.recovery?.status !== undefined
+      ? { recoveryStatus: providerRecovery.recovery.status }
+      : {}),
   });
 
   const destinationSpecific = new ResilienceRuntime([
