@@ -2,7 +2,6 @@ import {
   createAdapterExecution,
   createAdapterVerification,
   DeterministicRuntimeAdapter,
-  type RuntimeAdapter,
 } from './adapter-registry.js';
 import { createCapabilitySnapshot, createPolicySnapshot, createRuntimeContext, defaultPolicy } from './context/context.js';
 import type {
@@ -104,7 +103,7 @@ const phase40Observation = (
   category,
   metric: 'health',
   value: status,
-  timestamp: new Date().toISOString(),
+  timestamp: '2026-08-21T00:00:00.000Z',
   freshnessMs: 0,
   confidence: status === 'unknown' ? 0 : 0.95,
   severity: status === 'healthy' ? 'info' : status === 'failed' ? 'critical' : 'warning',
@@ -186,50 +185,45 @@ class FailureInjectingAdapter extends DeterministicRuntimeAdapter {
   }
 }
 
-export const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => {
-  return {
-    execute: async (plan, runtimeContext, faults) => {
-      const adapter = new FailureInjectingAdapter(
-        {
-          adapterId: 'phase40-fault-injector',
-          subsystem: 'failover',
-          version: '1.0.0',
-          capabilities: [],
-          supportedActions: [plan.selectedAction.intent],
-          supportsSimulation: false,
-          supportsSafe: false,
-          supportsLive: true,
-          requiredPermissions: [],
-          requiredKernelCapabilities: [],
-          verificationSupport: true,
-          recoverySupport: true,
-        },
-        faults,
-      );
-      return adapter.execute(plan, runtimeContext);
-    },
-    verify: async (plan, execution, runtimeContext, faults) => {
-      if (execution.status === 'failed' || faults.verification === 'failed')
-        return createAdapterVerification(plan, runtimeContext, faults.verification);
-      return createAdapterVerification(plan, runtimeContext, faults.verification);
-    },
-    recover: async (plan, reason, runtimeContext, faults) => {
-      if (faults.recovery === 'failed')
-        return {
-          id: `phase40-recovery-${runtimeContext.correlationId}`,
-          schemaVersion: 1,
-          createdAt: '2026-08-21T00:00:00.000Z',
-          correlationId: runtimeContext.correlationId,
-          source: 'phase40-harness',
-          metadata: {},
-          delegatedTo: 'failover',
-          status: 'failed',
-          reason,
-        };
-      return new FailoverRecoveryProvider().recover(plan, reason, runtimeContext);
-    },
-  };
-};
+export const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => ({
+  execute: async (plan, runtimeContext, faults) => {
+    const adapter = new FailureInjectingAdapter(
+      {
+        adapterId: 'phase40-fault-injector',
+        subsystem: 'failover',
+        version: '1.0.0',
+        capabilities: [],
+        supportedActions: [plan.selectedAction.intent],
+        supportsSimulation: false,
+        supportsSafe: false,
+        supportsLive: true,
+        requiredPermissions: [],
+        requiredKernelCapabilities: [],
+        verificationSupport: true,
+        recoverySupport: true,
+      },
+      faults,
+    );
+    return adapter.execute(plan, runtimeContext);
+  },
+  verify: async (plan, _execution, runtimeContext, faults) =>
+    createAdapterVerification(plan, runtimeContext, faults.verification),
+  recover: async (plan, reason, runtimeContext, faults) => {
+    if (faults.recovery === 'failed')
+      return {
+        id: `phase40-recovery-${runtimeContext.correlationId}`,
+        schemaVersion: 1,
+        createdAt: '2026-08-21T00:00:00.000Z',
+        correlationId: runtimeContext.correlationId,
+        source: 'phase40-harness',
+        metadata: {},
+        delegatedTo: 'failover',
+        status: 'failed',
+        reason,
+      };
+    return new FailoverRecoveryProvider().recover(plan, reason, runtimeContext);
+  },
+});
 
 const validateControlledLoop = async (faults: Phase40FaultPlan) => {
   const correlationId = `phase40-controlled-${faults.execution}-${faults.verification}-${faults.recovery}`;
@@ -328,12 +322,18 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
     incidents: destinationRecord.incidents.map((i) => i.rootCause),
   });
 
+  const applyFailure = await validateControlledLoop({
+    execution: 'failed',
+    verification: 'failed',
+    recovery: 'success',
+  });
+
   const acceptance = {
     completeStageOrderCovered: scenarios.some((scenario) => stageOrder.every((stage) => scenario.stages.includes(stage))),
     healthyPathRecorded: scenarios.some((scenario) => scenario.name === 'healthy' && scenario.outcomes.length === 1),
     degradedPathDetected: scenarios.some((scenario) => scenario.name === 'dns-degradation' && scenario.incidents.includes('dns_failure')),
     persistentDegradationDetected: scenarios.some((scenario) => scenario.name === 'provider-recovery' && scenario.incidents.includes('persistent_degradation')),
-    applyFailureInjectionAvailable: (await validateControlledLoop({ execution: 'failed', verification: 'failed', recovery: 'success' })).execution.status === 'failed',
+    applyFailureInjectionAvailable: applyFailure.execution.status === 'failed',
     verificationFailureTriggersRecovery: scenarios.some((scenario) => scenario.name === 'provider-recovery' && scenario.verificationStatus === 'failed' && scenario.recoveryStatus === 'success'),
     destinationIsolationRepresented: scenarios.some((scenario) => scenario.name === 'destination-specific'),
     decisionsAreUnique: new Set(scenarios.flatMap((scenario) => scenario.decisionIds)).size === scenarios.flatMap((scenario) => scenario.decisionIds).length,
