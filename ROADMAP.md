@@ -6,14 +6,14 @@
 
 InternetResiliencePlatform is **core-first and headless**. The product is not a dashboard, Electron application, or VPN switcher. Its primary responsibility is to make network access reliable without requiring the user to manually choose routes or troubleshoot connectivity.
 
-The core agent must continuously:
+The core agent continuously:
 
 ```text
 Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 → Apply → Verify → Monitor → Failover/Recover → Learn
 ```
 
-### Non-goals
+## Non-goals
 
 - No desktop dashboard.
 - No Electron UI.
@@ -21,7 +21,7 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - No global on/off VPN model as the core abstraction.
 - No route selection based on ping alone.
 
-### Required capabilities
+## Required capabilities
 
 - Per-destination/per-service path selection.
 - Direct and alternate connectivity providers through stable plugin interfaces.
@@ -32,24 +32,11 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - Automatic failover, recovery, hysteresis, cooldown and anti-flapping safeguards.
 - Explainable decisions and auditable route changes.
 - Headless API/control plane for automation and clients.
-- Mobile/remote clients remain supported through the control/data-plane interfaces, but UI is not a core deliverable.
+- Mobile/remote clients through the control/data-plane interfaces; UI is not a core deliverable.
 - Production-grade security, sandboxing, policy enforcement and rollback.
+- External/regional validation from independent network vantage points.
 
-## Core Principles
-
-- **Core over UI** — engineering capacity goes to the network engine and agent.
-- **Reliability first** — stability outranks feature count.
-- **Measure everything** — decisions use real connectivity evidence.
-- **Application-aware** — successful ping does not mean successful service access.
-- **Destination-aware** — different services may require different paths.
-- **Time-aware** — route quality changes with time and network load.
-- **Fail safely** — every automatic change is bounded, verified and reversible.
-- **Headless by design** — the agent must be useful without a graphical interface.
-- **Plugin-first** — providers and connectivity backends integrate through contracts.
-- **Test-first** — nothing is considered complete without deterministic tests and runtime verification.
-- **Production-ready only** — no demo-only paths in production behavior.
-
-## Roadmap Overview
+## Roadmap Overview — 48 Phases
 
 | Section | Phases | Goal |
 | --- | --- | --- |
@@ -57,10 +44,12 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 | Measurement & Intelligence | 8–15 | DNS, connectivity detection, diagnostics and network intelligence |
 | Resilience Core | 16–18 | Failover, profiles and policy-driven resilience |
 | Extensibility | 19–21 | Plugin SDK and connectivity-provider integrations |
-| Adaptive Access | 22–27 | Headless agent, route orchestration and access control plane |
-| Learning & Optimization | 28–33 | Historical modelling, prediction and automatic optimization |
-| Observability | 34–38 | Metrics, OpenTelemetry, Prometheus and operational diagnostics |
-| Client & Production | 39–40 | Remote/mobile connectivity and production validation |
+| Adaptive Access | 22–27 | Headless agent, route orchestration and secure control plane |
+| Learning & Optimization | 28–33 | Historical modelling, prediction and optimization |
+| Observability | 34–38 | Metrics, OpenTelemetry, Prometheus and diagnostics |
+| Client & Validation | 39–41 | Remote-client security and deterministic/external validation |
+| Distributed Resilience | 42–45 | Remote-client integration, regional probes, destination policy and adaptive learning |
+| Production Certification | 46–48 | Long-duration resilience, production release and continuous certification |
 
 ## Phase Map
 
@@ -105,7 +94,7 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - **Phase 24 — Destination Classification & Geo-Aware Policy:** distinguish direct, alternate and location-sensitive destinations without hard-coding a single global route.
 - **Phase 25 — Application Connectivity Verification:** DNS/TCP/TLS/HTTP/service-level verification and failure classification.
 - **Phase 26 — Secure Control Plane:** authenticated API for status, policy, diagnostics and controlled agent commands.
-- **Phase 27 — Runtime & Container Productionization:** non-root operation, dependency closure, startup readiness, health checks, deterministic images and end-to-end runtime verification.
+- **Phase 27 — Runtime & Container Productionization:** non-root operation, dependency closure, startup readiness, health checks, deterministic images and runtime verification.
 
 ### Learning & Optimization — 28–33
 
@@ -122,32 +111,53 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - **Phase 35 — OpenTelemetry:** standardized traces and metric export.
 - **Phase 36 — OpenTelemetry Runtime Integration:** production Node SDK lifecycle, OTLP exporters, resource identity and sampling.
 - **Phase 37 — Prometheus Integration:** canonical metrics bridge, standard scrape exposition and bounded label/cardinality semantics.
-- **Phase 38 — Operational Diagnostics:** machine-readable operational reports and automation hooks; no dashboard requirement.
+- **Phase 38 — Operational Diagnostics:** machine-readable operational reports and automation hooks.
 
-### Client & Production — 39–40
+### Client & Validation — 39–41
 
-- **Phase 39 — Remote/Mobile Client Connectivity & Security Hardening:** secure headless client/data-plane connectivity for Android/iOS/remote machines plus least privilege, integrity, secrets, sandboxing and auditability.
-- **Phase 40 — End-to-End Internet Resilience Validation:** validate the complete Observe→Measure→Decide→Apply→Verify→Recover loop under degraded, changing and destination-specific network conditions.
+- **Phase 39 — Remote/Mobile Client Connectivity & Security Hardening:** reusable device credentials, rotating refresh tokens, bounded remote-client scopes and security audit primitives.
+- **Phase 40 — End-to-End Internet Resilience Validation:** deterministic validation of the full Observe→Measure→Decide→Apply→Verify→Recover loop under controlled faults.
+- **Phase 41 — External Regional Validation:** online public-IP identity checks and externally observed service/connectivity validation from independent regional vantage points, with explicit Iran/IR validation support.
+
+### Distributed Resilience — 42–45
+
+- **Phase 42 — Remote Client API Integration:** wire Phase 39 device credentials and rotating refresh sessions into the real Fastify authentication lifecycle and remote-client authorization boundary.
+- **Phase 43 — Distributed Probe Federation:** register independent regional probes, collect bounded signed evidence and compare observations across vantage points.
+- **Phase 44 — Destination Policy & Network Identity Assurance:** strengthen destination-specific geo/policy evaluation, direct/local identity preservation and evidence-based policy enforcement.
+- **Phase 45 — Adaptive Provider Learning:** combine historical, regional and destination evidence into bounded provider/path learning and confidence updates.
+
+### Production Certification — 46–48
+
+- **Phase 46 — Long-Duration Chaos & Soak Validation:** multi-hour/day resilience validation, fault injection, anti-flapping, recovery budgets, memory/resource stability and state convergence.
+- **Phase 47 — Production Release & Upgrade Safety:** release artifacts, migrations, compatibility guarantees, upgrade/rollback paths, supply-chain validation and deployment certification.
+- **Phase 48 — v1.0 Continuous Resilience Certification:** final production certification with end-to-end evidence, regional validation, security gates, SLOs, recovery proof and continuous post-release validation.
+
+## Phase 41 Online Regional Validation Contract
+
+Regional validation must distinguish **where a probe is actually egressing** from where the GitHub runner, developer workstation or control plane is located.
+
+The repository therefore supports:
+
+```text
+pnpm regional:online
+```
+
+By default the command queries an HTTPS public-IP/geolocation endpoint and prints machine-readable JSON. For an actual Iran-origin vantage point, set:
+
+```text
+IRP_REGIONAL_PROBE_URL=https://<trusted-iranian-probe>/identity
+IRP_EXPECTED_COUNTRY=IR
+pnpm regional:online
+```
+
+The remote probe must return JSON containing at least `ip` and `country` (or `country_code`). The command fails closed when the response cannot prove the expected country.
+
+The public-IP lookup portion is based on standard public-IP/geolocation APIs that can return the request origin's IP and country. citeturn543801search0turn543801search2turn543801search7
 
 ## Definition of Success
 
-v1.0 is successful only when the core agent can autonomously:
-
-1. Detect that a destination is degraded or unreachable.
-2. Determine whether the failure is DNS, transport, TLS, HTTP/application, routing or provider related.
-3. Discover and evaluate eligible alternate paths.
-4. Select a path using multi-dimensional health and policy evidence rather than ping alone.
-5. Preserve destinations that require direct/local network identity when policy requires it.
-6. Apply the selected path safely.
-7. Verify actual service connectivity.
-8. Detect degradation over time and automatically fail over.
-9. Recover and fail back without route flapping.
-10. Learn historical/time-of-day behaviour and improve future decisions.
-11. Expose secure headless control and status interfaces for clients and automation.
-12. Operate reliably without any graphical UI.
+v1.0 is successful only when the core agent can autonomously detect degraded destinations, identify failure class, evaluate eligible paths using multi-dimensional evidence, preserve destination policy, apply safely, verify service connectivity, recover without flapping, learn over time, expose secure headless control, and provide externally verifiable resilience evidence from independent regional vantage points.
 
 ## Repository Policy
 
 The repository is intentionally **headless**. UI/Desktop work is removed from the product roadmap and implementation. Core network, agent, routing, policy, provider, verification, resilience, learning, security and runtime work takes priority over presentation layers.
-
-The README is product documentation and is intentionally not changed by this scope transition.
