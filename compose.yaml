@@ -24,10 +24,11 @@ services:
     environment:
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:-change-me-only-for-local-compose-32}
+      REMOTE_CLIENT_CREDENTIAL_KEY: ${REMOTE_CLIENT_CREDENTIAL_KEY:-change-me-only-for-local-compose-credential-48}
+      REMOTE_CLIENT_REFRESH_KEY: ${REMOTE_CLIENT_REFRESH_KEY:-change-me-only-for-local-compose-refresh-48}
       DATABASE_URL: postgresql://irp:irp_dev_password@postgres:5432/irp
       DATABASE_READY_TIMEOUT_MS: 60000
       DATABASE_READY_INTERVAL_MS: 1000
-      COREPACK_HOME: /app/.cache/node/corepack
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,7 +44,6 @@ services:
     tmpfs:
       - /tmp
       - /app/tmp:uid=1001,gid=1001,mode=700
-      - /app/.cache/node/corepack:uid=1001,gid=1001,mode=700
       - /app/.local/share/pnpm:uid=1001,gid=1001,mode=700
     restart: unless-stopped
     mem_limit: 768m
