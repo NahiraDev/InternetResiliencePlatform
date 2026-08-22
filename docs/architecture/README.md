@@ -1,15 +1,18 @@
 # Architecture
 
-The Internet Resilience Platform is organized around measurable resilience outcomes. Phase 0 defines documentation and automation boundaries before product code is introduced.
+This directory contains detailed architecture documentation for the implemented IRP system.
 
-## Initial layers
+## Start here
 
-1. **Documentation layer**: ADRs, architecture notes, security policies, and developer guidance.
-2. **Automation layer**: GitHub Actions and local scripts that validate repository hygiene.
-3. **Future application layer**: Services, libraries, infrastructure definitions, and data pipelines added in later phases.
+1. [Architecture overview](overview.md)
+2. [System architecture](system-architecture.md)
+3. [Resilience runtime](resilience-runtime.md)
+4. [Live control plane](live-control-plane.md)
+5. [Event stream](event-stream.md)
+6. [Runtime adapter model](runtime-adapter-model.md)
 
-## Principles
+## Reading rule
 
-- Prefer observable, testable behavior over implicit operational knowledge.
-- Keep security and reliability requirements visible in review artifacts.
-- Make local validation mirror CI validation where possible.
+Architecture documents explain responsibilities, boundaries, data/control flow, dependencies, failure behavior, and verification. Historical phase requirements do not belong here.
+
+The implementation on `main`, tests, and `PROJECT_STATE.md` determine whether a described capability is currently available.
