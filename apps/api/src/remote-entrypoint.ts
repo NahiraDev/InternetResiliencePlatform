@@ -1,10 +1,12 @@
 import { loadConfig } from '@irp/config';
 import { buildServer } from './index.js';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
+import { registerProbeFederationRoutes } from './probe-federation-api.js';
 
 const config = loadConfig();
 const server = await buildServer();
 registerRemoteClientRoutes(server);
+registerProbeFederationRoutes(server);
 
 let shuttingDown = false;
 const shutdown = async (signal: string) => {
@@ -14,18 +16,10 @@ const shutdown = async (signal: string) => {
     await server.close();
     process.exit(0);
   } catch (error) {
-    console.error(
-      JSON.stringify({
-        level: 'error',
-        msg: 'API shutdown failed',
-        signal,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-    );
+    console.error(JSON.stringify({ level: 'error', msg: 'API shutdown failed', signal, error: error instanceof Error ? error.message : String(error) }));
     process.exit(1);
   }
 };
-
 process.once('SIGTERM', () => void shutdown('SIGTERM'));
 process.once('SIGINT', () => void shutdown('SIGINT'));
 await server.listen({ host: config.api.host, port: config.api.port });
