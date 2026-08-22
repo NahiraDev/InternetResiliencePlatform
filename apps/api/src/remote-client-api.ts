@@ -138,10 +138,10 @@ export const registerRemoteClientRoutes = (
     const input = enrollmentSchema.parse(request.body ?? {});
     const scopes = validateRemoteClientScopes(input.scopes ?? [...DEFAULT_REMOTE_CLIENT_SCOPES]);
     const issued = credentials.issue({
-      deviceId: input.deviceId,
       platform: input.platform,
-      label: input.label,
-      ttlSeconds: input.ttlSeconds,
+      ...(input.deviceId !== undefined ? { deviceId: input.deviceId } : {}),
+      ...(input.label !== undefined ? { label: input.label } : {}),
+      ...(input.ttlSeconds !== undefined ? { ttlSeconds: input.ttlSeconds } : {}),
     });
     const metadata: RemoteClientMetadata = {
       credentialId: issued.credentialId,
