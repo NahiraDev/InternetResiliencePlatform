@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24-slim
+FROM node:26-slim
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NODE_ENV=development IRP_CONFIG_DIR=/app/config
 WORKDIR /app
 RUN apt-get update \
