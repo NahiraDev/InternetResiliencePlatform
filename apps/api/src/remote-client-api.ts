@@ -3,17 +3,15 @@ import { z } from 'zod';
 import {
   DEFAULT_REMOTE_CLIENT_SCOPES,
   DeviceCredentialService,
-  RemoteClientScope,
   RotatingRefreshTokenStore,
   SecurityAuditLog,
   validateRemoteClientScopes,
   type RemoteClientPlatform,
+  type RemoteClientScope,
+  JwtService,
+  RbacAuthorization,
 } from '@irp/auth';
-import {
-  ForbiddenAppError,
-  UnauthorizedAppError,
-} from '@irp/core';
-import { JwtService, RbacAuthorization } from '@irp/auth';
+import { ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
 
 const devicePlatform = z.enum(['android', 'ios', 'linux', 'macos', 'windows', 'unknown']);
 const scopesSchema = z.array(z.string()).max(DEFAULT_REMOTE_CLIENT_SCOPES.length);
@@ -43,7 +41,8 @@ const isProductionRuntime = () =>
 const resolveKey = (name: string, fallback: string): string => {
   const value = process.env[name]?.trim();
   if (value) return value;
-  if (isProductionRuntime()) throw new Error(`${name} is required for production or staging API runtime.`);
+  if (isProductionRuntime())
+    throw new Error(`${name} is required for production or staging API runtime.`);
   return fallback;
 };
 
@@ -81,12 +80,14 @@ export const registerRemoteClientRoutes = (
   app: FastifyInstance,
   options: RemoteClientApiOptions = {},
 ): RemoteClientApiHandle => {
-  const jwtSecret = options.jwtSecret ?? resolveKey('JWT_SECRET', 'development-secret-development-secret-32');
+  const jwtSecret =
+    options.jwtSecret ?? resolveKey('JWT_SECRET', 'development-secret-development-secret-32');
   const credentialKey =
     options.credentialKey ??
     resolveKey('REMOTE_CLIENT_CREDENTIAL_KEY', `${jwtSecret}:remote-client-credential`);
   const refreshKey =
-    options.refreshKey ?? resolveKey('REMOTE_CLIENT_REFRESH_KEY', `${jwtSecret}:remote-client-refresh`);
+    options.refreshKey ??
+    resolveKey('REMOTE_CLIENT_REFRESH_KEY', `${jwtSecret}:remote-client-refresh`);
   const jwt = new JwtService(jwtSecret, options.jwtIssuer ?? 'irp');
   const rbac = new RbacAuthorization();
   const credentials = new DeviceCredentialService(credentialKey);
@@ -122,7 +123,6 @@ export const registerRemoteClientRoutes = (
     subject: string,
     scopes: readonly string[],
     credentialId: string,
-    deviceId: string,
   ) =>
     jwt.sign({
       sub: subject,
@@ -175,10 +175,7 @@ export const registerRemoteClientRoutes = (
 
   app.get('/api/v1/auth/remote/devices', async (request) => {
     await requireAdmin(request);
-    return {
-      success: true,
-      data: [...devices.values()].map((device) => ({ ...device })),
-    };
+    return { success: true, data: [...devices.values()].map((device) => ({ ...device })) };
   });
 
   app.post('/api/v1/auth/remote/token', async (request) => {
@@ -198,7 +195,6 @@ export const registerRemoteClientRoutes = (
       authenticated.deviceId,
       metadata.scopes,
       authenticated.credentialId,
-      authenticated.deviceId,
     );
     const refresh = refreshTokens.issue(authenticated.credentialId, metadata.scopes);
     audit.record({
@@ -232,16 +228,25 @@ export const registerRemoteClientRoutes = (
     const input = refreshSchema.parse(request.body ?? {});
     const rotated = refreshTokens.rotate(input.refreshToken);
     if (!rotated) {
-      audit.record({ action: 'refresh.rejected', success: false, metadata: { reason: 'invalid-or-replayed-refresh' } });
+      audit.record({
+        action: 'refresh.rejected',
+        success: false,
+        metadata: { reason: 'invalid-or-replayed-refresh' },
+      });
       throw new UnauthorizedAppError();
     }
     const metadata = devices.get(rotated.subject);
     if (!metadata || metadata.revokedAt) {
       refreshTokens.revoke(rotated.tokenId);
-      audit.record({ action: 'refresh.rejected', success: false, subjectId: rotated.subject, metadata: { reason: 'device-revoked' } });
+      audit.record({
+        action: 'refresh.rejected',
+        success: false,
+        subjectId: rotated.subject,
+        metadata: { reason: 'device-revoked' },
+      });
       throw new UnauthorizedAppError();
     }
-    const accessToken = issueAccessToken(metadata.deviceId, rotated.scopes, metadata.credentialId, metadata.deviceId);
+    const accessToken = issueAccessToken(metadata.deviceId, rotated.scopes, metadata.credentialId);
     audit.record({
       action: 'refresh.rotated',
       success: true,
@@ -268,7 +273,12 @@ export const registerRemoteClientRoutes = (
     const rotated = refreshTokens.rotate(input.refreshToken);
     if (!rotated) throw new UnauthorizedAppError();
     refreshTokens.revoke(rotated.tokenId);
-    audit.record({ action: 'refresh.rotated', success: true, subjectId: rotated.subject, metadata: { reason: 'logout' } });
+    audit.record({
+      action: 'refresh.rotated',
+      success: true,
+      subjectId: rotated.subject,
+      metadata: { reason: 'logout' },
+    });
     return { success: true, data: { loggedOut: true } };
   });
 
