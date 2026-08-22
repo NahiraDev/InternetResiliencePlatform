@@ -40,7 +40,16 @@ export const registerProbeFederationRoutes = (app: FastifyInstance, federation =
     const result = federation.ingest(evidence.parse(request.body ?? {}) as SignedProbeEvidence);
     return reply.code(result.accepted ? 202 : 400).send({ success: result.accepted, data: result });
   });
-  app.get('/api/v1/federation/evidence', async (request) => { await authz(request, 'runtime.inspect'); const q=query.parse(request.query); return { success: true, data: federation.listEvidence(q) }; });
+  app.get('/api/v1/federation/evidence', async (request) => {
+    await authz(request, 'runtime.inspect');
+    const q = query.parse(request.query);
+    const filters = {
+      limit: q.limit,
+      ...(q.destination === undefined ? {} : { destination: q.destination }),
+      ...(q.probeId === undefined ? {} : { probeId: q.probeId }),
+    };
+    return { success: true, data: federation.listEvidence(filters) };
+  });
   app.get('/api/v1/federation/compare/:destination', async (request) => { await authz(request, 'runtime.inspect'); const q=destination.parse({ ...(request.params as {destination:string}), ...(request.query as object) }); return { success: true, data: federation.compareDestination(q.destination, q.limit) }; });
   app.get('/api/v1/federation/stats', async (request) => { await authz(request, 'runtime.inspect'); return { success: true, data: federation.stats() }; });
   return { federation };
