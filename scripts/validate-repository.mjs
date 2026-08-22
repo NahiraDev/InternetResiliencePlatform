@@ -139,6 +139,38 @@ for (const file of packages) {
   }
 }
 
+const examplesRoot = join(root, 'examples');
+if (existsSync(examplesRoot)) {
+  const exampleDirectories = readdirSync(examplesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  const examplesReadme = join(examplesRoot, 'README.md');
+  if (!existsSync(examplesReadme)) {
+    errors.push('examples/README.md is missing');
+  }
+
+  for (const name of exampleDirectories) {
+    const exampleRoot = join(examplesRoot, name);
+    const readme = join(exampleRoot, 'README.md');
+    if (!existsSync(readme)) {
+      errors.push(`examples/${name} is missing README.md`);
+    }
+
+    const executableFiles = readdirSync(exampleRoot, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && /\.(?:mjs|cjs|js|sh)$/.test(entry.name));
+    if (executableFiles.length === 0) {
+      errors.push(`examples/${name} has no executable entry point`);
+    }
+  }
+
+  const smokeScript = join(root, 'scripts/examples-smoke.mjs');
+  if (!existsSync(smokeScript)) {
+    errors.push('scripts/examples-smoke.mjs is missing');
+  }
+}
+
 const workflows = files.filter(
   (f) => relative(root, f).startsWith('.github/workflows/') && /\.ya?ml$/.test(f),
 );
