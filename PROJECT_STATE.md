@@ -1,22 +1,28 @@
 # InternetResiliencePlatform — Canonical Project State
 
-> This file is the machine-readable human-maintained handoff point for continuing development from any account, agent, or future session.
+> This file is the human-maintained handoff point for continuing development from any account, agent, or future session.
 
 ## Current State
 
 - **Highest merged phase:** Phase 40 — End-to-End Internet Resilience Validation
 - **Current phase:** Phase 41 — External Regional Validation
-- **Phase 40 status:** implementation merged; CI/runtime completion evidence not independently confirmed by the connected workflow-run API
+- **Phase 40 status:** implementation merged; CI/runtime completion evidence is not independently confirmed by the connected workflow-run API
 - **Phase 41 status:** initial online regional IP validation tooling implemented; independent Iranian-vantage verification pending
 - **Next phase:** Phase 42 — Remote Client API Integration
 - **Roadmap:** 48 phases total
 - **Product mode:** Headless/core-first
 - **UI/Desktop scope:** Removed; do not reintroduce unless explicitly requested
-- **README policy:** Do not modify README.md unless explicitly requested by the user
+- **README policy:** Keep the root README concise and entry-point focused; put detailed architecture, procedures, reference material, and phase history under `docs/`.
+
+## Documentation State
+
+The repository now treats `README.md` as the external project entry point and `docs/README.md` as the canonical documentation index. Detailed material is organized by purpose: getting started, development, API, architecture, guides, operations, observability, security, reference, ADRs, and historical phase records.
+
+Repository validation checks internal Markdown targets so documentation refactors cannot silently leave broken relative links.
 
 ## Phase 40 Result
 
-Phase 40 was merged through PR #128 on `main` with deterministic end-to-end resilience validation infrastructure. The harness covers healthy operation, DNS/application degradation, persistent-provider recovery, destination-specific evidence, apply-boundary fault injection, verification failure and recovery handling. fileciteturn70file0
+Phase 40 was merged through PR #128 on `main` with deterministic end-to-end resilience validation infrastructure. The harness covers healthy operation, DNS/application degradation, persistent-provider recovery, destination-specific evidence, apply-boundary fault injection, verification failure and recovery handling.
 
 The implementation is present, but the connected workflow-run API did not expose a CI run for merge commit `0fbd272d8e0811e701dfc2a39a65a4f7e7619aff`. Therefore the repository does not currently claim Phase 40 as fully verified until direct CI evidence is available.
 
@@ -49,8 +55,6 @@ pnpm regional:online
 
 The probe endpoint must return at least `ip` and `country`/`country_code`.
 
-Public geolocation services support returning the request-origin public IP and country, making them suitable as one component of this evidence path. citeturn543801search0turn543801search2turn543801search7
-
 ## Roadmap Extension — Phases 41–48
 
 The repository's previous roadmap ended at Phase 40. No authoritative Phase 41–48 specification was present in the repository history at the time of this extension. The following extension is now the canonical roadmap and is explicitly derived from the existing product direction rather than presented as recovered historical text.
@@ -68,7 +72,7 @@ The repository's previous roadmap ended at Phase 40. No authoritative Phase 41�
 
 A phase is not complete because source files exist. Completion requires the phase-specific acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
 
-For online regional validation, the evidence must identify the observed egress IP and country. Geolocation is evidence, not an absolute statement of physical location; accuracy can vary by network type and region. citeturn492492academia31
+For online regional validation, the evidence must identify the observed egress IP and country. Geolocation is evidence, not an absolute statement of physical location; accuracy can vary by network type and region.
 
 ## Continuation Rules
 
@@ -81,7 +85,7 @@ For online regional validation, the evidence must identify the observed egress I
 7. Preserve backward-compatible contracts unless the roadmap phase explicitly requires a breaking change.
 8. Prefer production-grade fixes over test-only workarounds.
 9. Do not add UI/dashboard/Electron/mobile UI work; clients consume the headless control/data plane.
-10. Do not modify README.md unless the user explicitly asks for a README change.
+10. Keep the root README concise and entry-point focused; detailed material belongs in `docs/`.
 11. Keep security, policy, destination-awareness, application-level verification, failover safety, auditability and rollback as first-class requirements.
 12. For regional validation, never infer Iranian egress from the destination being tested; prove it from the probe's observed public IP.
 
