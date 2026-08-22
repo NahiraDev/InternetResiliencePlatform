@@ -67,8 +67,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies without lockfile
-        run: pnpm install --no-lockfile
+      - name: Install dependencies with frozen lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Validate repository
         run: pnpm validate
@@ -92,4 +92,4 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: pnpm dlx @datadog/datadog-ci@latest synthetics run-tests --search 'tag:e2e-tests'
+        run: pnpm dlx @datadog/datadog-ci@5.23.0 synthetics run-tests --search 'tag:e2e-tests'
