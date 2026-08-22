@@ -13,8 +13,15 @@ describe('Phase 42 remote client API', () => {
     const jwt = new JwtService(jwtSecret, 'irp');
     const rbac = new RbacAuthorization();
     app.setErrorHandler((error, _request, reply) => {
-      const message = error instanceof Error ? error.message : String(error);
-      reply.code((error as { statusCode?: number }).statusCode ?? 500).send({ error: message });
+      const errorRecord =
+        typeof error === 'object' && error !== null
+          ? (error as { message?: unknown; statusCode?: unknown })
+          : undefined;
+      const message =
+        typeof errorRecord?.message === 'string' ? errorRecord.message : String(error);
+      const statusCode =
+        typeof errorRecord?.statusCode === 'number' ? errorRecord.statusCode : 500;
+      reply.code(statusCode).send({ error: message });
     });
     registerRemoteClientRoutes(app, { jwtSecret, credentialKey, refreshKey });
     app.get('/protected/runtime', async (request, reply) => {
