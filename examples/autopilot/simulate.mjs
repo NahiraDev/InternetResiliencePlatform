@@ -2,8 +2,26 @@ import { NetworkDecisionEngine } from '../../packages/network-intelligence/dist/
 
 const timestamp = new Date().toISOString();
 const candidates = [
-  { id: 'primary', metrics: { latencyMs: 160, availabilityRatio: 0.58, reliabilityRatio: 0.62 } },
-  { id: 'secondary', metrics: { latencyMs: 70, availabilityRatio: 0.97, reliabilityRatio: 0.96 } },
+  {
+    id: 'primary',
+    type: 'connectivity-source',
+    capabilities: ['internet'],
+    health: 'degraded',
+    timestamp,
+    policyCompatibility: true,
+    securityCompatibility: true,
+    metrics: { latencyMs: 160, availabilityRatio: 0.58, reliabilityRatio: 0.62 },
+  },
+  {
+    id: 'secondary',
+    type: 'connectivity-source',
+    capabilities: ['internet'],
+    health: 'healthy',
+    timestamp,
+    policyCompatibility: true,
+    securityCompatibility: true,
+    metrics: { latencyMs: 70, availabilityRatio: 0.97, reliabilityRatio: 0.96 },
+  },
 ];
 
 const context = {
