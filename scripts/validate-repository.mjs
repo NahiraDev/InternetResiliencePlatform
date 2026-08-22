@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const root = process.cwd();
@@ -37,6 +37,43 @@ const githubTokenLegacyAssumptions = [
   /(?:github.{0,40}token|installation.{0,40}token)[^\n]{0,160}@db\.VarChar\(\s*40\s*\)/i,
 ];
 
+const isExternalMarkdownTarget = (target) =>
+  /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(target) || target.startsWith('#');
+
+const validateMarkdownLinks = () => {
+  const markdownFiles = files.filter((file) => file.endsWith('.md'));
+  const markdownLink = /!??\[[^\]]*\]\(([^)]+)\)/g;
+
+  for (const file of markdownFiles) {
+    const text = readFileSync(file, 'utf8');
+    const lines = text.split(/\r?\n/);
+    let inFence = false;
+
+    lines.forEach((line, index) => {
+      if (/^\s*```/.test(line)) {
+        inFence = !inFence;
+        return;
+      }
+      if (inFence) return;
+
+      for (const match of line.matchAll(markdownLink)) {
+        const raw = match[1].trim().replace(/^<|>$/g, '');
+        const target = raw.split(/\s+/)[0];
+        if (!target || isExternalMarkdownTarget(target)) continue;
+
+        const pathPart = target.split('#', 1)[0].split('?', 1)[0];
+        if (!pathPart) continue;
+
+        const base = pathPart.startsWith('/') ? root : dirname(file);
+        const resolved = resolve(base, pathPart);
+        if (!existsSync(resolved)) {
+          errors.push(`${relative(root, file)}:${index + 1} links to missing path: ${target}`);
+        }
+      }
+    });
+  }
+};
+
 walk(root);
 
 for (const file of files) {
@@ -58,6 +95,8 @@ for (const file of files) {
     }
   }
 }
+
+validateMarkdownLinks();
 
 const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
 for (const expected of ['apps/*', 'packages/*']) {
