@@ -1,38 +1,63 @@
 # Examples
 
-These examples are **capability-oriented**. They demonstrate how to use implemented IRP interfaces without coupling examples to roadmap phases.
+These examples are **capability-oriented**. They demonstrate supported IRP interfaces and workflows without coupling the examples to roadmap phases.
 
 ## Examples
 
-| Example | Purpose | Requires build | Mutates host networking |
-| --- | --- | --- | --- |
-| `basic-api` | Call the read-only platform API | Running API | No |
-| `network-measurement` | Perform a bounded DNS measurement | Yes | No |
-| `dns-diagnostics` | Inspect DNS resolution timing and addresses | Yes | No |
-| `connectivity` | Run a small connectivity observation workflow | Yes | No |
-| `failover` | Simulate candidate selection and verification logic | Yes | No |
-| `autopilot` | Simulate the policy-controlled decision loop | Yes | No |
+| Example | Purpose | Build required | Live service required | Host mutation |
+| --- | --- | --- | --- | --- |
+| `basic-api` | Call the read-only platform status API | No | Yes | No |
+| `network-measurement` | Perform a bounded DNS measurement | Yes | No | No |
+| `dns-diagnostics` | Inspect DNS resolution timing and addresses | Yes | No | No |
+| `connectivity` | Observe platform connectivity status through the API | No | Yes | No |
+| `failover` | Simulate candidate selection and verification logic | Yes | No | No |
+| `autopilot` | Simulate the policy-controlled decision loop | Yes | No | No |
 
-## Running examples
+## Quick start
 
 From the repository root:
 
 ```bash
+pnpm install
 pnpm build
+pnpm examples:smoke
 ```
 
-Then follow the README inside the example you want to run.
+`examples:smoke` executes the deterministic/local examples and fails if an example exits unsuccessfully. It intentionally does not start external services or make host-network mutations.
 
-Examples are intentionally safe by default. They do not change system routes, DNS configuration, firewall state, tunnel state, or other host networking.
+For API examples, start the API using the normal repository development workflow and then run:
 
-## Design rules
+```bash
+node examples/basic-api/request.mjs
+node examples/connectivity/check.mjs
+```
 
-- Examples describe capabilities, not implementation phases.
-- Every example must have its own README.
-- Examples must use public, supported package interfaces where possible.
-- Examples must be deterministic or clearly label live network dependencies.
-- Examples must not contain generated result dumps or historical phase artifacts.
-- Examples must never require secrets for their basic path.
-- An example must not imply that an abstraction is a production-ready network mutation capability.
+Optional API base URL:
 
-New roadmap phases must update an existing example or add a capability example only when a genuinely new user-facing capability needs one.
+```bash
+IRP_API_BASE_URL=http://127.0.0.1:3000
+```
+
+## Example contract
+
+Every example must have:
+
+- a local `README.md`;
+- a clear purpose and prerequisites;
+- an executable entry point;
+- documented live dependencies;
+- safe-by-default behavior;
+- no required secrets on the basic path;
+- no generated result dumps;
+- no phase-specific naming;
+- a dependency on public/supported interfaces where practical.
+
+Examples must not imply that an interface is a production-ready network mutation capability merely because an abstraction exists.
+
+## Safety
+
+Examples do not change system routes, DNS configuration, firewall state, tunnel state, or other host networking. Simulation examples stop before mutation. Any future mutation example must use an explicit isolated test environment and document its prerequisites and rollback behavior.
+
+## Lifecycle
+
+Roadmap phases must never create `examples/phase-*` directories. A phase may update an existing example or add a new capability example only when a genuinely new user-facing capability warrants one.
