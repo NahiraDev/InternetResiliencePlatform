@@ -229,9 +229,9 @@ for (const file of workflows) {
     workflowNames.set(match[1], rel);
   }
 
-  const hasCheckout = /uses:\s*actions\/checkout@v(?:4|5|6)(?:\b|$)/m.test(text);
+  const hasCheckout = /uses:\s*actions\/checkout@v(?:4|5|6|7)(?:\b|$)/m.test(text);
   const hasTrustedArtifactHandoff =
-    /uses:\s*actions\/download-artifact@v(?:4|5|6)(?:\b|$)/m.test(text) &&
+    /uses:\s*actions\/download-artifact@v(?:4|5|6|7|8)(?:\b|$)/m.test(text) &&
     /run-id:\s*\$\{\{\s*github\.event\.workflow_run\.id\s*\}\}/m.test(text) &&
     /irp-source-\$\{\{\s*github\.event\.workflow_run\.head_sha\s*\}\}/m.test(text);
 
