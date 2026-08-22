@@ -1,33 +1,43 @@
 # InternetResiliencePlatform Documentation
 
-This directory is the documentation source of truth for the implementation currently present in `main`.
+This is the documentation entry point for developers and operators using the project from the outside.
 
 ## Start here
 
-| Document | Purpose |
-| --- | --- |
-| [Current architecture](current-architecture.md) | What exists in `main` now |
-| [Development](development.md) | Local development and verification workflow |
-| [Security architecture](security-architecture.md) | Current authentication, authorization and security invariants |
-| [Roadmap](../ROADMAP.md) | Authoritative 48-phase product roadmap |
-| [Phase index](phases/README.md) | Current and upcoming phase status |
-| [Project state](../PROJECT_STATE.md) | Current phase, blockers and continuation rules |
-| [ADR index](adr/README.md) | Durable architectural decisions |
+If this is your first time with the repository, follow this order:
 
-## Current state
+1. **[Development](development.md)** — install dependencies, run checks, and start the project.
+2. **[Configuration](configuration.md)** — understand runtime configuration and environment overrides.
+3. **[Current architecture](current-architecture.md)** — understand what is implemented on `main` and where the major components live.
+4. **[API reference](api/platform-status-api.md)** — inspect the currently documented platform API surface.
+5. **[Docker development](development/docker.md)** — run the project with Docker and troubleshoot container-specific issues.
+6. **[Observability](observability.md)** — metrics, telemetry, diagnostics, and operational visibility.
+7. **[Security architecture](security-architecture.md)** — authentication, authorization, trust boundaries, and security invariants.
+8. **[Regional validation](regional-validation.md)** — optional regional-vantage validation and evidence requirements.
 
-The repository has reached **Phase 40 — End-to-End Internet Resilience Validation** on `main`. Phase 41 is now the active extension: **External Regional Validation**.
+## Documentation map
 
-Phase 41 adds `pnpm regional:online`, an online probe that verifies the public egress IP and country reported by a trusted HTTPS regional vantage point. For Iran-specific validation, the observed probe egress must independently resolve to `IR`; the destination being tested is not evidence of Iranian egress.
+| Area | Canonical location | Audience |
+| --- | --- | --- |
+| Getting started / development | `development.md` | Developers |
+| Configuration | `configuration.md` | Developers / Operators |
+| Architecture | `current-architecture.md` | Developers / Architects |
+| API | `api/` | API consumers |
+| Runtime architecture details | `architecture/` | Maintainers |
+| Docker / operations | `development/`, `operations/` | Developers / Operators |
+| Security | `security-architecture.md`, `security/` | Developers / Operators |
+| Observability | `observability.md` | Developers / Operators |
+| Architectural decisions | `adr/` | Maintainers |
+| Phase history | `phases/` | Maintainers / Auditors |
 
-The roadmap now contains **48 phases**. Phases 41–48 are the canonical post-Phase-40 extension and are documented in `ROADMAP.md`.
+## Rules for documentation
 
-## Documentation policy
+- Root-level documents are user-facing canonical guides. Avoid creating another root document for a narrow implementation detail.
+- Phase reports are historical records and must not be used as onboarding documentation.
+- Generated reports, audit dumps, temporary JSON results, and one-off verification notes do not belong in the canonical documentation tree.
+- Architecture documents describe code that exists on `main`; proposed work belongs in the roadmap or an ADR.
+- `README.md`, `ROADMAP.md`, `PROJECT_STATE.md`, and this directory must agree on the current project state.
 
-1. Documentation must describe code that exists on `main`, not proposed architecture presented as implemented functionality.
-2. `README.md`, `ROADMAP.md`, `PROJECT_STATE.md`, and this directory must not claim different current phases.
-3. Historical phase material is retained for traceability, but it is not an operational source of truth.
-4. New architecture decisions belong in `docs/adr/`.
-5. Phase records belong under `docs/phases/` and must state implementation status and verification status separately.
-6. Generated reports, raw audit dumps and temporary verification artifacts do not belong in the canonical documentation tree.
-7. A regional/geolocation result is evidence, not absolute proof of physical location; location accuracy can vary by network type and provider.
+## Project state
+
+The authoritative roadmap is [`../ROADMAP.md`](../ROADMAP.md). Current implementation status is tracked in [`../PROJECT_STATE.md`](../PROJECT_STATE.md).
