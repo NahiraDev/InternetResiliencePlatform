@@ -9,9 +9,8 @@ on:
         default: IR
         type: string
       probe_url:
-        description: HTTPS endpoint reachable through the target regional vantage point
-        required: false
-        default: https://api.ipmyp.ir
+        description: HTTPS regional-vantage endpoint that returns JSON containing ip and country/country_code
+        required: true
         type: string
 
 permissions:
