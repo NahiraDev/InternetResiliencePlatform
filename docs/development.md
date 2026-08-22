@@ -1,13 +1,15 @@
-# Development
+# Development Guide
+
+This guide is for developers working directly in the repository.
 
 ## Requirements
 
-- Node.js 24
-- pnpm 11
+- Node.js 24 or newer
+- pnpm 11.21 or newer
 - Git
-- Docker Engine + Docker Compose for containerized development
+- Docker Engine + Docker Compose for containerized development/runtime checks
 
-The repository is a pnpm workspace. Use `pnpm`; do not substitute npm commands in project workflows.
+The repository uses pnpm workspaces and Turborepo. Use `pnpm` for project workflows.
 
 ## Install
 
@@ -16,37 +18,45 @@ corepack enable
 pnpm install
 ```
 
-## Verify the repository
-
-Run the normal quality gates before submitting changes:
+## Standard verification
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm build
-pnpm test
 pnpm validate
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
 ```
 
-## Run the API locally
+Run the smallest relevant package-level checks while developing, then run the repository gates before completing a change.
+
+## Workspace development
+
+Use workspace filters for package-specific work:
 
 ```bash
-pnpm --filter @irp/api start
+pnpm --filter @irp/<package> <command>
 ```
 
-For package-specific work, use the workspace filter rather than installing dependencies inside individual packages.
+Avoid installing dependencies separately inside workspace packages.
+
+## API development
+
+The API is implemented under `apps/api`. Use the repository's workspace scripts and environment configuration rather than inventing package-local runtime conventions.
 
 ## Docker
 
-Container development and the production-style runtime are documented in [development/docker.md](development/docker.md).
+See [Docker operations](operations/docker.md) for production-like container verification.
 
-## Configuration
+## Documentation
 
-Runtime configuration is documented in [configuration.md](configuration.md). Do not copy historical phase configuration examples from `docs/phases/` into new deployments.
+When behavior, architecture, configuration, or an external contract changes, update the corresponding canonical document. Do not create a phase report as a substitute for product documentation.
 
-## Before opening a change
+## Change checklist
 
-1. Keep changes scoped to the relevant package or application.
-2. Add or update tests for behavior changes.
-3. Run the affected package tests and the repository validation gates.
-4. Update canonical documentation only when the externally observable behavior or supported architecture changes.
+1. Identify the affected package/application and architecture boundary.
+2. Update implementation and tests together.
+3. Run relevant focused checks.
+4. Run repository validation/typecheck/lint/test/build as applicable.
+5. Update canonical documentation.
+6. Confirm no secrets or sensitive operational data entered logs, tests, fixtures, or documentation.
