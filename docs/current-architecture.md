@@ -1,94 +1,88 @@
-# Current Architecture
+# Architecture
 
-**Status:** authoritative for `main` at Phase 41.
+**Status:** authoritative description of the implementation on `main`.
 
 ## System boundary
 
-InternetResiliencePlatform is a modular TypeScript monorepo with a Fastify API, shared domain/runtime packages, PostgreSQL integration, Dockerized production runtime, and OpenTelemetry/Prometheus observability.
+InternetResiliencePlatform is a modular TypeScript monorepo with a Fastify API, shared domain/runtime packages, PostgreSQL/Prisma persistence, Dockerized runtime, and Prometheus/OpenTelemetry observability.
 
 ```text
-Clients / operators / regional probes
-              |
-              v
-         Fastify API
-              |
-  +-----------+-----------------------------+
-  |           |          |          |       |
- Auth/RBAC  Runtime   Autopilot  Diagnostics  Regional validation
-  |           |          |          |       |
-  +-----------+----------+----------+-------+
-                         |
-                  shared domain packages
-                         |
-          +--------------+--------------+
-          |              |              |
-       Network       Telemetry       Database
-    intelligence     + metrics      PostgreSQL
-          |
- endpoint / historical / regional evidence
+Clients / operators
+        |
+        v
+   Fastify API
+        |
+  +-----+-----------------------------+
+  |     |        |          |          |
+ Auth  Runtime  Network   Diagnostics  Regional evidence
+  |     |        |          |          |
+  +-----+--------+----------+----------+
+                 |
+          Shared domain packages
+                 |
+       +---------+----------+
+       |                    |
+   Persistence         Telemetry
+ PostgreSQL/Prisma   Prometheus/OTel
 ```
 
-## Current implemented layers
+## Major components
 
 ### API
 
 `apps/api` owns HTTP transport, request correlation, authentication/authorization boundaries, health/readiness endpoints, runtime/autopilot control-plane routes, network measurement routes, and operational diagnostics.
 
-The API deliberately keeps network mutation behind explicit runtime/autopilot policy and verification controls. Observe-only or partial states must never be documented as active host enforcement.
+Network mutation is not implied by an observation endpoint. Mutating operations must remain behind explicit runtime policy, capability checks, verification, and recovery controls.
 
 ### Authentication and authorization
 
-`@irp/auth` provides JWT authentication, RBAC authorization, password hashing, and the Phase 39 remote-client security primitives.
+`@irp/auth` provides authentication and RBAC primitives, including password hashing, JWT handling, device-oriented credentials, revocation, refresh-token rotation, bounded remote-client scopes, and security-audit support.
 
-Phase 39 primitives include opaque per-device credentials, keyed digests, constant-time comparison, revocation, rotating refresh tokens, bounded remote-client scopes and bounded security-audit storage with recursive secret redaction.
-
-The primitives are transport-independent. API route integration remains a future Phase 42 completion gate.
+A primitive existing in a package is not evidence that every transport or client lifecycle is production-integrated. Integration status is tracked separately in `PROJECT_STATE.md` and the roadmap.
 
 ### Network intelligence
 
-The network layer performs bounded measurements and derives health/reliability signals. Endpoint intelligence and historical analysis are measurement layers; they do not themselves mutate network state.
-
-### Regional validation
-
-Phase 41 adds `pnpm regional:online` and `scripts/regional-online-test.mjs`. The tool validates the **observed public egress identity of the probe itself**, including country code, rather than inferring geography from the destination being tested.
-
-For an Iranian result, an actual independent Iranian egress/probe is required. A remote runner outside Iran cannot be labelled Iranian merely because it queried an Iranian destination.
-
-Public IP/geolocation APIs can expose request-origin IP and country as one evidence source; their result is treated as evidence rather than absolute physical-location truth. citeturn543801search0turn543801search2
+The network subsystem performs bounded measurements and derives health and reliability signals. Endpoint intelligence and historical analysis are measurement layers; they do not independently mutate host networking.
 
 ### Runtime and autopilot
 
-`@irp/resilience-runtime` implements the closed-loop runtime contract:
+The resilience runtime implements the control-loop boundary:
 
-`Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check → Apply → Verify → Rollback/Recovery → Telemetry/Logging`
+`Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check → Apply → Verify → Rollback/Recovery → Telemetry`
 
-Production mutation remains fail-closed and policy-gated.
+Production mutation is fail-closed and policy-gated. Capability abstractions must not be described as active host enforcement unless a verified implementation exists.
 
-### Observability
+### Regional validation
 
-`@irp/telemetry` and `@irp/metrics` provide bounded metrics, diagnostics, Prometheus exposition and OpenTelemetry integration. Logs and telemetry must not contain bearer credentials, refresh tokens, device secrets or equivalent secret material.
+`pnpm regional:online` validates the public egress identity observed by the probe itself. A destination being located in a country does not make the caller originate from that country.
+
+Regional validation therefore requires an independent regional vantage when geography is part of the assertion. The validation workflow is evidence collection, not a substitute for a real regional runner.
 
 ### Persistence
 
-PostgreSQL/Prisma is the persistence boundary. In-memory stores still present in API code are application-local runtime/test stores and must not be documented as the production persistence model.
+PostgreSQL/Prisma is the production persistence boundary. In-memory stores may be used for local runtime behavior, deterministic tests, and adapters, but are not the production database model.
+
+### Observability
+
+`@irp/telemetry` and `@irp/metrics` provide metrics, diagnostics, Prometheus exposition, and OpenTelemetry integration. Telemetry and logs must not expose bearer credentials, refresh tokens, device secrets, or equivalent secret material.
 
 ### Deployment
 
-The production API runs as a non-root container. Runtime writable paths are explicitly constrained through the existing Docker/Compose contract; the Corepack/pnpm cache permission regression is covered by the runtime smoke path.
+The production API runs as a non-root container. Writable runtime paths are explicitly controlled by the Docker contract, including the Corepack/pnpm cache permission protections required by the container smoke path.
 
-## Current roadmap state
+## Documentation boundaries
 
-- Phase 40: merged deterministic end-to-end validation infrastructure; final CI evidence must still be checked before claiming full completion.
-- Phase 41: online regional validation tooling implemented; independent Iranian-vantage validation pending.
-- Phase 42–48: planned distributed-resilience and production-certification work.
+This file describes architecture that exists on `main`. Detailed subsystem contracts belong under `docs/architecture/`; operational procedures belong under `docs/operations/`; historical phase evidence belongs under `docs/phases/`.
 
-## Non-goals currently
+Planned architecture must be labelled as planned and should normally be documented in `ROADMAP.md` or an ADR rather than presented as implemented behavior.
 
-The following must not be described as implemented production capabilities unless the code and verification gates are subsequently changed:
+## Current limitations
+
+Do not describe the following as completed production capabilities without corresponding implementation and verification evidence:
 
 - unrestricted network scanning;
 - automatic censorship/access-control bypass;
 - active host routing mutation from observation endpoints;
-- production-grade VPN/tunnel enforcement merely because tunnel abstractions exist;
-- a completed Android/iOS UI;
-- a fully integrated remote-device authentication lifecycle before Phase 42 is complete.
+- production VPN/tunnel enforcement merely because tunnel abstractions exist;
+- completed mobile clients;
+- a fully integrated remote-device authentication lifecycle before its integration gate is complete.
