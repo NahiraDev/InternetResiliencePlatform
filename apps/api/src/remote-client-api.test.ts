@@ -12,6 +12,9 @@ describe('Phase 42 remote client API', () => {
     const app = Fastify({ logger: false });
     const jwt = new JwtService(jwtSecret, 'irp');
     const rbac = new RbacAuthorization();
+    app.setErrorHandler((error, _request, reply) => {
+      reply.code((error as { statusCode?: number }).statusCode ?? 500).send({ error: error.message });
+    });
     registerRemoteClientRoutes(app, { jwtSecret, credentialKey, refreshKey });
     app.get('/protected/runtime', async (request, reply) => {
       const raw = request.headers.authorization;
@@ -28,6 +31,19 @@ describe('Phase 42 remote client API', () => {
         resource: '/protected/runtime',
         action: 'GET',
         requiredPermissions: ['runtime.read'],
+      });
+      return allowed ? { success: true } : reply.code(403).send({ error: 'forbidden' });
+    });
+    app.get('/protected/admin', async (request, reply) => {
+      const raw = request.headers.authorization;
+      const token = Array.isArray(raw) ? raw[0]?.slice(7) : raw?.slice(7);
+      if (!token?.length) return reply.code(401).send({ error: 'unauthorized' });
+      const claims = jwt.verify(token, 'access');
+      const allowed = await rbac.authorize({
+        principal: { id: claims.sub, roles: claims.roles, scopes: claims.scopes },
+        resource: '/protected/admin',
+        action: 'GET',
+        requiredPermissions: ['runtime.admin'],
       });
       return allowed ? { success: true } : reply.code(403).send({ error: 'forbidden' });
     });
@@ -79,12 +95,12 @@ describe('Phase 42 remote client API', () => {
     });
     expect(protectedResponse.statusCode).toBe(200);
 
-    const replayProtected = await app.inject({
+    const denied = await app.inject({
       method: 'GET',
       url: '/protected/admin',
       headers: { authorization: `Bearer ${issued.accessToken}` },
     });
-    expect(replayProtected.statusCode).toBe(404);
+    expect(denied.statusCode).toBe(403);
     await app.close();
   });
 
