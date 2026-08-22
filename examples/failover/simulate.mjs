@@ -1,18 +1,32 @@
 import { NetworkDecisionEngine } from '../../packages/network-intelligence/dist/index.js';
 
+const timestamp = new Date().toISOString();
+
 const candidates = [
   {
     id: 'primary',
+    type: 'connectivity-source',
+    capabilities: ['internet'],
+    health: 'degraded',
     metrics: { latencyMs: 180, availabilityRatio: 0.55, reliabilityRatio: 0.6 },
+    policyCompatibility: true,
+    securityCompatibility: true,
+    timestamp,
   },
   {
     id: 'secondary',
+    type: 'connectivity-source',
+    capabilities: ['internet'],
+    health: 'healthy',
     metrics: { latencyMs: 65, availabilityRatio: 0.98, reliabilityRatio: 0.97 },
+    policyCompatibility: true,
+    securityCompatibility: true,
+    timestamp,
   },
 ];
 
 const context = {
-  timestamp: new Date().toISOString(),
+  timestamp,
   versions: {
     policyVersion: 'example-v1',
     networkStateVersion: 'example-network-v1',
@@ -24,19 +38,17 @@ const context = {
   requiredCapabilities: ['internet'],
   candidates,
   historicalObservations: Object.fromEntries(
-    candidates.map((candidate) => [candidate.id, [candidate].map((item) => ({
-      timestamp: contextTimestamp(),
-      latencyMs: item.metrics.latencyMs,
-      availabilityRatio: item.metrics.availabilityRatio,
-      reliabilityRatio: item.metrics.reliabilityRatio,
-      uptimeRatio: item.metrics.reliabilityRatio,
-    }))]),
+    candidates.map((candidate) => [candidate.id, [
+      {
+        timestamp: candidate.timestamp,
+        latencyMs: candidate.metrics.latencyMs,
+        availabilityRatio: candidate.metrics.availabilityRatio,
+        reliabilityRatio: candidate.metrics.reliabilityRatio,
+        uptimeRatio: candidate.metrics.reliabilityRatio,
+      },
+    ]]),
   ),
 };
-
-function contextTimestamp() {
-  return new Date().toISOString();
-}
 
 const engine = new NetworkDecisionEngine({
   events: { emit() {} },
