@@ -1,20 +1,18 @@
 # syntax=docker/dockerfile:1.7
 FROM node:26-slim AS base
 ENV PNPM_HOME=/pnpm \
-    COREPACK_HOME=/pnpm/corepack \
-    PATH=/pnpm:$PATH
+    PATH=/pnpm/bin:/pnpm:$PATH
 WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates dumb-init \
   && rm -rf /var/lib/apt/lists/* \
-  && corepack enable \
-  && corepack prepare pnpm@11.21.0 --activate
+  && npm install --global --prefix /pnpm --no-audit --no-fund pnpm@11.21.0
 
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --no-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
@@ -24,8 +22,7 @@ RUN pnpm build
 FROM node:26-slim AS runtime
 ENV NODE_ENV=production \
     PNPM_HOME=/pnpm \
-    COREPACK_HOME=/app/.cache/node/corepack \
-    PATH=/pnpm:$PATH \
+    PATH=/pnpm/bin:/pnpm:$PATH \
     IRP_CONFIG_DIR=/app/config
 WORKDIR /app
 RUN apt-get update \
@@ -33,12 +30,10 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --system --gid 1001 irp \
   && useradd --system --uid 1001 --gid irp --home-dir /app --shell /usr/sbin/nologin irp \
-  && mkdir -p /app/.cache/node/corepack /app/.local/share/pnpm /app/tmp \
-  && chown -R irp:irp /app/.cache /app/.local /app/tmp \
-  && corepack enable \
-  && corepack prepare pnpm@11.21.0 --activate
+  && mkdir -p /app/.local/share/pnpm /app/tmp \
+  && chown -R irp:irp /app/.local /app/tmp
 COPY --from=base --chown=irp:irp /pnpm /pnpm
-COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/turbo.json ./
+COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/turbo.json ./
 COPY --from=build --chown=irp:irp /app/node_modules ./node_modules
 COPY --from=build --chown=irp:irp /app/apps ./apps
 COPY --from=build --chown=irp:irp /app/packages ./packages
