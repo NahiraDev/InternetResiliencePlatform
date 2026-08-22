@@ -1,36 +1,40 @@
-# Platform Status and Real-Time Metrics API
+# Platform Status API
 
-This document records the audited API contract used by the Electron desktop live mode and Phase 24 visualization clients.
+This document describes the currently supported platform status and live-metrics endpoints.
 
-## Historical requirement
+## Base path
 
-Earlier stabilization phases introduced a consolidated live status endpoint for the Electron backend connector. Phase 24 added real-time visualization requirements for sampled latency, packet-loss, and DNS performance without mutating host DNS, routing, tunnels, or security state.
+All API routes are versioned under:
 
-## Current implementation
+```text
+/api/v1
+```
 
-All routes are mounted below `/api/v1` in `apps/api/src/index.ts`.
+## `GET /platform/status`
 
-### `GET /platform/status`
+Returns the current platform/network observation snapshot using the standard API response envelope.
 
-Returns the standard success envelope with a `source: "LIVE"` data object derived from `NetworkMonitoringService` measurements. The response includes network, DNS, routing, recovery, tunnel, security, decision, event bus, and observability sections. Unsupported enforcement capabilities remain explicitly observe-only or unavailable rather than being represented as active host control.
+The response is derived from the network monitoring/runtime state. It may contain network health, DNS, routing, recovery, tunnel, security, decision, event, and observability information depending on what is implemented and available at runtime.
 
-### `GET /platform/metrics/stream`
+Unsupported capabilities are reported as unavailable or observe-only. The endpoint does not itself apply DNS, routing, tunnel, firewall, or recovery mutations.
 
-Returns `text/event-stream` and emits a `platform.metrics` server-sent event. The event payload is a JSON object with:
+## `GET /platform/metrics/stream`
 
-- `source: "LIVE"`
-- `updatedAt`, copied from the network health score timestamp
-- `metrics[]`, one entry per current network measurement
-- per-measurement `timestamp`, `probeType`, `latencyMs`, and `success`
-- `packetLossPct` only when packet-loss probes report a numeric loss ratio
-- `dnsPerformanceMs` only for DNS probe measurements
+Returns a Server-Sent Events stream with live network measurements.
 
-The endpoint sets `Cache-Control: no-cache, no-transform`, `Connection: keep-alive`, and `X-Accel-Buffering: no` so proxies and reverse proxies do not buffer visualization events. It also emits a conservative SSE `retry` hint for client reconnect behavior.
+The stream uses:
 
-## Recovery work performed during this audit
+- `Content-Type: text/event-stream`;
+- `Cache-Control: no-cache, no-transform`;
+- `Connection: keep-alive`;
+- `X-Accel-Buffering: no`.
 
-The Phase 24 stream contract was hardened with explicit no-buffering/no-transform headers and a regression test that parses the SSE `data:` line rather than only checking for substrings. This verifies that visualization clients receive structured LIVE metrics and DNS performance fields.
+Each `platform.metrics` event contains a JSON payload with the current source, update timestamp, and measurement records. Measurement records can include latency, success state, packet-loss percentage, and DNS performance when those values are available.
 
-## Security and runtime notes
+## Safety boundary
 
-The status and metrics endpoints are read-only observation surfaces. They run safe probes through the existing network monitoring service and do not apply routes, change DNS settings, open tunnels, modify firewall state, or execute recovery actions.
+These endpoints are observation surfaces. Calling them must not be interpreted as permission to mutate host networking or execute recovery actions.
+
+## Source of truth
+
+The running API implementation and its tests are authoritative. This document intentionally avoids reproducing historical phase requirements or implementation notes so that it remains a stable API reference.
