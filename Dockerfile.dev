@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1.7
 FROM node:26-slim
-ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NODE_ENV=development IRP_CONFIG_DIR=/app/config
+ENV PNPM_HOME=/pnpm PATH=/pnpm/bin:/pnpm:$PATH NODE_ENV=development IRP_CONFIG_DIR=/app/config
 WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates dumb-init \
   && rm -rf /var/lib/apt/lists/* \
-  && corepack enable \
-  && corepack prepare pnpm@latest --activate
+  && npm install --global --prefix /pnpm --no-audit --no-fund pnpm@11.21.0
 EXPOSE 8080
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "pnpm install --no-lockfile && pnpm --filter @irp/database prisma:generate && pnpm build && pnpm --filter @irp/api start"]
+CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm --filter @irp/database prisma:generate && pnpm build && pnpm --filter @irp/api start"]
