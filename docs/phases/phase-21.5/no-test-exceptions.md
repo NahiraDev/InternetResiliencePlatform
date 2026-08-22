@@ -1,3 +1,0 @@
-| Package | Classification | Reason                                                           | Verification Method                                                                               | Owner           | Review Date |
-| ------- | -------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------- | ----------- |
-| _None_  | N/A            | Every workspace package now has at least one test/contract file. | `pnpm validate` enforces this machine-readable policy via `docs/testing/no-test-exceptions.json`. | IRP maintainers | 2026-08-15  |
