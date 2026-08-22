@@ -13,7 +13,8 @@ describe('Phase 42 remote client API', () => {
     const jwt = new JwtService(jwtSecret, 'irp');
     const rbac = new RbacAuthorization();
     app.setErrorHandler((error, _request, reply) => {
-      reply.code((error as { statusCode?: number }).statusCode ?? 500).send({ error: error.message });
+      const message = error instanceof Error ? error.message : String(error);
+      reply.code((error as { statusCode?: number }).statusCode ?? 500).send({ error: message });
     });
     registerRemoteClientRoutes(app, { jwtSecret, credentialKey, refreshKey });
     app.get('/protected/runtime', async (request, reply) => {
