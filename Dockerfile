@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24-slim AS base
+FROM node:26-slim AS base
 ENV PNPM_HOME=/pnpm \
     COREPACK_HOME=/pnpm/corepack \
     PATH=/pnpm:$PATH
@@ -21,7 +21,7 @@ COPY . .
 RUN pnpm --filter @irp/database prisma:generate
 RUN pnpm build
 
-FROM node:24-slim AS runtime
+FROM node:26-slim AS runtime
 ENV NODE_ENV=production \
     PNPM_HOME=/pnpm \
     COREPACK_HOME=/app/.cache/node/corepack \
