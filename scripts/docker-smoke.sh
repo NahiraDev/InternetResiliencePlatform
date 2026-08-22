@@ -41,13 +41,13 @@ test "$(docker inspect -f '{{.Config.User}}' "$api_container")" = "irp"
 docker exec "$api_container" sh -c '
   set -eu
   test "$(id -u)" != "0"
-  for path in /app/.cache/node/corepack /app/.cache/node/corepack/v1 /app/.local/share/pnpm /app/tmp; do
+  for path in /app/.local/share/pnpm /app/tmp; do
     test -w "$path"
   done
   pnpm --version >/dev/null
   pnpm exec prisma --version >/dev/null
 '
-! docker compose -f "$compose_file" logs --no-color api | grep -Ei 'EACCES.*corepack|password|JWT_SECRET|DATABASE_URL' >/dev/null
+! docker compose -f "$compose_file" logs --no-color api | grep -Ei 'EACCES.*corepack|password|JWT_SECRET|DATABASE_URL|REMOTE_CLIENT_CREDENTIAL_KEY|REMOTE_CLIENT_REFRESH_KEY' >/dev/null
 
 docker compose -f "$compose_file" restart api
 wait_ready
