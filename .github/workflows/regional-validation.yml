@@ -1,5 +1,8 @@
 name: Regional Validation
 
+# Intentionally isolated from the standard CI workflow.
+# This workflow must execute from a controlled regional vantage point.
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,8 +12,9 @@ on:
         default: IR
         type: string
       probe_url:
-        description: HTTPS regional-vantage endpoint that returns JSON containing ip and country/country_code
-        required: true
+        description: HTTPS endpoint that reports the egress IP and country of the regional runner
+        required: false
+        default: https://ipapi.co/json/
         type: string
 
 permissions:
@@ -18,8 +22,10 @@ permissions:
 
 jobs:
   regional-validation:
-    name: Online regional validation
-    runs-on: ubuntu-latest
+    name: Regional evidence probe
+    # Never use GitHub-hosted ubuntu-latest for regional evidence.
+    # Configure an actual regional machine as a self-hosted runner with the `iran` label.
+    runs-on: [self-hosted, linux, iran]
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -43,6 +49,7 @@ jobs:
           IRP_EXPECTED_COUNTRY: ${{ inputs.expected_country }}
         run: |
           set -o pipefail
+          pnpm install --frozen-lockfile
           pnpm regional:online | tee regional-validation.json
 
       - name: Publish regional result to step summary
@@ -50,6 +57,8 @@ jobs:
         run: |
           {
             echo '## Regional Validation Result'
+            echo
+            echo 'Runner: self-hosted regional vantage (`iran`)'
             echo
             echo '```json'
             cat regional-validation.json 2>/dev/null || echo '{"status":"no-result"}'
