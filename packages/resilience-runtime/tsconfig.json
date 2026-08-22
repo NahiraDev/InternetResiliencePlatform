@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "..",
+    "types": ["node"],
     "paths": {
       "@irp/events": ["../events/src/index.ts"],
       "@irp/telemetry": ["../telemetry/src/index.ts"],
