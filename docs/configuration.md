@@ -1,12 +1,8 @@
 # Configuration
 
-This document describes configuration that is relevant to the current implementation on `main`.
+Configuration should be explicit, validated, environment-specific, and free of secrets committed to source control.
 
-## Configuration sources
-
-Configuration is supplied by the repository's configuration files and environment variables. Environment-specific values must be explicit; invalid values should fail validation rather than silently selecting permissive defaults.
-
-Common runtime variables include:
+## Core runtime variables
 
 | Variable | Purpose |
 | --- | --- |
@@ -16,11 +12,11 @@ Common runtime variables include:
 | `IRP_LOG_FILE` | Optional log destination |
 | `IRP_TELEMETRY_ENABLED` | Enable telemetry integration |
 
-Check the application/package configuration schemas for the complete set of supported variables. Do not treat historical phase documents as configuration references.
+The complete supported configuration surface is defined by the application/package configuration schemas. This document is the conceptual reference; schemas and implementation remain authoritative for exact validation rules.
 
 ## Automatic optimization
 
-Automatic optimization is disabled unless explicitly enabled and must remain subject to the resilience-runtime policy and safety gates.
+Automatic optimization is opt-in and must remain governed by resilience-runtime policy and safety checks.
 
 | Key | Default | Constraint |
 | --- | --- | --- |
@@ -30,13 +26,13 @@ Automatic optimization is disabled unless explicitly enabled and must remain sub
 | `AUTO_OPTIMIZATION_MIN_BENEFIT` | `60` | `0..100` |
 | `AUTO_OPTIMIZATION_COOLDOWN_MS` | `30000` | `>= 0` |
 | `AUTO_OPTIMIZATION_MAX_ACTIONS_PER_WINDOW` | `6` | integer `>= 0` |
-| `AUTO_OPTIMIZATION_DRY_RUN` | `false` | never mutates when enabled |
+| `AUTO_OPTIMIZATION_DRY_RUN` | `false` | enabled means no mutation |
 | `AUTO_OPTIMIZATION_ROLLBACK_ON_VERIFY_FAILURE` | `true` | fail closed when rollback is unavailable |
 
-## Security
+## Secrets
 
-Never commit credentials, API tokens, refresh tokens, device secrets, private keys, or production environment files. Secret values must be provided through the deployment environment or an appropriate secret manager.
+Never commit credentials, API tokens, refresh tokens, device secrets, private keys, or production environment files. Supply secrets through the deployment environment or an approved secret manager.
 
 ## Regional validation
 
-Regional validation is an optional evidence workflow and is not part of normal application configuration. See [regional validation](regional-validation.md) for its dedicated requirements.
+Regional validation is an evidence workflow, not normal application configuration. See [Regional Validation](regional-validation.md).
