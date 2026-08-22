@@ -10,7 +10,12 @@ const fail = (msg, extra = {}) => {
   console.error(JSON.stringify({ level: 'error', msg, ...extra }));
   process.exit(1);
 };
-const required = ['DATABASE_URL', 'JWT_SECRET'];
+const required = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'REMOTE_CLIENT_CREDENTIAL_KEY',
+  'REMOTE_CLIENT_REFRESH_KEY',
+];
 for (const name of required)
   if (!process.env[name]) fail(`${name} is required for production startup`);
 
@@ -118,8 +123,10 @@ if (config.telemetry.prometheus) {
 }
 
 const { buildServer } = await import('../apps/api/dist/index.js');
+const { registerRemoteClientRoutes } = await import('../apps/api/dist/remote-client-api.js');
 
 const server = await buildServer();
+registerRemoteClientRoutes(server);
 let shuttingDown = false;
 const shutdown = async (signal) => {
   if (shuttingDown) return;
