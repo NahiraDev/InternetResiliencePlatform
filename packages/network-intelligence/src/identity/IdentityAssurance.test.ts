@@ -48,6 +48,14 @@ describe('assessIdentityPolicy', () => {
     expect(result.findings).toEqual([]);
   });
 
+  it('normalizes destination hostnames without conflating identity dimensions', () => {
+    const result = assessIdentityPolicy(evidence({ destination: { hostname: 'Service.Example.' } }), {
+      allowedDestinationHostnames: ['service.example'],
+    }, now);
+
+    expect(result.status).toBe('compliant');
+  });
+
   it('does not infer destination identity from egress identity', () => {
     const result = assessIdentityPolicy(evidence(), {
       allowedEgressIps: ['203.0.113.10'],
@@ -77,13 +85,16 @@ describe('assessIdentityPolicy', () => {
     expect(result.findings.map((finding) => finding.code)).toContain('egress-source-mismatch');
   });
 
-  it('does not silently accept stale evidence', () => {
-    const result = assessIdentityPolicy(evidence({ egress: { observedAt: '2026-08-23T11:00:00.000Z' } }), {
+  it('does not silently accept stale or future-dated evidence', () => {
+    const stale = assessIdentityPolicy(evidence({ egress: { observedAt: '2026-08-23T11:00:00.000Z' } }), {
       maxEvidenceAgeMs: 60_000,
     }, now);
+    const future = assessIdentityPolicy(evidence({ destination: { observedAt: '2026-08-23T12:00:01.000Z' } }), {}, now);
 
-    expect(result.status).toBe('insufficient-data');
-    expect(result.findings.map((finding) => finding.code)).toContain('stale-evidence');
+    expect(stale.status).toBe('insufficient-data');
+    expect(stale.findings.map((finding) => finding.code)).toContain('stale-evidence');
+    expect(future.status).toBe('insufficient-data');
+    expect(future.findings.map((finding) => finding.code)).toContain('stale-evidence');
   });
 
   it('treats insufficient confidence as insufficient data', () => {
@@ -99,6 +110,13 @@ describe('assessIdentityPolicy', () => {
     }, now);
 
     expect(result.status).toBe('compliant');
+  });
+
+  it('rejects malformed identity evidence before policy evaluation', () => {
+    expect(() => assessIdentityPolicy(evidence({ egress: { ip: 'not-an-ip' } }), {}, now)).toThrow('egress ip');
+    expect(() => assessIdentityPolicy(evidence({ egress: { ip: '2001:db8::10', family: 'ipv4' } }), {}, now)).toThrow('address family');
+    expect(() => assessIdentityPolicy(evidence({ destination: { addresses: [] } }), {}, now)).toThrow('destination addresses');
+    expect(() => assessIdentityPolicy(evidence({ destination: { addresses: ['not-an-ip'] } }), {}, now)).toThrow('destination addresses');
   });
 
   it('rejects invalid destination ports', () => {
