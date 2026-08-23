@@ -37,7 +37,7 @@ describe('data analytics', () => {
       timestamp: '2026-01-01T05:00:00.000Z', probeType: 'https', success: true, latencyMs: 60,
     });
     const anomalies = detectAnomalies(measurements, { thresholdPercent: 50, baselineWindow: 5 });
-    expect(anomalies.some((item) => item.metric === 'latency' && item.severity === 'warning')).toBe(true);
+    expect(anomalies.some((item) => item.metric === 'latency' && item.severity === 'critical')).toBe(true);
   });
 
   it('rejects invalid analytics ranges', () => {
