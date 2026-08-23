@@ -38,6 +38,7 @@ export interface IdentityPolicy {
 
 export interface AssuranceFinding {
   code:
+    | 'missing-evidence'
     | 'stale-evidence'
     | 'egress-not-allowed'
     | 'destination-not-allowed'
@@ -48,8 +49,8 @@ export interface AssuranceFinding {
 
 export interface IdentityAssuranceResult {
   status: AssuranceStatus;
-  egress: EgressIdentity;
-  destination: DestinationIdentity;
+  egress: EgressIdentity | null;
+  destination: DestinationIdentity | null;
   findings: AssuranceFinding[];
   evaluatedAt: string;
 }
@@ -74,13 +75,7 @@ export const assessIdentityPolicy = (
   evidence: IdentityEvidence | null,
   policy: IdentityPolicy,
   now = new Date(),
-): IdentityAssuranceResult | {
-  status: 'insufficient-data';
-  egress: null;
-  destination: null;
-  findings: Array<{ code: 'missing-evidence'; message: string }>;
-  evaluatedAt: string;
-} => {
+): IdentityAssuranceResult => {
   const evaluatedAt = now.toISOString();
   if (!evidence) {
     return {
