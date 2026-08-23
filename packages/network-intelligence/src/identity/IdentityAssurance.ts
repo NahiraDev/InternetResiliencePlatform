@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export type AddressFamily = 'ipv4' | 'ipv6';
 export type IdentityConfidence = 'observed' | 'corroborated' | 'insufficient';
 export type AssuranceStatus = 'compliant' | 'non-compliant' | 'insufficient-data';
@@ -60,12 +62,30 @@ const normalizeHostname = (hostname: string): string => hostname.trim().toLowerC
 const unique = (values: readonly string[]): string[] => [...new Set(values.map((value) => value.trim()).filter(isNonEmpty))];
 
 const validateEvidence = (evidence: IdentityEvidence): void => {
-  if (!isNonEmpty(evidence.egress.ip)) throw new Error('egress ip is required');
+  const egressIp = evidence.egress.ip.trim();
+  if (!isNonEmpty(egressIp)) throw new Error('egress ip is required');
+  const egressFamily = isIP(egressIp);
+  if (egressFamily === 0) throw new Error('egress ip must be a valid IPv4 or IPv6 address');
+  if ((evidence.egress.family === 'ipv4' && egressFamily !== 4) || (evidence.egress.family === 'ipv6' && egressFamily !== 6)) {
+    throw new Error('egress ip does not match the declared address family');
+  }
   if (!isNonEmpty(evidence.egress.source)) throw new Error('egress source is required');
   if (!Number.isFinite(Date.parse(evidence.egress.observedAt))) throw new Error('egress observedAt must be a valid timestamp');
-  if (!isNonEmpty(evidence.destination.hostname)) throw new Error('destination hostname is required');
+  if (evidence.egress.asn !== undefined && (!Number.isInteger(evidence.egress.asn) || evidence.egress.asn < 0)) {
+    throw new Error('egress asn must be a non-negative integer');
+  }
+  if (evidence.egress.organization !== undefined && !isNonEmpty(evidence.egress.organization)) {
+    throw new Error('egress organization must not be empty');
+  }
+
+  const destinationHostname = normalizeHostname(evidence.destination.hostname);
+  if (!destinationHostname) throw new Error('destination hostname is required');
   if (!isNonEmpty(evidence.destination.source)) throw new Error('destination source is required');
   if (!Number.isFinite(Date.parse(evidence.destination.observedAt))) throw new Error('destination observedAt must be a valid timestamp');
+  if (evidence.destination.addresses.length === 0) throw new Error('destination addresses are required');
+  if (evidence.destination.addresses.some((address) => isIP(address.trim()) === 0)) {
+    throw new Error('destination addresses must contain valid IPv4 or IPv6 addresses');
+  }
   if (evidence.destination.port !== undefined && (!Number.isInteger(evidence.destination.port) || evidence.destination.port < 1 || evidence.destination.port > 65535)) {
     throw new Error('destination port must be between 1 and 65535');
   }
