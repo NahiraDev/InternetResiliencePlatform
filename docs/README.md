@@ -26,8 +26,9 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 7. [Engineering governance](architecture/engineering-governance.md)
 8. [Release gates](architecture/release-gates.md)
 9. [Phase records](phases/README.md)
-10. [Documentation audit](audits/documentation-audit-2026-08-23.md)
-11. [ADRs](adr/)
+10. [Historical phase evidence matrix](audits/phase-history-evidence-matrix.md)
+11. [Documentation audit](audits/documentation-audit-2026-08-23.md)
+12. [ADRs](adr/)
 
 ### Operator / troubleshooter
 
@@ -79,6 +80,7 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - Architecture belongs in `architecture/`; phase evidence belongs in `phases/`; API contracts belong in `api/`; durable decisions belong in `adr/`.
 - Concepts belong in `concepts/`; operational procedures belong in `operations/`; troubleshooting belongs in `guides/`.
 - Security architecture belongs in `security/`.
+- Historical implementation mappings belong in `audits/phase-history-evidence-matrix.md`; they do not redefine the current roadmap.
 - Do not create one-off phase reports in the user-facing navigation.
 - Phase records distinguish implemented, verified, pending-verification, and planned behavior.
 - Use relative links and keep them valid.
@@ -93,5 +95,6 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - Current implementation state: [`../PROJECT_STATE.md`](../PROJECT_STATE.md)
 - Documentation standards: [`documentation-standards.md`](documentation-standards.md)
 - Documentation audit baseline: [`audits/documentation-audit-2026-08-23.md`](audits/documentation-audit-2026-08-23.md)
+- Historical phase evidence matrix: [`audits/phase-history-evidence-matrix.md`](audits/phase-history-evidence-matrix.md)
 
 If sources disagree, implementation and verification must be reconciled before a capability is described as production-ready.
