@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Phase 0 repository bootstrap.
+- Phase 45 Network Identity & Destination Policy Assurance with explicit egress and destination evidence contracts.
+- Strict identity evidence validation for IPv4/IPv6, declared address family, resolved destination addresses, timestamps, ASN metadata and destination ports.
+- Deterministic compliant, non-compliant and insufficient-data assurance outcomes with bounded freshness and independent egress-source enforcement.
+- Boundary tests for normalization, malformed evidence, stale/future evidence, insufficient confidence and policy mismatches.
+- Phase 45 project-state and verification documentation.
 
 ## Phase 16 — Intelligent Auto Failover & Recovery Engine
 
