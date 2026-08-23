@@ -27,7 +27,7 @@ A current phase receives a historical mapping only when source, tests, ADRs, mer
 
 ## Historical numbering drift
 
-**Historical numbering drift is authoritative context for this matrix:** historical implementation phase numbers drifted from the current 70-phase product numbering. These labels must not be interpreted as one-to-one mappings. A historical phase number may have been renamed, split, merged, superseded, or moved into a later product track. The current product roadmap remains authoritative.
+**historical numbering drift** is authoritative context for this matrix: historical implementation phase numbers drifted from the current 70-phase product numbering. These labels must not be interpreted as one-to-one mappings. A historical phase number may have been renamed, split, merged, superseded, or moved into a later product track. The current product roadmap remains authoritative.
 
 ## Prohibition on unverified historical completion claims
 
