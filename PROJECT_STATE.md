@@ -4,11 +4,12 @@
 
 ## Current State
 
-- **Highest implemented area:** Phase 43 — Distributed Probe Federation.
-- **Current work:** Phase 44 — Data Analytics & Decision Intelligence.
+- **Highest implemented area:** Phase 45 — Network Identity & Destination Policy Assurance (verification pending).
+- **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
 - **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
 - **Phase 44:** analytics engine, tests and specification have been added; final verification remains required.
-- **Next planned phase:** Phase 45 — Network Identity & Destination Policy Assurance, after the active verification gates pass.
+- **Phase 45:** identity-assurance package, tests and phase contract have been added; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
+- **Next planned phase:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
 - **Roadmap:** 70 phases total.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are product clients. Mobile is a Full Client, not a read-only dashboard.
@@ -46,6 +47,20 @@ The active analytics work provides deterministic, bounded analytics over histori
 - tests for normal, sparse, invalid and anomalous data.
 
 Analytics is decision support. It does not directly bypass policy/safety gates or mutate routes.
+
+## Phase 45 — Network Identity & Destination Policy Assurance
+
+Implementation started with a dedicated `@irp/identity-assurance` package providing:
+
+- explicit egress identity evidence with source provenance and observation time;
+- explicit destination identity evidence with hostname, resolved addresses, protocol and source provenance;
+- policy constraints for egress IP/ASN/organization and destination hostname/address;
+- required independent egress-source enforcement;
+- bounded freshness validation;
+- explicit `compliant`, `non-compliant` and `insufficient-data` outcomes;
+- deterministic findings and tests for policy mismatch, stale evidence, insufficient confidence and invalid input.
+
+The assurance layer is read-only decision support. It does not mutate routes, DNS, tunnels or failover state, and it does not infer service capability from geographic IP information.
 
 ## Mobile Product Contract
 
