@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { assessIdentityPolicy, type IdentityEvidence } from './IdentityAssurance.js';
+import {
+  assessIdentityPolicy,
+  type DestinationIdentity,
+  type EgressIdentity,
+  type IdentityEvidence,
+} from './IdentityAssurance.js';
 
 const now = new Date('2026-08-23T12:00:00.000Z');
 
-const evidence = (overrides: Partial<IdentityEvidence> = {}): IdentityEvidence => ({
+type EvidenceOverrides = {
+  egress?: Partial<EgressIdentity>;
+  destination?: Partial<DestinationIdentity>;
+  confidence?: IdentityEvidence['confidence'];
+};
+
+const evidence = (overrides: EvidenceOverrides = {}): IdentityEvidence => ({
   egress: {
     ip: '203.0.113.10',
     family: 'ipv4',
