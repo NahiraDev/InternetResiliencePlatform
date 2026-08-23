@@ -8,7 +8,7 @@
 - **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
 - **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
 - **Phase 44:** analytics engine, tests and specification have been added; final verification remains required.
-- **Phase 45:** identity-assurance package, tests and phase contract have been added; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
+- **Phase 45:** explicit egress/destination assurance has been added to `@irp/network-intelligence`, with tests and phase contract; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
 - **Next planned phase:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
 - **Roadmap:** 70 phases total.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
@@ -50,7 +50,7 @@ Analytics is decision support. It does not directly bypass policy/safety gates o
 
 ## Phase 45 — Network Identity & Destination Policy Assurance
 
-Implementation started with a dedicated `@irp/identity-assurance` package providing:
+Implementation started as an additive module in `@irp/network-intelligence`:
 
 - explicit egress identity evidence with source provenance and observation time;
 - explicit destination identity evidence with hostname, resolved addresses, protocol and source provenance;
