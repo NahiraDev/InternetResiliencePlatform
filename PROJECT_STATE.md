@@ -8,7 +8,7 @@
 - **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
 - **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
 - **Phase 44:** analytics engine, tests and specification have been added; final verification remains required.
-- **Phase 45:** explicit egress/destination assurance has been added to `@irp/network-intelligence`, with tests and phase contract; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
+- **Phase 45:** explicit egress/destination assurance has been added to `@irp/network-intelligence`, with hardened evidence validation, tests and phase contract; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
 - **Next planned phase:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
 - **Roadmap:** 70 phases total.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
@@ -50,15 +50,17 @@ Analytics is decision support. It does not directly bypass policy/safety gates o
 
 ## Phase 45 — Network Identity & Destination Policy Assurance
 
-Implementation started as an additive module in `@irp/network-intelligence`:
+Implementation is an additive module in `@irp/network-intelligence`:
 
 - explicit egress identity evidence with source provenance and observation time;
 - explicit destination identity evidence with hostname, resolved addresses, protocol and source provenance;
 - policy constraints for egress IP/ASN/organization and destination hostname/address;
 - required independent egress-source enforcement;
-- bounded freshness validation;
+- bounded freshness validation, including future-dated evidence;
+- strict IPv4/IPv6 and address-family validation;
+- required resolved destination addresses and valid destination ports;
 - explicit `compliant`, `non-compliant` and `insufficient-data` outcomes;
-- deterministic findings and tests for policy mismatch, stale evidence, insufficient confidence and invalid input.
+- deterministic findings and tests for normalization, policy mismatch, stale/future evidence, insufficient confidence and invalid input.
 
 The assurance layer is read-only decision support. It does not mutate routes, DNS, tunnels or failover state, and it does not infer service capability from geographic IP information.
 
