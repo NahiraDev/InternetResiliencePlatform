@@ -1,66 +1,67 @@
 # Documentation
 
-This directory contains the canonical user-facing and maintainer documentation for InternetResiliencePlatform.
+This directory is the canonical documentation tree for InternetResiliencePlatform. It is intentionally organized by document purpose rather than by temporary phase output.
 
 ## Start here
 
-Choose the path that matches your task:
-
 ### External developer
 
-1. [Quick start](getting-started/quick-start.md) — install and run the repository.
-2. [Development](development.md) — development workflow, checks, and tooling.
-3. [Configuration](configuration.md) — local and runtime configuration.
-4. [Current architecture](current-architecture.md) — implemented system and boundaries.
-5. [API reference](api/platform-status-api.md) — documented HTTP and streaming API.
-6. [Examples](../examples/README.md) — runnable capability-oriented examples.
+1. [Quick start](getting-started/quick-start.md)
+2. [Development](development.md)
+3. [Configuration](configuration.md)
+4. [Current architecture](current-architecture.md)
+5. [API reference](api/platform-status-api.md)
+6. [Examples](../examples/README.md)
 
-### Maintainer / operator
+### Maintainer / architect
 
-- [Architecture](architecture/README.md) — detailed subsystem architecture.
-- [Product architecture](PRODUCT_ARCHITECTURE.md) — cross-platform product/client contract.
-- [70-phase product plan](PRODUCT_ROADMAP_70_PHASES.md) — detailed execution dependencies and acceptance gates.
-- [Guides](guides/) — testing and troubleshooting procedures.
-- [Operations](operations/) — deployment and runtime procedures.
-- [Observability](observability.md) — metrics, telemetry, diagnostics, and operational visibility.
-- [Security](security-architecture.md) — authentication, authorization, trust boundaries, and security invariants.
-- [Reference](reference/) — package and implementation reference material.
-- [ADRs](adr/) — accepted architectural decisions.
-- [Phase records](phases/) — implementation/audit records.
+1. [Architecture](architecture/README.md)
+2. [70-phase product plan](architecture/product-roadmap-70-phases.md)
+3. [Engineering governance](architecture/engineering-governance.md)
+4. [Release gates](architecture/release-gates.md)
+5. [Phase records](phases/README.md)
+6. [ADRs](adr/)
+
+### Operator / troubleshooter
+
+- [Guides](guides/)
+- [Operations](operations/)
+- [Observability](observability.md)
+- [Security](security-architecture.md)
+- [Reference](reference/)
 
 ## Documentation structure
 
-| Section | Purpose | Audience |
-| --- | --- | --- |
-| Root guides | Stable user-facing documentation | Everyone |
-| `api/` | API contracts and examples | API consumers / developers |
-| `architecture/` | Detailed implementation architecture | Maintainers / architects |
-| `development/` | Local development and tooling | Developers |
-| `guides/` | Task-oriented testing and troubleshooting | Developers / operators |
-| `operations/` | Deployment and operational procedures | Operators / maintainers |
-| `reference/` | Stable package and implementation reference | Developers / maintainers |
-| `security/` | Security-specific implementation/reference material | Developers / security reviewers |
-| `adr/` | Accepted architectural decisions | Maintainers / architects |
-| `phases/` | Historical implementation/audit records | Maintainers / auditors |
+| Section | Purpose |
+| --- | --- |
+| Root guides | Stable user-facing entry points |
+| `getting-started/` | Installation and first-run workflows |
+| `api/` | API contracts and examples |
+| `architecture/` | Current architecture, product architecture, governance and release rules |
+| `guides/` | Task-oriented procedures and troubleshooting |
+| `operations/` | Deployment and operational procedures |
+| `reference/` | Stable package and implementation references |
+| `security/` | Security-specific documentation |
+| `adr/` | Durable architectural decisions |
+| `phases/` | Historical implementation and audit evidence |
 
-## Documentation rules
+## Canonical-source rules
 
-- Prefer updating an existing canonical document over creating a new document for the same concept.
-- Root documents must remain stable, current, and useful to an external developer.
-- Do not put phase reports, generated output, audit dumps, temporary JSON, or one-off verification notes in the user-facing navigation.
-- Phase documents must distinguish implemented behavior from planned contracts.
-- Describe only behavior that exists and is verifiable on `main`. Mark planned behavior explicitly.
-- Avoid duplicating the same architecture, API contract, or operational procedure in multiple files.
-- Keep links relative and maintainable; repository validation checks internal Markdown targets.
-- Use task-oriented documents for procedures and reference documents for stable facts/contracts.
+- One fact has one canonical home.
+- Prefer updating an existing canonical document over creating a duplicate.
+- Architecture belongs in `architecture/`; phase evidence belongs in `phases/`; API contracts belong in `api/`; durable decisions belong in `adr/`.
+- Do not create one-off phase reports in the user-facing navigation.
+- Phase records distinguish implemented, verified, pending-verification, and planned behavior.
+- Use relative links and keep them valid.
+- When implementation changes a contract, update implementation, tests, and the canonical document together.
 
 ## Project authority
 
 - Project overview: [`../README.md`](../README.md)
-- Roadmap: [`../ROADMAP.md`](../ROADMAP.md)
-- Detailed 70-phase plan: [`PRODUCT_ROADMAP_70_PHASES.md`](PRODUCT_ROADMAP_70_PHASES.md)
-- Product architecture: [`PRODUCT_ARCHITECTURE.md`](PRODUCT_ARCHITECTURE.md)
+- Concise roadmap: [`../ROADMAP.md`](../ROADMAP.md)
+- Detailed 70-phase plan: [`architecture/product-roadmap-70-phases.md`](architecture/product-roadmap-70-phases.md)
+- Product architecture: [`architecture/product-architecture.md`](architecture/product-architecture.md)
 - Current implementation state: [`../PROJECT_STATE.md`](../PROJECT_STATE.md)
-- Documentation index: this file
+- Documentation standards: [`documentation-standards.md`](documentation-standards.md)
 
-If these sources disagree, implementation and verification must be reconciled before claiming a capability is production-ready.
+If sources disagree, implementation and verification must be reconciled before a capability is described as production-ready.
