@@ -18,13 +18,15 @@ Choose the path that matches your task:
 ### Maintainer / operator
 
 - [Architecture](architecture/README.md) — detailed subsystem architecture.
+- [Product architecture](PRODUCT_ARCHITECTURE.md) — cross-platform product/client contract.
+- [70-phase product plan](PRODUCT_ROADMAP_70_PHASES.md) — detailed execution dependencies and acceptance gates.
 - [Guides](guides/) — testing and troubleshooting procedures.
 - [Operations](operations/) — deployment and runtime procedures.
 - [Observability](observability.md) — metrics, telemetry, diagnostics, and operational visibility.
 - [Security](security-architecture.md) — authentication, authorization, trust boundaries, and security invariants.
 - [Reference](reference/) — package and implementation reference material.
 - [ADRs](adr/) — accepted architectural decisions.
-- [Phase records](phases/) — historical implementation records.
+- [Phase records](phases/) — implementation/audit records.
 
 ## Documentation structure
 
@@ -39,14 +41,14 @@ Choose the path that matches your task:
 | `reference/` | Stable package and implementation reference | Developers / maintainers |
 | `security/` | Security-specific implementation/reference material | Developers / security reviewers |
 | `adr/` | Accepted architectural decisions | Maintainers / architects |
-| `phases/` | Historical implementation record | Maintainers / auditors |
+| `phases/` | Historical implementation/audit records | Maintainers / auditors |
 
 ## Documentation rules
 
 - Prefer updating an existing canonical document over creating a new document for the same concept.
 - Root documents must remain stable, current, and useful to an external developer.
 - Do not put phase reports, generated output, audit dumps, temporary JSON, or one-off verification notes in the user-facing navigation.
-- Phase documents are historical records, not product documentation.
+- Phase documents must distinguish implemented behavior from planned contracts.
 - Describe only behavior that exists and is verifiable on `main`. Mark planned behavior explicitly.
 - Avoid duplicating the same architecture, API contract, or operational procedure in multiple files.
 - Keep links relative and maintainable; repository validation checks internal Markdown targets.
@@ -56,6 +58,8 @@ Choose the path that matches your task:
 
 - Project overview: [`../README.md`](../README.md)
 - Roadmap: [`../ROADMAP.md`](../ROADMAP.md)
+- Detailed 70-phase plan: [`PRODUCT_ROADMAP_70_PHASES.md`](PRODUCT_ROADMAP_70_PHASES.md)
+- Product architecture: [`PRODUCT_ARCHITECTURE.md`](PRODUCT_ARCHITECTURE.md)
 - Current implementation state: [`../PROJECT_STATE.md`](../PROJECT_STATE.md)
 - Documentation index: this file
 
