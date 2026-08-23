@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implementation started; Phase 44 verification and Phase 45 CI verification gates remain required.**
+**Implementation present; repository and CI verification gates remain required.**
 
 ## Objective
 
@@ -22,7 +22,9 @@ Make network identity explicit and independently verifiable so policy decisions 
 
 Phase 45 is implemented as an additive module in the existing `@irp/network-intelligence` package at `src/identity/IdentityAssurance.ts`. No new workspace package or dependency was introduced, preserving the existing dependency graph and frozen lockfile contract.
 
-The exported assurance contract is read-only and returns explicit `compliant`, `non-compliant`, or `insufficient-data` outcomes. It keeps egress identity and destination identity as separate evidence dimensions.
+The assurance implementation validates IP address syntax and declared address family, requires resolved destination addresses, validates optional ASN/organization metadata, validates destination ports, and treats future-dated evidence as non-current evidence. The exported contract remains read-only and returns explicit `compliant`, `non-compliant`, or `insufficient-data` outcomes.
+
+It keeps egress identity and destination identity as separate evidence dimensions and does not infer service capability from geography, ASN, or egress identity alone.
 
 ## Non-goals
 
@@ -51,10 +53,10 @@ Egress identity and destination identity remain separate evidence dimensions. A 
 2. Policy evaluation can constrain egress IP, ASN, organization and evidence source.
 3. Policy evaluation can constrain destination hostname and/or resolved address.
 4. Stale, future-dated or insufficient-confidence evidence never silently becomes compliant.
-5. Invalid timestamps, ports and required identity fields are rejected.
+5. Invalid IPs, address-family mismatches, timestamps, ports, destination addresses, ASN values and required identity fields are rejected.
 6. Results distinguish `compliant`, `non-compliant`, and `insufficient-data` and provide deterministic findings.
 7. No routing, DNS, tunnel or failover mutation occurs in the assurance layer.
-8. Tests cover normal, boundary, invalid, stale and policy-mismatch cases.
+8. Tests cover normal, normalization, boundary, invalid, stale/future, insufficient-confidence and policy-mismatch cases.
 9. No secrets, credentials or raw payload data are represented by the contract.
 10. `pnpm validate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and CI must pass before completion is claimed.
 
@@ -62,8 +64,9 @@ Egress identity and destination identity remain separate evidence dimensions. A 
 
 - **Egress spoofing:** an assurance result identifies the evidence source; policy may require an independent source.
 - **Destination conflation:** destination identity is evaluated separately from egress identity and cannot be inferred from it.
-- **Stale evidence:** bounded freshness prevents old network identity from being treated as current.
+- **Stale evidence:** bounded freshness prevents old or future-dated network identity from being treated as current.
 - **Insufficient evidence:** missing or low-confidence evidence produces `insufficient-data`, not a permissive result.
+- **Malformed evidence:** invalid network identity fields are rejected before policy evaluation.
 - **Policy bypass:** the module produces decision-support evidence only; Core policy/safety gates remain authoritative.
 - **Sensitive data exposure:** contracts contain network identity metadata only and no credentials or raw payloads.
 
