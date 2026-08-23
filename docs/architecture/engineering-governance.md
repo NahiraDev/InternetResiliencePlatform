@@ -10,7 +10,8 @@ This document defines engineering rules that keep the 70-phase product coherent 
 - `docs/architecture/product-roadmap-70-phases.md` — detailed phase contracts.
 - `docs/architecture/product-architecture.md` — product-level architecture.
 - `PROJECT_STATE.md` — current implementation truth.
-- `docs/phases/` — historical implementation and audit evidence.
+- `docs/phases/` — current-phase implementation and audit records.
+- `docs/audits/phase-history-evidence-matrix.md` — historical implementation labels and their evidence-backed mapping status.
 - `docs/documentation-standards.md` — documentation rules.
 - ADRs — durable architectural decisions.
 
@@ -37,10 +38,19 @@ A phase is complete only when implementation, tests, documentation, runtime evid
 
 Source presence, exported types, mocks, placeholders, or documentation alone are never completion evidence.
 
+## Historical phase numbering
+
+Historical phase numbers are **not** authoritative product identifiers. The repository has undergone roadmap revisions, so a historical label such as "Phase 8" must never be assumed to mean current product Phase 8.
+
+Historical implementation claims must be kept separate from current product-phase status. A mapping from historical work to a current phase requires evidence from implementation ownership, tests, configuration/schema impact, ADRs or durable decisions, merged changes, and applicable runtime/CI evidence. Until that mapping is justified, the historical item remains evidence only and must not advance the current phase status.
+
+The canonical mapping status is maintained in [`../audits/phase-history-evidence-matrix.md`](../audits/phase-history-evidence-matrix.md).
+
 ## Repository hygiene
 
 - Prefer existing directories and documents over new top-level documentation.
-- Keep phase evidence under `docs/phases/`.
+- Keep current phase records under `docs/phases/`.
+- Keep historical mapping/reconstruction under `docs/audits/`.
 - Keep architecture under `docs/architecture/`.
 - Keep API contracts under `docs/api/`.
 - Keep durable decisions under `docs/adr/`.
