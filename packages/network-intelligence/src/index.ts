@@ -10,6 +10,7 @@ export * from './core/NetworkMonitor.js';
 export * from './core/NetworkSampler.js';
 export * from './core/Scheduler.js';
 export * from './events/NetworkEvents.js';
+export * from './identity/IdentityAssurance.js';
 export * from './metrics/ASNMetric.js';
 export * from './metrics/BandwidthMetric.js';
 export * from './metrics/DNSMetric.js';
