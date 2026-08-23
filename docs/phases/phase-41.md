@@ -79,3 +79,11 @@ Regional identity is evidence for policy evaluation, not an absolute guarantee o
 - [ ] Service-level reachability checks are added for an explicit bounded target set.
 - [ ] Results are captured as versioned evidence without secret leakage.
 - [ ] Regional evidence can be consumed by automation without treating remote environmental failure as a local code failure.
+
+## Status / Verification
+
+**Implementation status:** tooling and CI workflow are implemented.
+
+**Verification status:** repository-side implementation is reviewable and testable, but independent Iranian regional evidence remains pending. The phase must not be marked fully complete until the completion criteria above are satisfied, including a real Iranian egress observation.
+
+**CI interpretation:** failure to access the independently hosted regional probe is an environmental validation failure and is intentionally outside the normal repository CI gate.
