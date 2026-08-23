@@ -62,6 +62,9 @@ jobs:
       - name: Validate repository integrity
         run: pnpm validate
 
+      - name: Validate documentation integrity
+        run: pnpm validate:docs
+
       - name: Lint
         run: pnpm lint
 
