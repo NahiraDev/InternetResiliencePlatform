@@ -12,9 +12,10 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Highest implemented area:** Phase 43 — Distributed Probe Federation.
-- **Active verification:** Phase 44 — Data Analytics & Decision Intelligence.
-- **Next:** Phase 45 — Network Identity & Destination Policy Assurance, only after required verification gates pass.
+- **Highest implemented area:** Phase 45 — Network Identity & Destination Policy Assurance (verification pending).
+- **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
+- **Phase 45:** implementation started; completion is blocked until the required verification gates pass.
+- **Next:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
 
 ## Canonical records with current verification status
 
@@ -28,6 +29,7 @@ Phase records are implementation and audit evidence. They are **not** the produc
 | 42 | Remote client API integration | Implemented / verify current state | [`phase-42.md`](phase-42.md) |
 | 43 | Distributed probe federation | Implemented / final CI-runtime gate required | [`phase-43.md`](phase-43.md) |
 | 44 | Data analytics & decision intelligence | Implemented / final CI-runtime gate required | [`phase-44.md`](phase-44.md) |
+| 45 | Network identity & destination policy assurance | Implementation started / verification required | [`phase-45.md`](phase-45.md) |
 
 ## Historical phases 01–38
 
@@ -49,7 +51,6 @@ Do not create speculative implementation reports for phases that have not starte
 
 | Range | Product track |
 | ---: | --- |
-| 45 | Network identity & destination policy assurance |
 | 46–55 | Gateway, tunnel and multi-path platform |
 | 56–60 | Unified control plane, Web Control Center and self-hosting |
 | 61–63 | Linux, macOS and Windows Full Clients |
