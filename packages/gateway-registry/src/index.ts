@@ -86,9 +86,7 @@ const clone = <T>(value: T): T => structuredClone(value);
 function assertGateway(gateway: GatewayMetadata): void {
   if (!gateway.id.trim()) throw new Error('gateway id is required');
   if (!gateway.name.trim()) throw new Error('gateway name is required');
-  if (!gateway.ownerId?.trim() || !gateway.ownership.ownerId.trim()) {
-    throw new Error('gateway ownership ownerId is required');
-  }
+  if (!gateway.ownership.ownerId.trim()) throw new Error('gateway ownership ownerId is required');
   if (!Number.isInteger(gateway.endpoint.port) || gateway.endpoint.port < 1 || gateway.endpoint.port > 65535) {
     throw new Error('gateway endpoint port must be an integer between 1 and 65535');
   }
