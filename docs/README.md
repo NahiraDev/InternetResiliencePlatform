@@ -8,22 +8,26 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 
 1. [Quick start](getting-started/quick-start.md)
 2. [Platform support](getting-started/platform-support.md)
-3. [Development](development.md)
-4. [Configuration](configuration.md)
-5. [Current architecture](current-architecture.md)
-6. [API reference](api/platform-status-api.md)
-7. [Examples](../examples/README.md)
+3. [Client onboarding](getting-started/client-onboarding.md)
+4. [Development](development.md)
+5. [Configuration](configuration.md)
+6. [Current architecture](current-architecture.md)
+7. [API reference](api/platform-status-api.md)
+8. [Examples](../examples/README.md)
 
 ### Maintainer / architect
 
 1. [Architecture](architecture/README.md)
 2. [Platform model](architecture/platform-model.md)
-3. [Data and control flow](architecture/data-flow.md)
-4. [70-phase product plan](architecture/product-roadmap-70-phases.md)
-5. [Engineering governance](architecture/engineering-governance.md)
-6. [Release gates](architecture/release-gates.md)
-7. [Phase records](phases/README.md)
-8. [ADRs](adr/)
+3. [Product architecture](architecture/product-architecture.md)
+4. [Data and control flow](architecture/data-flow.md)
+5. [Gateway and tunnel architecture](architecture/gateway-and-tunnel-architecture.md)
+6. [70-phase product plan](architecture/product-roadmap-70-phases.md)
+7. [Engineering governance](architecture/engineering-governance.md)
+8. [Release gates](architecture/release-gates.md)
+9. [Phase records](phases/README.md)
+10. [Documentation audit](audits/documentation-audit-2026-08-23.md)
+11. [ADRs](adr/)
 
 ### Operator / troubleshooter
 
@@ -34,13 +38,20 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - [Recovery and rollback](operations/recovery.md)
 - [Autopilot runbook](operations/autopilot-runbook.md)
 - [Observability](observability.md)
-- [Security architecture](security-architecture.md)
+- [Security](security/)
+- [Security architecture](security/security-architecture.md)
 - [Reference](reference/)
 
 ## Core concepts
 
 - [Autopilot](concepts/autopilot.md)
 - [Control loop](concepts/control-loop.md)
+- [Network Autopilot](concepts/network-autopilot.md)
+- [Full Client Model](concepts/full-client-model.md)
+- [Gateways and Tunnels](concepts/gateways-and-tunnels.md)
+- [Devices and Enrollment](concepts/devices-and-enrollment.md)
+- [Telemetry and Analytics](concepts/telemetry-and-analytics.md)
+- [Extensibility](concepts/extensibility.md)
 
 ## Documentation structure
 
@@ -58,6 +69,8 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 | `security/` | Security-specific documentation |
 | `adr/` | Durable architectural decisions |
 | `phases/` | Historical implementation and audit evidence |
+| `audits/` | Documentation/repository audit records and migration evidence |
+| `testing/` | Test policy and exception metadata |
 
 ## Canonical-source rules
 
@@ -65,6 +78,7 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - Prefer updating an existing canonical document over creating a duplicate.
 - Architecture belongs in `architecture/`; phase evidence belongs in `phases/`; API contracts belong in `api/`; durable decisions belong in `adr/`.
 - Concepts belong in `concepts/`; operational procedures belong in `operations/`; troubleshooting belongs in `guides/`.
+- Security architecture belongs in `security/`.
 - Do not create one-off phase reports in the user-facing navigation.
 - Phase records distinguish implemented, verified, pending-verification, and planned behavior.
 - Use relative links and keep them valid.
@@ -78,5 +92,6 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - Product architecture: [`architecture/product-architecture.md`](architecture/product-architecture.md)
 - Current implementation state: [`../PROJECT_STATE.md`](../PROJECT_STATE.md)
 - Documentation standards: [`documentation-standards.md`](documentation-standards.md)
+- Documentation audit baseline: [`audits/documentation-audit-2026-08-23.md`](audits/documentation-audit-2026-08-23.md)
 
 If sources disagree, implementation and verification must be reconciled before a capability is described as production-ready.
