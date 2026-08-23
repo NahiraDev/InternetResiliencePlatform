@@ -16,6 +16,7 @@
     "prepare": "husky",
     "coverage": "turbo run test -- --coverage",
     "validate": "node scripts/validate-repository.mjs",
+    "validate:docs": "node scripts/validate-documentation.mjs",
     "examples:smoke": "node scripts/examples-smoke.mjs",
     "clean": "node scripts/clean.mjs",
     "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
