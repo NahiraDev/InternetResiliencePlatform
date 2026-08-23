@@ -25,6 +25,16 @@ A current phase receives a historical mapping only when source, tests, ADRs, mer
 | `verification-pending` | The current-phase implementation is present, but required repository/runtime/CI verification has not been re-established. |
 | `planned` | Roadmap-only. No implementation claim is made. |
 
+## Historical numbering drift
+
+Historical implementation phase numbers drifted from the current 70-phase product numbering. These labels must not be interpreted as one-to-one mappings. A historical phase number may have been renamed, split, merged, superseded, or moved into a later product track. The current product roadmap remains authoritative.
+
+## Prohibition on unverified historical completion claims
+
+Historical evidence must never be represented as proof that a current product phase was completed. In particular, commit messages, old phase labels, file existence, or partial implementation evidence alone do not establish current completion.
+
+Until that mapping is complete, historical implementation labels remain historical evidence only and must not be promoted to verified current-phase completion.
+
 ## Current product-phase status
 
 The current 70-phase roadmap is authoritative for product planning. The following table intentionally avoids inventing historical mappings.
