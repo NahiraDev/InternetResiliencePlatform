@@ -22,23 +22,23 @@ The repository contains documentation in several forms: `docs/`, root governance
 | Getting started | `docs/getting-started/` | EXPAND |
 | Guides | `docs/guides/` | EXPAND |
 | Operations | `docs/operations/` | EXPAND |
-| Security | `docs/security/` | RECONCILE legacy root document |
+| Security | `docs/security/` | CANONICAL |
 | Network | `docs/network/` | EXPAND |
 | Observability | `docs/observability.md` + operations observability | CONSOLIDATE boundary |
 | Reference | `docs/reference/` | EXPAND |
 | Decisions | `docs/adr/` | KEEP / reconcile historical names |
-| Phase evidence | `docs/phases/` | RECONSTRUCT 00–44 |
+| Phase evidence | `docs/phases/` + `docs/audits/phase-history-evidence-matrix.md` | RECONSTRUCT 00–44 |
 | Tests policy | `docs/testing/` | EXPAND |
 
-## Legacy / duplicate surfaces found
+## Legacy / duplicate surfaces resolved
 
 ### Mobile
 
-`docs/mobile-client.md` describes the Phase-43-era remote-client model and explicitly says native iOS/Android is not part of the current roadmap. That statement is stale relative to the 70-phase product model. Its durable material must live under the client concept/getting-started documentation, not as an orphan root document. fileciteturn159file0
+The obsolete root `docs/mobile-client.md` has been removed. Its durable product model is now represented by `docs/concepts/full-client-model.md` and the client onboarding documentation. Mobile is a first-class Full Client under the 70-phase product plan; platform-specific capabilities remain constrained by native OS permissions and networking APIs.
 
 ### Security
 
-`docs/security-architecture.md` contains valuable security material but duplicates the newer `docs/security/` tree. It should be merged into the canonical security documentation and then removed from the root navigation. fileciteturn160file0
+The obsolete root `docs/security-architecture.md` has been removed. The canonical security architecture is now `docs/security/security-architecture.md`. The canonical document defines authentication/authorization boundaries, remote-client security, network-probe safety, secret handling and runtime/supply-chain requirements. fileciteturn210file0
 
 ## Required documentation domains before Phase 45
 
@@ -52,7 +52,7 @@ The repository contains documentation in several forms: `docs/`, root governance
 
 ## Phase-history reconstruction policy
 
-Do not fabricate Phase 01–38 records. Where implementation evidence exists in source, tests, migrations, ADRs or commits, reconstruct a concise historical record. Where evidence is insufficient, mark the phase as `historical-evidence-incomplete` rather than claiming completion.
+Do not fabricate Phase 01–38 records. The new [`phase-history-evidence-matrix.md`](phase-history-evidence-matrix.md) records verified historical evidence and explicitly distinguishes historical evidence from current completion. Historical phase numbering drift is a known issue: old implementation phase numbers do not map one-to-one to the current 70-phase product contract. Canonical records for 01–38 will only be created after each implementation cluster is mapped to the current contract, tests, migrations/configuration, ADRs, merged changes and verification evidence.
 
 Future Phase 45–70 documents are specifications until implementation and verification evidence exists.
 
