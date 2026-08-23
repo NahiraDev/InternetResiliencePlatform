@@ -18,6 +18,12 @@ Make network identity explicit and independently verifiable so policy decisions 
 - deterministic assurance findings suitable for Core and future Control Plane clients;
 - tests for compliant, non-compliant, stale, insufficient-confidence and invalid evidence.
 
+## Implementation
+
+Phase 45 is implemented as an additive module in the existing `@irp/network-intelligence` package at `src/identity/IdentityAssurance.ts`. No new workspace package or dependency was introduced, preserving the existing dependency graph and frozen lockfile contract.
+
+The exported assurance contract is read-only and returns explicit `compliant`, `non-compliant`, or `insufficient-data` outcomes. It keeps egress identity and destination identity as separate evidence dimensions.
+
 ## Non-goals
 
 - changing routes, DNS, tunnels or failover state;
@@ -54,11 +60,11 @@ Egress identity and destination identity remain separate evidence dimensions. A 
 
 ## Security / threat review
 
-- **Egress spoofing:** an assurance result must identify the evidence source; policy may require an independent source.
+- **Egress spoofing:** an assurance result identifies the evidence source; policy may require an independent source.
 - **Destination conflation:** destination identity is evaluated separately from egress identity and cannot be inferred from it.
 - **Stale evidence:** bounded freshness prevents old network identity from being treated as current.
 - **Insufficient evidence:** missing or low-confidence evidence produces `insufficient-data`, not a permissive result.
-- **Policy bypass:** this package produces decision-support evidence only; Core policy/safety gates remain authoritative.
+- **Policy bypass:** the module produces decision-support evidence only; Core policy/safety gates remain authoritative.
 - **Sensitive data exposure:** contracts contain network identity metadata only and no credentials or raw payloads.
 
 ## Dependencies
