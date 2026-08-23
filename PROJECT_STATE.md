@@ -4,18 +4,38 @@
 
 ## Current State
 
-- **Highest implemented area:** Phase 45 — Network Identity & Destination Policy Assurance (verification pending).
-- **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
+- **Highest implemented area:** Phase 46 — Gateway Registry (verification pending).
+- **Verification prerequisite:** Phase 45 — Network Identity & Destination Policy Assurance remains subject to repository/CI verification before it can be marked complete.
 - **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
-- **Phase 44:** analytics engine, tests and specification have been added; final verification remains required.
-- **Phase 45:** explicit egress/destination assurance has been added to `@irp/network-intelligence`, with hardened evidence validation, tests and phase contract; completion is blocked until repository/CI verification passes and the Phase 44 prerequisite gate is resolved.
-- **Next planned phase:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
+- **Phase 44:** analytics engine, tests and specification are present; final verification remains required.
+- **Phase 45:** explicit egress/destination assurance is present in `@irp/network-intelligence`, with hardened evidence validation, tests and phase contract; completion remains blocked until repository/CI verification passes and the prerequisite analytics gate is resolved.
+- **Phase 46:** gateway inventory, ownership, capabilities, trust state, bounded lifecycle transitions and safe retirement/removal are implemented in `@irp/gateway-registry`; no network activation or routing mutation is performed by the registry.
+- **Next planned phase:** Phase 47 — Gateway Discovery & Health, only after Phase 46 verification gates pass.
 - **Roadmap:** 70 phases total.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are product clients. Mobile is a Full Client, not a read-only dashboard.
 - **UI strategy:** Web Control Center is an explicit product track beginning in Phase 57; it does not contain safety-critical routing logic.
 - **Gateway strategy:** managed gateway/tunnel capabilities are a first-class product track in Phases 46–55, provider-neutral and policy-controlled.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 46 — Gateway Registry
+
+The gateway registry establishes the authoritative inventory contract for later gateway discovery, health, selection and tunnel phases:
+
+- stable gateway identity and names;
+- endpoint metadata with address-family declaration;
+- ownership and management source;
+- optional provider reference without provider-specific execution;
+- declared tunnel protocols, transports and capabilities;
+- explicit lifecycle state machine: `registered`, `active`, `draining`, `disabled`, `retired`;
+- explicit trust state: `untrusted`, `pending`, `trusted`, `revoked`;
+- bounded inventory filtering by lifecycle, trust, region, country, provider, owner and tags;
+- defensive copies on registry reads/writes;
+- safe retirement and deletion only after retirement;
+- revoked trust cannot be silently restored;
+- no route, DNS, tunnel or failover mutation.
+
+The implementation is intentionally in-memory and provider-neutral. Persistence, discovery, health measurement and execution belong to later phases rather than being hidden inside the registry.
 
 ## Phase 43 — Distributed Probe Federation
 
@@ -94,6 +114,8 @@ Gateway/tunnel support is provider-neutral. A gateway is eligible only after aut
 A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
 
 For networking/runtime phases, completion requires the applicable repository validation, typecheck, lint, tests, build, API smoke, Docker/runtime, platform integration and/or external validation gates.
+
+For Phase 46 specifically, verification must include the new package through the normal workspace test/typecheck/build graph and must not rely on test-only exceptions or unrelated CI bypasses.
 
 ## Continuation Rules
 
