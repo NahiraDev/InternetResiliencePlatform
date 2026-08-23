@@ -9,7 +9,7 @@ A document is not considered complete merely because a file exists. Every durabl
 
 ## Repository-wide observations
 
-The repository contains documentation in several forms: `docs/`, root governance files, package READMEs, `examples/`, `infra/*/README.md`, `.github/AGENTS.md`, workflow files, and phase-specific tests. The recursive repository tree confirms these are all part of the current `main` tree. fileciteturn157file0
+The repository contains documentation in several forms: `docs/`, root governance files, package READMEs, `examples/`, `infra/*/README.md`, `.github/AGENTS.md`, workflow files, and phase-specific tests. The recursive repository tree confirms these are all part of the current `main` tree.
 
 ## Canonical documentation domains
 
@@ -34,11 +34,11 @@ The repository contains documentation in several forms: `docs/`, root governance
 
 ### Mobile
 
-The obsolete root `docs/mobile-client.md` has been removed. Its durable product model is now represented by `docs/concepts/full-client-model.md` and the client onboarding documentation. Mobile is a first-class Full Client under the 70-phase product plan; platform-specific capabilities remain constrained by native OS permissions and networking APIs.
+The obsolete root mobile-client document has been removed. Its durable product model is now represented by `docs/concepts/full-client-model.md` and the client onboarding documentation. Mobile is a first-class Full Client under the 70-phase product plan; platform-specific capabilities remain constrained by native OS permissions and networking APIs.
 
 ### Security
 
-The obsolete root `docs/security-architecture.md` has been removed. The canonical security architecture is now `docs/security/security-architecture.md`. The canonical document defines authentication/authorization boundaries, remote-client security, network-probe safety, secret handling and runtime/supply-chain requirements. fileciteturn210file0
+The obsolete root security-architecture document has been removed. The canonical security architecture is now `docs/security/security-architecture.md`. The canonical document defines authentication/authorization boundaries, remote-client security, network-probe safety, secret handling and runtime/supply-chain requirements.
 
 ## Required documentation domains before Phase 45
 
