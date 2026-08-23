@@ -39,7 +39,7 @@ The 70 phases are organized into these tracks:
 - **64–68:** iOS/Android Full Clients and native networking
 - **69–70:** Production Hardening & v1.0 Certification
 
-See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/PRODUCT_ROADMAP_70_PHASES.md`](docs/PRODUCT_ROADMAP_70_PHASES.md) for dependencies, acceptance contracts and release gates.
+See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/architecture/product-roadmap-70-phases.md`](docs/architecture/product-roadmap-70-phases.md) for dependencies, acceptance contracts and release gates.
 
 ## What exists today
 
@@ -62,21 +62,23 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 
 ### For users and external developers
 
-1. [Getting started](docs/getting-started/quick-start.md)
-2. [Development guide](docs/development.md)
-3. [Configuration](docs/configuration.md)
-4. [Current architecture](docs/current-architecture.md)
-5. [API reference](docs/api/platform-status-api.md)
-6. [Examples](examples/README.md)
-7. [Observability](docs/observability.md)
-8. [Security architecture](docs/security-architecture.md)
+1. [Documentation index](docs/README.md)
+2. [Getting started](docs/getting-started/quick-start.md)
+3. [Development guide](docs/development.md)
+4. [Configuration](docs/configuration.md)
+5. [Current architecture](docs/current-architecture.md)
+6. [API reference](docs/api/platform-status-api.md)
+7. [Examples](examples/README.md)
+8. [Security architecture](docs/security/security-architecture.md)
 
 ### For maintainers
 
 - [Documentation index](docs/README.md)
 - [Architecture documentation](docs/architecture/README.md)
-- [Product architecture](docs/PRODUCT_ARCHITECTURE.md)
-- [70-phase product plan](docs/PRODUCT_ROADMAP_70_PHASES.md)
+- [Product architecture](docs/architecture/product-architecture.md)
+- [70-phase product plan](docs/architecture/product-roadmap-70-phases.md)
+- [Documentation audit](docs/audits/documentation-audit-2026-08-23.md)
+- [Historical phase evidence matrix](docs/audits/phase-history-evidence-matrix.md)
 - [Operational documentation](docs/operations/)
 - [Architectural decisions](docs/adr/)
 - [Testing policy](docs/testing/)
@@ -146,7 +148,7 @@ At a high level:
                     Telemetry / History
 ```
 
-Detailed architecture is documented in [`docs/architecture/`](docs/architecture/) and [`docs/PRODUCT_ARCHITECTURE.md`](docs/PRODUCT_ARCHITECTURE.md).
+Detailed architecture is documented in [`docs/architecture/`](docs/architecture/).
 
 ## Examples
 
@@ -169,7 +171,7 @@ Future gateway/tunnel automation is constrained to authorized endpoints and must
 
 Consequential recovery actions are explicit, policy-controlled, auditable, bounded, reversible, and independently verified.
 
-See [`SECURITY.md`](SECURITY.md) and [`docs/security-architecture.md`](docs/security-architecture.md).
+See [`SECURITY.md`](SECURITY.md) and [`docs/security/security-architecture.md`](docs/security/security-architecture.md).
 
 ## Documentation policy
 
