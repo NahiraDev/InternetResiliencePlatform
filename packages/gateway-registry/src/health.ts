@@ -123,16 +123,23 @@ export async function probeGatewayHealth(
 ): Promise<GatewayHealthSample> {
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) throw new Error('timeoutMs must be a positive integer');
 
-  const result = await Promise.race([
-    probe.probe(endpoint, timeoutMs),
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('gateway health probe timed out')), timeoutMs)),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const result = await Promise.race([
+      probe.probe(endpoint, timeoutMs),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('gateway health probe timed out')), timeoutMs);
+      }),
+    ]);
 
-  return {
-    gatewayId,
-    checkedAt: new Date().toISOString(),
-    reachable: result.reachable,
-    ...(result.latencyMs === undefined ? {} : { latencyMs: result.latencyMs }),
-    ...(result.packetLossPercent === undefined ? {} : { packetLossPercent: result.packetLossPercent }),
-  };
+    return {
+      gatewayId,
+      checkedAt: new Date().toISOString(),
+      reachable: result.reachable,
+      ...(result.latencyMs === undefined ? {} : { latencyMs: result.latencyMs }),
+      ...(result.packetLossPercent === undefined ? {} : { packetLossPercent: result.packetLossPercent }),
+    };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
