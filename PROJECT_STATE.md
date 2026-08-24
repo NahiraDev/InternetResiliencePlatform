@@ -4,19 +4,39 @@
 
 ## Current State
 
-- **Highest implemented area:** Phase 46 — Gateway Registry (verification pending).
+- **Highest implemented area:** Phase 47 — Gateway Discovery & Health (verification pending).
 - **Verification prerequisite:** Phase 45 — Network Identity & Destination Policy Assurance remains subject to repository/CI verification before it can be marked complete.
 - **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
 - **Phase 44:** analytics engine, tests and specification are present; final verification remains required.
 - **Phase 45:** explicit egress/destination assurance is present in `@irp/network-intelligence`, with hardened evidence validation, tests and phase contract; completion remains blocked until repository/CI verification passes and the prerequisite analytics gate is resolved.
-- **Phase 46:** gateway inventory, ownership, capabilities, trust state, bounded lifecycle transitions and safe retirement/removal are implemented in `@irp/gateway-registry`; no network activation or routing mutation is performed by the registry.
-- **Next planned phase:** Phase 47 — Gateway Discovery & Health, only after Phase 46 verification gates pass.
-- **Roadmap:** 70 phases total.
+- **Phase 46:** gateway inventory, ownership, capabilities, trust state, bounded lifecycle transitions and safe retirement/removal are implemented in `@irp/gateway-registry`; an `exactOptionalPropertyTypes` transition construction issue was corrected; verification remains the gate.
+- **Phase 47:** provider-neutral gateway discovery reconciliation, stale inventory detection, deterministic health classification/scoring and hard per-probe timeout behavior are implemented in `@irp/gateway-registry`; verification remains pending.
+- **Next planned phase:** Phase 48 — Secure Tunnel Abstraction, only after Phase 47 verification gates pass.
+- **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are product clients. Mobile is a Full Client, not a read-only dashboard.
 - **UI strategy:** Web Control Center is an explicit product track beginning in Phase 57; it does not contain safety-critical routing logic.
 - **Gateway strategy:** managed gateway/tunnel capabilities are a first-class product track in Phases 46–55, provider-neutral and policy-controlled.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 47 — Gateway Discovery & Health
+
+The Phase 47 layer extends the authoritative Phase 46 gateway inventory without creating a parallel gateway model:
+
+- provider-neutral `GatewayDiscoverySource` contract;
+- bounded discovery reconciliation into the existing registry;
+- registration of newly discovered gateways;
+- metadata reconciliation for existing gateways;
+- retired-gateway resurrection protection;
+- stale inventory reporting without implicit lifecycle mutation;
+- explicit health states: `healthy`, `degraded`, `unreachable`, `stale`, `unknown`;
+- deterministic quality scoring from latency and packet loss;
+- explicit unknown semantics when reachability exists without quality measurements;
+- bounded timestamp and measurement validation;
+- hard per-probe timeout boundary;
+- no route, DNS, tunnel or failover mutation.
+
+Health is decision-support evidence. Gateway selection and execution remain later phases.
 
 ## Phase 46 — Gateway Registry
 
@@ -117,6 +137,8 @@ For networking/runtime phases, completion requires the applicable repository val
 
 For Phase 46 specifically, verification must include the new package through the normal workspace test/typecheck/build graph and must not rely on test-only exceptions or unrelated CI bypasses.
 
+For Phase 47 specifically, verification must include discovery and health tests through the normal workspace graph, with explicit timeout behavior and no network mutation.
+
 ## Continuation Rules
 
 1. Read `ROADMAP.md` and this file before starting work.
@@ -130,6 +152,7 @@ For Phase 46 specifically, verification must include the new package through the
 9. Keep security, destination-awareness, application-level verification, failover safety, auditability and rollback first-class.
 10. Never infer regional egress from the destination being tested; prove it from independently observed probe egress.
 11. Every autonomous network mutation must pass policy/safety checks and be verifiable and reversible.
+12. Health and discovery are evidence-producing layers; they do not themselves activate gateways or mutate routes.
 
 ## Product Objective
 
