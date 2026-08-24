@@ -83,7 +83,8 @@ describe('WireGuardProvider', () => {
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: 'peerkey 1787500000\n', stderr: '', exitCode: 0 });
+    const freshHandshakeSeconds = Math.floor(Date.now() / 1000) - 1;
+    runner.queue({ stdout: `peerkey ${freshHandshakeSeconds}\n`, stderr: '', exitCode: 0 });
     runner.queue({ stdout: '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n', stderr: '', exitCode: 0 });
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
     const tunnel = await provider.create(config());
