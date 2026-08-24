@@ -54,7 +54,18 @@ describe('secure tunnel abstraction', () => {
     expect(manager.list()[0]?.lifecycle).toBe('failed');
   });
 
-  it('disconnects cleanly and rejects unsafe disconnect during connect', async () => {
+  it('rejects disconnect while a tunnel is still connecting', async () => {
+    const p = provider({ connect: vi.fn(() => new Promise(() => undefined)) });
+    const manager = new InMemoryTunnelManager(p);
+    const connecting = manager.connect({ target, timeoutMs: 50 });
+    const session = manager.list()[0];
+
+    expect(session?.lifecycle).toBe('connecting');
+    await expect(manager.disconnect(session!.id, 10)).rejects.toThrow('cannot disconnect a tunnel while it is connecting');
+    await expect(connecting).rejects.toThrow('tunnel connect timed out');
+  });
+
+  it('disconnects cleanly after a successful connection', async () => {
     const p = provider();
     const manager = new InMemoryTunnelManager(p);
     const session = await manager.connect({ target, timeoutMs: 100 });
@@ -62,6 +73,16 @@ describe('secure tunnel abstraction', () => {
     const disconnected = await manager.disconnect(session.id, 100);
     expect(disconnected.lifecycle).toBe('disconnected');
     expect(p.disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('recovers a failed session to disconnected when no provider connection exists', async () => {
+    const p = provider({ connect: vi.fn(() => Promise.reject(new Error('provider failed'))) });
+    const manager = new InMemoryTunnelManager(p);
+    await expect(manager.connect({ target, timeoutMs: 100 })).rejects.toThrow('provider failed');
+    const failed = manager.list()[0];
+
+    const disconnected = await manager.disconnect(failed!.id, 100);
+    expect(disconnected.lifecycle).toBe('disconnected');
   });
 
   it('reconnects only when the provider advertises reconnect support', async () => {
