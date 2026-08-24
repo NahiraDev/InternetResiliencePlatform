@@ -77,20 +77,26 @@ describe('WireGuardProvider', () => {
   });
 
   it('classifies a fresh WireGuard handshake and interface as healthy', async () => {
-    const runner = new FakeRunner();
-    runner.queue({ stdout: '', stderr: 'not found', exitCode: 1 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: 'peerkey 1787500000\n', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n', stderr: '', exitCode: 0 });
-    const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
-    const tunnel = await provider.create(config());
-    await provider.connect(tunnel);
-    const health = await provider.healthCheck(tunnel);
-    expect(health.status).toBe('healthy');
-    expect(health.handshake).toBe(true);
+    const nowMs = 1_787_500_000_000;
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
+    try {
+      const runner = new FakeRunner();
+      runner.queue({ stdout: '', stderr: 'not found', exitCode: 1 });
+      runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+      runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+      runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+      runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+      runner.queue({ stdout: `peerkey ${Math.floor(nowMs / 1000)}\n`, stderr: '', exitCode: 0 });
+      runner.queue({ stdout: '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n', stderr: '', exitCode: 0 });
+      const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
+      const tunnel = await provider.create(config());
+      await provider.connect(tunnel);
+      const health = await provider.healthCheck(tunnel);
+      expect(health.status).toBe('healthy');
+      expect(health.handshake).toBe(true);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('cleans up a newly created interface when connect fails', async () => {
