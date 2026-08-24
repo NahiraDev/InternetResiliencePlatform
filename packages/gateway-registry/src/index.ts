@@ -150,9 +150,13 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
       throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
     }
     const now = new Date().toISOString();
-    const updated: GatewayMetadata = lifecycle === 'retired'
-      ? { ...current, lifecycle, updatedAt: now, retiredAt: now }
-      : { ...current, lifecycle, updatedAt: now };
+    if (lifecycle === 'retired') {
+      const updated: GatewayMetadata = { ...current, lifecycle, updatedAt: now, retiredAt: now };
+      this.gateways.set(id, updated);
+      return clone(updated);
+    }
+
+    const updated: GatewayMetadata = { ...current, lifecycle, updatedAt: now };
     this.gateways.set(id, updated);
     return clone(updated);
   }
@@ -180,3 +184,6 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
     return gateway;
   }
 }
+
+export * from './health.js';
+export * from './discovery.js';
