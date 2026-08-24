@@ -150,12 +150,9 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
       throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
     }
     const now = new Date().toISOString();
-    const updated = {
-      ...current,
-      lifecycle,
-      updatedAt: now,
-      retiredAt: lifecycle === 'retired' ? now : current.retiredAt,
-    };
+    const updated: GatewayMetadata = lifecycle === 'retired'
+      ? { ...current, lifecycle, updatedAt: now, retiredAt: now }
+      : { ...current, lifecycle, updatedAt: now };
     this.gateways.set(id, updated);
     return clone(updated);
   }
