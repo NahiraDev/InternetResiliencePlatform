@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { GatewayAddressFamily, GatewayEndpoint, GatewayId } from './index.js';
 
 /** Provider-neutral tunnel protocols supported by the abstraction layer. */
@@ -137,7 +138,7 @@ export class InMemoryTunnelManager implements TunnelManager {
     if (!capabilities.transports.includes(request.target.transport)) throw new Error(`provider does not support tunnel transport ${request.target.transport}`);
     if (!capabilities.addressFamilies.includes(request.target.addressFamily)) throw new Error(`provider does not support address family ${request.target.addressFamily}`);
 
-    const id = `${this.provider.id}:${request.target.gatewayId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const id = `${this.provider.id}:${request.target.gatewayId}:${randomUUID()}`;
     const now = new Date().toISOString();
     let session: TunnelSession = { id, target: clone(request.target), lifecycle: 'disconnected', createdAt: now, updatedAt: now };
     session = transition(session, 'connecting', now);
@@ -164,7 +165,8 @@ export class InMemoryTunnelManager implements TunnelManager {
     if (current.lifecycle === 'connecting') throw new Error('cannot disconnect a tunnel while it is connecting');
     const connection = this.connections.get(id);
     if (!connection) {
-      const disconnected = transition(current, 'disconnected');
+      const disconnecting = transition(current, 'disconnecting');
+      const disconnected = transition(disconnecting, 'disconnected');
       this.sessions.set(id, disconnected);
       return clone(disconnected);
     }
