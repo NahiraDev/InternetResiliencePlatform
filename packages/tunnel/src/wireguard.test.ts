@@ -36,9 +36,15 @@ describe('WireGuardProvider', () => {
     expect(JSON.stringify(tunnel)).not.toContain(PRIVATE_KEY);
   });
 
-  it('rejects non-key authentication and missing credential reference', async () => {
+  it('rejects non-key authentication', async () => {
     const provider = new WireGuardProvider({ credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
-    await expect(provider.create({ ...config(), authentication: { type: 'token' }, credentialRef: undefined })).rejects.toThrow(/key-based authentication|credential reference/);
+    await expect(provider.create({ ...config(), authentication: { type: 'token' } })).rejects.toThrow(/key-based authentication/);
+  });
+
+  it('rejects key authentication without a credential reference', async () => {
+    const provider = new WireGuardProvider({ credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
+    const { credentialRef: _credentialRef, ...withoutCredential } = config();
+    await expect(provider.create(withoutCredential)).rejects.toThrow(/credential reference/);
   });
 
   it('generates and derives key material without exposing the private key in arguments', async () => {
