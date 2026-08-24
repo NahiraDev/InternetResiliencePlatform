@@ -4,20 +4,44 @@
 
 ## Current State
 
-- **Highest implemented area:** Phase 47 — Gateway Discovery & Health (verification pending).
-- **Verification prerequisite:** Phase 45 — Network Identity & Destination Policy Assurance remains subject to repository/CI verification before it can be marked complete.
-- **Phase 43:** implementation is present; final CI/runtime completion evidence remains the gate.
-- **Phase 44:** analytics engine, tests and specification are present; final verification remains required.
-- **Phase 45:** explicit egress/destination assurance is present in `@irp/network-intelligence`, with hardened evidence validation, tests and phase contract; completion remains blocked until repository/CI verification passes and the prerequisite analytics gate is resolved.
-- **Phase 46:** gateway inventory, ownership, capabilities, trust state, bounded lifecycle transitions and safe retirement/removal are implemented in `@irp/gateway-registry`; an `exactOptionalPropertyTypes` transition construction issue was corrected; verification remains the gate.
-- **Phase 47:** provider-neutral gateway discovery reconciliation, stale inventory detection, deterministic health classification/scoring and hard per-probe timeout behavior are implemented in `@irp/gateway-registry`; verification remains pending.
-- **Next planned phase:** Phase 48 — Secure Tunnel Abstraction, only after Phase 47 verification gates pass.
+- **Highest implemented area:** Phase 48 — Secure Tunnel Abstraction (verification pending).
+- **Phase 47:** verified green by CI and accepted as complete.
+- **Phase 48:** provider-neutral tunnel lifecycle contracts, capability negotiation, bounded connect/disconnect/reconnect/health operations, defensive session state, opaque provider context and failure/degradation semantics are implemented; final CI verification remains the completion gate.
+- **Phase 45:** explicit egress/destination assurance is present in `@irp/network-intelligence`; its verification is governed by the repository's phase gates.
+- **Phase 46:** gateway inventory, ownership, capabilities, trust state, bounded lifecycle transitions and safe retirement/removal are implemented in `@irp/gateway-registry`.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Product architecture:** Core-first, headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are product clients. Mobile is a Full Client, not a read-only dashboard.
 - **UI strategy:** Web Control Center is an explicit product track beginning in Phase 57; it does not contain safety-critical routing logic.
 - **Gateway strategy:** managed gateway/tunnel capabilities are a first-class product track in Phases 46–55, provider-neutral and policy-controlled.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 48 — Secure Tunnel Abstraction
+
+Phase 48 establishes the provider-neutral contract that later tunnel providers implement without coupling the Core to a specific vendor or protocol.
+
+Implemented in `@irp/gateway-registry`:
+
+- `TunnelProvider` contract with capability declaration and lifecycle operations;
+- `TunnelTarget` with gateway, endpoint, protocol, transport and address-family requirements;
+- explicit lifecycle states: `disconnected`, `connecting`, `connected`, `degraded`, `disconnecting`, `failed`;
+- deterministic lifecycle transition validation;
+- capability negotiation before provider execution;
+- connect, disconnect and reconnect operations;
+- provider health-check contract and explicit degraded semantics;
+- hard per-operation timeouts;
+- bounded and validated health evidence;
+- opaque provider-owned connection handles;
+- opaque provider context that is not persisted in public session state;
+- defensive copies of returned session state;
+- explicit failure reasons;
+- no route, DNS, gateway lifecycle, failover or policy mutation;
+- no provider-specific command execution;
+- no private-key generation, storage or logging.
+
+Tests cover normal lifecycle, unsupported capabilities, connect timeout, disconnect, reconnect capability enforcement, healthy/degraded health, health timeout, opaque context handling and defensive copies.
+
+Phase 48 intentionally does not implement WireGuard/OpenVPN adapters, key rotation, provisioning, gateway selection or automatic failover; those are later roadmap phases.
 
 ## Phase 47 — Gateway Discovery & Health
 
@@ -55,8 +79,6 @@ The gateway registry establishes the authoritative inventory contract for later 
 - revoked trust cannot be silently restored;
 - no route, DNS, tunnel or failover mutation.
 
-The implementation is intentionally in-memory and provider-neutral. Persistence, discovery, health measurement and execution belong to later phases rather than being hidden inside the registry.
-
 ## Phase 43 — Distributed Probe Federation
 
 Implemented federation capabilities include:
@@ -70,13 +92,12 @@ Implemented federation capabilities include:
 - Signed evidence ingestion API.
 - Destination-level regional comparison.
 - Bounded network measurements and federation statistics.
-- Tests for valid signatures, tampering, replay, revocation and cross-region comparison.
 
 The federation layer is evidence-only. It does not itself decide or apply routes.
 
 ## Phase 44 — Data Analytics & Decision Intelligence
 
-The active analytics work provides deterministic, bounded analytics over historical/federated evidence:
+The analytics layer provides deterministic, bounded analytics over historical/federated evidence:
 
 - availability, latency and packet-loss summaries;
 - p50/p95/p99 latency;
@@ -135,9 +156,7 @@ A phase is not complete because source files exist. Completion requires acceptan
 
 For networking/runtime phases, completion requires the applicable repository validation, typecheck, lint, tests, build, API smoke, Docker/runtime, platform integration and/or external validation gates.
 
-For Phase 46 specifically, verification must include the new package through the normal workspace test/typecheck/build graph and must not rely on test-only exceptions or unrelated CI bypasses.
-
-For Phase 47 specifically, verification must include discovery and health tests through the normal workspace graph, with explicit timeout behavior and no network mutation.
+For Phase 48 specifically, verification must include the new tunnel contract and tests through the normal workspace test/typecheck/build graph and must not rely on test-only exceptions or unrelated CI bypasses.
 
 ## Continuation Rules
 
