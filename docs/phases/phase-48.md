@@ -6,57 +6,44 @@ Implementation complete; CI verification is the completion gate.
 
 ## Objective
 
-Establish a provider-neutral, security-conscious tunnel lifecycle contract that later providers (Phase 49+) can implement without coupling the Core to WireGuard, OpenVPN, or another specific backend.
+Harden the existing provider-neutral `@irp/tunnel` abstraction into the authoritative security boundary for later tunnel providers. Phase 48 does not select a vendor or implement a concrete tunnel backend.
 
 ## Scope
 
-- Provider-neutral tunnel target and capability contracts.
-- Explicit tunnel lifecycle state machine.
-- Connect/disconnect/reconnect/health-check manager operations.
-- Provider capability negotiation before provider execution.
-- Bounded operation timeouts.
-- Defensive session copies.
-- Opaque provider-owned connection context; secrets are not persisted by the abstraction.
-- Explicit health state and degradation semantics.
-- Failure reasons for failed lifecycle transitions.
-- No route, DNS, failover, gateway lifecycle or policy mutation.
+- Existing provider-neutral tunnel target, provider and lifecycle contracts.
+- Provider capability negotiation before execution.
+- Explicit lifecycle transition enforcement.
+- Bounded operation timeout with `AbortSignal` propagation for cooperative providers.
+- Provider endpoint, protocol, scope, routing-mode and capability validation.
+- Health-evidence validation including timestamp freshness and internal consistency.
+- Credential-reference-only handling; private credential material is not stored by the abstraction.
+- Explicit failure/degraded semantics.
+- No route, DNS, failover, gateway lifecycle or provider-specific command mutation.
 
-## Lifecycle
+## Authoritative package
 
-```text
-disconnected → connecting → connected
-                         ↘ failed
-connected ↔ degraded
-connected/degraded → disconnecting → disconnected
-connected/degraded/failed → disconnecting → failed
-failed → connecting
-```
-
-Invalid transitions are rejected. A failed operation does not silently become a successful state.
+`@irp/tunnel` is the canonical tunnel package. Gateway inventory remains owned by `@irp/gateway-registry`; tunnel execution contracts must not be duplicated there.
 
 ## Security boundaries
 
 1. The abstraction does not generate, persist, log or inspect tunnel private keys.
-2. Provider context is opaque and is passed only to the provider's `connect` operation.
-3. Provider connections are represented by opaque handles and are kept separately from public session metadata.
-4. Provider capabilities are checked before connection attempts.
-5. Connect, disconnect and health-check operations have explicit hard timeouts.
-6. Health evidence is validated before it becomes session state.
-7. The abstraction is provider-neutral and contains no vendor-specific command execution.
-8. The abstraction does not autonomously change routing or DNS.
+2. Credential material is represented by references only.
+3. Provider compatibility is checked before provider execution.
+4. Endpoint, protocol, scope, routing mode and required capabilities must match the provider declaration.
+5. Tunnel operations are bounded to 1–300 seconds and expose an `AbortSignal` for cooperative cancellation.
+6. Health evidence rejects invalid/future timestamps and internally inconsistent healthy results.
+7. Lifecycle transitions remain authoritative through the existing `transitionTunnel` state machine.
+8. No provider-specific command execution is introduced in Phase 48.
 
-## Acceptance criteria
+## Verification matrix
 
-- [x] Provider-neutral `TunnelProvider` contract.
-- [x] Provider capability negotiation.
-- [x] Explicit lifecycle state machine.
-- [x] Connect/disconnect/reconnect operations.
-- [x] Health-check operation with reachable/degraded semantics.
-- [x] Hard timeout boundaries.
-- [x] Defensive copies.
-- [x] Opaque provider connection/context handling.
-- [x] Invalid input and unsupported capability rejection.
-- [x] Unit tests for normal, boundary and failure paths.
+- [x] Provider-neutral provider/lifecycle contract already present in `@irp/tunnel`.
+- [x] Capability negotiation/security boundary added in `src/secure.ts`.
+- [x] Bounded operation timeout added.
+- [x] Provider compatibility validation added.
+- [x] Health evidence validation added.
+- [x] Dedicated Phase 48 tests added.
+- [x] No new external dependencies.
 - [ ] `pnpm validate` passes.
 - [ ] `pnpm typecheck` passes.
 - [ ] `pnpm lint` passes.
@@ -64,10 +51,12 @@ Invalid transitions are rejected. A failed operation does not silently become a 
 
 ## Explicit non-goals
 
-Phase 48 does **not** implement a WireGuard adapter, OpenVPN adapter, gateway selection, automatic failover, routing mutation, key rotation, provisioning or provider-specific system commands. Those concerns belong to later roadmap phases.
+Phase 48 does **not** implement a WireGuard adapter, OpenVPN adapter, additional provider adapter, gateway selection, automatic failover, routing mutation, key rotation, provisioning or provider-specific system commands. Those belong to later roadmap phases.
 
 ## Files
 
-- `packages/gateway-registry/src/tunnel.ts`
-- `packages/gateway-registry/src/tunnel.test.ts`
-- `packages/gateway-registry/src/index.ts`
+- `packages/tunnel/src/index.ts`
+- `packages/tunnel/src/index.test.ts`
+- `packages/tunnel/src/secure.ts`
+- `packages/tunnel/src/secure.test.ts`
+- `packages/tunnel/package.json`
