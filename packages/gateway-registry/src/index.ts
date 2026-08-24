@@ -87,9 +87,7 @@ function assertGateway(gateway: GatewayMetadata): void {
   if (!gateway.id.trim()) throw new Error('gateway id is required');
   if (!gateway.name.trim()) throw new Error('gateway name is required');
   if (!gateway.ownership.ownerId.trim()) throw new Error('gateway ownership ownerId is required');
-  if (!Number.isInteger(gateway.endpoint.port) || gateway.endpoint.port < 1 || gateway.endpoint.port > 65535) {
-    throw new Error('gateway endpoint port must be an integer between 1 and 65535');
-  }
+  if (!Number.isInteger(gateway.endpoint.port) || gateway.endpoint.port < 1 || gateway.endpoint.port > 65535) throw new Error('gateway endpoint port must be an integer between 1 and 65535');
   if (gateway.endpoint.host.trim().length === 0) throw new Error('gateway endpoint host is required');
   if (gateway.tags.some((tag) => !tag.trim())) throw new Error('gateway tags must not be empty');
   if (new Set(gateway.tags).size !== gateway.tags.length) throw new Error('gateway tags must be unique');
@@ -113,9 +111,7 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
   }
 
   list(filter: GatewayFilter = {}): GatewayMetadata[] {
-    const matches = (value: GatewayLifecycle | GatewayTrust, expected?: string | string[]) =>
-      expected === undefined || (Array.isArray(expected) ? expected.includes(value) : value === expected);
-
+    const matches = (value: GatewayLifecycle | GatewayTrust, expected?: string | string[]) => expected === undefined || (Array.isArray(expected) ? expected.includes(value) : value === expected);
     return [...this.gateways.values()]
       .filter((gateway) => matches(gateway.lifecycle, filter.lifecycle))
       .filter((gateway) => matches(gateway.trust, filter.trust))
@@ -146,16 +142,13 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
   transition(id: GatewayId, lifecycle: GatewayLifecycle): GatewayMetadata {
     const current = this.require(id);
     if (current.lifecycle === lifecycle) return clone(current);
-    if (!lifecycleTransitions[current.lifecycle].includes(lifecycle)) {
-      throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
-    }
+    if (!lifecycleTransitions[current.lifecycle].includes(lifecycle)) throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
     const now = new Date().toISOString();
     if (lifecycle === 'retired') {
       const updated: GatewayMetadata = { ...current, lifecycle, updatedAt: now, retiredAt: now };
       this.gateways.set(id, updated);
       return clone(updated);
     }
-
     const updated: GatewayMetadata = { ...current, lifecycle, updatedAt: now };
     this.gateways.set(id, updated);
     return clone(updated);
@@ -163,9 +156,7 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
 
   setTrust(id: GatewayId, trust: GatewayTrust): GatewayMetadata {
     const current = this.require(id);
-    if (current.trust === 'revoked' && trust !== 'revoked') {
-      throw new Error('revoked gateways require explicit re-registration');
-    }
+    if (current.trust === 'revoked' && trust !== 'revoked') throw new Error('revoked gateways require explicit re-registration');
     const updated = { ...current, trust, updatedAt: new Date().toISOString() };
     this.gateways.set(id, updated);
     return clone(updated);
@@ -187,3 +178,4 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
 
 export * from './health.js';
 export * from './discovery.js';
+export * from './tunnel.js';
