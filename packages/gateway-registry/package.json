@@ -6,14 +6,9 @@
   "types": "dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "devDependencies": {
-    "@types/node": "^26.2.0",
-    "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "build": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
+    "lint": "pnpm -w exec eslint packages/gateway-registry",
+    "test": "pnpm -w exec vitest run packages/gateway-registry/src/index.test.ts",
+    "typecheck": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json --noEmit"
   }
 }
