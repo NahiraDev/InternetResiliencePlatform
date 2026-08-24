@@ -178,4 +178,3 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
 
 export * from './health.js';
 export * from './discovery.js';
-export * from './tunnel.js';
