@@ -8,7 +8,7 @@
   "scripts": {
     "build": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
     "lint": "pnpm -w exec eslint packages/gateway-registry",
-    "test": "pnpm -w exec vitest run packages/gateway-registry/src/index.test.ts",
+    "test": "vitest run",
     "typecheck": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json --noEmit"
   }
 }
