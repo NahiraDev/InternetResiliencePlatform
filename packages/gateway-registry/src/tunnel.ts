@@ -87,12 +87,8 @@ function assertTimeout(timeoutMs: number): void {
 function assertHealth(health: TunnelHealth): void {
   const checkedAt = Date.parse(health.checkedAt);
   if (!Number.isFinite(checkedAt)) throw new Error('health checkedAt must be a valid ISO timestamp');
-  if (health.latencyMs !== undefined && (!Number.isFinite(health.latencyMs) || health.latencyMs < 0)) {
-    throw new Error('health latencyMs must be non-negative');
-  }
-  if (health.packetLossPercent !== undefined && (!Number.isFinite(health.packetLossPercent) || health.packetLossPercent < 0 || health.packetLossPercent > 100)) {
-    throw new Error('health packetLossPercent must be between 0 and 100');
-  }
+  if (health.latencyMs !== undefined && (!Number.isFinite(health.latencyMs) || health.latencyMs < 0)) throw new Error('health latencyMs must be non-negative');
+  if (health.packetLossPercent !== undefined && (!Number.isFinite(health.packetLossPercent) || health.packetLossPercent < 0 || health.packetLossPercent > 100)) throw new Error('health packetLossPercent must be between 0 and 100');
 }
 
 function assertTarget(target: TunnelTarget): void {
@@ -100,24 +96,20 @@ function assertTarget(target: TunnelTarget): void {
   if (!target.protocol.trim()) throw new Error('tunnel protocol is required');
   if (!target.transport.trim()) throw new Error('tunnel transport is required');
   if (!target.endpoint.host.trim()) throw new Error('tunnel endpoint host is required');
-  if (!Number.isInteger(target.endpoint.port) || target.endpoint.port < 1 || target.endpoint.port > 65535) {
-    throw new Error('tunnel endpoint port must be an integer between 1 and 65535');
-  }
+  if (!Number.isInteger(target.endpoint.port) || target.endpoint.port < 1 || target.endpoint.port > 65535) throw new Error('tunnel endpoint port must be an integer between 1 and 65535');
   if (!target.addressFamily) throw new Error('tunnel addressFamily is required');
 }
 
 function transition(session: TunnelSession, lifecycle: TunnelLifecycle, now = new Date().toISOString(), failureReason?: string): TunnelSession {
-  if (session.lifecycle !== lifecycle && !lifecycleTransitions[session.lifecycle].includes(lifecycle)) {
-    throw new Error(`invalid tunnel lifecycle transition: ${session.lifecycle} -> ${lifecycle}`);
+  if (session.lifecycle !== lifecycle && !lifecycleTransitions[session.lifecycle].includes(lifecycle)) throw new Error(`invalid tunnel lifecycle transition: ${session.lifecycle} -> ${lifecycle}`);
+  const next: TunnelSession = { ...session, lifecycle, updatedAt: now };
+  if (lifecycle === 'connected') {
+    next.connectedAt = now;
+    delete next.failureReason;
   }
-  return {
-    ...session,
-    lifecycle,
-    updatedAt: now,
-    ...(lifecycle === 'connected' ? { connectedAt: now, failureReason: undefined } : {}),
-    ...(lifecycle === 'disconnected' ? { disconnectedAt: now } : {}),
-    ...(failureReason === undefined ? {} : { failureReason }),
-  };
+  if (lifecycle === 'disconnected') next.disconnectedAt = now;
+  if (failureReason !== undefined) next.failureReason = failureReason;
+  return next;
 }
 
 export class InMemoryTunnelManager implements TunnelManager {
@@ -140,7 +132,6 @@ export class InMemoryTunnelManager implements TunnelManager {
   async connect(request: TunnelConnectRequest): Promise<TunnelSession> {
     assertTarget(request.target);
     assertTimeout(request.timeoutMs);
-
     const capabilities = this.provider.capabilities();
     if (!capabilities.protocols.includes(request.target.protocol)) throw new Error(`provider does not support tunnel protocol ${request.target.protocol}`);
     if (!capabilities.transports.includes(request.target.transport)) throw new Error(`provider does not support tunnel transport ${request.target.transport}`);
@@ -148,13 +139,7 @@ export class InMemoryTunnelManager implements TunnelManager {
 
     const id = `${this.provider.id}:${request.target.gatewayId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     const now = new Date().toISOString();
-    let session: TunnelSession = {
-      id,
-      target: clone(request.target),
-      lifecycle: 'disconnected',
-      createdAt: now,
-      updatedAt: now,
-    };
+    let session: TunnelSession = { id, target: clone(request.target), lifecycle: 'disconnected', createdAt: now, updatedAt: now };
     session = transition(session, 'connecting', now);
     this.sessions.set(id, session);
 
@@ -177,16 +162,13 @@ export class InMemoryTunnelManager implements TunnelManager {
     const current = this.require(id);
     if (current.lifecycle === 'disconnected') return clone(current);
     if (current.lifecycle === 'connecting') throw new Error('cannot disconnect a tunnel while it is connecting');
-
     const connection = this.connections.get(id);
     if (!connection) {
       const disconnected = transition(current, 'disconnected');
       this.sessions.set(id, disconnected);
       return clone(disconnected);
     }
-
-    const disconnecting = transition(current, 'disconnecting');
-    this.sessions.set(id, disconnecting);
+    this.sessions.set(id, transition(current, 'disconnecting'));
     try {
       await withTimeout(this.provider.disconnect(connection, timeoutMs), timeoutMs, 'tunnel disconnect timed out');
       this.connections.delete(id);
@@ -205,9 +187,8 @@ export class InMemoryTunnelManager implements TunnelManager {
     assertTimeout(timeoutMs);
     const current = this.require(id);
     if (current.lifecycle === 'connecting' || current.lifecycle === 'disconnecting') throw new Error('cannot reconnect while tunnel transition is in progress');
-    const connection = this.connections.get(id);
-    if (connection) await this.disconnect(id, timeoutMs);
-
+    if (!this.provider.capabilities().supportsReconnect) throw new Error('provider does not support reconnect');
+    if (this.connections.has(id)) await this.disconnect(id, timeoutMs);
     return this.connect({ target: current.target, timeoutMs });
   }
 
@@ -216,13 +197,12 @@ export class InMemoryTunnelManager implements TunnelManager {
     const current = this.require(id);
     if (current.lifecycle !== 'connected' && current.lifecycle !== 'degraded') throw new Error('health check requires a connected tunnel');
     const connection = this.connections.get(id);
-    if (!connection || !this.provider.healthCheck) throw new Error('provider does not expose tunnel health checks');
-
+    if (!connection || !this.provider.healthCheck || !this.provider.capabilities().supportsHealthCheck) throw new Error('provider does not expose tunnel health checks');
     const health = await withTimeout(this.provider.healthCheck(connection, timeoutMs), timeoutMs, 'tunnel health check timed out');
     assertHealth(health);
     const lifecycle: TunnelLifecycle = health.reachable ? 'connected' : 'degraded';
     const updated = transition(current, lifecycle);
-    const session = { ...updated, health: clone(health), updatedAt: new Date().toISOString() };
+    const session: TunnelSession = { ...updated, health: clone(health), updatedAt: new Date().toISOString() };
     this.sessions.set(id, session);
     return clone(session);
   }
@@ -237,12 +217,7 @@ export class InMemoryTunnelManager implements TunnelManager {
 async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([
-      operation,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
-      }),
-    ]);
+    return await Promise.race([operation, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(message)), timeoutMs); })]);
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
