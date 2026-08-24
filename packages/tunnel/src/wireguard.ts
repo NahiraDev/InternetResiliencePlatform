@@ -8,7 +8,7 @@ import type { Endpoint, Tunnel, TunnelCapability, TunnelConfiguration, TunnelCon
 import { TunnelError, tunnelErrors, validateTunnelConfiguration } from './index.js';
 
 const execFileAsync = promisify(execFile);
-const WG_COMMAND = 'wg'; const IP_COMMAND = 'ip'; const KEY_PATTERN = /^[A-Za-z0-9+/]{42}[=]{0,2}$/; const DEFAULT_TIMEOUT_MS = 30_000; const DEFAULT_HANDSHAKE_MAX_AGE_MS = 180_000;
+const WG_COMMAND = 'wg'; const IP_COMMAND = 'ip'; const KEY_PATTERN = /^[A-Za-z0-9+/]{43}=$/; const DEFAULT_TIMEOUT_MS = 30_000; const DEFAULT_HANDSHAKE_MAX_AGE_MS = 180_000;
 
 export interface CommandResult { stdout: string; stderr: string; exitCode: number }
 export interface CommandRunner { run(command: string, args: string[], options?: { stdin?: string; timeoutMs?: number }): Promise<CommandResult> }
