@@ -56,13 +56,12 @@ jobs:
 
       - name: Start temporary public tunnel
         run: |
-          docker run --rm --network host cloudflare/cloudflared:2025.8.1 \
-            tunnel --no-autoupdate --url http://127.0.0.1:8081 \
-            > /tmp/cloudflared.log 2>&1 &
-          echo $! > /tmp/cloudflared.pid
+          docker run -d --name irp-cloudflared --network host \
+            cloudflare/cloudflared:latest \
+            tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8081
 
           for i in {1..60}; do
-            URL=$(grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n1 || true)
+            URL=$(docker logs irp-cloudflared 2>&1 | grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' | head -n1 || true)
             if [ -n "$URL" ]; then
               echo "PUBLIC_LAB_URL=$URL" >> "$GITHUB_ENV"
               echo "## IRP Public Runtime Lab" >> "$GITHUB_STEP_SUMMARY"
@@ -74,19 +73,26 @@ jobs:
               echo "The URL is temporary and remains available while this workflow is running." >> "$GITHUB_STEP_SUMMARY"
               break
             fi
+            if ! docker inspect -f '{{.State.Running}}' irp-cloudflared 2>/dev/null | grep -q true; then
+              docker logs irp-cloudflared || true
+              exit 1
+            fi
             sleep 2
           done
 
           if [ -z "${PUBLIC_LAB_URL:-}" ]; then
-            cat /tmp/cloudflared.log
+            docker logs irp-cloudflared || true
             exit 1
           fi
+
+          curl --fail --retry 10 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
 
       - name: Keep lab online
         run: |
           echo "Public lab: $PUBLIC_LAB_URL"
           for i in {1..324}; do
             curl -fsS http://localhost:8081/health >/dev/null
+            docker inspect -f '{{.State.Running}}' irp-cloudflared | grep -q true
             sleep 60
           done
 
@@ -95,10 +101,11 @@ jobs:
         run: |
           docker compose -f ops/observability/docker-compose.yml ps
           docker compose -f ops/observability/docker-compose.yml logs --no-color > /tmp/irp-runtime-lab.log
+          docker logs irp-cloudflared > /tmp/cloudflared.log 2>&1 || true
           cat /tmp/cloudflared.log || true
 
       - name: Shutdown
         if: always()
         run: |
-          if [ -f /tmp/cloudflared.pid ]; then kill "$(cat /tmp/cloudflared.pid)" || true; fi
+          docker rm -f irp-cloudflared 2>/dev/null || true
           docker compose -f ops/observability/docker-compose.yml down -v
