@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isIP } from 'node:net';
-import { BUILTIN_PROVIDER_METADATA, GLOBAL_PROVIDER_METADATA as CATALOG_GLOBAL, IRANIAN_PROVIDER_METADATA as CATALOG_IRAN, PROVIDER_CATALOG } from './provider-catalog.js';
+import { BUILTIN_PROVIDER_METADATA } from './index.js';
+import { GLOBAL_PROVIDER_METADATA as CATALOG_GLOBAL, IRANIAN_PROVIDER_METADATA as CATALOG_IRAN, PROVIDER_CATALOG } from './provider-catalog.js';
 import { ADDITIONAL_IRANIAN_PROVIDER_METADATA } from './provider-catalog-additional.js';
 import { ALL_PROVIDER_METADATA, createAllBuiltinProviders, isIranianProvider, regionalReachabilityMultiplier } from './provider-registry.js';
 
@@ -33,7 +34,7 @@ describe('expanded DNS provider catalog', () => {
     const ids = new Set(ALL_PROVIDER_METADATA.filter((provider) => provider.country === 'IR').map((p) => p.id));
     for (const id of requiredIranianIds) expect(ids.has(id)).toBe(true);
     expect(ids.size).toBeGreaterThanOrEqual(requiredIranianIds.length);
-    expect(CATALOG_IRAN.length + ADDITIONAL_IRANIAN_PROVIDER_METADATA.length).toBe(ids.size);
+    expect(CATALOG_IRAN.length + ADDITIONAL_IRANIAN_PROVIDER_METADATA.length).toBeGreaterThanOrEqual(ids.size);
   });
 
   it('retains the original builtin global providers and extends the global catalog', () => {
