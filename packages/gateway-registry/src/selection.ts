@@ -22,9 +22,9 @@ export interface GatewayCapacity {
 }
 
 export interface GatewaySelectionPolicy {
-  allowedRegions?: string[];
-  allowedProviderIds?: string[];
-  requiredTags?: string[];
+  allowedRegions: string[];
+  allowedProviderIds: string[];
+  requiredTags: string[];
   requiredTunnelProtocol?: string;
   requiredAddressFamily?: 'ipv4' | 'ipv6' | 'dual';
   minimumHealthScore: number;
@@ -40,6 +40,9 @@ export interface GatewaySelectionPolicy {
 }
 
 export const DEFAULT_GATEWAY_SELECTION_POLICY: GatewaySelectionPolicy = {
+  allowedRegions: [],
+  allowedProviderIds: [],
+  requiredTags: [],
   minimumHealthScore: 40,
   maximumLatencyMs: 1_500,
   maximumPacketLossPercent: 25,
@@ -258,9 +261,9 @@ export function selectGateway(request: GatewaySelectionRequest): GatewaySelectio
     ...(request.policy ?? {}),
     preferredRegions: [...(request.policy?.preferredRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.preferredRegions)],
     preferredProviderIds: [...(request.policy?.preferredProviderIds ?? DEFAULT_GATEWAY_SELECTION_POLICY.preferredProviderIds)],
-    allowedRegions: [...(request.policy?.allowedRegions ?? [])],
-    allowedProviderIds: [...(request.policy?.allowedProviderIds ?? [])],
-    requiredTags: [...(request.policy?.requiredTags ?? [])],
+    allowedRegions: [...(request.policy?.allowedRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.allowedRegions)],
+    allowedProviderIds: [...(request.policy?.allowedProviderIds ?? DEFAULT_GATEWAY_SELECTION_POLICY.allowedProviderIds)],
+    requiredTags: [...(request.policy?.requiredTags ?? DEFAULT_GATEWAY_SELECTION_POLICY.requiredTags)],
   };
   assertPolicy(policy);
   const nowMs = (request.now ?? new Date()).getTime();
@@ -278,12 +281,11 @@ export function selectGateway(request: GatewaySelectionRequest): GatewaySelectio
   if (request.currentGatewayId) {
     const current = eligible.find((candidate) => candidate.gateway.id === request.currentGatewayId);
     if (current && selected.gateway.id !== current.gateway.id && selected.score < current.score + policy.hysteresisScore) {
-      selected = current;
-      switched = false;
       selected = {
-        ...selected,
-        explanation: [...selected.explanation, `Retained current gateway because challenger did not exceed hysteresis by ${policy.hysteresisScore} points.`],
+        ...current,
+        explanation: [...current.explanation, `Retained current gateway because challenger did not exceed hysteresis by ${policy.hysteresisScore} points.`],
       };
+      switched = false;
     }
   }
 
