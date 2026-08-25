@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '@irp/config';
 import type { Logger } from '@irp/logger';
 import {
-  createBuiltinProviders,
+  createAllBuiltinProviders,
   type BenchmarkSample,
   type DnsProvider,
   type DnsQuestion,
@@ -177,10 +177,7 @@ export class Scheduler implements Lifecycle {
         if (retry && attempt < retry.attempts) {
           const backoff = Math.min(retry.maxDelayMs, retry.baseDelayMs * 2 ** attempt);
           const jitter = backoff * retry.jitterRatio * Math.random();
-          this.timers.set(
-            options.id,
-            setTimeout(() => void run(attempt + 1), backoff + jitter),
-          );
+          this.timers.set(options.id, setTimeout(() => void run(attempt + 1), backoff + jitter));
           return;
         }
         this.logger?.error('scheduler job failed', {
@@ -189,16 +186,10 @@ export class Scheduler implements Lifecycle {
         });
       }
       if (options.intervalMs && !this.stopping)
-        this.timers.set(
-          options.id,
-          setTimeout(() => void run(0), options.intervalMs),
-        );
+        this.timers.set(options.id, setTimeout(() => void run(0), options.intervalMs));
     };
     const delay = Math.max(0, (options.runAt?.getTime() ?? Date.now()) - Date.now());
-    this.timers.set(
-      options.id,
-      setTimeout(() => void run(), delay),
-    );
+    this.timers.set(options.id, setTimeout(() => void run(), delay));
     return () => this.cancel(options.id);
   }
   cancel(id: string): void {
@@ -228,10 +219,7 @@ export interface RollingStats {
 }
 export class BenchmarkEngine {
   private readonly samples = new Map<string, BenchmarkSample[]>();
-  constructor(
-    private readonly events?: EventBus,
-    private readonly maxSamples = 200,
-  ) {}
+  constructor(private readonly events?: EventBus, private readonly maxSamples = 200) {}
   async run(
     providers: DnsProvider[],
     question: DnsQuestion = { name: 'example.com', recordType: 'A' },
@@ -274,8 +262,7 @@ export class BenchmarkEngine {
     const successes = list.filter((s) => s.success);
     const latencies = successes.map((s) => s.latencyMs);
     const average = latencies.reduce((a, b) => a + b, 0) / (latencies.length || 1);
-    const jitter =
-      latencies.reduce((a, b) => a + Math.abs(b - average), 0) / (latencies.length || 1);
+    const jitter = latencies.reduce((a, b) => a + Math.abs(b - average), 0) / (latencies.length || 1);
     return {
       count: list.length,
       successes: successes.length,
@@ -331,7 +318,8 @@ export class Application implements Lifecycle {
   private readonly plugins: Plugin[] = [];
   public readonly events = new EventBus();
   public readonly scheduler: Scheduler;
-  public readonly providers = createBuiltinProviders();
+  /** All curated + verified regional/global providers participate in benchmarking and scoring. */
+  public readonly providers = createAllBuiltinProviders();
   public readonly benchmark = new BenchmarkEngine(this.events);
   public readonly scorer = new HealthScorer();
   public state: RuntimeState = 'created';
