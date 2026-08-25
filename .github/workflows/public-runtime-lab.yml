@@ -2,6 +2,16 @@ name: Public Runtime Lab
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ops/observability/**'
+      - 'tools/runtime-lab/**'
+      - 'packages/gateway-registry/**'
+      - 'packages/resilience-runtime/**'
+      - '.github/workflows/public-runtime-lab.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
