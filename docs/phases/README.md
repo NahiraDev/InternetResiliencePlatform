@@ -12,10 +12,10 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Highest implemented area:** Phase 50 — Additional Tunnel Providers (verification pending).
-- **Phase 49:** WireGuard provider implementation is present; CI and Linux runtime verification remain the completion gates.
-- **Phase 50:** OpenVPN provider implementation is present; repository verification remains the completion gate.
-- **Next after verification:** Phase 51 — Automatic Gateway Selection.
+- **Current phase:** Phase 51 — Automatic Gateway Selection (implementation in progress).
+- **Phase 49:** WireGuard provider implementation is complete after CI and Linux runtime verification.
+- **Phase 50:** OpenVPN provider implementation is complete after repository/runtime verification.
+- **Next after Phase 51:** Phase 52 — Automated Tunnel Lifecycle.
 
 ## Canonical records with current verification status
 
@@ -30,7 +30,9 @@ Phase records are implementation and audit evidence. They are **not** the produc
 | 43 | Distributed probe federation | Implemented / final CI-runtime gate required | [`phase-43.md`](phase-43.md) |
 | 44 | Data analytics & decision intelligence | Implemented / final CI-runtime gate required | [`phase-44.md`](phase-44.md) |
 | 45 | Network identity & destination policy assurance | Implementation started / verification required | [`phase-45.md`](phase-45.md) |
-| 50 | Additional tunnel providers | Implementation present / verification pending | [`phase-50.md`](phase-50.md) |
+| 49 | WireGuard provider | Complete / verified | [`phase-49.md`](phase-49.md) |
+| 50 | Additional tunnel providers | Complete / verified | [`phase-50.md`](phase-50.md) |
+| 51 | Automatic Gateway Selection | Implementation in progress / CI verification pending | [`phase-51.md`](phase-51.md) |
 
 ## Historical phases 01–38
 
