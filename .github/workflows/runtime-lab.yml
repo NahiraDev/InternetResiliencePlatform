@@ -1,0 +1,59 @@
+name: Runtime Lab
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ops/observability/**'
+      - 'tools/runtime-lab/**'
+      - 'packages/gateway-registry/**'
+      - 'packages/resilience-runtime/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+jobs:
+  runtime-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start runtime lab
+        run: docker compose -f ops/observability/docker-compose.yml up -d
+
+      - name: Wait for runtime report
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/report | grep -q '"status"'; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/health
+          curl -fsS http://localhost:8080/report
+
+      - name: Validate metrics
+        run: |
+          curl -fsS http://localhost:9464/metrics | grep -q 'irp_runtime_lab_up 1'
+          curl -fsS http://localhost:9464/metrics | grep -q 'irp_package_calls_total'
+
+      - name: Validate Prometheus target
+        run: |
+          curl -fsS http://localhost:9090/-/ready
+
+      - name: Validate Grafana
+        run: |
+          curl -fsS http://localhost:3001/api/health
+
+      - name: Validate Tempo
+        run: |
+          curl -fsS http://localhost:3200/ready
+
+      - name: Collect logs
+        if: always()
+        run: docker compose -f ops/observability/docker-compose.yml logs --no-color
+
+      - name: Shutdown
+        if: always()
+        run: docker compose -f ops/observability/docker-compose.yml down -v
