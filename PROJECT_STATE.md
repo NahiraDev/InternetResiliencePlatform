@@ -4,18 +4,40 @@
 
 ## Current State
 
-- **Highest implemented phase:** Phase 50 — Additional Tunnel Providers.
+- **Current phase:** Phase 51 — Automatic Gateway Selection (implementation in progress).
 - **Phase 47:** verified green by CI and accepted as complete.
 - **Phase 48:** implementation is complete and accepted after verification.
-- **Phase 49:** WireGuard provider implementation is present; CI and Linux runtime verification remain the completion gates.
-- **Phase 50:** OpenVPN provider implementation is present; repository verification remains the completion gate.
-- **Next phase after verification:** Phase 51 — Automatic Gateway Selection.
+- **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
+- **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
+- **Next phase after Phase 51:** Phase 52 — Automated Tunnel Lifecycle.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
+- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health and the Phase 51 selection primitive. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 51 — Automatic Gateway Selection
+
+Phase 51 adds a side-effect-free gateway selection primitive to the canonical gateway domain. Selection consumes existing inventory and health contracts plus optional capacity evidence and never creates tunnels or mutates routes/DNS.
+
+Phase 51 additions:
+
+- policy-aware gateway eligibility;
+- active lifecycle and trusted-gateway enforcement;
+- health freshness, reachability, status and score validation;
+- latency and packet-loss limits;
+- optional capacity utilization limits;
+- region/provider/tag/tunnel-protocol/address-family constraints;
+- bounded deterministic scoring from health, quality, capacity and preferences;
+- configurable hysteresis to prevent unnecessary gateway switching;
+- deterministic gateway-ID tie breaking;
+- explicit rejection reasons and score components;
+- human-readable decision explanations;
+- input immutability and no network/tunnel/route/DNS side effects;
+- unit coverage for normal, boundary, invalid and failure-path selection behavior.
+
+Phase 51 remains out of automated tunnel lifecycle, multi-gateway failover, fleet operations and gateway supply-chain hardening.
 
 ## Phase 50 — Additional Tunnel Providers
 
