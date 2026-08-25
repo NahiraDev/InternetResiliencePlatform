@@ -6,6 +6,7 @@ import {
   type ProviderMetadata,
 } from './index.js';
 import { BUILTIN_PROVIDER_METADATA, PROVIDER_CATALOG } from './provider-catalog.js';
+import { ADDITIONAL_IRANIAN_PROVIDER_METADATA } from './provider-catalog-additional.js';
 
 type CatalogEntry = ProviderMetadata & {
   dnssec: boolean;
@@ -19,14 +20,22 @@ const mergeMetadata = (): Array<ProviderMetadata & { dnssec: boolean }> => {
   for (const entry of PROVIDER_CATALOG as CatalogEntry[]) {
     if (!byId.has(entry.id)) byId.set(entry.id, entry);
   }
+  for (const entry of ADDITIONAL_IRANIAN_PROVIDER_METADATA) {
+    if (!byId.has(entry.id)) byId.set(entry.id, entry);
+  }
   return [...byId.values()];
 };
 
-/**
- * Runtime provider factory. Catalog membership is not preference: every
- * candidate is measured by the normal health/benchmark/scoring pipeline.
- */
+/** Runtime provider factory. Catalog membership is never preference. */
 export const ALL_PROVIDER_METADATA = mergeMetadata();
+
+export const IRANIAN_PROVIDER_METADATA = ALL_PROVIDER_METADATA.filter(
+  (entry) => entry.country?.toUpperCase() === 'IR',
+);
+
+export const GLOBAL_PROVIDER_METADATA = ALL_PROVIDER_METADATA.filter(
+  (entry) => entry.country?.toUpperCase() !== 'IR',
+);
 
 export const createAllBuiltinProviders = (
   configs: Record<string, Partial<ProviderConfig>> = {},
@@ -34,7 +43,16 @@ export const createAllBuiltinProviders = (
 ): DnsProvider[] =>
   ALL_PROVIDER_METADATA.map(
     (metadata) =>
-      new StaticDnsProvider(metadata, { enabled: true, timeoutMs: 2_000, protocols: ['udp', 'tcp', 'doh', 'dot'], ...configs[metadata.id] }, resolvers),
+      new StaticDnsProvider(
+        metadata,
+        {
+          enabled: true,
+          timeoutMs: 2_000,
+          protocols: ['udp', 'tcp', 'doh', 'dot'],
+          ...configs[metadata.id],
+        },
+        resolvers,
+      ),
   ).filter((provider) => provider.config.enabled);
 
 export const isIranianProvider = (provider: DnsProvider): boolean =>
@@ -42,11 +60,9 @@ export const isIranianProvider = (provider: DnsProvider): boolean =>
   provider.metadata().tags.some((tag) => tag.toLowerCase() === 'iran');
 
 /**
- * Regional reachability is an observation, not a permanent country bonus.
- * A small bounded multiplier is exposed for callers that have a measured
- * regional probe result. A value of 0.5 is neutral; 0 is unreachable and 1
- * is fully reachable. This keeps regional DNS inside normal scoring without
- * allowing geography alone to dominate health/latency.
+ * Regional reachability is a measured factor, not a static country bonus.
+ * 0.5 is neutral; unreachable regional resolvers are penalized and fully
+ * reachable regional resolvers receive only a bounded multiplier.
  */
 export const regionalReachabilityMultiplier = (
   provider: DnsProvider,
