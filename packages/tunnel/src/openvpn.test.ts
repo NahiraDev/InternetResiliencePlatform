@@ -37,7 +37,13 @@ describe('OpenVPNProvider', () => {
 
   it('rejects unauthenticated OpenVPN configuration', async () => {
     const provider = new OpenVPNProvider({ credentialStore });
-    await expect(provider.create({ ...config(), authentication: { type: 'none' } })).rejects.toThrow(/authenticated client configuration/);
+    const error = await provider.create({ ...config(), authentication: { type: 'none' } }).catch((value: unknown) => value);
+
+    expect(error).toMatchObject({
+      code: 'TunnelAuthenticationFailed',
+      classification: 'securityFailure',
+      retryable: false,
+    });
   });
 
   it('rejects a missing credential reference', async () => {
