@@ -1,11 +1,12 @@
 import {
+  BUILTIN_PROVIDER_METADATA,
   StaticDnsProvider,
   type DnsProvider,
   type DnsResolver,
   type ProviderConfig,
   type ProviderMetadata,
 } from './index.js';
-import { BUILTIN_PROVIDER_METADATA, PROVIDER_CATALOG } from './provider-catalog.js';
+import { PROVIDER_CATALOG } from './provider-catalog.js';
 import { ADDITIONAL_IRANIAN_PROVIDER_METADATA } from './provider-catalog-additional.js';
 
 type CatalogEntry = ProviderMetadata & {
@@ -59,11 +60,7 @@ export const isIranianProvider = (provider: DnsProvider): boolean =>
   provider.metadata().country?.toUpperCase() === 'IR' ||
   provider.metadata().tags.some((tag) => tag.toLowerCase() === 'iran');
 
-/**
- * Regional reachability is a measured factor, not a static country bonus.
- * 0.5 is neutral; unreachable regional resolvers are penalized and fully
- * reachable regional resolvers receive only a bounded multiplier.
- */
+/** Regional reachability is a measured factor, not a static country bonus. */
 export const regionalReachabilityMultiplier = (
   provider: DnsProvider,
   measuredReachability: number,
