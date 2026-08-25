@@ -82,7 +82,6 @@ describe('WireGuardProvider', () => {
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     const freshHandshakeSeconds = Math.floor(Date.now() / 1000) - 1;
     runner.queue({ stdout: `peerkey ${freshHandshakeSeconds}\n`, stderr: '', exitCode: 0 });
     runner.queue({ stdout: '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n', stderr: '', exitCode: 0 });
