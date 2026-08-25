@@ -274,9 +274,10 @@ export function selectGateway(request: GatewaySelectionRequest): GatewaySelectio
     .sort((a, b) => b.score - a.score || a.gateway.id.localeCompare(b.gateway.id));
 
   const eligible = candidates.filter((candidate) => candidate.eligible);
-  if (eligible.length === 0) return { candidates, reason: 'No gateway satisfies the selection policy and current evidence.', switched: false };
+  const selectedCandidate = eligible[0];
+  if (!selectedCandidate) return { candidates, reason: 'No gateway satisfies the selection policy and current evidence.', switched: false };
 
-  let selected = eligible[0];
+  let selected = selectedCandidate;
   let switched = request.currentGatewayId !== undefined && request.currentGatewayId !== selected.gateway.id;
   if (request.currentGatewayId) {
     const current = eligible.find((candidate) => candidate.gateway.id === request.currentGatewayId);
