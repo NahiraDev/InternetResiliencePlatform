@@ -1,0 +1,27 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "links": [
+    {"title": "Explore IRP traces", "type": "link", "url": "/explore?orgId=1&left=%7B%22datasource%22:%22irp-tempo%22%7D", "targetBlank": true}
+  ],
+  "panels": [
+    {"type":"stat","title":"Runtime Lab","gridPos":{"x":0,"y":0,"w":6,"h":4},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"irp_runtime_lab_up","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}},
+    {"type":"stat","title":"Runtime Cycles","gridPos":{"x":6,"y":0,"w":6,"h":4},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"irp_runtime_cycles_total","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}},
+    {"type":"stat","title":"Gateway Selections","gridPos":{"x":12,"y":0,"w":6,"h":4},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"irp_gateway_selections_total","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}},
+    {"type":"stat","title":"Selected Gateway Score","gridPos":{"x":18,"y":0,"w":6,"h":4},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"irp_gateway_selected_score","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}},
+    {"type":"timeseries","title":"Package Interaction Rate","gridPos":{"x":0,"y":4,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"rate(irp_package_calls_total[1m])","legendFormat":"{{source}} → {{target}} / {{operation}}","refId":"A"}],"fieldConfig":{"defaults":{"unit":"reqps"},"overrides":[]}},
+    {"type":"timeseries","title":"Runtime Cycle Duration","gridPos":{"x":12,"y":4,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"irp_runtime_cycle_duration_ms","legendFormat":"cycle duration","refId":"A"}],"fieldConfig":{"defaults":{"unit":"ms"},"overrides":[]}},
+    {"type":"timeseries","title":"Gateway Selection Success","gridPos":{"x":0,"y":12,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"increase(irp_gateway_selection_success_total[5m])","legendFormat":"{{gateway}}","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}},
+    {"type":"timeseries","title":"Runtime Scenario Status","gridPos":{"x":12,"y":12,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"irp-prometheus"},"targets":[{"expr":"increase(irp_runtime_scenarios_total[5m])","legendFormat":"{{status}}","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short"},"overrides":[]}}
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["irp","runtime","observability"],
+  "templating": {"list": []},
+  "time": {"from":"now-15m","to":"now"},
+  "title": "IRP Runtime Lab",
+  "uid": "irp-runtime-lab",
+  "version": 1
+}

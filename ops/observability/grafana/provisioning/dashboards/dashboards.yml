@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: IRP Runtime Lab
+    orgId: 1
+    folder: IRP
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
