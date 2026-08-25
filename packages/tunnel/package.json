@@ -6,7 +6,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./secure": "./dist/secure.js"
+    "./secure": "./dist/secure.js",
+    "./wireguard": "./dist/wireguard.js",
+    "./openvpn": "./dist/openvpn.js"
   },
   "files": [
     "dist"
