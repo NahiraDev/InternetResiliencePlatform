@@ -79,8 +79,8 @@ describe('selectGateway', () => {
     expect(result.selected).toBeUndefined();
     expect(result.candidates.map((candidate) => candidate.rejectionReason)).toEqual([
       'not-active',
-      'not-trusted',
       'capacity-limit',
+      'not-trusted',
       'region-not-allowed',
     ]);
   });
