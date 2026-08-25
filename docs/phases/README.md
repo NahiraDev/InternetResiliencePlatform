@@ -12,10 +12,10 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Highest implemented area:** Phase 45 — Network Identity & Destination Policy Assurance (verification pending).
-- **Active prerequisite verification:** Phase 44 — Data Analytics & Decision Intelligence.
-- **Phase 45:** implementation started; completion is blocked until the required verification gates pass.
-- **Next:** Phase 46 — Authorized Gateway Inventory, only after Phase 45 completion gates pass.
+- **Highest implemented area:** Phase 50 — Additional Tunnel Providers (verification pending).
+- **Phase 49:** WireGuard provider implementation is present; CI and Linux runtime verification remain the completion gates.
+- **Phase 50:** OpenVPN provider implementation is present; repository verification remains the completion gate.
+- **Next after verification:** Phase 51 — Automatic Gateway Selection.
 
 ## Canonical records with current verification status
 
@@ -30,6 +30,7 @@ Phase records are implementation and audit evidence. They are **not** the produc
 | 43 | Distributed probe federation | Implemented / final CI-runtime gate required | [`phase-43.md`](phase-43.md) |
 | 44 | Data analytics & decision intelligence | Implemented / final CI-runtime gate required | [`phase-44.md`](phase-44.md) |
 | 45 | Network identity & destination policy assurance | Implementation started / verification required | [`phase-45.md`](phase-45.md) |
+| 50 | Additional tunnel providers | Implementation present / verification pending | [`phase-50.md`](phase-50.md) |
 
 ## Historical phases 01–38
 
