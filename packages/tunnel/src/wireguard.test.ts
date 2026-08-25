@@ -81,8 +81,9 @@ describe('WireGuardProvider', () => {
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     try {
       const runner = new FakeRunner();
+      // connect() without addressCidr executes exactly four commands:
+      // ensureInterface -> add interface -> wg set -> link up.
       runner.queue({ stdout: '', stderr: 'not found', exitCode: 1 });
-      runner.queue({ stdout: '', stderr: '', exitCode: 0 });
       runner.queue({ stdout: '', stderr: '', exitCode: 0 });
       runner.queue({ stdout: '', stderr: '', exitCode: 0 });
       runner.queue({ stdout: '', stderr: '', exitCode: 0 });
