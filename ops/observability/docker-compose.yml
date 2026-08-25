@@ -78,3 +78,4 @@ services:
 volumes:
   grafana-data:
   prometheus-data:
+  tempo-data:
