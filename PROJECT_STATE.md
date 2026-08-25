@@ -4,17 +4,39 @@
 
 ## Current State
 
-- **Highest implemented phase:** Phase 49 — WireGuard Provider.
+- **Highest implemented phase:** Phase 50 — Additional Tunnel Providers.
 - **Phase 47:** verified green by CI and accepted as complete.
 - **Phase 48:** implementation is complete and accepted after verification.
 - **Phase 49:** WireGuard provider implementation is present; CI and Linux runtime verification remain the completion gates.
-- **Next phase after green verification:** Phase 50 — Additional Tunnel Providers.
+- **Phase 50:** OpenVPN provider implementation is present; repository verification remains the completion gate.
+- **Next phase after verification:** Phase 51 — Automatic Gateway Selection.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 50 — Additional Tunnel Providers
+
+Phase 50 extends the canonical `@irp/tunnel` abstraction with an OpenVPN provider without creating a second tunnel lifecycle or decision model.
+
+Phase 50 additions:
+
+- `OpenVPNProvider` implementing the canonical `TunnelProvider` contract;
+- provider capability declaration for OpenVPN over UDP/TCP and system scope;
+- opaque credential-store boundary for complete client configuration;
+- secure `0600` temporary client configuration handling with deterministic cleanup;
+- non-shell OpenVPN execution through `execFile`;
+- bounded startup and command timeouts;
+- provider-owned PID tracking and deterministic connect/disconnect/destroy lifecycle;
+- positive health evidence from live process state and OpenVPN status output;
+- rejection of credential-managed executable script hooks;
+- sanitized dependency errors for certificate material;
+- concrete provider package subpath exports for WireGuard and OpenVPN;
+- unit tests using command fakes only; no host networking mutation in CI.
+
+The provider remains out of gateway selection, automatic failover, autonomous tunnel maintenance, routing policy, DNS orchestration, fleet provisioning and cross-platform native integration.
 
 ## Phase 49 — WireGuard Provider
 
