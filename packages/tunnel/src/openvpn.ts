@@ -381,7 +381,7 @@ function isProcessAlive(pid: number): boolean {
 }
 
 function parseClientStats(status: string): Pick<TunnelHealth, 'throughputBps'> {
-  const match = status.match(/TUN/TAP read bytes,write bytes,(\d+),(\d+)/);
+  const match = status.match(/TUN\/TAP read bytes,write bytes,(\d+),(\d+)/);
   if (!match) return {};
   return { throughputBps: Number(match[1]) + Number(match[2]) };
 }
