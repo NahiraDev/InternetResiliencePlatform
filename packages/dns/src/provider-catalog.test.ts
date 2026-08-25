@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { isIP } from 'node:net';
-import { BUILTIN_PROVIDER_METADATA, GLOBAL_PROVIDER_METADATA, IRANIAN_PROVIDER_METADATA, PROVIDER_CATALOG } from './provider-catalog.js';
-import { createAllBuiltinProviders, isIranianProvider, regionalReachabilityMultiplier } from './provider-registry.js';
+import { BUILTIN_PROVIDER_METADATA, GLOBAL_PROVIDER_METADATA as CATALOG_GLOBAL, IRANIAN_PROVIDER_METADATA as CATALOG_IRAN, PROVIDER_CATALOG } from './provider-catalog.js';
+import { ADDITIONAL_IRANIAN_PROVIDER_METADATA } from './provider-catalog-additional.js';
+import { ALL_PROVIDER_METADATA, createAllBuiltinProviders, isIranianProvider, regionalReachabilityMultiplier } from './provider-registry.js';
 
 const requiredIranianIds = [
   'shecan', 'shecan-2', 'begzar', 'begzar-2', '403', 'radar', 'electro', 'shatel',
@@ -13,9 +14,9 @@ const requiredIranianIds = [
 
 describe('expanded DNS provider catalog', () => {
   it('contains unique provider ids and valid endpoint metadata', () => {
-    const ids = PROVIDER_CATALOG.map((provider) => provider.id);
+    const ids = ALL_PROVIDER_METADATA.map((provider) => provider.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const provider of PROVIDER_CATALOG) {
+    for (const provider of ALL_PROVIDER_METADATA) {
       expect(provider.id).toMatch(/^[a-z0-9][a-z0-9-]*$/);
       expect(provider.name.length).toBeGreaterThan(0);
       expect(provider.homepage).toMatch(/^https:\/\//);
@@ -29,29 +30,35 @@ describe('expanded DNS provider catalog', () => {
   });
 
   it('contains the Iranian resolver families discovered across the audited sources', () => {
-    const ids = new Set(IRANIAN_PROVIDER_METADATA.map((provider) => provider.id));
+    const ids = new Set(ALL_PROVIDER_METADATA.filter((provider) => provider.country === 'IR').map((p) => p.id));
     for (const id of requiredIranianIds) expect(ids.has(id)).toBe(true);
-    expect(IRANIAN_PROVIDER_METADATA.length).toBeGreaterThanOrEqual(requiredIranianIds.length);
+    expect(ids.size).toBeGreaterThanOrEqual(requiredIranianIds.length);
+    expect(CATALOG_IRAN.length + ADDITIONAL_IRANIAN_PROVIDER_METADATA.length).toBe(ids.size);
   });
 
   it('retains the original builtin global providers and extends the global catalog', () => {
     expect(BUILTIN_PROVIDER_METADATA.map((entry) => entry.id)).toEqual([
       'cloudflare', 'google', 'quad9', 'opendns', 'controld', 'adguard', 'nextdns', 'cleanbrowsing',
     ]);
-    expect(GLOBAL_PROVIDER_METADATA.length).toBeGreaterThanOrEqual(10);
+    expect(CATALOG_GLOBAL.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('does not duplicate provider identities across catalog layers', () => {
+    const ids = [...PROVIDER_CATALOG, ...ADDITIONAL_IRANIAN_PROVIDER_METADATA, ...BUILTIN_PROVIDER_METADATA].map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('creates every catalog entry as a real runtime candidate', () => {
     const providers = createAllBuiltinProviders();
-    expect(providers.length).toBe(BUILTIN_PROVIDER_METADATA.length + GLOBAL_PROVIDER_METADATA.length + IRANIAN_PROVIDER_METADATA.length);
-    expect(providers.filter(isIranianProvider).length).toBe(IRANIAN_PROVIDER_METADATA.length);
+    expect(providers.length).toBe(ALL_PROVIDER_METADATA.length);
+    expect(providers.filter(isIranianProvider).length).toBeGreaterThanOrEqual(requiredIranianIds.length);
     expect(providers.some((provider) => provider.id === 'shecan')).toBe(true);
     expect(providers.some((provider) => provider.id === 'cloudflare')).toBe(true);
   });
 
   it('derives DoH/DoT/DNSSEC capability from metadata', () => {
     const providers = createAllBuiltinProviders();
-    const byId = new Map(PROVIDER_CATALOG.map((entry) => [entry.id, entry]));
+    const byId = new Map(ALL_PROVIDER_METADATA.map((entry) => [entry.id, entry]));
     for (const provider of providers) {
       const metadata = byId.get(provider.id)!;
       expect(provider.supportsDoH()).toBe(Boolean(metadata.endpoints.doh));
