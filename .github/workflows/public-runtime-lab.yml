@@ -1,0 +1,79 @@
+name: Public Runtime Lab
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-runtime-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start IRP observability stack
+        run: docker compose -f ops/observability/docker-compose.yml up -d
+
+      - name: Wait for runtime lab
+        run: |
+          for i in {1..90}; do
+            if curl -fsS http://localhost:8081/health >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f ops/observability/docker-compose.yml ps
+          docker compose -f ops/observability/docker-compose.yml logs --no-color lab
+          exit 1
+
+      - name: Start temporary public tunnel
+        run: |
+          docker run --rm --network host cloudflare/cloudflared:2025.8.1 \
+            tunnel --no-autoupdate --url http://127.0.0.1:8081 \
+            > /tmp/cloudflared.log 2>&1 &
+          echo $! > /tmp/cloudflared.pid
+
+          for i in {1..60}; do
+            URL=$(grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n1 || true)
+            if [ -n "$URL" ]; then
+              echo "PUBLIC_LAB_URL=$URL" >> "$GITHUB_ENV"
+              echo "## IRP Public Runtime Lab" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "**Dashboard:** [$URL]($URL)" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "**Grafana:** [$URL/grafana/]($URL/grafana/)" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "The URL is temporary and remains available while this workflow is running." >> "$GITHUB_STEP_SUMMARY"
+              break
+            fi
+            sleep 2
+          done
+
+          if [ -z "${PUBLIC_LAB_URL:-}" ]; then
+            cat /tmp/cloudflared.log
+            exit 1
+          fi
+
+      - name: Keep lab online
+        run: |
+          echo "Public lab: $PUBLIC_LAB_URL"
+          for i in {1..324}; do
+            curl -fsS http://localhost:8081/health >/dev/null
+            sleep 60
+          done
+
+      - name: Collect diagnostics
+        if: always()
+        run: |
+          docker compose -f ops/observability/docker-compose.yml ps
+          docker compose -f ops/observability/docker-compose.yml logs --no-color > /tmp/irp-runtime-lab.log
+          cat /tmp/cloudflared.log || true
+
+      - name: Shutdown
+        if: always()
+        run: |
+          if [ -f /tmp/cloudflared.pid ]; then kill "$(cat /tmp/cloudflared.pid)" || true; fi
+          docker compose -f ops/observability/docker-compose.yml down -v
