@@ -166,8 +166,25 @@ jobs:
         run: |
           echo "Public lab: $PUBLIC_LAB_URL"
           for i in {1..324}; do
+            echo "=== soak iteration $i/324 ==="
             curl -fsS --max-time 10 "$PUBLIC_LAB_URL/health" >/dev/null
-            curl -fsS --max-time 10 "$PUBLIC_LAB_URL/ready" >/dev/null
+
+            ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready" || true)
+            echo "ready_status=$ready_status"
+
+            if [ "$ready_status" != "200" ]; then
+              echo '=== READY RESPONSE ==='
+              cat /tmp/ready.json || true
+              echo '=== REPORT ==='
+              curl -sS --max-time 10 "$PUBLIC_LAB_URL/report" || true
+              echo
+              echo '=== LOCAL RUNTIME STATE ==='
+              docker compose -f ops/observability/docker-compose.yml ps || true
+              echo '=== RUNTIME LOGS ==='
+              docker compose -f ops/observability/docker-compose.yml logs --no-color --tail 1000 lab public-gateway || true
+              exit 1
+            fi
+
             docker inspect -f '{{.State.Running}}' irp-cloudflared | grep -q true
             sleep 60
           done
