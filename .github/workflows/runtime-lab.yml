@@ -2,19 +2,50 @@ name: Runtime Lab
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     paths:
       - 'ops/observability/**'
       - 'tools/runtime-lab/**'
       - 'packages/gateway-registry/**'
       - 'packages/resilience-runtime/**'
+      - '.github/workflows/runtime-lab.yml'
+      - '.github/workflows/public-runtime-lab.yml'
+      - 'scripts/docker-smoke.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'ops/observability/**'
+      - 'tools/runtime-lab/**'
+      - 'packages/gateway-registry/**'
+      - 'packages/resilience-runtime/**'
+      - '.github/workflows/runtime-lab.yml'
+      - '.github/workflows/public-runtime-lab.yml'
+      - 'scripts/docker-smoke.sh'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-lab-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+  COMPOSE_FILE: ops/observability/docker-compose.yml
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   runtime-lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,61 +53,82 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Start runtime lab
-        run: docker compose -f ops/observability/docker-compose.yml up -d
+        run: docker compose -f "$COMPOSE_FILE" up -d --no-build
+
+      - name: Verify runtime containers
+        run: |
+          docker compose -f "$COMPOSE_FILE" ps -a
+          lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+          test -n "$lab_id"
+          docker inspect --format='lab status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}}' "$lab_id"
 
       - name: Wait for runtime readiness
         run: |
           ready=false
           for i in {1..60}; do
-            if curl -fsS --max-time 5 http://localhost:8080/ready >/dev/null; then
+            lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+            running="$(docker inspect -f '{{.State.Running}}' "$lab_id" 2>/dev/null || echo false)"
+            exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$lab_id" 2>/dev/null || echo unknown)"
+            restart_count="$(docker inspect -f '{{.RestartCount}}' "$lab_id" 2>/dev/null || echo unknown)"
+
+            echo "--- readiness attempt $i/60 running=$running exit=$exit_code restarts=$restart_count ---"
+            if curl -fsS --max-time 5 http://127.0.0.1:8080/ready >/tmp/runtime-ready.json 2>/tmp/runtime-ready.err; then
               ready=true
+              cat /tmp/runtime-ready.json
               break
             fi
-            echo "--- readiness attempt $i/60 ---"
-            curl -sS --max-time 5 http://localhost:8080/ready || true
-            docker compose -f ops/observability/docker-compose.yml ps
+
+            cat /tmp/runtime-ready.json 2>/dev/null || true
+            cat /tmp/runtime-ready.err 2>/dev/null || true
+            docker compose -f "$COMPOSE_FILE" ps -a
+
+            if [ "$running" != "true" ]; then
+              echo 'Runtime lab container exited before readiness.'
+              break
+            fi
             sleep 2
           done
 
           if [ "$ready" != true ]; then
-            echo 'Runtime lab did not become ready.'
+            echo '::error::Runtime lab did not become ready.'
             echo '--- compose ps ---'
-            docker compose -f ops/observability/docker-compose.yml ps -a
+            docker compose -f "$COMPOSE_FILE" ps -a
             echo '--- lab inspect ---'
-            docker inspect --format='status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$(docker compose -f ops/observability/docker-compose.yml ps -q lab)" || true
+            lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+            docker inspect --format='status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$lab_id" || true
             echo '--- lab logs ---'
-            docker compose -f ops/observability/docker-compose.yml logs --no-color --tail=1000 lab || true
+            docker compose -f "$COMPOSE_FILE" logs --no-color --tail=2000 lab || true
             echo '--- health ---'
-            curl -sS --max-time 5 http://localhost:8080/health || true
+            curl -sS --max-time 5 http://127.0.0.1:8080/health || true
             echo '--- ready ---'
-            curl -sS --max-time 5 http://localhost:8080/ready || true
+            curl -sS --max-time 5 http://127.0.0.1:8080/ready || true
             echo '--- report ---'
-            curl -sS --max-time 5 http://localhost:8080/report || true
+            curl -sS --max-time 5 http://127.0.0.1:8080/report || true
             exit 1
           fi
 
-          curl -fsS --max-time 5 http://localhost:8080/health
-          curl -fsS --max-time 5 http://localhost:8080/ready
-          curl -fsS --max-time 5 http://localhost:8080/report
+          curl -fsS --max-time 5 http://127.0.0.1:8080/health
+          curl -fsS --max-time 5 http://127.0.0.1:8080/ready
+          curl -fsS --max-time 5 http://127.0.0.1:8080/report
 
       - name: Validate metrics
         run: |
           ready=false
           for i in {1..30}; do
-            metrics="$(curl -fsS --max-time 5 http://localhost:9464/metrics || true)"
+            metrics="$(curl -fsS --max-time 5 http://127.0.0.1:9464/metrics || true)"
             if printf '%s\n' "$metrics" | grep -q '^irp_runtime_lab_up 1$' \
               && printf '%s\n' "$metrics" | grep -q '^irp_package_calls_total'; then
               ready=true
@@ -89,23 +141,20 @@ jobs:
           printf '%s\n' "$metrics" | grep -q '^irp_package_calls_total'
 
       - name: Validate Prometheus target
-        run: |
-          curl -fsS http://localhost:9090/-/ready
+        run: curl -fsS --max-time 10 http://127.0.0.1:9090/-/ready
 
       - name: Validate Grafana
-        run: |
-          curl -fsS http://localhost:3001/api/health
+        run: curl -fsS --max-time 10 http://127.0.0.1:3001/api/health
 
       - name: Validate Tempo
-        run: |
-          curl -fsS http://localhost:3200/ready
+        run: curl -fsS --max-time 10 http://127.0.0.1:3200/ready
 
       - name: Collect logs
         if: always()
         run: |
-          docker compose -f ops/observability/docker-compose.yml ps -a
-          docker compose -f ops/observability/docker-compose.yml logs --no-color --tail=2000
+          docker compose -f "$COMPOSE_FILE" ps -a
+          docker compose -f "$COMPOSE_FILE" logs --no-color --tail=2000
 
       - name: Shutdown
         if: always()
-        run: docker compose -f ops/observability/docker-compose.yml down -v
+        run: docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
