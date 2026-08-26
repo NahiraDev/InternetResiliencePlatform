@@ -4,12 +4,15 @@ import crypto from 'node:crypto';
 const PORT = Number(process.env.PORT ?? 8080);
 const METRICS_PORT = Number(process.env.METRICS_PORT ?? 9464);
 const TEMPO_URL = process.env.TEMPO_URL ?? 'http://tempo:4318/v1/traces';
+const SCENARIO_INTERVAL_MS = Number(process.env.SCENARIO_INTERVAL_MS ?? 15000);
 
 const counters = new Map();
 const gauges = new Map();
 let lastReport = null;
 let appListening = false;
 let metricsListening = false;
+let scenarioRunning = false;
+let scenarioTimer = null;
 
 function inc(name, labels = {}, value = 1) {
   const key = `${name}|${JSON.stringify(labels)}`;
@@ -55,6 +58,7 @@ async function sendTrace(spans) {
           scopeSpans: [{ scope: { name: 'irp-runtime-lab', version: '1.0.0' }, spans }],
         }],
       }),
+      signal: AbortSignal.timeout(5000),
     });
   } catch (error) {
     inc('irp_observability_export_failures_total', { signal: 'traces' });
@@ -63,6 +67,13 @@ async function sendTrace(spans) {
 }
 
 async function executeScenario() {
+  if (scenarioRunning) {
+    inc('irp_runtime_cycles_skipped_total', { reason: 'already_running' });
+    return;
+  }
+  scenarioRunning = true;
+  setGauge('irp_runtime_scenario_running', {}, 1);
+
   const started = process.hrtime.bigint();
   const { traceId, spanId: rootSpanId } = ids();
   const spans = [];
@@ -119,8 +130,27 @@ async function executeScenario() {
     console.error(JSON.stringify({ level: 'error', event: 'runtime_cycle_failed', trace_id: traceId, error: message }));
   } finally {
     await sendTrace(spans);
+    scenarioRunning = false;
+    setGauge('irp_runtime_scenario_running', {}, 0);
   }
 }
+
+function scheduleScenario() {
+  if (scenarioTimer) clearTimeout(scenarioTimer);
+  scenarioTimer = setTimeout(async () => {
+    await executeScenario();
+    scheduleScenario();
+  }, SCENARIO_INTERVAL_MS);
+}
+
+process.on('uncaughtException', (error) => {
+  console.error(JSON.stringify({ level: 'fatal', event: 'uncaught_exception', error: error instanceof Error ? error.stack ?? error.message : String(error) }));
+  setGauge('irp_runtime_process_errors', { type: 'uncaughtException' }, 1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error(JSON.stringify({ level: 'fatal', event: 'unhandled_rejection', error: reason instanceof Error ? reason.stack ?? reason.message : String(reason) }));
+  setGauge('irp_runtime_process_errors', { type: 'unhandledRejection' }, 1);
+});
 
 const app = http.createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
@@ -132,9 +162,9 @@ const app = http.createServer((req, res) => {
   if (url.pathname === '/ready') {
     const scenarioCompleted = lastReport !== null;
     const scenarioPassed = lastReport?.status === 'passed';
-    const ready = appListening && metricsListening && scenarioPassed;
+    const ready = appListening && metricsListening && scenarioPassed && !scenarioRunning;
     res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ status: ready ? 'ready' : scenarioCompleted ? 'failed' : 'starting', appListening, metricsListening, scenarioCompleted, scenarioStatus: lastReport?.status ?? null, failedCriteria: lastReport?.failedCriteria ?? [], error: lastReport?.error ?? null, traceId: lastReport?.traceId ?? null }));
+    res.end(JSON.stringify({ status: ready ? 'ready' : scenarioCompleted ? 'failed' : 'starting', appListening, metricsListening, scenarioCompleted, scenarioRunning, scenarioStatus: lastReport?.status ?? null, failedCriteria: lastReport?.failedCriteria ?? [], error: lastReport?.error ?? null, traceId: lastReport?.traceId ?? null }));
     return;
   }
   if (url.pathname === '/report') {
@@ -165,4 +195,4 @@ await Promise.all([listen(app, PORT, 'lab'), listen(metrics, METRICS_PORT, 'metr
 appListening = true;
 metricsListening = true;
 await executeScenario();
-setInterval(() => void executeScenario(), Number(process.env.SCENARIO_INTERVAL_MS ?? 15000));
+scheduleScenario();
