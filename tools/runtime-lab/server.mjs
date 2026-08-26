@@ -8,6 +8,8 @@ const TEMPO_URL = process.env.TEMPO_URL ?? 'http://tempo:4318/v1/traces';
 const counters = new Map();
 const gauges = new Map();
 let lastReport = null;
+let appListening = false;
+let metricsListening = false;
 
 function inc(name, labels = {}, value = 1) {
   const key = `${name}|${JSON.stringify(labels)}`;
@@ -166,13 +168,25 @@ const app = http.createServer((req, res) => {
     res.end(JSON.stringify({ status: 'ok', service: 'irp-runtime-lab' }));
     return;
   }
+  if (url.pathname === '/ready') {
+    const ready = appListening && metricsListening && lastReport?.status === 'passed';
+    res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      status: ready ? 'ready' : 'starting',
+      appListening,
+      metricsListening,
+      scenarioCompleted: lastReport !== null,
+      scenarioStatus: lastReport?.status ?? null,
+    }));
+    return;
+  }
   if (url.pathname === '/report') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify(lastReport ?? { status: 'starting' }, null, 2));
     return;
   }
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-  res.end(`<!doctype html><html><head><meta charset="utf-8"><title>IRP Runtime Lab</title><style>body{font-family:system-ui;margin:40px;max-width:1000px}pre{background:#111;color:#eee;padding:20px;border-radius:8px;overflow:auto}a{margin-right:20px}</style></head><body><h1>IRP Runtime Lab</h1><p>Runtime verification and package interaction environment.</p><p><a href="/report">JSON report</a><a href="/health">Health</a><a href="http://localhost:3001">Grafana</a></p><pre>${JSON.stringify(lastReport ?? { status: 'starting' }, null, 2)}</pre></body></html>`);
+  res.end(`<!doctype html><html><head><meta charset="utf-8"><title>IRP Runtime Lab</title><style>body{font-family:system-ui;margin:40px;max-width:1000px}pre{background:#111;color:#eee;padding:20px;border-radius:8px;overflow:auto}a{margin-right:20px}</style></head><body><h1>IRP Runtime Lab</h1><p>Runtime verification and package interaction environment.</p><p><a href="/report">JSON report</a><a href="/health">Health</a><a href="/ready">Readiness</a><a href="http://localhost:3001">Grafana</a></p><pre>${JSON.stringify(lastReport ?? { status: 'starting' }, null, 2)}</pre></body></html>`);
 });
 
 const metrics = http.createServer((_req, res) => {
@@ -180,8 +194,29 @@ const metrics = http.createServer((_req, res) => {
   res.end(metricsText());
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(JSON.stringify({ level: 'info', event: 'lab_started', port: PORT })));
-metrics.listen(METRICS_PORT, '0.0.0.0', () => console.log(JSON.stringify({ level: 'info', event: 'metrics_started', port: METRICS_PORT })));
+function listen(server, port, name) {
+  return new Promise((resolve, reject) => {
+    const onError = (error) => {
+      server.off('listening', onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      server.off('error', onError);
+      console.log(JSON.stringify({ level: 'info', event: `${name}_started`, port }));
+      resolve();
+    };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, '0.0.0.0');
+  });
+}
+
+await Promise.all([
+  listen(app, PORT, 'lab'),
+  listen(metrics, METRICS_PORT, 'metrics'),
+]);
+appListening = true;
+metricsListening = true;
 
 await executeScenario();
 setInterval(() => void executeScenario(), Number(process.env.SCENARIO_INTERVAL_MS ?? 15000));
