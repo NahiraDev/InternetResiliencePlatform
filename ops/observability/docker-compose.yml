@@ -5,6 +5,8 @@ services:
     command: >-
       sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm build && node tools/runtime-lab/server.mjs"
     environment:
+      CI: "true"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       PORT: 8080
       METRICS_PORT: 9464
       TEMPO_URL: http://tempo:4318/v1/traces
