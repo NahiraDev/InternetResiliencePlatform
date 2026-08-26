@@ -9,12 +9,27 @@ on:
       - 'tools/runtime-lab/**'
       - 'packages/gateway-registry/**'
       - 'packages/resilience-runtime/**'
+      - '.github/workflows/runtime-lab.yml'
       - '.github/workflows/public-runtime-lab.yml'
+      - 'scripts/docker-smoke.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: public-runtime-lab-main
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+  COMPOSE_FILE: ops/observability/docker-compose.yml
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   public-runtime-lab:
@@ -27,38 +42,91 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Start IRP observability stack
-        run: docker compose -f ops/observability/docker-compose.yml up -d
+        run: docker compose -f "$COMPOSE_FILE" up -d --no-build
 
-      - name: Wait for local public gateway
+      - name: Verify local runtime before exposing it
         run: |
-          ready=false
+          lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+          gateway_id="$(docker compose -f "$COMPOSE_FILE" ps -q public-gateway)"
+          test -n "$lab_id"
+          test -n "$gateway_id"
+
+          echo '--- initial compose state ---'
+          docker compose -f "$COMPOSE_FILE" ps -a
+          docker inspect --format='lab status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}}' "$lab_id"
+          docker inspect --format='gateway status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} restart={{.RestartCount}} error={{.State.Error}}' "$gateway_id"
+
+      - name: Wait for local public gateway and runtime readiness
+        run: |
+          gateway_ready=false
+          runtime_ready=false
+
           for i in {1..90}; do
-            if curl -fsS --max-time 5 http://127.0.0.1:8081/health >/dev/null; then
-              ready=true
+            lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+            gateway_id="$(docker compose -f "$COMPOSE_FILE" ps -q public-gateway)"
+            lab_running="$(docker inspect -f '{{.State.Running}}' "$lab_id" 2>/dev/null || echo false)"
+            gateway_running="$(docker inspect -f '{{.State.Running}}' "$gateway_id" 2>/dev/null || echo false)"
+
+            echo "--- local readiness attempt $i/90 lab=$lab_running gateway=$gateway_running ---"
+
+            if curl -fsS --max-time 5 http://127.0.0.1:8081/health >/tmp/gateway-health.json 2>/tmp/gateway-health.err; then
+              gateway_ready=true
+            fi
+
+            if curl -fsS --max-time 5 http://127.0.0.1:8080/ready >/tmp/runtime-ready.json 2>/tmp/runtime-ready.err; then
+              runtime_ready=true
+            fi
+
+            if [ "$gateway_ready" = true ] && [ "$runtime_ready" = true ]; then
+              cat /tmp/gateway-health.json
+              cat /tmp/runtime-ready.json
+              break
+            fi
+
+            cat /tmp/gateway-health.err 2>/dev/null || true
+            cat /tmp/runtime-ready.err 2>/dev/null || true
+            docker compose -f "$COMPOSE_FILE" ps -a
+
+            if [ "$lab_running" != "true" ] || [ "$gateway_running" != "true" ]; then
+              echo 'A required runtime container exited before readiness.'
               break
             fi
             sleep 2
           done
-          if [ "$ready" != true ]; then
-            echo 'Public gateway did not become ready.'
-            docker compose -f ops/observability/docker-compose.yml ps
-            docker compose -f ops/observability/docker-compose.yml logs --no-color lab public-gateway || true
+
+          if [ "$gateway_ready" != true ] || [ "$runtime_ready" != true ]; then
+            echo '::error::Local public gateway/runtime did not become ready.'
+            echo '--- compose ps ---'
+            docker compose -f "$COMPOSE_FILE" ps -a
+            echo '--- lab inspect ---'
+            docker inspect --format='status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$lab_id" || true
+            echo '--- gateway inspect ---'
+            docker inspect --format='status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} restart={{.RestartCount}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$gateway_id" || true
+            echo '--- lab logs ---'
+            docker compose -f "$COMPOSE_FILE" logs --no-color --tail=2000 lab || true
+            echo '--- gateway logs ---'
+            docker compose -f "$COMPOSE_FILE" logs --no-color --tail=1000 public-gateway || true
+            echo '--- local health ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/health || true
+            echo '--- local ready ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
+            echo '--- local report ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/report || true
             exit 1
           fi
-          curl -fsS --max-time 5 http://127.0.0.1:8081/health
 
       - name: Start temporary public tunnel
         run: |
@@ -96,21 +164,25 @@ jobs:
 
           echo 'Waiting for the newly-created Quick Tunnel edge route to become reachable...'
           reachable=false
-          for i in {1..45}; do
+          for i in {1..60}; do
             if curl -fsS --max-time 10 --retry 0 "$URL/health" >/tmp/public-health.json 2>/tmp/public-health.err; then
               reachable=true
               break
             fi
             status=$(curl -sS -o /tmp/public-health.json -w '%{http_code}' --max-time 10 --retry 0 "$URL/health" || true)
-            echo "Tunnel health attempt $i/45 returned HTTP $status"
+            echo "Tunnel health attempt $i/60 returned HTTP $status"
             cat /tmp/public-health.err 2>/dev/null || true
             sleep 2
           done
 
           if [ "$reachable" != true ]; then
-            echo 'Public Quick Tunnel was created but its HTTP route did not become reachable.'
-            echo '--- local origin ---'
+            echo '::error::Quick Tunnel was created but the public route did not become reachable.'
+            echo '--- local origin health ---'
             curl -sS --max-time 5 http://127.0.0.1:8081/health || true
+            echo '--- local origin ready ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
+            echo '--- local origin report ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/report || true
             echo '--- public response ---'
             cat /tmp/public-health.json 2>/dev/null || true
             echo '--- cloudflared logs ---'
@@ -122,52 +194,55 @@ jobs:
 
       - name: Validate public endpoints
         run: |
-          set +e
+          set -euo pipefail
           failures=0
 
-          echo '--- public /health ---'
-          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
-          rc=$?
-          [ "$rc" -eq 0 ] || failures=$((failures + 1))
+          check_endpoint() {
+            local label="$1"
+            local url="$2"
+            local output="$3"
+            echo "--- $label ---"
+            if ! curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$url" >"$output"; then
+              echo "FAILED: $url"
+              failures=$((failures + 1))
+              cat "$output" 2>/dev/null || true
+            else
+              cat "$output"
+            fi
+            echo
+          }
 
-          echo
-          echo '--- public /ready ---'
-          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/ready"
-          ready_rc=$?
-          [ "$ready_rc" -eq 0 ] || failures=$((failures + 1))
+          check_endpoint 'public /health' "$PUBLIC_LAB_URL/health" /tmp/public-health.json
+          check_endpoint 'public /ready' "$PUBLIC_LAB_URL/ready" /tmp/public-ready.json
+          check_endpoint 'public /report' "$PUBLIC_LAB_URL/report" /tmp/public-report.json
+          check_endpoint 'public Grafana health' "$PUBLIC_LAB_URL/grafana/api/health" /tmp/public-grafana.json
 
+          echo '--- local diagnostics ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/health || true
           echo
-          echo '--- public /report ---'
-          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/report"
-          report_rc=$?
-          [ "$report_rc" -eq 0 ] || failures=$((failures + 1))
-
-          echo
-          echo '--- public Grafana health ---'
-          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/grafana/api/health"
-          grafana_rc=$?
-          [ "$grafana_rc" -eq 0 ] || failures=$((failures + 1))
-
-          echo
-          echo '--- local readiness diagnostics ---'
           curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
           echo
-          echo '--- local report diagnostics ---'
           curl -sS --max-time 5 http://127.0.0.1:8081/report || true
-
           echo
-          echo "endpoint failures: $failures"
-          if [ "$ready_rc" -ne 0 ]; then
-            echo 'Public readiness is required; the runtime scenario must pass before the lab is considered ready.'
+
+          if [ "$failures" -ne 0 ]; then
+            echo "::error::Public endpoint validation failed for $failures endpoint(s)."
+            echo '--- cloudflared logs ---'
+            docker logs irp-cloudflared 2>&1 || true
+            exit 1
           fi
-          [ "$failures" -eq 0 ]
 
       - name: Keep lab online
         run: |
+          set -euo pipefail
           echo "Public lab: $PUBLIC_LAB_URL"
           for i in {1..324}; do
             echo "=== soak iteration $i/324 ==="
-            curl -fsS --max-time 10 "$PUBLIC_LAB_URL/health" >/dev/null
+
+            if ! curl -fsS --max-time 10 "$PUBLIC_LAB_URL/health" >/dev/null; then
+              echo 'Public health check failed.'
+              break
+            fi
 
             ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready" || true)
             echo "ready_status=$ready_status"
@@ -179,9 +254,11 @@ jobs:
               curl -sS --max-time 10 "$PUBLIC_LAB_URL/report" || true
               echo
               echo '=== LOCAL RUNTIME STATE ==='
-              docker compose -f ops/observability/docker-compose.yml ps || true
+              docker compose -f "$COMPOSE_FILE" ps -a || true
               echo '=== RUNTIME LOGS ==='
-              docker compose -f ops/observability/docker-compose.yml logs --no-color --tail 1000 lab public-gateway || true
+              docker compose -f "$COMPOSE_FILE" logs --no-color --tail 1000 lab public-gateway || true
+              echo '=== CLOUDFLARED LOGS ==='
+              docker logs irp-cloudflared 2>&1 || true
               exit 1
             fi
 
@@ -192,8 +269,8 @@ jobs:
       - name: Collect diagnostics
         if: always()
         run: |
-          docker compose -f ops/observability/docker-compose.yml ps
-          docker compose -f ops/observability/docker-compose.yml logs --no-color > /tmp/irp-runtime-lab.log
+          docker compose -f "$COMPOSE_FILE" ps -a || true
+          docker compose -f "$COMPOSE_FILE" logs --no-color > /tmp/irp-runtime-lab.log || true
           docker logs irp-cloudflared > /tmp/cloudflared.log 2>&1 || true
           echo '--- cloudflared ---'
           cat /tmp/cloudflared.log || true
@@ -204,10 +281,10 @@ jobs:
           echo '--- local report ---'
           curl -sS --max-time 5 http://127.0.0.1:8081/report || true
           echo '--- compose logs ---'
-          tail -n 500 /tmp/irp-runtime-lab.log || true
+          tail -n 1000 /tmp/irp-runtime-lab.log || true
 
       - name: Shutdown
         if: always()
         run: |
           docker rm -f irp-cloudflared 2>/dev/null || true
-          docker compose -f ops/observability/docker-compose.yml down -v
+          docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
