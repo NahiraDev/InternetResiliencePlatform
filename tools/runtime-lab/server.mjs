@@ -153,9 +153,21 @@ async function executeScenario() {
     };
     console.log(JSON.stringify({ level: 'info', event: 'runtime_cycle', trace_id: traceId, status: report.status, gateway: selection.selected?.gateway.id, duration_ms: elapsedMs }));
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     inc('irp_runtime_cycles_failed_total');
-    root.status = { code: 2, message: String(error) };
-    console.error(JSON.stringify({ level: 'error', event: 'runtime_cycle_failed', trace_id: traceId, error: String(error) }));
+    root.status = { code: 2, message };
+    lastReport = {
+      generatedAt: new Date().toISOString(),
+      status: 'failed',
+      deterministic: false,
+      scenarios: [],
+      acceptance: {},
+      failedCriteria: ['runtime-cycle-exception'],
+      error: message,
+      traceId,
+      durationMs: Number(process.hrtime.bigint() - started) / 1e6,
+    };
+    console.error(JSON.stringify({ level: 'error', event: 'runtime_cycle_failed', trace_id: traceId, error: message }));
   } finally {
     await sendTrace(spans);
   }
@@ -169,14 +181,19 @@ const app = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === '/ready') {
-    const ready = appListening && metricsListening && lastReport?.status === 'passed';
+    const scenarioCompleted = lastReport !== null;
+    const scenarioPassed = lastReport?.status === 'passed';
+    const ready = appListening && metricsListening && scenarioPassed;
     res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
     res.end(JSON.stringify({
-      status: ready ? 'ready' : 'starting',
+      status: ready ? 'ready' : scenarioCompleted ? 'failed' : 'starting',
       appListening,
       metricsListening,
-      scenarioCompleted: lastReport !== null,
+      scenarioCompleted,
       scenarioStatus: lastReport?.status ?? null,
+      failedCriteria: lastReport?.failedCriteria ?? [],
+      error: lastReport?.error ?? null,
+      traceId: lastReport?.traceId ?? null,
     }));
     return;
   }
