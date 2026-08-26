@@ -19,7 +19,7 @@ services:
     depends_on:
       tempo:
         condition: service_started
-    restart: unless-stopped
+    restart: "no"
 
   prometheus:
     image: prom/prometheus:v3.5.0
@@ -33,7 +33,7 @@ services:
       - "9090:9090"
     depends_on:
       - lab
-    restart: unless-stopped
+    restart: "no"
 
   tempo:
     image: grafana/tempo:2.8.2
@@ -44,7 +44,7 @@ services:
     ports:
       - "3200:3200"
       - "4318:4318"
-    restart: unless-stopped
+    restart: "no"
 
   grafana:
     image: grafana/grafana:12.1.1
@@ -63,7 +63,7 @@ services:
     depends_on:
       - prometheus
       - tempo
-    restart: unless-stopped
+    restart: "no"
 
   public-gateway:
     image: caddy:2.10-alpine
@@ -75,7 +75,7 @@ services:
       - lab
       - grafana
       - prometheus
-    restart: unless-stopped
+    restart: "no"
 
 volumes:
   grafana-data:
