@@ -42,35 +42,34 @@ jobs:
       - name: Start IRP observability stack
         run: docker compose -f ops/observability/docker-compose.yml up -d
 
-      - name: Wait for runtime lab
+      - name: Wait for local public gateway
         run: |
+          ready=false
           for i in {1..90}; do
-            if curl -fsS http://localhost:8081/health >/dev/null 2>&1; then
-              exit 0
+            if curl -fsS --max-time 5 http://127.0.0.1:8081/health >/dev/null; then
+              ready=true
+              break
             fi
             sleep 2
           done
-          docker compose -f ops/observability/docker-compose.yml ps
-          docker compose -f ops/observability/docker-compose.yml logs --no-color lab
-          exit 1
+          if [ "$ready" != true ]; then
+            echo 'Public gateway did not become ready.'
+            docker compose -f ops/observability/docker-compose.yml ps
+            docker compose -f ops/observability/docker-compose.yml logs --no-color lab public-gateway || true
+            exit 1
+          fi
+          curl -fsS --max-time 5 http://127.0.0.1:8081/health
 
       - name: Start temporary public tunnel
         run: |
           docker run -d --name irp-cloudflared --network host \
-            cloudflare/cloudflared:latest \
+            cloudflare/cloudflared:2026.8.2 \
             tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8081
 
+          URL=''
           for i in {1..60}; do
             URL=$(docker logs irp-cloudflared 2>&1 | grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' | head -n1 || true)
             if [ -n "$URL" ]; then
-              echo "PUBLIC_LAB_URL=$URL" >> "$GITHUB_ENV"
-              echo "## IRP Public Runtime Lab" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "**Dashboard:** [$URL]($URL)" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "**Grafana:** [$URL/grafana/]($URL/grafana/)" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "The URL is temporary and remains available while this workflow is running." >> "$GITHUB_STEP_SUMMARY"
               break
             fi
             if ! docker inspect -f '{{.State.Running}}' irp-cloudflared 2>/dev/null | grep -q true; then
@@ -80,18 +79,60 @@ jobs:
             sleep 2
           done
 
-          if [ -z "${PUBLIC_LAB_URL:-}" ]; then
+          if [ -z "$URL" ]; then
+            echo 'cloudflared did not publish a Quick Tunnel URL.'
             docker logs irp-cloudflared || true
             exit 1
           fi
 
-          curl --fail --retry 10 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
+          echo "PUBLIC_LAB_URL=$URL" >> "$GITHUB_ENV"
+          echo "## IRP Public Runtime Lab" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Dashboard:** [$URL]($URL)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Grafana:** [$URL/grafana/]($URL/grafana/)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The URL is temporary and remains available while this workflow is running." >> "$GITHUB_STEP_SUMMARY"
+
+          echo 'Waiting for the newly-created Quick Tunnel edge route to become reachable...'
+          reachable=false
+          for i in {1..45}; do
+            if curl -fsS --max-time 10 --retry 0 "$URL/health" >/tmp/public-health.json 2>/tmp/public-health.err; then
+              reachable=true
+              break
+            fi
+            status=$(curl -sS -o /tmp/public-health.json -w '%{http_code}' --max-time 10 --retry 0 "$URL/health" || true)
+            echo "Tunnel health attempt $i/45 returned HTTP $status"
+            cat /tmp/public-health.err 2>/dev/null || true
+            sleep 2
+          done
+
+          if [ "$reachable" != true ]; then
+            echo 'Public Quick Tunnel was created but its HTTP route did not become reachable.'
+            echo '--- local origin ---'
+            curl -sS --max-time 5 http://127.0.0.1:8081/health || true
+            echo '--- public response ---'
+            cat /tmp/public-health.json 2>/dev/null || true
+            echo '--- cloudflared logs ---'
+            docker logs irp-cloudflared 2>&1 || true
+            exit 1
+          fi
+
+          cat /tmp/public-health.json
+
+      - name: Validate public endpoints
+        run: |
+          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
+          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/ready"
+          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/report"
+          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/grafana/api/health"
 
       - name: Keep lab online
         run: |
           echo "Public lab: $PUBLIC_LAB_URL"
           for i in {1..324}; do
-            curl -fsS http://localhost:8081/health >/dev/null
+            curl -fsS --max-time 10 "$PUBLIC_LAB_URL/health" >/dev/null
+            curl -fsS --max-time 10 "$PUBLIC_LAB_URL/ready" >/dev/null
             docker inspect -f '{{.State.Running}}' irp-cloudflared | grep -q true
             sleep 60
           done
@@ -102,7 +143,16 @@ jobs:
           docker compose -f ops/observability/docker-compose.yml ps
           docker compose -f ops/observability/docker-compose.yml logs --no-color > /tmp/irp-runtime-lab.log
           docker logs irp-cloudflared > /tmp/cloudflared.log 2>&1 || true
+          echo '--- cloudflared ---'
           cat /tmp/cloudflared.log || true
+          echo '--- local health ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/health || true
+          echo '--- local ready ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
+          echo '--- local report ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/report || true
+          echo '--- compose logs ---'
+          tail -n 500 /tmp/irp-runtime-lab.log || true
 
       - name: Shutdown
         if: always()
