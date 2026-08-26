@@ -34,7 +34,7 @@ defaults:
 jobs:
   public-runtime-lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -241,7 +241,13 @@ jobs:
 
             if ! curl -fsS --max-time 10 "$PUBLIC_LAB_URL/health" >/dev/null; then
               echo 'Public health check failed.'
-              break
+              echo '=== LOCAL RUNTIME STATE ==='
+              docker compose -f "$COMPOSE_FILE" ps -a || true
+              echo '=== RUNTIME LOGS ==='
+              docker compose -f "$COMPOSE_FILE" logs --no-color --tail 1000 lab public-gateway || true
+              echo '=== CLOUDFLARED LOGS ==='
+              docker logs irp-cloudflared 2>&1 || true
+              exit 1
             fi
 
             ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready" || true)
