@@ -77,7 +77,7 @@ async function executeScenario() {
   const started = process.hrtime.bigint();
   const { traceId, spanId: rootSpanId } = ids();
   const spans = [];
-  const now = Date.now() * 1_000_000;
+  const now = BigInt(Date.now()) * 1_000_000n;
   const span = (name, parentSpanId, startOffsetMs, durationMs, attributes = {}, status = 1) => {
     const spanId = ids().spanId;
     const start = now + BigInt(Math.round(startOffsetMs * 1_000_000));
@@ -85,7 +85,7 @@ async function executeScenario() {
     spans.push({ traceId, spanId, ...(parentSpanId ? { parentSpanId } : {}), name, startTimeUnixNano: String(start), endTimeUnixNano: String(end), kind: 1, attributes: Object.entries(attributes).map(([k, v]) => attr(k, v)), status: { code: status } });
     return spanId;
   };
-  const root = { traceId, spanId: rootSpanId, name: 'irp.runtime.cycle', startTimeUnixNano: String(now), endTimeUnixNano: String(now + 1_000_000), kind: 1, attributes: [attr('scenario', 'gateway-selection-and-runtime-validation')], status: { code: 1 } };
+  const root = { traceId, spanId: rootSpanId, name: 'irp.runtime.cycle', startTimeUnixNano: String(now), endTimeUnixNano: String(now + 1_000_000n), kind: 1, attributes: [attr('scenario', 'gateway-selection-and-runtime-validation')], status: { code: 1 } };
   spans.push(root);
 
   try {
