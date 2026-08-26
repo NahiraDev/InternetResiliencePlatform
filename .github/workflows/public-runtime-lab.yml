@@ -122,10 +122,45 @@ jobs:
 
       - name: Validate public endpoints
         run: |
-          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
-          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/ready"
-          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/report"
-          curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/grafana/api/health"
+          set +e
+          failures=0
+
+          echo '--- public /health ---'
+          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/health"
+          rc=$?
+          [ "$rc" -eq 0 ] || failures=$((failures + 1))
+
+          echo
+          echo '--- public /ready ---'
+          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/ready"
+          ready_rc=$?
+          [ "$ready_rc" -eq 0 ] || failures=$((failures + 1))
+
+          echo
+          echo '--- public /report ---'
+          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/report"
+          report_rc=$?
+          [ "$report_rc" -eq 0 ] || failures=$((failures + 1))
+
+          echo
+          echo '--- public Grafana health ---'
+          curl -sS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$PUBLIC_LAB_URL/grafana/api/health"
+          grafana_rc=$?
+          [ "$grafana_rc" -eq 0 ] || failures=$((failures + 1))
+
+          echo
+          echo '--- local readiness diagnostics ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
+          echo
+          echo '--- local report diagnostics ---'
+          curl -sS --max-time 5 http://127.0.0.1:8081/report || true
+
+          echo
+          echo "endpoint failures: $failures"
+          if [ "$ready_rc" -ne 0 ]; then
+            echo 'Public readiness is required; the runtime scenario must pass before the lab is considered ready.'
+          fi
+          [ "$failures" -eq 0 ]
 
       - name: Keep lab online
         run: |
