@@ -106,7 +106,7 @@ async function executeScenario() {
 
     const runtimeSpan = span('resilience-runtime.validation', rootSpanId, 4, 8, { 'irp.source': 'runtime-lab', 'irp.target': '@irp/resilience-runtime' });
     inc('irp_package_calls_total', { source: 'runtime-lab', target: 'resilience-runtime', operation: 'phase40-validation' });
-    const { runPhase40Validation } = await import('../../packages/resilience-runtime/dist/e2e-validation.js');
+    const { runPhase40Validation } = await import('@irp/resilience-runtime');
     const report = await runPhase40Validation();
     const passed = report.status === 'passed';
     inc('irp_runtime_cycles_total');
