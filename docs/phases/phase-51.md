@@ -2,7 +2,19 @@
 
 ## Status
 
-**Implementation in progress.** Completion requires repository validation, relevant tests/builds, security review, and green CI.
+**Complete / verified.** Implementation, repository validation, typecheck, lint, tests, coverage, build, deterministic smoke tests, production Docker runtime smoke tests, and CI are green on `main`.
+
+## Verification evidence
+
+- Commit: `ec6daceb56f98f9dff84bafe1d9cf20532c30a61`
+- CI run: `33104741177` (`CI #770`) — successful.
+- CI validation job: `98631462114` — successful.
+- Required repository gates passed: repository integrity, documentation integrity, lint, typecheck, test, fresh coverage, build, deterministic smoke test, and production Docker runtime smoke test.
+- CodeQL for the same commit: successful.
+- Docker Publish for the same commit: successful.
+- Datadog Synthetics for the same commit: successful.
+
+The separate Public Runtime Lab run associated with an earlier commit was cancelled; it is not a Phase 51 acceptance dependency because gateway selection is deliberately side-effect free and does not establish tunnels or mutate networking state.
 
 ## Contract
 
@@ -25,7 +37,7 @@ Select the best authorized gateway from current registry inventory using policy,
 
 ## Safety boundaries
 
-Selection is a decision primitive, not an actuator. Phase 51 must not establish tunnels, mutate routes, modify DNS, or perform automatic failover. Those actions belong to later phases and must consume an explicit policy-checked selection result.
+Selection is a decision primitive, not an actuator. Phase 51 does not establish tunnels, mutate routes, modify DNS, or perform automatic failover. Those actions belong to later phases and must consume an explicit policy-checked selection result.
 
 Only gateways with `lifecycle=active` and `trust=trusted` are eligible. Health evidence must satisfy the configured freshness and quality bounds. A current gateway is retained unless a challenger exceeds it by the configured hysteresis threshold.
 
