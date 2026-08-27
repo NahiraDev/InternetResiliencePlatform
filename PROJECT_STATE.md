@@ -4,24 +4,33 @@
 
 ## Current State
 
-- **Current phase:** Phase 51 — Automatic Gateway Selection (implementation in progress).
+- **Current phase:** Phase 52 — Automated Tunnel Lifecycle (not started).
+- **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 47:** verified green by CI and accepted as complete.
 - **Phase 48:** implementation is complete and accepted after verification.
 - **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
-- **Next phase after Phase 51:** Phase 52 — Automated Tunnel Lifecycle.
+- **Next phase:** Phase 52 — Automated Tunnel Lifecycle.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health and the Phase 51 selection primitive. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
+- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health and gateway selection. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
 ## Phase 51 — Automatic Gateway Selection
 
-Phase 51 adds a side-effect-free gateway selection primitive to the canonical gateway domain. Selection consumes existing inventory and health contracts plus optional capacity evidence and never creates tunnels or mutates routes/DNS.
+**Complete / verified.** Phase 51 adds a side-effect-free gateway selection primitive to the canonical gateway domain. Selection consumes existing inventory and health contracts plus optional capacity evidence and never creates tunnels or mutates routes/DNS.
 
-Phase 51 additions:
+### Verification evidence
+
+- Verification commit: `ec6daceb56f98f9dff84bafe1d9cf20532c30a61`.
+- CI run `33104741177` (`CI #770`) passed.
+- CI job `98631462114` passed all repository gates: repository integrity, documentation integrity, lint, typecheck, test, fresh coverage, build, deterministic smoke test and production Docker runtime smoke test.
+- CodeQL, Docker Publish and Datadog Synthetics for the verification commit passed.
+- The cancelled Public Runtime Lab run was associated with an earlier runtime-lab change and is not a Phase 51 acceptance dependency because gateway selection is explicitly side-effect free.
+
+### Additions
 
 - policy-aware gateway eligibility;
 - active lifecycle and trusted-gateway enforcement;
@@ -43,91 +52,21 @@ Phase 51 remains out of automated tunnel lifecycle, multi-gateway failover, flee
 
 Phase 50 extends the canonical `@irp/tunnel` abstraction with an OpenVPN provider without creating a second tunnel lifecycle or decision model.
 
-Phase 50 additions:
-
-- `OpenVPNProvider` implementing the canonical `TunnelProvider` contract;
-- provider capability declaration for OpenVPN over UDP/TCP and system scope;
-- opaque credential-store boundary for complete client configuration;
-- secure `0600` temporary client configuration handling with deterministic cleanup;
-- non-shell OpenVPN execution through `execFile`;
-- bounded startup and command timeouts;
-- provider-owned PID tracking and deterministic connect/disconnect/destroy lifecycle;
-- positive health evidence from live process state and OpenVPN status output;
-- rejection of credential-managed executable script hooks;
-- sanitized dependency errors for certificate material;
-- concrete provider package subpath exports for WireGuard and OpenVPN;
-- unit tests using command fakes only; no host networking mutation in CI.
-
-The provider remains out of gateway selection, automatic failover, autonomous tunnel maintenance, routing policy, DNS orchestration, fleet provisioning and cross-platform native integration.
-
 ## Phase 49 — WireGuard Provider
 
 The first concrete tunnel provider is implemented inside the canonical `@irp/tunnel` package so it consumes the Phase 48 contract directly without introducing another tunnel abstraction or workspace dependency.
-
-Phase 49 additions:
-
-- `WireGuardProvider` implementing the canonical `TunnelProvider` contract;
-- provider capability declaration for WireGuard/UDP/system scope;
-- injected credential-store boundary for private-key retrieval;
-- `WireGuardProvider.generateKeyPair()` using the WireGuard tooling without passing private keys through argv;
-- non-shell command execution through `execFile`;
-- bounded command timeouts;
-- secure `0600` temporary private-key file handling with cleanup;
-- peer endpoint, allowed-IPs and persistent-keepalive configuration;
-- Linux WireGuard interface creation and activation through `ip`/`wg` commands;
-- deterministic connection/disconnection/destroy handling;
-- recent-handshake + interface-state health classification;
-- sanitized dependency errors;
-- rejection of pre-existing provider interface names so the provider cannot silently take ownership of an unrelated interface;
-- failure cleanup of an interface created during a failed connection;
-- provider unit tests using command fakes only; no host networking mutation in CI.
-
-The provider remains out of gateway selection, automatic failover, routing policy, DNS orchestration, fleet provisioning and cross-platform native integration. Those concerns remain in their roadmap phases.
 
 ## Phase 48 — Secure Tunnel Abstraction
 
 The authoritative tunnel implementation is `@irp/tunnel`. Existing provider-neutral lifecycle/state/provider contracts were retained and hardened rather than creating a parallel abstraction.
 
-Phase 48 additions:
-
-- provider compatibility validation before provider execution;
-- protocol, endpoint, scope, routing-mode and required-capability checks;
-- bounded tunnel operation helper with 1–300 second production bounds;
-- cooperative cancellation support where providers expose it;
-- health evidence validation for timestamp freshness, latency, packet loss and internal consistency;
-- explicit lifecycle transition authority through the existing `transitionTunnel` state machine;
-- credential-reference-only security boundary;
-- no private-key storage/generation/logging in the generic abstraction;
-- no route/DNS/failover mutation;
-- no new external dependencies.
-
 ## Phase 47 — Gateway Discovery & Health
 
-Implemented and verified:
-
-- provider-neutral gateway discovery reconciliation;
-- registration and metadata reconciliation;
-- retired-gateway resurrection protection;
-- stale inventory reporting;
-- health states: `healthy`, `degraded`, `unreachable`, `stale`, `unknown`;
-- deterministic quality scoring from latency and packet loss;
-- bounded measurement/timestamp validation;
-- hard per-probe timeout;
-- no route, DNS, tunnel or failover mutation.
+Implemented and verified provider-neutral gateway discovery, health classification, quality scoring, freshness validation and bounded probing without route/DNS/tunnel/failover mutation.
 
 ## Phase 46 — Gateway Registry
 
-Implemented and verified gateway inventory primitives:
-
-- stable identity and endpoint metadata;
-- ownership/provider metadata;
-- capabilities and address-family declaration;
-- lifecycle: `registered`, `active`, `draining`, `disabled`, `retired`;
-- trust: `untrusted`, `pending`, `trusted`, `revoked`;
-- bounded filtering;
-- defensive copies;
-- safe retirement/removal;
-- revoked trust cannot be silently restored.
+Implemented and verified gateway inventory primitives including stable identity, endpoint metadata, ownership/provider metadata, capabilities, lifecycle, trust, bounded filtering, defensive copies and safe retirement/removal.
 
 ## Earlier Security/Intelligence Contracts
 
