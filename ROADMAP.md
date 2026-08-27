@@ -185,4 +185,6 @@ IRP treats gateways and tunnels as managed network providers. A provider is only
 
 ## Current implementation truth
 
-The repository has implemented work through the Phase 43 federation area, with Phase 44 analytics code added but its verification gate still required. The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**
+The canonical implementation boundary is now **Phase 51 — Automatic Gateway Selection**, which is complete and verified on `main`. Phase 52 — Automated Tunnel Lifecycle is the next unstarted phase. Historical phase numbering for 00–45 remains governed by the phase-history evidence matrix; entries that still explicitly require verification are not silently converted into completion claims.
+
+The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**
