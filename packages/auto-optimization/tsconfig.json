@@ -2,7 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "preserveSymlinks": true,
+    "paths": {
+      "@irp/resilience-runtime": ["../resilience-runtime/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }
