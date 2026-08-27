@@ -2,8 +2,8 @@
   "name": "@irp/resilience-runtime",
   "version": "0.1.0",
   "type": "module",
-  "main": "dist/resilience-runtime/src/index.js",
-  "types": "dist/resilience-runtime/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
