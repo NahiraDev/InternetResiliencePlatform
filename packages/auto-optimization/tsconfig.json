@@ -4,6 +4,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "preserveSymlinks": true,
+    "types": ["node"],
     "paths": {
       "@irp/resilience-runtime": ["../resilience-runtime/dist/index.d.ts"]
     }
