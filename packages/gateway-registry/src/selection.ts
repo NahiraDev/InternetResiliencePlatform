@@ -69,7 +69,7 @@ export interface GatewaySelectionCandidate {
 export interface GatewaySelectionRequest {
   gateways: GatewayMetadata[];
   health: Map<string, GatewayHealth> | Record<string, GatewayHealth>;
-  capacity?: Map<string, GatewayCapacity> | Record<string, GatewayCapacity>;
+  capacity?: Map<string, GatewayCapacity> | Record<string, GatewayCapacity> | undefined;
   currentGatewayId?: string;
   policy?: Partial<GatewaySelectionPolicy>;
   now?: Date;

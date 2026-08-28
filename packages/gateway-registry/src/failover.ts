@@ -19,7 +19,7 @@ export interface GatewayFailoverEvent {
     | 'gateway.failover.succeeded'
     | 'gateway.failover.exhausted';
   gatewayId?: string;
-  currentGatewayId?: string;
+  currentGatewayId?: string | undefined;
   attempt?: number;
   reason: string;
   occurredAt: string;
@@ -151,8 +151,8 @@ export class MultiGatewayFailover {
       const baseline = selectGateway({
         gateways: request.gateways,
         health: request.health,
-        capacity: request.capacity,
-        currentGatewayId: request.currentGatewayId,
+        ...(request.capacity !== undefined ? { capacity: request.capacity } : {}),
+        ...(request.currentGatewayId !== undefined ? { currentGatewayId: request.currentGatewayId } : {}),
         policy: {
           ...DEFAULT_GATEWAY_SELECTION_POLICY,
           ...(request.policy ?? {}),
