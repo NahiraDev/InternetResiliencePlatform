@@ -19,7 +19,6 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
-    "@irp/kernel": "workspace:*",
-    "@irp/shared": "workspace:*"
+    "@irp/kernel": "workspace:*"
   }
 }
