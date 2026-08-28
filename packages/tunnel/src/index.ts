@@ -53,3 +53,4 @@ export function simulateTunnelConnection(tunnel: Tunnel): Record<string, unknown
 export function simulateFailover(from: Tunnel, candidates: Tunnel[], policy: TunnelPolicyConstraints): TunnelSelectionResult { return simulateTunnelSelection({ candidates: candidates.filter((t) => t.id !== from.id), policy, routingMode: from.configuration.routingMode, scope: from.configuration.scope, requiredCapabilities: from.configuration.capabilities, securityProfile: from.securityProfile }); }
 export const supportedProtocolStatus: Record<'WireGuard' | 'OpenVPN' | 'SOCKS5' | 'HTTP CONNECT' | 'HTTPS proxy', 'implemented' | 'not implemented'> = { WireGuard: 'not implemented', OpenVPN: 'not implemented', SOCKS5: 'not implemented', 'HTTP CONNECT': 'not implemented', 'HTTPS proxy': 'not implemented' };
 export * from './wireguard.js';
+export * from './lifecycle.js';
