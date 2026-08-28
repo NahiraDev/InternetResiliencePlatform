@@ -19,6 +19,7 @@ Phase 55 adds a provider-neutral security verifier to `@irp/gateway-registry` wi
 - Ed25519-signed gateway artifact attestations;
 - SHA-256 artifact digest verification;
 - matching signer enforcement between identity and artifact evidence;
+- bounded process-local nonce replay protection;
 - secret-free security telemetry;
 - pure assessment semantics: verification does not mutate gateway lifecycle, trust, routes, DNS or tunnel state.
 
@@ -36,12 +37,13 @@ The verifier protects against:
 1. forged gateway identity without a trusted signing key;
 2. tampered identity payloads;
 3. expired, future-dated or excessively old attestations;
-4. revoked signing keys;
-5. provider identity mismatch and policy violations;
-6. artifact substitution where bytes do not match the signed SHA-256 digest;
-7. using different trusted signers for gateway identity and its artifact evidence.
+4. replay of an accepted identity or artifact nonce within the verifier's tracked window;
+5. revoked signing keys;
+6. provider identity mismatch and policy violations;
+7. artifact substitution where bytes do not match the signed SHA-256 digest;
+8. using different trusted signers for gateway identity and its artifact evidence.
 
-This phase does not claim to provide full remote attestation, hardware-rooted trust, malware detection or compromise detection after valid signing credentials have been compromised.
+This phase does not claim to provide full remote attestation, hardware-rooted trust, malware detection or compromise detection after valid signing credentials have been compromised. Nonce replay tracking is process-local and bounded; distributed deployments must provide a shared replay/nonce store at a higher control-plane layer.
 
 ## Security contract
 
@@ -59,7 +61,7 @@ An identity attestation contains:
 - a nonce;
 - detached Ed25519 signature over the canonical payload.
 
-The verifier requires a trusted, non-revoked public key and rejects evidence outside the configured freshness/clock-skew window.
+The verifier requires a trusted, non-revoked public key and rejects evidence outside the configured freshness/clock-skew window. After successful verification, the identity nonce is consumed and cannot be accepted again until its tracked entry expires/evicts.
 
 ### Artifact evidence
 
@@ -73,14 +75,17 @@ An artifact attestation contains:
 - a nonce;
 - detached Ed25519 signature over the canonical payload.
 
-The verifier hashes the supplied artifact bytes and requires an exact digest match before accepting the signature. The default policy requires artifact evidence for a complete security assessment.
+The verifier hashes the supplied artifact bytes and requires an exact digest match before accepting the signature. The default policy requires artifact evidence for a complete security assessment. Artifact nonces are likewise consumed after successful verification.
 
 ## Safety properties
 
 - Private keys and credentials are never accepted by the verifier or emitted through telemetry.
 - Public keys are the only key material stored by the verifier.
 - Key revocation is explicit and immediately affects subsequent verification.
-- Verification is deterministic for the same inputs and reference time.
+- Signature authenticity is checked before claim/provider semantics so tampered claims cannot be reported as trusted policy mismatches.
+- Expiration is evaluated before maximum-age classification, avoiding ambiguous failure semantics for stale evidence.
+- Nonce tracking is bounded by `maxTrackedNonces` and expired entries are pruned before capacity eviction.
+- Verification is deterministic for the same inputs and reference time until a nonce is intentionally consumed.
 - Verification has no network dependency and performs no provider/tunnel/route/DNS mutation.
 - Security rejection is fail-closed: invalid evidence throws and cannot produce a verified assessment.
 - Telemetry contains only gateway ID, timestamp and a bounded failure reason; it contains no signature, key material or artifact bytes.
@@ -94,11 +99,12 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 1. valid identity plus matching artifact verification;
 2. tampered signed identity payload rejection;
 3. expired and future-dated attestation rejection;
-4. revoked key and provider-policy rejection;
-5. artifact digest mismatch rejection;
-6. mismatched identity/artifact signer rejection;
-7. digest-only verification and malformed digest rejection;
-8. explicit opt-out of mandatory artifact evidence.
+4. identity and artifact nonce replay rejection;
+5. revoked key and provider-policy rejection;
+6. artifact digest mismatch rejection;
+7. mismatched identity/artifact signer rejection;
+8. digest-only verification and malformed digest rejection;
+9. explicit opt-out of mandatory artifact evidence.
 
 ## Acceptance criteria
 
@@ -109,6 +115,7 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 - [x] Provider allow-list policy is supported.
 - [x] Artifact SHA-256 digest and signature evidence are verified.
 - [x] Identity and artifact signer continuity is enforced.
+- [x] Bounded process-local nonce replay protection is implemented.
 - [x] Security verification is side-effect free with respect to gateway/network/tunnel state.
 - [x] Security tests cover normal, boundary and failure paths.
 - [ ] `pnpm typecheck` passes for the final Phase 55 commit.
@@ -126,4 +133,5 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 - provider-specific provisioning or upgrade logic;
 - hardware/TPM remote attestation;
 - malware/behavioral scanning;
-- secret storage or private-key management.
+- secret storage or private-key management;
+- distributed nonce/replay storage inside `@irp/gateway-registry`.
