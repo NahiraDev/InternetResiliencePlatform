@@ -196,6 +196,9 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
       throw new Error('retired gateways cannot be managed by fleet operations');
     }
     if (record.desiredState === desiredState && record.gateway.lifecycle === desiredToLifecycle(desiredState)) return clone(record);
+    if (desiredState === 'disabled' && record.capacity.allocated + record.capacity.reserved > 0) {
+      throw new Error('gateway cannot be disabled while capacity is allocated or reserved');
+    }
     const gateway = this.registry.transition(gatewayId, desiredToLifecycle(desiredState));
     const updated = this.replace(record, { gateway, desiredState });
     return this.commit(updated, 'gateway.fleet.state.changed', reason);
