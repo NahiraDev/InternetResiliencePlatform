@@ -36,6 +36,21 @@ describe('Unified Product API', () => {
     await app.close();
   });
 
+  it('accepts array-valued version headers after normalization', async () => {
+    const app = createTestApp();
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/product/capabilities',
+      headers: {
+        'x-api-version': ['v1', 'v1'],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['x-api-version']).toBe('1');
+    await app.close();
+  });
+
   it('rejects unsupported API versions without authenticating the caller', async () => {
     const authenticate = vi.fn(async () => null);
     const app = Fastify({ logger: false });
