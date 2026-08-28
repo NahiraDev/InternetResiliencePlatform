@@ -77,6 +77,11 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.setDesiredState('gw-1', 'active', 'activate gateway')).toEqual(activated);
 
     expect(manager.setDesiredState('gw-1', 'draining', 'maintenance drain').gateway.lifecycle).toBe('draining');
+    manager.setAllocatedCapacity('gw-1', 10);
+    expect(() => manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance')).toThrow(
+      'gateway cannot be disabled while capacity is allocated or reserved',
+    );
+    manager.setAllocatedCapacity('gw-1', 0);
     expect(manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance').gateway.lifecycle).toBe('disabled');
     registry.transition('gw-1', 'retired');
     expect(() => manager.setDesiredState('gw-1', 'active', 'unsafe restore')).toThrow('retired gateways');
