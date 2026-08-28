@@ -20,7 +20,7 @@
     "@irp/failover": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.3.0",
     "typescript": "^6.0.3",
     "vitest": "^2.1.8",
     "@vitest/coverage-v8": "^4.1.11"
