@@ -13,7 +13,7 @@ import {
 const { publicKey, privateKey } = generateKeyPairSync('ed25519');
 const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
 
-const gateway: GatewayMetadata = {
+const gateway: GatewayMetadata & { providerId: string } = {
   id: 'gw-security-1',
   name: 'Security Test Gateway',
   endpoint: { host: '198.51.100.10', port: 51820, family: 'ipv4' },
@@ -81,10 +81,10 @@ describe('@irp/gateway-registry security', () => {
 
   it('rejects expired and future attestations', () => {
     const expired = makeIdentity('2026-08-28T11:00:00.000Z');
-    expect(() => verifier().verifyIdentity(gateway, expired, new Date('2026-08-28T12:01:00.000Z'))).toThrow('expired');
+    expect(() => verifier().verifyIdentity(gateway, expired, new Date('2026-08-28T12:00:00.000Z'))).toThrow('expired');
 
     const future = makeIdentity('2026-08-28T12:10:00.000Z');
-    expect(() => verifier().verifyIdentity(gateway, future, new Date('2026-08-28T12:01:00.000Z'))).toThrow('future');
+    expect(() => verifier().verifyIdentity(gateway, future, new Date('2026-08-28T12:00:00.000Z'))).toThrow('future');
   });
 
   it('rejects revoked keys and provider policy violations', () => {
