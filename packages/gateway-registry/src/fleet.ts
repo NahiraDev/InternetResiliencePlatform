@@ -143,6 +143,7 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
 
   register(gateway: GatewayMetadata, provisioning: GatewayProvisioningMetadata): GatewayFleetRecord {
     assertProvisioning(provisioning);
+    if (gateway.lifecycle === 'retired') throw new Error('retired gateways cannot be registered for fleet management');
     if (this.records.has(gateway.id)) throw new Error(`gateway fleet record ${gateway.id} already exists`);
     const registered = this.registry.register(gateway);
     const now = new Date().toISOString();
