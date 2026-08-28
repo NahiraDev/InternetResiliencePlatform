@@ -4,19 +4,49 @@
 
 ## Current State
 
-- **Current phase:** Phase 52 — Automated Tunnel Lifecycle (**implementation complete; verification in progress**).
+- **Current phase:** Phase 53 — Multi-Gateway Failover (**implementation started; verification required**).
+- **Phase 52:** implementation is complete, but final repository/runtime verification is still required before it can be accepted as complete.
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 47:** verified green by CI and accepted as complete.
 - **Phase 48:** implementation is complete and accepted after verification.
 - **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
-- **Next phase after Phase 52:** Phase 53 — Multi-Gateway Failover.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health and gateway selection. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
+- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection and multi-gateway failover coordination. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 53 — Multi-Gateway Failover
+
+**Implementation started; verification required.** Phase 53 adds `MultiGatewayFailover` to the canonical `@irp/gateway-registry` package.
+
+### Implementation evidence
+
+- `packages/gateway-registry/src/failover.ts`
+- `packages/gateway-registry/src/failover.test.ts`
+- exported through `packages/gateway-registry/src/index.ts`
+- phase record: `docs/phases/phase-53.md`
+- architecture contract: `docs/architecture/gateway-and-tunnel-architecture.md`
+
+### Safety and failover guarantees
+
+- failover operations are serialized;
+- a healthy/degraded current gateway is retained when `requireCurrentUnhealthy` is enabled;
+- candidate eligibility and ranking remain delegated to the Phase 51 selector;
+- the current gateway and explicitly failed gateways are excluded from failover targets;
+- failover attempts are bounded and deterministic;
+- failed targets are quarantined for a bounded cooldown;
+- a target is selected only after post-switch verification reports healthy;
+- gateway/health input objects are never mutated;
+- the coordinator does not directly mutate routes, DNS, tunnel state or platform networking;
+- executor failures are treated as atomic switch failures and never as proof of a successful transition;
+- telemetry contains operational gateway/attempt metadata without introducing secret material.
+
+### Verification status
+
+Phase 53 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI verification for the final Phase 53 commit. Phase 52's outstanding verification gate must also remain explicitly tracked.
 
 ## Phase 52 — Automated Tunnel Lifecycle
 
@@ -56,7 +86,7 @@ Both workflows were corrected to include the tunnel package, preserve main-branc
 
 ### Verification status
 
-The Phase 52 implementation is **not yet marked complete**. Completion requires the final commit's repository CI, Runtime Lab and required Public Runtime Lab verification to pass. The currently running runtime workflows are the first verification of the audited workflow contract.
+The Phase 52 implementation is **not yet marked complete**. Completion requires the final commit's repository CI, Runtime Lab and required Public Runtime Lab verification to pass.
 
 ## Phase 51 — Automatic Gateway Selection
 

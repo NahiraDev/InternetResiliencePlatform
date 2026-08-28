@@ -49,7 +49,19 @@ No gateway or tunnel should be selected solely because it exists. Selection must
 
 ## Multi-gateway operation
 
-Future phases may support multiple gateways, regional federation and automatic failover. The authoritative policy and decision state remains in the control-plane/core model; clients execute bounded platform-specific actions.
+Phase 53 introduces the canonical `MultiGatewayFailover` coordinator in `@irp/gateway-registry`. It consumes the Phase 51 `selectGateway(...)` contract for deterministic candidate eligibility and delegates the actual switch to an executor owned by the caller's tunnel/platform layer.
+
+The failover coordinator provides:
+
+- serialized failover operations;
+- explicit current-gateway health gating;
+- bounded deterministic candidate attempts;
+- quarantine/cooldown for failed targets;
+- mandatory post-switch health verification;
+- failure/exhaustion telemetry;
+- no direct route/DNS/platform mutation.
+
+This preserves the domain boundary: `@irp/gateway-registry` decides which gateway is eligible to attempt, while `@irp/tunnel` and platform adapters own how a tunnel is actually established, disconnected, verified or recovered.
 
 ## Roadmap relationship
 
