@@ -96,8 +96,8 @@ function assertWindow(issuedAt: string, expiresAt: string, nowMs: number, policy
   const issued = timestamp(issuedAt, 'issuedAt');
   const expires = timestamp(expiresAt, 'expiresAt');
   if (expires <= issued) throw new Error('expiresAt must be after issuedAt');
-  if (issued > nowMs + policy.maxClockSkewMs) throw new Error('attestation issuedAt is in the future');
   if (expires < nowMs - policy.maxClockSkewMs) throw new Error('attestation has expired');
+  if (issued > nowMs + policy.maxClockSkewMs) throw new Error('attestation issuedAt is in the future');
   if (nowMs - issued > policy.maxAttestationAgeMs + policy.maxClockSkewMs) throw new Error('attestation is too old');
 }
 
@@ -189,21 +189,20 @@ export class GatewaySecurityVerifier {
     const nowMs = now.getTime();
     if (!Number.isFinite(nowMs)) throw new Error('now must be a valid date');
     const payload = attestation.payload;
-    if (payload.gatewayId !== gateway.id) throw new Error('identity attestation gatewayId does not match gateway');
     if (payload.algorithm !== 'ed25519') throw new Error('unsupported identity attestation algorithm');
     assertNonEmpty(payload.nonce, 'identity attestation nonce');
-    assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
-    assertProviderAllowed(gateway, payload.providerId, this.policy);
     const key = getKey(this.keys, payload.keyId);
     verifySignature(payload, attestation.signature, key);
-    const assessment: GatewaySecurityAssessment = {
+    if (payload.gatewayId !== gateway.id) throw new Error('identity attestation gatewayId does not match gateway');
+    assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
+    assertProviderAllowed(gateway, payload.providerId, this.policy);
+    return {
       gatewayId: gateway.id,
       identityVerified: true,
       artifactVerified: false,
       assessedAt: new Date(nowMs).toISOString(),
       identityKeyId: key.keyId,
     };
-    return assessment;
   }
 
   verifyArtifact(
@@ -215,16 +214,16 @@ export class GatewaySecurityVerifier {
     const nowMs = now.getTime();
     if (!Number.isFinite(nowMs)) throw new Error('now must be a valid date');
     const payload = attestation.payload;
-    if (payload.gatewayId !== gateway.id) throw new Error('artifact attestation gatewayId does not match gateway');
     if (payload.algorithm !== 'ed25519') throw new Error('unsupported artifact attestation algorithm');
     assertNonEmpty(payload.artifactId, 'artifactId');
     assertNonEmpty(payload.version, 'artifact version');
     assertNonEmpty(payload.nonce, 'artifact attestation nonce');
+    const key = getKey(this.keys, payload.keyId);
+    verifySignature(payload, attestation.signature, key);
+    if (payload.gatewayId !== gateway.id) throw new Error('artifact attestation gatewayId does not match gateway');
     assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
     assertSha256Digest(payload.digestSha256);
     if (!verifyArtifactDigest(artifact, payload.digestSha256)) throw new Error('artifact digest does not match attestation');
-    const key = getKey(this.keys, payload.keyId);
-    verifySignature(payload, attestation.signature, key);
     return {
       gatewayId: gateway.id,
       identityVerified: false,
