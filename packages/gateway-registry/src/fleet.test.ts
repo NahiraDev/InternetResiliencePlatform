@@ -61,20 +61,13 @@ describe('InMemoryGatewayFleetManager', () => {
   });
 
   it('performs explicit idempotent lifecycle operations and rejects retired gateways', () => {
-    const { manager } = createManager();
+    const { manager, registry } = createManager();
     const activated = manager.setDesiredState('gw-1', 'active', 'activate gateway');
     expect(activated.gateway.lifecycle).toBe('active');
     expect(manager.setDesiredState('gw-1', 'active', 'activate gateway')).toEqual(activated);
 
-    const draining = manager.setDesiredState('gw-1', 'draining', 'maintenance drain');
-    expect(draining.gateway.lifecycle).toBe('draining');
-    const disabled = manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance');
-    expect(disabled.gateway.lifecycle).toBe('disabled');
-    manager.setDesiredState('gw-1', 'active', 'return to service');
-    manager.setDesiredState('gw-1', 'disabled', 'disable before retirement');
-    const { registry } = createManager();
-    registry.transition('gw-1', 'active');
-    registry.transition('gw-1', 'disabled');
+    expect(manager.setDesiredState('gw-1', 'draining', 'maintenance drain').gateway.lifecycle).toBe('draining');
+    expect(manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance').gateway.lifecycle).toBe('disabled');
     registry.transition('gw-1', 'retired');
     expect(() => manager.setDesiredState('gw-1', 'active', 'unsafe restore')).toThrow('retired gateways');
   });
