@@ -74,6 +74,7 @@ export interface GatewayFleetManager {
   updateGateway(gatewayId: string, patch: GatewayPatch): GatewayFleetRecord;
   setDesiredState(gatewayId: string, desiredState: GatewayFleetDesiredState, reason: string): GatewayFleetRecord;
   setCapacityLimit(gatewayId: string, limit: number): GatewayFleetRecord;
+  setAllocatedCapacity(gatewayId: string, amount: number): GatewayFleetRecord;
   reserveCapacity(gatewayId: string, amount: number): GatewayFleetRecord;
   releaseCapacity(gatewayId: string, amount: number): GatewayFleetRecord;
   scheduleMaintenance(gatewayId: string, window: GatewayMaintenanceWindow): GatewayFleetRecord;
@@ -189,7 +190,10 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
     requireNonEmpty(reason, 'reason');
     if (!VALID_DESIRED_STATES.includes(desiredState)) throw new Error(`unsupported gateway desired state: ${desiredState}`);
     const record = this.requireRecord(gatewayId);
-    if (record.gateway.lifecycle === 'retired') throw new Error('retired gateways cannot be managed by fleet operations');
+    const canonicalGateway = this.registry.get(gatewayId);
+    if (canonicalGateway?.lifecycle === 'retired' || record.gateway.lifecycle === 'retired') {
+      throw new Error('retired gateways cannot be managed by fleet operations');
+    }
     if (record.desiredState === desiredState && record.gateway.lifecycle === desiredToLifecycle(desiredState)) return clone(record);
     const gateway = this.registry.transition(gatewayId, desiredToLifecycle(desiredState));
     const updated = this.replace(record, { gateway, desiredState });
@@ -202,6 +206,14 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
     const capacity = { ...record.capacity, limit, checkedAt: new Date().toISOString() };
     assertCapacity(capacity);
     return this.commit(this.replace(record, { capacity }), 'gateway.fleet.capacity.updated', 'Gateway capacity limit updated.');
+  }
+
+  setAllocatedCapacity(gatewayId: string, amount: number): GatewayFleetRecord {
+    if (!Number.isFinite(amount) || amount < 0) throw new Error('allocated capacity must be a finite non-negative number');
+    const record = this.requireRecord(gatewayId);
+    const capacity = { ...record.capacity, allocated: amount, checkedAt: new Date().toISOString() };
+    assertCapacity(capacity);
+    return this.commit(this.replace(record, { capacity }), 'gateway.fleet.capacity.updated', 'Gateway allocated capacity updated.');
   }
 
   reserveCapacity(gatewayId: string, amount: number): GatewayFleetRecord {
@@ -224,7 +236,10 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
   scheduleMaintenance(gatewayId: string, window: GatewayMaintenanceWindow): GatewayFleetRecord {
     assertMaintenance(window);
     const record = this.requireRecord(gatewayId);
-    if (record.gateway.lifecycle === 'retired') throw new Error('retired gateways cannot have maintenance scheduled');
+    const canonicalGateway = this.registry.get(gatewayId);
+    if (canonicalGateway?.lifecycle === 'retired' || record.gateway.lifecycle === 'retired') {
+      throw new Error('retired gateways cannot have maintenance scheduled');
+    }
     return this.commit(this.replace(record, { maintenanceWindow: clone(window) }), 'gateway.fleet.maintenance.scheduled', window.reason);
   }
 
@@ -246,7 +261,10 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
     requireNonEmpty(targetVersion, 'upgrade targetVersion');
     requireNonEmpty(reason, 'reason');
     const record = this.requireRecord(gatewayId);
-    if (record.gateway.lifecycle === 'retired') throw new Error('retired gateways cannot be upgraded');
+    const canonicalGateway = this.registry.get(gatewayId);
+    if (canonicalGateway?.lifecycle === 'retired' || record.gateway.lifecycle === 'retired') {
+      throw new Error('retired gateways cannot be upgraded');
+    }
     if (record.upgrade.status === 'in-progress') throw new Error('gateway upgrade is already in progress');
     const now = new Date().toISOString();
     const upgrade: GatewayUpgradeState = { targetVersion, status: 'scheduled', requestedAt: now, reason };
