@@ -100,6 +100,18 @@ describe('@irp/gateway-registry security', () => {
     expect(() => checked.verifyArtifact(gateway, artifact, artifactBytes, now)).toThrow('nonce has already been used');
   });
 
+  it('fails closed when bounded nonce tracking is saturated', () => {
+    const checked = new GatewaySecurityVerifier(
+      [{ keyId: 'key-1', algorithm: 'ed25519', publicKey: publicKeyPem }],
+      { requireArtifactAttestation: false, maxTrackedNonces: 1 },
+    );
+    const now = new Date('2026-08-28T12:01:00.000Z');
+
+    expect(() => checked.verifyIdentity(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-capacity-1'), now)).not.toThrow();
+    expect(() => checked.verifyIdentity(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-capacity-2'), now)).toThrow('nonce tracking capacity is exhausted');
+    expect(() => checked.verifyIdentity(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-capacity-1'), now)).toThrow('nonce has already been used');
+  });
+
   it('rejects revoked keys and provider policy violations', () => {
     const checked = verifier();
     checked.revokeKey('key-1');
