@@ -76,6 +76,7 @@ const DEFAULT_POLICY: GatewaySecurityPolicy = {
 };
 
 const SHA256_HEX = /^[a-f0-9]{64}$/;
+const MAX_TELEMETRY_REASON_LENGTH = 256;
 
 function canonicalize(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
@@ -140,6 +141,11 @@ function assertProviderAllowed(gateway: GatewayMetadata, providerId: string | un
       throw new Error('gateway provider is not allowed by security policy');
     }
   }
+}
+
+function boundedTelemetryReason(error: unknown): string {
+  const reason = error instanceof Error ? error.message : 'gateway security verification failed';
+  return reason.replace(/[\r\n\t]+/g, ' ').slice(0, MAX_TELEMETRY_REASON_LENGTH);
 }
 
 export function sha256Hex(input: Uint8Array): string {
@@ -256,12 +262,19 @@ export class GatewaySecurityVerifier {
         identityAssessment.artifactVerified = true;
         identityAssessment.artifactKeyId = artifactAssessment.artifactKeyId;
       }
-      void this.telemetry?.publish({ type: 'gateway.security.verified', gatewayId: gateway.id, occurredAt: identityAssessment.assessedAt, reason: 'Gateway identity and supply-chain evidence verified.' });
+      this.publishTelemetry({ type: 'gateway.security.verified', gatewayId: gateway.id, occurredAt: identityAssessment.assessedAt, reason: 'Gateway identity and supply-chain evidence verified.' });
       return identityAssessment;
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'gateway security verification failed';
-      void this.telemetry?.publish({ type: 'gateway.security.rejected', gatewayId: gateway.id, occurredAt: new Date().toISOString(), reason });
+      this.publishTelemetry({ type: 'gateway.security.rejected', gatewayId: gateway.id, occurredAt: new Date().toISOString(), reason: boundedTelemetryReason(error) });
       throw error;
+    }
+  }
+
+  private publishTelemetry(event: Parameters<GatewaySecurityTelemetry['publish']>[0]): void {
+    try {
+      void Promise.resolve(this.telemetry?.publish(event)).catch(() => undefined);
+    } catch {
+      // Telemetry is observational and must never alter verification semantics.
     }
   }
 
