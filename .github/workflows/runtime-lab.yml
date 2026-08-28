@@ -8,6 +8,7 @@ on:
       - 'tools/runtime-lab/**'
       - 'packages/gateway-registry/**'
       - 'packages/resilience-runtime/**'
+      - 'packages/tunnel/**'
       - '.github/workflows/runtime-lab.yml'
       - '.github/workflows/public-runtime-lab.yml'
       - 'scripts/docker-smoke.sh'
@@ -20,6 +21,7 @@ on:
       - 'tools/runtime-lab/**'
       - 'packages/gateway-registry/**'
       - 'packages/resilience-runtime/**'
+      - 'packages/tunnel/**'
       - '.github/workflows/runtime-lab.yml'
       - '.github/workflows/public-runtime-lab.yml'
       - 'scripts/docker-smoke.sh'
@@ -29,9 +31,11 @@ on:
 permissions:
   contents: read
 
+# PR runs may cancel obsolete work. Main runs must never be silently cancelled,
+# otherwise a green-looking repository can have its only runtime evidence cancelled.
 concurrency:
-  group: runtime-lab-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: runtime-lab-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_VERSION: '24'
@@ -83,18 +87,15 @@ jobs:
             running="$(docker inspect -f '{{.State.Running}}' "$lab_id" 2>/dev/null || echo false)"
             exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$lab_id" 2>/dev/null || echo unknown)"
             restart_count="$(docker inspect -f '{{.RestartCount}}' "$lab_id" 2>/dev/null || echo unknown)"
-
             echo "--- readiness attempt $i/60 running=$running exit=$exit_code restarts=$restart_count ---"
             if curl -fsS --max-time 5 http://127.0.0.1:8080/ready >/tmp/runtime-ready.json 2>/tmp/runtime-ready.err; then
               ready=true
               cat /tmp/runtime-ready.json
               break
             fi
-
             cat /tmp/runtime-ready.json 2>/dev/null || true
             cat /tmp/runtime-ready.err 2>/dev/null || true
             docker compose -f "$COMPOSE_FILE" ps -a
-
             if [ "$running" != "true" ]; then
               echo 'Runtime lab container exited before readiness.'
               break
@@ -104,21 +105,30 @@ jobs:
 
           if [ "$ready" != true ]; then
             echo '::error::Runtime lab did not become ready.'
-            echo '--- compose ps ---'
             docker compose -f "$COMPOSE_FILE" ps -a
-            echo '--- lab inspect ---'
             lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
             docker inspect --format='status={{.State.Status}} running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restart={{.RestartCount}} error={{.State.Error}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' "$lab_id" || true
-            echo '--- lab logs ---'
             docker compose -f "$COMPOSE_FILE" logs --no-color --tail=2000 lab || true
-            echo '--- health ---'
             curl -sS --max-time 5 http://127.0.0.1:8080/health || true
-            echo '--- ready ---'
             curl -sS --max-time 5 http://127.0.0.1:8080/ready || true
-            echo '--- report ---'
             curl -sS --max-time 5 http://127.0.0.1:8080/report || true
             exit 1
           fi
+
+          # Readiness is not sufficient: catch a process that becomes ready and
+          # immediately crashes/restarts after the first successful probe.
+          lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
+          baseline_restarts="$(docker inspect -f '{{.RestartCount}}' "$lab_id")"
+          for i in {1..5}; do
+            sleep 2
+            running="$(docker inspect -f '{{.State.Running}}' "$lab_id")"
+            restarts="$(docker inspect -f '{{.RestartCount}}' "$lab_id")"
+            echo "--- post-readiness stability $i/5 running=$running restarts=$restarts baseline=$baseline_restarts ---"
+            test "$running" = true
+            test "$restarts" = "$baseline_restarts"
+            curl -fsS --max-time 5 http://127.0.0.1:8080/health >/dev/null
+            curl -fsS --max-time 5 http://127.0.0.1:8080/ready >/dev/null
+          done
 
           curl -fsS --max-time 5 http://127.0.0.1:8080/health
           curl -fsS --max-time 5 http://127.0.0.1:8080/ready
@@ -143,26 +153,18 @@ jobs:
       - name: Validate observability readiness
         run: |
           wait_http_ok() {
-            local name="$1"
-            local url="$2"
-            local attempts="${3:-60}"
-            local delay="${4:-2}"
-
+            local name="$1"; local url="$2"; local attempts="${3:-60}"; local delay="${4:-2}"
             for i in $(seq 1 "$attempts"); do
               echo "--- $name readiness attempt $i/$attempts ---"
               if response="$(curl -fsS --max-time 5 "$url" 2>/tmp/observability-ready.err)"; then
                 printf '%s\n' "$response"
                 return 0
               fi
-
               cat /tmp/observability-ready.err 2>/dev/null || true
               sleep "$delay"
             done
-
             echo "::error::$name did not become ready at $url"
-            echo '--- compose ps ---'
             docker compose -f "$COMPOSE_FILE" ps -a
-            echo "--- $name container logs ---"
             case "$name" in
               Prometheus) docker compose -f "$COMPOSE_FILE" logs --no-color --tail=500 prometheus || true ;;
               Grafana) docker compose -f "$COMPOSE_FILE" logs --no-color --tail=500 grafana || true ;;
@@ -170,7 +172,6 @@ jobs:
             esac
             return 1
           }
-
           wait_http_ok Prometheus http://127.0.0.1:9090/-/ready 60 2
           wait_http_ok Grafana http://127.0.0.1:3001/api/health 60 2
           wait_http_ok Tempo http://127.0.0.1:3200/ready 60 2
