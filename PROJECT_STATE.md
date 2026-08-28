@@ -4,7 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 53 — Multi-Gateway Failover (**implementation started; verification required**).
+- **Current phase:** Phase 54 — Gateway Fleet Operations (**implementation started; verification required**).
+- **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification is required before it can be accepted as complete.
+- **Phase 53:** implementation is complete in the repository, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
 - **Phase 52:** implementation is complete, but final repository/runtime verification is still required before it can be accepted as complete.
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 47:** verified green by CI and accepted as complete.
@@ -14,9 +16,38 @@
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection and multi-gateway failover coordination. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
+- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 54 — Gateway Fleet Operations
+
+**Implementation started; verification required.** Phase 54 adds `InMemoryGatewayFleetManager` to the canonical `@irp/gateway-registry` package.
+
+### Implementation evidence
+
+- `packages/gateway-registry/src/fleet.ts`
+- `packages/gateway-registry/src/fleet.test.ts`
+- exported through `packages/gateway-registry/src/index.ts`
+- phase record: `docs/phases/phase-54.md`
+- architecture contract: `docs/architecture/gateway-and-tunnel-architecture.md`
+
+### Fleet guarantees
+
+- provisioning metadata is explicit and separate from actual provider infrastructure creation;
+- gateway desired state supports active, draining and disabled operations;
+- canonical registry lifecycle remains authoritative, including out-of-band retirement;
+- capacity limits, reservations and reported allocation are bounded by invariants;
+- maintenance windows are validated metadata and expose deterministic active-window checks;
+- upgrade intent follows scheduled → in-progress → succeeded/failed state transitions;
+- terminal upgrade states require completion timestamps;
+- fleet operations return defensive copies;
+- lifecycle, capacity, maintenance and upgrade mutations emit operational telemetry without secret material;
+- no fleet method directly creates tunnels, mutates routes/DNS or executes provider-specific provisioning/upgrade logic.
+
+### Verification status
+
+Phase 54 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI verification for the final Phase 54 commit. Phase 53 and Phase 52 outstanding verification gates remain explicitly tracked and are not silently converted into completion claims.
 
 ## Phase 53 — Multi-Gateway Failover
 
