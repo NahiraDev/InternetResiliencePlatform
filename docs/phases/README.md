@@ -12,7 +12,8 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Current phase:** Phase 53 — Multi-Gateway Failover (**implementation started; verification required**).
+- **Current phase:** Phase 56 — Unified Product API (**implementation complete; final verification required**).
+- **Phase 55:** Gateway Security & Supply-Chain Hardening is implemented; final verification status is tracked by its phase record and CI evidence.
 - **Phase 52:** Automated Tunnel Lifecycle is implementation-complete but remains pending final repository/runtime verification.
 - **Phase 51:** Automatic Gateway Selection is complete and verified by repository CI.
 - **Phase 49:** WireGuard provider implementation is complete after CI and Linux runtime verification.
@@ -36,6 +37,8 @@ Phase records are implementation and audit evidence. They are **not** the produc
 | 51 | Automatic Gateway Selection | **Complete / verified** | [`phase-51.md`](phase-51.md) |
 | 52 | Automated Tunnel Lifecycle | **Implementation complete / verification in progress** | [`phase-52.md`](phase-52.md) |
 | 53 | Multi-Gateway Failover | **Implementation started / verification required** | [`phase-53.md`](phase-53.md) |
+| 55 | Gateway Security & Supply-Chain Hardening | **Implementation complete / verification in progress** | [`phase-55.md`](phase-55.md) |
+| 56 | Unified Product API | **Implementation complete / verification in progress** | [`phase-56.md`](phase-56.md) |
 
 ## Historical phases 01–38
 
