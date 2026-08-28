@@ -53,13 +53,13 @@ jobs:
           tar -xzf "${RUNNER_TEMP}/source-artifact/irp-source.tar.gz" -C "${GITHUB_WORKSPACE}"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
