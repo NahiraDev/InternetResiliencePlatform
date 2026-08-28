@@ -63,6 +63,23 @@ The failover coordinator provides:
 
 This preserves the domain boundary: `@irp/gateway-registry` decides which gateway is eligible to attempt, while `@irp/tunnel` and platform adapters own how a tunnel is actually established, disconnected, verified or recovered.
 
+## Fleet operations
+
+Phase 54 adds `InMemoryGatewayFleetManager` as the provider-neutral fleet-control boundary. It builds on the canonical `GatewayRegistry` rather than duplicating gateway inventory.
+
+Fleet state covers:
+
+- provisioning metadata and configuration version;
+- desired lifecycle (`active`, `draining`, `disabled`);
+- bounded capacity limits, allocation and reservations;
+- explicit maintenance windows;
+- upgrade intent and terminal outcome tracking;
+- operational telemetry.
+
+Fleet operations are metadata/control-plane operations. They do not create cloud instances, mutate routes, create tunnels, or execute provider-specific upgrades. Those actions remain external adapters. This keeps provisioning, tunnel execution and safety-critical switching separately testable and auditable.
+
+Retirement is authoritative in the registry: fleet mutations re-check canonical lifecycle state so an out-of-band retirement cannot be undone by a stale fleet record.
+
 ## Roadmap relationship
 
 Gateway/tunnel implementation is primarily covered by Phases 46–55. Earlier resilience-runtime and connectivity components provide the abstractions those phases extend.
