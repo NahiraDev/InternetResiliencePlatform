@@ -61,7 +61,7 @@ An identity attestation contains:
 - a nonce;
 - detached Ed25519 signature over the canonical payload.
 
-The verifier requires a trusted, non-revoked public key and rejects evidence outside the configured freshness/clock-skew window. After successful verification, the identity nonce is consumed and cannot be accepted again until its tracked entry expires/evicts.
+The verifier requires a trusted, non-revoked public key and rejects evidence outside the configured freshness/clock-skew window. After successful verification, the identity nonce is consumed and cannot be accepted again while it remains tracked.
 
 ### Artifact evidence
 
@@ -84,7 +84,7 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 - Key revocation is explicit and immediately affects subsequent verification.
 - Signature authenticity is checked before claim/provider semantics so tampered claims cannot be reported as trusted policy mismatches.
 - Expiration is evaluated before maximum-age classification, avoiding ambiguous failure semantics for stale evidence.
-- Nonce tracking is bounded by `maxTrackedNonces` and expired entries are pruned before capacity eviction.
+- Nonce tracking is bounded by `maxTrackedNonces`; expired entries are pruned before capacity checks, and a saturated live cache fails closed rather than evicting a still-valid nonce.
 - Verification is deterministic for the same inputs and reference time until a nonce is intentionally consumed.
 - Verification has no network dependency and performs no provider/tunnel/route/DNS mutation.
 - Security rejection is fail-closed: invalid evidence throws and cannot produce a verified assessment.
@@ -100,11 +100,12 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 2. tampered signed identity payload rejection;
 3. expired and future-dated attestation rejection;
 4. identity and artifact nonce replay rejection;
-5. revoked key and provider-policy rejection;
-6. artifact digest mismatch rejection;
-7. mismatched identity/artifact signer rejection;
-8. digest-only verification and malformed digest rejection;
-9. explicit opt-out of mandatory artifact evidence.
+5. saturated nonce tracking rejection;
+6. revoked key and provider-policy rejection;
+7. artifact digest mismatch rejection;
+8. mismatched identity/artifact signer rejection;
+9. digest-only verification and malformed digest rejection;
+10. explicit opt-out of mandatory artifact evidence.
 
 ## Acceptance criteria
 
