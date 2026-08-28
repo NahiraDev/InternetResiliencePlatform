@@ -245,8 +245,16 @@ export class InMemoryGatewayFleetManager implements GatewayFleetManager {
 
   clearMaintenance(gatewayId: string): GatewayFleetRecord {
     const record = this.requireRecord(gatewayId);
-    const { maintenanceWindow: _maintenanceWindow, ...withoutWindow } = record;
-    return this.commit(withoutWindow, 'gateway.fleet.maintenance.cleared', 'Gateway maintenance window cleared.');
+    const { maintenanceWindow: _maintenanceWindow, gateway, desiredState, provisioning, capacity, upgrade } = record;
+    const updated: GatewayFleetRecord = {
+      gateway,
+      desiredState,
+      provisioning,
+      capacity,
+      upgrade,
+      updatedAt: new Date().toISOString(),
+    };
+    return this.commit(updated, 'gateway.fleet.maintenance.cleared', 'Gateway maintenance window cleared.');
   }
 
   isUnderMaintenance(gatewayId: string, at = new Date()): boolean {
