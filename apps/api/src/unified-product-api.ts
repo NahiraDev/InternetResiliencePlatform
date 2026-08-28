@@ -11,6 +11,7 @@ export const PRODUCT_API_ACCEPT_VERSION_HEADER = 'accept-version';
 export type ProductApiClient = 'web' | 'desktop' | 'ios' | 'android';
 export type ProductCapabilityStatus = 'implemented' | 'pending-verification' | 'planned';
 export type ProductCapabilityKind = 'read' | 'mutate' | 'stream';
+export type ProductCapabilityAuthentication = 'none' | 'bearer' | 'device-credential';
 
 export interface ProductCapability {
   id: string;
@@ -18,7 +19,7 @@ export interface ProductCapability {
   kind: ProductCapabilityKind;
   methods: readonly string[];
   paths: readonly string[];
-  authentication: 'none' | 'bearer' | 'device-credential';
+  authentication: ProductCapabilityAuthentication;
   requiredPermissions: readonly string[];
   description: string;
 }
@@ -218,7 +219,7 @@ export const PRODUCT_API_MANIFEST: ProductApiManifest = Object.freeze({
       methods: ['GET', 'POST', 'DELETE'],
       paths: [`${PRODUCT_API_PATH}/tunnels`, `${PRODUCT_API_PATH}/tunnels/:id`],
       authentication: 'bearer',
-      requiredPermissions: ['runtime.inspect', 'runtime.execute', 'runtime.recover'],
+      requiredPermissions: ['runtime.inspect'],
       description: 'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
     },
     {
@@ -268,8 +269,9 @@ const hasCapability = async (
   capability: ProductCapability,
 ): Promise<boolean> => {
   if (capability.status !== 'implemented') return false;
-  if (capability.authentication === 'device-credential') return false;
-  if (capability.requiredPermissions.length === 0) return capability.authentication === 'none';
+  if (capability.requiredPermissions.length === 0) {
+    return capability.authentication === 'none' || capability.authentication === 'bearer';
+  }
   for (const permission of capability.requiredPermissions) {
     if (
       await request.rbac.authorize({
