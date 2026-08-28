@@ -48,7 +48,7 @@ export interface ProductApiContext {
 
 const versionSchema = z.string().trim().regex(/^v?1$/, 'Unsupported API version.');
 
-export const PRODUCT_API_MANIFEST: ProductApiManifest = Object.freeze({
+export const PRODUCT_API_MANIFEST = Object.freeze({
   api: {
     name: 'InternetResiliencePlatform Product API',
     version: PRODUCT_API_VERSION,
@@ -243,13 +243,15 @@ export const PRODUCT_API_MANIFEST: ProductApiManifest = Object.freeze({
       description: 'Historical and aggregate network intelligence over retained evidence.',
     },
   ],
-});
+} as const satisfies ProductApiManifest);
+
+const firstHeaderValue = (value: string | string[] | undefined): string | undefined =>
+  Array.isArray(value) ? value[0] : value;
 
 const authorizationVersion = (request: FastifyRequest): string | null => {
-  const version = request.headers[PRODUCT_API_VERSION_HEADER];
-  const accepted = request.headers[PRODUCT_API_ACCEPT_VERSION_HEADER];
-  const value = Array.isArray(version) ? version[0] : version ?? accepted;
-  return value?.trim() ?? null;
+  const version = firstHeaderValue(request.headers[PRODUCT_API_VERSION_HEADER]);
+  const accepted = firstHeaderValue(request.headers[PRODUCT_API_ACCEPT_VERSION_HEADER]);
+  return (version ?? accepted)?.trim() ?? null;
 };
 
 const isSupportedVersion = (request: FastifyRequest) => {
