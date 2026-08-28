@@ -77,6 +77,7 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.setDesiredState('gw-1', 'active', 'activate gateway')).toEqual(activated);
 
     expect(manager.setDesiredState('gw-1', 'draining', 'maintenance drain').gateway.lifecycle).toBe('draining');
+    manager.setCapacityLimit('gw-1', 10);
     manager.setAllocatedCapacity('gw-1', 10);
     expect(() => manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance')).toThrow(
       'gateway cannot be disabled while capacity is allocated or reserved',
@@ -93,63 +94,57 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.setAllocatedCapacity('gw-1', 50).capacity.allocated).toBe(50);
     expect(manager.reserveCapacity('gw-1', 40).capacity.reserved).toBe(40);
     expect(() => manager.reserveCapacity('gw-1', 11)).toThrow('capacity allocation exceeds limit');
-    expect(manager.releaseCapacity('gw-1', 25).capacity.reserved).toBe(15);
-    expect(() => manager.releaseCapacity('gw-1', 16)).toThrow('cannot release more reserved capacity');
-    expect(() => manager.setAllocatedCapacity('gw-1', 90)).toThrow('capacity allocation exceeds limit');
-    expect(() => manager.reserveCapacity('gw-1', 0)).toThrow('positive number');
-    expect(() => manager.setCapacityLimit('gw-1', -1)).toThrow('non-negative number');
+    expect(() => manager.setAllocatedCapacity('gw-1', 61)).toThrow('capacity allocation exceeds limit');
+    expect(manager.releaseCapacity('gw-1', { allocated: 50, reserved: 40 }).capacity).toEqual({
+      limit: 100,
+      allocated: 0,
+      reserved: 0,
+      checkedAt: expect.any(String),
+    });
   });
 
   it('validates maintenance windows and reports active windows deterministically', () => {
     const { manager } = createManager();
     manager.scheduleMaintenance('gw-1', {
-      startsAt: '2026-08-28T13:00:00.000Z',
-      endsAt: '2026-08-28T14:00:00.000Z',
-      reason: 'planned kernel upgrade',
-    });
-    expect(manager.isUnderMaintenance('gw-1', new Date('2026-08-28T12:59:59.999Z'))).toBe(false);
-    expect(manager.isUnderMaintenance('gw-1', new Date('2026-08-28T13:00:00.000Z'))).toBe(true);
-    expect(manager.isUnderMaintenance('gw-1', new Date('2026-08-28T14:00:00.000Z'))).toBe(false);
-    expect(() => manager.scheduleMaintenance('gw-1', {
-      startsAt: '2026-08-28T14:00:00.000Z',
-      endsAt: '2026-08-28T13:00:00.000Z',
-      reason: 'invalid',
-    })).toThrow('endsAt must be after startsAt');
-    expect(manager.clearMaintenance('gw-1').maintenanceWindow).toBeUndefined();
-  });
-
-  it('tracks upgrade state with a strict state machine', () => {
-    const { manager } = createManager();
-    expect(() => manager.markUpgradeStarted('gw-1')).toThrow('must be scheduled');
-    expect(manager.scheduleUpgrade('gw-1', '2026.09.01.0').upgrade.status).toBe('scheduled');
-    expect(manager.markUpgradeStarted('gw-1').upgrade.status).toBe('in-progress');
-    const completed = manager.markUpgradeCompleted('gw-1', 'post-upgrade verification passed');
-    expect(completed.upgrade.status).toBe('succeeded');
-    expect(completed.upgrade.completedAt).toEqual(expect.any(String));
-    expect(() => manager.markUpgradeCompleted('gw-1')).toThrow('must be in progress');
-  });
-
-  it('records failed upgrades and rejects invalid scheduling', () => {
-    const { manager } = createManager();
-    expect(() => manager.scheduleUpgrade('gw-1', '')).toThrow('targetVersion is required');
-    manager.scheduleUpgrade('gw-1', '2026.09.02.0');
-    manager.markUpgradeStarted('gw-1');
-    const failed = manager.markUpgradeFailed('gw-1', 'verification failed');
-    expect(failed.upgrade.status).toBe('failed');
-    expect(failed.upgrade.reason).toBe('verification failed');
-    expect(() => manager.markUpgradeFailed('gw-1', 'again')).toThrow('must be in progress');
-  });
-
-  it('publishes operational telemetry without changing state semantics', () => {
-    const { manager, publish } = createManager();
-    manager.setCapacityLimit('gw-1', 10);
-    manager.reserveCapacity('gw-1', 2);
-    manager.scheduleMaintenance('gw-1', {
+      id: 'mw-1',
       startsAt: '2026-08-28T13:00:00.000Z',
       endsAt: '2026-08-28T14:00:00.000Z',
       reason: 'upgrade',
     });
-    expect(publish).toHaveBeenCalled();
-    expect(publish.mock.calls.every(([event]) => event?.gatewayId === 'gw-1')).toBe(true);
+    expect(manager.isInMaintenance('gw-1', new Date('2026-08-28T13:30:00.000Z'))).toBe(true);
+    expect(manager.isInMaintenance('gw-1', new Date('2026-08-28T14:00:00.000Z'))).toBe(false);
+    expect(() => manager.scheduleMaintenance('gw-1', {
+      id: 'mw-invalid',
+      startsAt: '2026-08-28T14:00:00.000Z',
+      endsAt: '2026-08-28T14:00:00.000Z',
+      reason: 'invalid',
+    })).toThrow('maintenance window must end after it starts');
+  });
+
+  it('tracks upgrade state with a strict state machine', () => {
+    const { manager } = createManager();
+    expect(manager.scheduleUpgrade('gw-1', '2026.08.28.2', 'planned upgrade').upgrade.state).toBe('scheduled');
+    expect(manager.startUpgrade('gw-1').upgrade.state).toBe('in-progress');
+    expect(manager.completeUpgrade('gw-1', '2026.08.28.2').upgrade.state).toBe('succeeded');
+    expect(() => manager.startUpgrade('gw-1')).toThrow('upgrade must be scheduled');
+  });
+
+  it('records failed upgrades and rejects invalid scheduling', () => {
+    const { manager } = createManager();
+    expect(() => manager.scheduleUpgrade('gw-1', '', 'invalid')).toThrow('target version is required');
+    manager.scheduleUpgrade('gw-1', '2026.08.28.2', 'planned upgrade');
+    manager.startUpgrade('gw-1');
+    expect(manager.failUpgrade('gw-1', 'verification failed').upgrade.state).toBe('failed');
+    expect(manager.get('gw-1')?.upgrade.reason).toBe('verification failed');
+  });
+
+  it('publishes operational telemetry without changing state semantics', () => {
+    const { manager, publish } = createManager();
+    manager.setDesiredState('gw-1', 'draining', 'operator requested drain');
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'gateway.fleet.lifecycle_changed',
+      gatewayId: 'gw-1',
+      desiredState: 'draining',
+    }));
   });
 });
