@@ -245,13 +245,22 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
   ],
 } as const satisfies ProductApiManifest);
 
-const firstHeaderValue = (value: string | string[] | undefined): string | undefined =>
-  Array.isArray(value) ? value[0] : value;
+const normalizeHeaderValues = (value: string | string[] | undefined): string[] => {
+  if (value === undefined) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return values.flatMap((entry) => entry.split(',')).map((entry) => entry.trim()).filter(Boolean);
+};
 
 const authorizationVersion = (request: FastifyRequest): string | null => {
-  const version = firstHeaderValue(request.headers[PRODUCT_API_VERSION_HEADER]);
-  const accepted = firstHeaderValue(request.headers[PRODUCT_API_ACCEPT_VERSION_HEADER]);
-  return (version ?? accepted)?.trim() ?? null;
+  const explicit = normalizeHeaderValues(request.headers[PRODUCT_API_VERSION_HEADER]);
+  const accepted = normalizeHeaderValues(request.headers[PRODUCT_API_ACCEPT_VERSION_HEADER]);
+  const requested = explicit.length > 0 ? explicit : accepted;
+
+  if (requested.length === 0) return null;
+  if (requested.some((version) => !versionSchema.safeParse(version).success)) return requested[0] ?? null;
+  if (requested.some((version) => version !== requested[0])) return requested.join(',');
+
+  return requested[0] ?? null;
 };
 
 const isSupportedVersion = (request: FastifyRequest) => {
