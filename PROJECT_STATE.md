@@ -4,19 +4,59 @@
 
 ## Current State
 
-- **Current phase:** Phase 52 — Automated Tunnel Lifecycle (not started).
+- **Current phase:** Phase 52 — Automated Tunnel Lifecycle (**implementation complete; verification in progress**).
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 47:** verified green by CI and accepted as complete.
 - **Phase 48:** implementation is complete and accepted after verification.
 - **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
-- **Next phase:** Phase 52 — Automated Tunnel Lifecycle.
+- **Next phase after Phase 52:** Phase 53 — Multi-Gateway Failover.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health and gateway selection. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 52 — Automated Tunnel Lifecycle
+
+**Implementation complete; repository/runtime verification in progress.** The canonical `@irp/tunnel` package now contains `AutomatedTunnelLifecycle` with bounded establish/connect/retry/reconnect/rotation/disconnect/destroy/shutdown behavior.
+
+### Implementation evidence
+
+- `packages/tunnel/src/lifecycle.ts`
+- `packages/tunnel/src/lifecycle.test.ts`
+- exported through `packages/tunnel/src/index.ts`
+- phase record: `docs/phases/phase-52.md`
+
+### Safety and lifecycle guarantees
+
+- provider protocol/scope/routing/capability compatibility is checked before establishment;
+- platform route context is validated before connection;
+- full-tunnel/strict lifecycle requires a configured kill-switch implementation;
+- kill switch remains enabled during establishment and is disabled only after post-connect health verification;
+- health verification requires healthy status, connectivity, handshake and authentication evidence;
+- connect attempts are bounded and timeout-protected;
+- retry follows the canonical `failed → recovering → connecting` state path;
+- concurrent operations on one tunnel are rejected;
+- failed establishment is rolled back through provider/adapter cleanup and destruction;
+- endpoint/credential-reference rotation is followed by verified reconnect;
+- lifecycle events carry `phase: 52` metadata;
+- no secret material is emitted by the lifecycle telemetry contract.
+
+### Workflow audit and fixes
+
+The Runtime Lab and Public Runtime Lab workflows were audited as part of Phase 52. The audit found three material gaps:
+
+1. changes under `packages/tunnel/**` did not trigger the runtime verification workflows;
+2. main-branch runtime evidence could be cancelled by a newer push because of `cancel-in-progress: true`;
+3. readiness was not followed by a stability window that detects immediate process/container restarts.
+
+Both workflows were corrected to include the tunnel package, preserve main-branch evidence, and assert post-readiness container stability/restart counts.
+
+### Verification status
+
+The Phase 52 implementation is **not yet marked complete**. Completion requires the final commit's repository CI, Runtime Lab and required Public Runtime Lab verification to pass. The currently running runtime workflows are the first verification of the audited workflow contract.
 
 ## Phase 51 — Automatic Gateway Selection
 
@@ -26,27 +66,8 @@
 
 - Verification commit: `ec6daceb56f98f9dff84bafe1d9cf20532c30a61`.
 - CI run `33104741177` (`CI #770`) passed.
-- CI job `98631462114` passed all repository gates: repository integrity, documentation integrity, lint, typecheck, test, fresh coverage, build, deterministic smoke test and production Docker runtime smoke test.
+- CI job `98631462114` passed repository gates: integrity, documentation, lint, typecheck, test, fresh coverage, build, deterministic smoke test and production Docker runtime smoke test.
 - CodeQL, Docker Publish and Datadog Synthetics for the verification commit passed.
-- The cancelled Public Runtime Lab run was associated with an earlier runtime-lab change and is not a Phase 51 acceptance dependency because gateway selection is explicitly side-effect free.
-
-### Additions
-
-- policy-aware gateway eligibility;
-- active lifecycle and trusted-gateway enforcement;
-- health freshness, reachability, status and score validation;
-- latency and packet-loss limits;
-- optional capacity utilization limits;
-- region/provider/tag/tunnel-protocol/address-family constraints;
-- bounded deterministic scoring from health, quality, capacity and preferences;
-- configurable hysteresis to prevent unnecessary gateway switching;
-- deterministic gateway-ID tie breaking;
-- explicit rejection reasons and score components;
-- human-readable decision explanations;
-- input immutability and no network/tunnel/route/DNS side effects;
-- unit coverage for normal, boundary, invalid and failure-path selection behavior.
-
-Phase 51 remains out of automated tunnel lifecycle, multi-gateway failover, fleet operations and gateway supply-chain hardening.
 
 ## Phase 50 — Additional Tunnel Providers
 
