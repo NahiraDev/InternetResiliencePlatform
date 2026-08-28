@@ -20,14 +20,3 @@ export interface UseCase<TInput, TOutput> {
   execute(input: TInput): Promise<TOutput>;
 }
 export const createId = (prefix = 'irp'): string => `${prefix}_${crypto.randomUUID()}`;
-
-export type {
-  ProductApiClient,
-  ProductApiContext,
-  ProductApiManifest,
-  ProductApiPrincipal,
-  ProductCapability,
-  ProductCapabilityKind,
-  ProductCapabilityStatus,
-} from './product-api.js';
-export { PRODUCT_API_MANIFEST, PRODUCT_API_PATH, PRODUCT_API_VERSION } from './product-api.js';
