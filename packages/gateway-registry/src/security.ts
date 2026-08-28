@@ -14,6 +14,7 @@ export interface GatewaySecurityPolicy {
   maxClockSkewMs: number;
   maxAttestationAgeMs: number;
   requireArtifactAttestation: boolean;
+  maxTrackedNonces: number;
   allowedProviderIds?: readonly string[];
 }
 
@@ -71,6 +72,7 @@ const DEFAULT_POLICY: GatewaySecurityPolicy = {
   maxClockSkewMs: 30_000,
   maxAttestationAgeMs: 5 * 60_000,
   requireArtifactAttestation: true,
+  maxTrackedNonces: 10_000,
 };
 
 const SHA256_HEX = /^[a-f0-9]{64}$/;
@@ -92,13 +94,14 @@ function timestamp(value: string, field: string): number {
   return parsed;
 }
 
-function assertWindow(issuedAt: string, expiresAt: string, nowMs: number, policy: GatewaySecurityPolicy): void {
+function assertWindow(issuedAt: string, expiresAt: string, nowMs: number, policy: GatewaySecurityPolicy): number {
   const issued = timestamp(issuedAt, 'issuedAt');
   const expires = timestamp(expiresAt, 'expiresAt');
   if (expires <= issued) throw new Error('expiresAt must be after issuedAt');
   if (expires < nowMs - policy.maxClockSkewMs) throw new Error('attestation has expired');
   if (issued > nowMs + policy.maxClockSkewMs) throw new Error('attestation issuedAt is in the future');
   if (nowMs - issued > policy.maxAttestationAgeMs + policy.maxClockSkewMs) throw new Error('attestation is too old');
+  return expires;
 }
 
 function decodeSignature(value: string): Buffer {
@@ -154,6 +157,7 @@ export function verifyArtifactDigest(input: Uint8Array, expectedDigest: string):
 
 export class GatewaySecurityVerifier {
   private readonly keys = new Map<string, GatewaySecurityKey>();
+  private readonly seenNonces = new Map<string, number>();
   private readonly policy: GatewaySecurityPolicy;
 
   constructor(
@@ -164,6 +168,7 @@ export class GatewaySecurityVerifier {
     this.policy = { ...DEFAULT_POLICY, ...policy };
     if (!Number.isFinite(this.policy.maxClockSkewMs) || this.policy.maxClockSkewMs < 0) throw new Error('maxClockSkewMs must be a finite non-negative number');
     if (!Number.isFinite(this.policy.maxAttestationAgeMs) || this.policy.maxAttestationAgeMs <= 0) throw new Error('maxAttestationAgeMs must be a finite positive number');
+    if (!Number.isInteger(this.policy.maxTrackedNonces) || this.policy.maxTrackedNonces < 1) throw new Error('maxTrackedNonces must be a positive integer');
     for (const key of keys) this.addKey(key);
   }
 
@@ -194,8 +199,9 @@ export class GatewaySecurityVerifier {
     const key = getKey(this.keys, payload.keyId);
     verifySignature(payload, attestation.signature, key);
     if (payload.gatewayId !== gateway.id) throw new Error('identity attestation gatewayId does not match gateway');
-    assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
+    const expiresAt = assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
     assertProviderAllowed(gateway, payload.providerId, this.policy);
+    this.consumeNonce(`identity:${key.keyId}:${payload.nonce}`, expiresAt, nowMs);
     return {
       gatewayId: gateway.id,
       identityVerified: true,
@@ -221,9 +227,10 @@ export class GatewaySecurityVerifier {
     const key = getKey(this.keys, payload.keyId);
     verifySignature(payload, attestation.signature, key);
     if (payload.gatewayId !== gateway.id) throw new Error('artifact attestation gatewayId does not match gateway');
-    assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
+    const expiresAt = assertWindow(payload.issuedAt, payload.expiresAt, nowMs, this.policy);
     assertSha256Digest(payload.digestSha256);
     if (!verifyArtifactDigest(artifact, payload.digestSha256)) throw new Error('artifact digest does not match attestation');
+    this.consumeNonce(`artifact:${key.keyId}:${payload.nonce}`, expiresAt, nowMs);
     return {
       gatewayId: gateway.id,
       identityVerified: false,
@@ -256,6 +263,19 @@ export class GatewaySecurityVerifier {
       void this.telemetry?.publish({ type: 'gateway.security.rejected', gatewayId: gateway.id, occurredAt: new Date().toISOString(), reason });
       throw error;
     }
+  }
+
+  private consumeNonce(key: string, expiresAt: number, nowMs: number): void {
+    for (const [trackedKey, trackedExpiry] of this.seenNonces) {
+      if (trackedExpiry <= nowMs) this.seenNonces.delete(trackedKey);
+    }
+    if (this.seenNonces.has(key)) throw new Error('attestation nonce has already been used');
+    if (this.seenNonces.size >= this.policy.maxTrackedNonces) {
+      const oldestKey = this.seenNonces.keys().next().value;
+      if (oldestKey === undefined) throw new Error('nonce tracking capacity is exhausted');
+      this.seenNonces.delete(oldestKey);
+    }
+    this.seenNonces.set(key, expiresAt);
   }
 }
 
