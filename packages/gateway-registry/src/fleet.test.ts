@@ -50,6 +50,12 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.get('gw-1')?.provisioning.configurationVersion).toBe('2026.08.28.1');
   });
 
+  it('rejects retired gateways during fleet registration', () => {
+    const registry = new InMemoryGatewayRegistry();
+    const manager = new InMemoryGatewayFleetManager(registry);
+    expect(() => manager.register(gateway({ lifecycle: 'retired' }), provisioning)).toThrow('retired gateways');
+  });
+
   it('updates provisioning metadata without changing gateway identity', () => {
     const { manager } = createManager();
     const updated = manager.updateProvisioning('gw-1', {
@@ -80,7 +86,7 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(() => manager.reserveCapacity('gw-1', 11)).toThrow('capacity allocation exceeds limit');
     expect(manager.releaseCapacity('gw-1', 25).capacity.reserved).toBe(15);
     expect(() => manager.releaseCapacity('gw-1', 16)).toThrow('cannot release more reserved capacity');
-    expect(() => manager.setAllocatedCapacity('gw-1', 61)).toThrow('capacity allocation exceeds limit');
+    expect(() => manager.setAllocatedCapacity('gw-1', 90)).toThrow('capacity allocation exceeds limit');
     expect(() => manager.reserveCapacity('gw-1', 0)).toThrow('positive number');
     expect(() => manager.setCapacityLimit('gw-1', -1)).toThrow('non-negative number');
   });
