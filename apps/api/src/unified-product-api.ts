@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UnauthorizedAppError } from '@irp/core';
+import type { Principal } from '@irp/auth';
 
 export const PRODUCT_API_VERSION = '1' as const;
 export const PRODUCT_API_PATH = `/api/v${PRODUCT_API_VERSION}` as const;
@@ -183,12 +184,7 @@ const authorizationVersion = (request: FastifyRequest): string | null => {
 
 const requireSupportedVersion = (request: FastifyRequest) => {
   const requested = authorizationVersion(request);
-  if (requested === null) return;
-  if (!versionSchema.safeParse(requested).success) {
-    const error = new Error(`Unsupported API version: ${requested}`);
-    Object.assign(error, { statusCode: 406, code: 'API_VERSION_NOT_SUPPORTED' });
-    throw error;
-  }
+  return requested === null || versionSchema.safeParse(requested).success;
 };
 
 const authenticate = async (request: FastifyRequest) => {
@@ -199,7 +195,7 @@ const authenticate = async (request: FastifyRequest) => {
 
 const hasCapability = async (
   request: FastifyRequest,
-  principal: Parameters<FastifyRequest['jwtAuth']['authenticate']>[0] extends never ? never : NonNullable<Awaited<ReturnType<FastifyRequest['jwtAuth']['authenticate']>>>,
+  principal: Principal,
   capability: ProductCapability,
 ): Promise<boolean> => {
   if (capability.status !== 'implemented') return false;
@@ -225,7 +221,16 @@ export interface UnifiedProductApiHandle {
 
 export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProductApiHandle => {
   app.addHook('onRequest', async (request, reply) => {
-    requireSupportedVersion(request);
+    if (!requireSupportedVersion(request)) {
+      return reply.code(406).send({
+        success: false,
+        error: {
+          code: 'API_VERSION_NOT_SUPPORTED',
+          message: 'The requested API version is not supported.',
+          supportedVersions: [`v${PRODUCT_API_VERSION}`],
+        },
+      });
+    }
     reply.header(PRODUCT_API_VERSION_HEADER, PRODUCT_API_VERSION);
     reply.header('x-api-supported-versions', `v${PRODUCT_API_VERSION}`);
   });
