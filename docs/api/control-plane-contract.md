@@ -23,6 +23,19 @@ Each API resource must be classified as `implemented`, `verified`, `pending-veri
 | Administration | RBAC, organizations and operational control | Control plane |
 | Notifications | Alerts and client-facing events | Product UI |
 
+## Phase 56 unified product boundary
+
+The canonical client entry point is the versioned `/api/v1` surface. Phase 56 adds two discovery resources:
+
+| Endpoint | Auth | Purpose |
+| --- | --- | --- |
+| `GET /api/v1/product/capabilities` | None | Public version/capability manifest. |
+| `GET /api/v1/product/context` | Bearer | Principal-specific capabilities authorized by the existing RBAC layer. |
+
+The capability manifest declares operation kind, supported methods/paths, authentication mode, required permissions and implementation status. `product.context` filters that contract using the authenticated principal; it never grants a capability.
+
+Clients may provide `X-API-Version: v1` or `Accept-Version: v1`. Unsupported versions fail with HTTP `406`, and successful Product API responses advertise `X-API-Version` and `X-API-Supported-Versions`.
+
 ## Contract principles
 
 1. Authentication and authorization are separate concerns.
@@ -31,6 +44,7 @@ Each API resource must be classified as `implemented`, `verified`, `pending-veri
 4. Long-running operations need explicit state and failure semantics.
 5. API responses must not expose bearer credentials, private keys or equivalent secrets.
 6. Clients must not infer hidden policy from implementation details; the server contract is authoritative.
+7. Product clients discover server-supported capabilities instead of assuming that roadmap resources are implemented.
 
 ## Client compatibility
 
