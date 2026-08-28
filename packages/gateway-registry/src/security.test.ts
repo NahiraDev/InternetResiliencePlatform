@@ -29,7 +29,7 @@ const gateway: GatewayMetadata & { providerId: string } = {
 
 const signPayload = (payload: unknown): string => sign(null, Buffer.from(canonicalSecurityPayload(payload)), privateKey).toString('base64');
 
-function makeIdentity(now = '2026-08-28T12:00:00.000Z') {
+function makeIdentity(now = '2026-08-28T12:00:00.000Z', nonce = 'nonce-identity-1') {
   const payload: GatewayIdentityAttestationPayload = {
     gatewayId: gateway.id,
     providerId: gateway.providerId,
@@ -37,12 +37,12 @@ function makeIdentity(now = '2026-08-28T12:00:00.000Z') {
     algorithm: 'ed25519',
     issuedAt: now,
     expiresAt: '2026-08-28T12:05:00.000Z',
-    nonce: 'nonce-identity-1',
+    nonce,
   };
   return { payload, signature: signPayload(payload) };
 }
 
-function makeArtifact(bytes: Uint8Array, now = '2026-08-28T12:00:00.000Z') {
+function makeArtifact(bytes: Uint8Array, now = '2026-08-28T12:00:00.000Z', nonce = 'nonce-artifact-1') {
   const payload: GatewayArtifactAttestationPayload = {
     gatewayId: gateway.id,
     artifactId: 'gateway-agent',
@@ -52,7 +52,7 @@ function makeArtifact(bytes: Uint8Array, now = '2026-08-28T12:00:00.000Z') {
     algorithm: 'ed25519',
     issuedAt: now,
     expiresAt: '2026-08-28T12:05:00.000Z',
-    nonce: 'nonce-artifact-1',
+    nonce,
   };
   return { payload, signature: signPayload(payload) };
 }
@@ -80,27 +80,40 @@ describe('@irp/gateway-registry security', () => {
   });
 
   it('rejects expired and future attestations', () => {
-    const expired = makeIdentity('2026-08-28T11:00:00.000Z');
+    const expired = makeIdentity('2026-08-28T11:00:00.000Z', 'nonce-expired');
     expect(() => verifier().verifyIdentity(gateway, expired, new Date('2026-08-28T12:00:00.000Z'))).toThrow('expired');
 
-    const future = makeIdentity('2026-08-28T12:10:00.000Z');
+    const future = makeIdentity('2026-08-28T12:10:00.000Z', 'nonce-future');
     expect(() => verifier().verifyIdentity(gateway, future, new Date('2026-08-28T12:00:00.000Z'))).toThrow('future');
+  });
+
+  it('rejects replayed identity and artifact nonces within their validity window', () => {
+    const checked = verifier();
+    const identity = makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-replay-identity');
+    const artifactBytes = Buffer.from('replay-artifact');
+    const artifact = makeArtifact(artifactBytes, '2026-08-28T12:00:00.000Z', 'nonce-replay-artifact');
+    const now = new Date('2026-08-28T12:01:00.000Z');
+
+    expect(() => checked.verifyIdentity(gateway, identity, now)).not.toThrow();
+    expect(() => checked.verifyIdentity(gateway, identity, now)).toThrow('nonce has already been used');
+    expect(() => checked.verifyArtifact(gateway, artifact, artifactBytes, now)).not.toThrow();
+    expect(() => checked.verifyArtifact(gateway, artifact, artifactBytes, now)).toThrow('nonce has already been used');
   });
 
   it('rejects revoked keys and provider policy violations', () => {
     const checked = verifier();
     checked.revokeKey('key-1');
-    expect(() => checked.verifyIdentity(gateway, makeIdentity(), new Date('2026-08-28T12:01:00.000Z'))).toThrow('revoked');
+    expect(() => checked.verifyIdentity(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-revoked'), new Date('2026-08-28T12:01:00.000Z'))).toThrow('revoked');
 
     const policyVerifier = new GatewaySecurityVerifier(
       [{ keyId: 'key-1', algorithm: 'ed25519', publicKey: publicKeyPem }],
       { requireArtifactAttestation: false, allowedProviderIds: ['provider-b'] },
     );
-    expect(() => policyVerifier.verifyIdentity(gateway, makeIdentity(), new Date('2026-08-28T12:01:00.000Z'))).toThrow('provider is not allowed');
+    expect(() => policyVerifier.verifyIdentity(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-policy'), new Date('2026-08-28T12:01:00.000Z'))).toThrow('provider is not allowed');
   });
 
   it('rejects an artifact whose bytes do not match its signed digest', () => {
-    const attestation = makeArtifact(Buffer.from('expected'));
+    const attestation = makeArtifact(Buffer.from('expected'), '2026-08-28T12:00:00.000Z', 'nonce-digest');
     expect(() => verifier().verifyArtifact(gateway, attestation, Buffer.from('tampered'), new Date('2026-08-28T12:01:00.000Z'))).toThrow('digest does not match');
   });
 
@@ -108,7 +121,7 @@ describe('@irp/gateway-registry security', () => {
     const second = generateKeyPairSync('ed25519');
     const secondPublic = second.publicKey.export({ type: 'spki', format: 'pem' }).toString();
     const bytes = Buffer.from('artifact');
-    const artifactPayload = makeArtifact(bytes).payload;
+    const artifactPayload = makeArtifact(bytes, '2026-08-28T12:00:00.000Z', 'nonce-signer-mismatch').payload;
     const artifact = {
       payload: { ...artifactPayload, keyId: 'key-2' },
       signature: sign(null, Buffer.from(canonicalSecurityPayload({ ...artifactPayload, keyId: 'key-2' })), second.privateKey).toString('base64'),
@@ -117,7 +130,7 @@ describe('@irp/gateway-registry security', () => {
       { keyId: 'key-1', algorithm: 'ed25519', publicKey: publicKeyPem },
       { keyId: 'key-2', algorithm: 'ed25519', publicKey: secondPublic },
     ]);
-    expect(() => checked.assess(gateway, makeIdentity(), { attestation: artifact, bytes }, new Date('2026-08-28T12:01:00.000Z'))).toThrow('signer keys do not match');
+    expect(() => checked.assess(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-identity-signer-mismatch'), { attestation: artifact, bytes }, new Date('2026-08-28T12:01:00.000Z'))).toThrow('signer keys do not match');
   });
 
   it('supports digest-only verification without accepting malformed digests', () => {
@@ -129,7 +142,7 @@ describe('@irp/gateway-registry security', () => {
   });
 
   it('does not require artifact evidence when policy explicitly disables that requirement', () => {
-    const assessment = verifier(false).assess(gateway, makeIdentity(), undefined, new Date('2026-08-28T12:01:00.000Z'));
+    const assessment = verifier(false).assess(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-no-artifact'), undefined, new Date('2026-08-28T12:01:00.000Z'));
     expect(assessment.identityVerified).toBe(true);
     expect(assessment.artifactVerified).toBe(false);
   });
