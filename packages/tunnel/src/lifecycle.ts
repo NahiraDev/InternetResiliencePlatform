@@ -1,5 +1,5 @@
+import { randomUUID } from 'node:crypto';
 import {
-  type Endpoint,
   type KillSwitch,
   type PlatformTunnelAdapter,
   type Tunnel,
@@ -58,7 +58,6 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation:
   if (!Number.isFinite(timeoutMs) || timeoutMs < 1_000) {
     throw tunnelErrors.configuration(`${operation} timeout must be at least 1000ms`);
   }
-
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
@@ -76,11 +75,7 @@ function isHealthy(health: TunnelHealth): boolean {
   return health.status === 'healthy' && health.connectivity && health.handshake && health.authenticated;
 }
 
-/**
- * Owns the mutable tunnel lifecycle while keeping provider, platform and safety
- * concerns behind explicit contracts. It never silently disables a kill switch
- * or treats an unverified connection as production-ready.
- */
+/** Policy-safe lifecycle orchestrator. It never treats an unverified connection as ready. */
 export class AutomatedTunnelLifecycle {
   private readonly options: Required<TunnelLifecycleOptions>;
   private readonly locks = new Set<string>();
@@ -101,10 +96,7 @@ export class AutomatedTunnelLifecycle {
     }
   }
 
-  getTunnel(tunnelId: string): Tunnel | undefined {
-    return this.tunnels.get(tunnelId);
-  }
-
+  getTunnel(tunnelId: string): Tunnel | undefined { return this.tunnels.get(tunnelId); }
   getConnection(tunnelId: string): TunnelConnection | undefined {
     return [...this.connections.values()].find((connection) => connection.tunnelId === tunnelId);
   }
@@ -113,11 +105,9 @@ export class AutomatedTunnelLifecycle {
     validateTunnelConfiguration(config);
     const provider = this.requireProvider(providerId);
     this.assertProviderCompatibility(provider, config);
-
     const tunnel = await provider.create(config);
     this.tunnels.set(tunnel.id, tunnel);
     await this.emit('tunnel.lifecycle.configured', tunnel.id, { providerId });
-
     try {
       return await this.connect(tunnel.id);
     } catch (error) {
@@ -130,15 +120,12 @@ export class AutomatedTunnelLifecycle {
     this.lock(tunnelId);
     const startedAt = Date.now();
     let killSwitchEnabled = false;
-
     try {
       let tunnel = this.requireTunnel(tunnelId);
       const provider = this.requireProvider(tunnel.providerId);
-
       if (this.options.killSwitchRequired && !tunnel.capabilities.includes('killSwitch')) {
         throw tunnelErrors.policy('Lifecycle requires a kill switch but the tunnel does not advertise one', { tunnelId });
       }
-
       if (this.options.requireRouteValidation) {
         const routeValid = await withTimeout(
           this.adapter.validateRouteContext(tunnel, tunnel.configuration.metadata?.routeContext),
@@ -147,11 +134,9 @@ export class AutomatedTunnelLifecycle {
         );
         if (!routeValid) throw tunnelErrors.policy('Tunnel route context was rejected by the platform adapter', { tunnelId });
       }
-
-      tunnel = this.transition(tunnel, 'preparing');
-      await this.adapter.prepare(tunnel);
+      tunnel = transitionTunnel(tunnel, 'preparing');
       this.tunnels.set(tunnel.id, tunnel);
-
+      await this.adapter.prepare(tunnel);
       if (this.requiresKillSwitch(tunnel)) {
         if (!this.killSwitch) throw tunnelErrors.policy('A kill switch is required but no kill-switch implementation is configured');
         await withTimeout(this.killSwitch.enable(tunnel.id), this.options.healthTimeoutMs, 'kill switch enable');
@@ -161,41 +146,24 @@ export class AutomatedTunnelLifecycle {
       let lastError: unknown;
       for (let attempt = 1; attempt <= this.options.maxConnectAttempts; attempt += 1) {
         try {
-          tunnel = this.transition(this.requireTunnel(tunnelId), 'connecting');
+          tunnel = transitionTunnel(this.requireTunnel(tunnelId), 'connecting');
           this.tunnels.set(tunnel.id, tunnel);
           await this.emit('tunnel.lifecycle.connecting', tunnel.id, { attempt });
-
-          const connection = await withTimeout(
-            provider.connect(tunnel),
-            this.options.connectTimeoutMs,
-            'tunnel connect',
-          );
+          const connection = await withTimeout(provider.connect(tunnel), this.options.connectTimeoutMs, 'tunnel connect');
           this.connections.set(connection.id, connection);
-
           tunnel = { ...this.requireTunnel(tunnelId), state: 'establishing' };
           this.tunnels.set(tunnel.id, tunnel);
           await this.adapter.establish(tunnel);
-
           const health = await withTimeout(provider.healthCheck(tunnel), this.options.healthTimeoutMs, 'tunnel health check');
           if (this.options.requireHealth && !isHealthy(health as TunnelHealth)) {
-            throw tunnelErrors.dependency('Tunnel connected but failed post-connect health verification', {
-              tunnelId,
-              healthStatus: health.status,
-            });
+            throw tunnelErrors.dependency('Tunnel connected but failed post-connect health verification', { tunnelId, healthStatus: health.status });
           }
-
-          tunnel = {
-            ...this.requireTunnel(tunnelId),
-            state: 'connected',
-            health: health as TunnelHealth,
-          };
+          tunnel = { ...this.requireTunnel(tunnelId), state: 'connected', health: health as TunnelHealth };
           this.tunnels.set(tunnel.id, tunnel);
-
           if (killSwitchEnabled) {
             await withTimeout(this.killSwitch!.disable(tunnel.id), this.options.healthTimeoutMs, 'kill switch disable');
             killSwitchEnabled = false;
           }
-
           this.metrics?.record('tunnel_lifecycle_connect_success_total', 1, { provider: provider.id });
           this.metrics?.record('tunnel_lifecycle_connect_duration_ms', Date.now() - startedAt, { provider: provider.id });
           await this.emit('tunnel.lifecycle.connected', tunnel.id, { connectionId: connection.id, attempt });
@@ -210,12 +178,9 @@ export class AutomatedTunnelLifecycle {
           });
           if (attempt < this.options.maxConnectAttempts && !(error instanceof TunnelError && !error.retryable)) {
             await this.cleanupConnection(tunnelId, provider);
-          } else {
-            break;
-          }
+          } else break;
         }
       }
-
       throw lastError instanceof Error ? lastError : tunnelErrors.dependency('Tunnel connection failed');
     } catch (error) {
       this.metrics?.record('tunnel_lifecycle_connect_failure_total', 1);
@@ -224,7 +189,6 @@ export class AutomatedTunnelLifecycle {
         try {
           await withTimeout(this.killSwitch.enable(tunnelId), this.options.healthTimeoutMs, 'kill switch recovery enable');
         } catch {
-          // Preserve the original lifecycle error; a failed safety action is emitted below.
           await this.emit('tunnel.lifecycle.safety_action_failed', tunnelId, { action: 'enable-kill-switch' });
         }
       }
@@ -240,26 +204,20 @@ export class AutomatedTunnelLifecycle {
       const tunnel = this.requireTunnel(tunnelId);
       const provider = this.requireProvider(tunnel.providerId);
       const connection = this.getConnection(tunnelId);
-      const killSwitchRequired = this.requiresKillSwitch(tunnel);
-
-      if (killSwitchRequired && this.killSwitch) {
+      if (this.requiresKillSwitch(tunnel) && this.killSwitch) {
         await withTimeout(this.killSwitch.enable(tunnelId), this.options.healthTimeoutMs, 'kill switch enable before disconnect');
       }
-
-      const disconnecting = this.transition(tunnel, 'disconnecting');
+      const disconnecting = this.toDisconnecting(tunnel);
       this.tunnels.set(tunnelId, disconnecting);
       await this.emit('tunnel.lifecycle.disconnecting', tunnelId, {});
-
       if (connection) {
         await withTimeout(provider.disconnect(connection, this.options.disconnectTimeoutMs), this.options.disconnectTimeoutMs, 'tunnel disconnect');
         this.connections.delete(connection.id);
       }
       await this.adapter.cleanup(tunnel);
-
       const disconnected = { ...this.requireTunnel(tunnelId), state: 'disconnected' as const };
       this.tunnels.set(tunnelId, disconnected);
       await this.emit('tunnel.lifecycle.disconnected', tunnelId, {});
-
       if (destroy) {
         await provider.destroy(disconnected);
         this.tunnels.set(tunnelId, { ...disconnected, state: 'destroyed' });
@@ -271,14 +229,12 @@ export class AutomatedTunnelLifecycle {
   }
 
   async reconnect(tunnelId: string): Promise<TunnelLifecycleResult> {
-    await this.disconnect(tunnelId);
+    const current = this.requireTunnel(tunnelId);
+    if (current.state === 'connected' || current.state === 'degraded') await this.disconnect(tunnelId);
     return this.connect(tunnelId);
   }
 
-  async rotate(
-    tunnelId: string,
-    changes: Pick<Partial<TunnelConfiguration>, 'credentialRef' | 'authentication' | 'endpoint'> = {},
-  ): Promise<TunnelLifecycleResult> {
+  async rotate(tunnelId: string, changes: Pick<Partial<TunnelConfiguration>, 'credentialRef' | 'authentication' | 'endpoint'> = {}): Promise<TunnelLifecycleResult> {
     if (changes.endpoint) validateEndpoint(changes.endpoint);
     this.lock(tunnelId);
     try {
@@ -299,20 +255,13 @@ export class AutomatedTunnelLifecycle {
     } finally {
       this.unlock(tunnelId);
     }
-
     return this.reconnect(tunnelId);
   }
 
   async shutdown(): Promise<void> {
-    const active = [...this.tunnels.values()].filter((tunnel) =>
-      tunnel.state === 'connected' || tunnel.state === 'degraded' || tunnel.state === 'failed',
-    );
+    const active = [...this.tunnels.values()].filter((tunnel) => tunnel.state === 'connected' || tunnel.state === 'degraded');
     for (const tunnel of active) {
-      try {
-        await this.disconnect(tunnel.id);
-      } catch {
-        await this.emit('tunnel.lifecycle.shutdown_failed', tunnel.id, {});
-      }
+      try { await this.disconnect(tunnel.id); } catch { await this.emit('tunnel.lifecycle.shutdown_failed', tunnel.id, {}); }
     }
   }
 
@@ -321,34 +270,17 @@ export class AutomatedTunnelLifecycle {
   }
 
   private assertProviderCompatibility(provider: TunnelProvider, config: TunnelConfiguration): void {
-    if (provider.protocol !== config.endpoint.protocol) {
-      throw tunnelErrors.configuration('Provider protocol does not match tunnel endpoint protocol', {
-        providerId: provider.id,
-        providerProtocol: provider.protocol,
-        endpointProtocol: config.endpoint.protocol,
-      });
-    }
-    if (!provider.supportedScopes.includes(config.scope)) {
-      throw tunnelErrors.capability('Provider does not support the requested tunnel scope', { providerId: provider.id, scope: config.scope });
-    }
-    if (!provider.supportedRoutingModes.includes(config.routingMode)) {
-      throw tunnelErrors.capability('Provider does not support the requested routing mode', { providerId: provider.id, routingMode: config.routingMode });
-    }
-    for (const capability of config.capabilities) {
-      if (!provider.capabilities.includes(capability)) {
-        throw tunnelErrors.capability(`Provider does not support required capability ${capability}`, { providerId: provider.id, capability });
-      }
-    }
+    if (provider.protocol !== config.endpoint.protocol) throw tunnelErrors.configuration('Provider protocol does not match tunnel endpoint protocol', { providerId: provider.id, providerProtocol: provider.protocol, endpointProtocol: config.endpoint.protocol });
+    if (!provider.supportedScopes.includes(config.scope)) throw tunnelErrors.capability('Provider does not support the requested tunnel scope', { providerId: provider.id, scope: config.scope });
+    if (!provider.supportedRoutingModes.includes(config.routingMode)) throw tunnelErrors.capability('Provider does not support the requested routing mode', { providerId: provider.id, routingMode: config.routingMode });
+    for (const capability of config.capabilities) if (!provider.capabilities.includes(capability)) throw tunnelErrors.capability(`Provider does not support required capability ${capability}`, { providerId: provider.id, capability });
   }
 
   private async cleanupConnection(tunnelId: string, provider: TunnelProvider): Promise<void> {
     const connection = this.getConnection(tunnelId);
     if (!connection) return;
-    try {
-      await withTimeout(provider.disconnect(connection, this.options.disconnectTimeoutMs), this.options.disconnectTimeoutMs, 'retry disconnect');
-    } finally {
-      this.connections.delete(connection.id);
-    }
+    try { await withTimeout(provider.disconnect(connection, this.options.disconnectTimeoutMs), this.options.disconnectTimeoutMs, 'retry disconnect'); }
+    finally { this.connections.delete(connection.id); }
   }
 
   private async rollbackCreatedTunnel(tunnel: Tunnel, provider: TunnelProvider): Promise<void> {
@@ -360,13 +292,16 @@ export class AutomatedTunnelLifecycle {
     } catch {
       await this.emit('tunnel.lifecycle.rollback_failed', tunnel.id, {});
     } finally {
-      this.connections.delete(connectionId(this.connections, tunnel.id));
+      const connection = this.getConnection(tunnel.id);
+      if (connection) this.connections.delete(connection.id);
       this.tunnels.delete(tunnel.id);
     }
   }
 
-  private transition(tunnel: Tunnel, next: Parameters<typeof transitionTunnel>[1]): Tunnel {
-    return transitionTunnel(tunnel, next);
+  private toDisconnecting(tunnel: Tunnel): Tunnel {
+    if (tunnel.state === 'connected' || tunnel.state === 'degraded' || tunnel.state === 'failed') return transitionTunnel(tunnel, 'disconnecting');
+    if (tunnel.state === 'disconnected') return tunnel;
+    throw tunnelErrors.state(`Cannot disconnect tunnel in state ${tunnel.state}`, { tunnelId: tunnel.id });
   }
 
   private async markFailed(tunnelId: string, error: unknown): Promise<void> {
@@ -377,9 +312,7 @@ export class AutomatedTunnelLifecycle {
     } catch {
       this.tunnels.set(tunnelId, { ...tunnel, state: 'failed' });
     }
-    await this.emit('tunnel.lifecycle.failed', tunnelId, {
-      error: error instanceof TunnelError ? error.code : 'unknown',
-    });
+    await this.emit('tunnel.lifecycle.failed', tunnelId, { error: error instanceof TunnelError ? error.code : 'unknown' });
   }
 
   private requireProvider(providerId: string): TunnelProvider {
@@ -399,22 +332,9 @@ export class AutomatedTunnelLifecycle {
     this.locks.add(tunnelId);
   }
 
-  private unlock(tunnelId: string): void {
-    this.locks.delete(tunnelId);
-  }
+  private unlock(tunnelId: string): void { this.locks.delete(tunnelId); }
 
   private async emit(type: string, aggregateId: string, payload: Record<string, unknown>): Promise<void> {
-    await this.events?.publish({
-      id: `evt_${crypto.randomUUID()}`,
-      type,
-      aggregateId,
-      occurredAt: new Date(),
-      payload,
-      metadata: { phase: '52' },
-    });
+    await this.events?.publish({ id: `evt_${randomUUID()}`, type, aggregateId, occurredAt: new Date(), payload, metadata: { phase: '52' } });
   }
-}
-
-function connectionId(connections: Map<string, TunnelConnection>, tunnelId: string): string {
-  return [...connections.entries()].find(([, connection]) => connection.tunnelId === tunnelId)?.[0] ?? '';
 }
