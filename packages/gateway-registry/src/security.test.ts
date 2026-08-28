@@ -1,5 +1,5 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { GatewayMetadata } from './index.js';
 import {
   GatewaySecurityVerifier,
@@ -13,7 +13,7 @@ import {
 const { publicKey, privateKey } = generateKeyPairSync('ed25519');
 const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
 
-const gateway: GatewayMetadata & { providerId: string } = {
+const gateway: GatewayMetadata = {
   id: 'gw-security-1',
   name: 'Security Test Gateway',
   endpoint: { host: '198.51.100.10', port: 51820, family: 'ipv4' },
@@ -29,20 +29,29 @@ const gateway: GatewayMetadata & { providerId: string } = {
 
 const signPayload = (payload: unknown): string => sign(null, Buffer.from(canonicalSecurityPayload(payload)), privateKey).toString('base64');
 
-function makeIdentity(now = '2026-08-28T12:00:00.000Z', nonce = 'nonce-identity-1') {
+function makeIdentity(
+  now = '2026-08-28T12:00:00.000Z',
+  nonce = 'nonce-identity-1',
+  expiresAt = new Date(Date.parse(now) + 5 * 60_000).toISOString(),
+) {
   const payload: GatewayIdentityAttestationPayload = {
     gatewayId: gateway.id,
-    providerId: gateway.providerId,
+    ...(gateway.providerId === undefined ? {} : { providerId: gateway.providerId }),
     keyId: 'key-1',
     algorithm: 'ed25519',
     issuedAt: now,
-    expiresAt: '2026-08-28T12:05:00.000Z',
+    expiresAt,
     nonce,
   };
   return { payload, signature: signPayload(payload) };
 }
 
-function makeArtifact(bytes: Uint8Array, now = '2026-08-28T12:00:00.000Z', nonce = 'nonce-artifact-1') {
+function makeArtifact(
+  bytes: Uint8Array,
+  now = '2026-08-28T12:00:00.000Z',
+  nonce = 'nonce-artifact-1',
+  expiresAt = new Date(Date.parse(now) + 5 * 60_000).toISOString(),
+) {
   const payload: GatewayArtifactAttestationPayload = {
     gatewayId: gateway.id,
     artifactId: 'gateway-agent',
@@ -51,16 +60,17 @@ function makeArtifact(bytes: Uint8Array, now = '2026-08-28T12:00:00.000Z', nonce
     keyId: 'key-1',
     algorithm: 'ed25519',
     issuedAt: now,
-    expiresAt: '2026-08-28T12:05:00.000Z',
+    expiresAt,
     nonce,
   };
   return { payload, signature: signPayload(payload) };
 }
 
-function verifier(requireArtifactAttestation = true) {
+function verifier(requireArtifactAttestation = true, telemetry?: ConstructorParameters<typeof GatewaySecurityVerifier>[2]) {
   return new GatewaySecurityVerifier(
     [{ keyId: 'key-1', algorithm: 'ed25519', publicKey: publicKeyPem }],
     { requireArtifactAttestation },
+    telemetry,
   );
 }
 
@@ -73,17 +83,24 @@ describe('@irp/gateway-registry security', () => {
     expect(assessment.identityKeyId).toBe('key-1');
   });
 
-  it('rejects tampered identity payloads', () => {
+  it('rejects tampered identity payloads before claim/provider semantics', () => {
     const identity = makeIdentity();
-    identity.payload.providerId = 'attacker';
+    identity.payload.gatewayId = 'attacker-gateway';
     expect(() => verifier().verifyIdentity(gateway, identity, new Date('2026-08-28T12:01:00.000Z'))).toThrow('signature verification failed');
   });
 
+  it('rejects provider identity mismatches after authenticating the payload', () => {
+    const identity = makeIdentity();
+    identity.payload.providerId = 'provider-b';
+    identity.signature = signPayload(identity.payload);
+    expect(() => verifier().verifyIdentity(gateway, identity, new Date('2026-08-28T12:01:00.000Z'))).toThrow('provider does not match gateway provider');
+  });
+
   it('rejects expired and future attestations', () => {
-    const expired = makeIdentity('2026-08-28T11:00:00.000Z', 'nonce-expired');
+    const expired = makeIdentity('2026-08-28T11:00:00.000Z', 'nonce-expired', '2026-08-28T11:05:00.000Z');
     expect(() => verifier().verifyIdentity(gateway, expired, new Date('2026-08-28T12:00:00.000Z'))).toThrow('expired');
 
-    const future = makeIdentity('2026-08-28T12:10:00.000Z', 'nonce-future');
+    const future = makeIdentity('2026-08-28T12:10:00.000Z', 'nonce-future', '2026-08-28T12:15:00.000Z');
     expect(() => verifier().verifyIdentity(gateway, future, new Date('2026-08-28T12:00:00.000Z'))).toThrow('future');
   });
 
@@ -143,6 +160,16 @@ describe('@irp/gateway-registry security', () => {
       { keyId: 'key-2', algorithm: 'ed25519', publicKey: secondPublic },
     ]);
     expect(() => checked.assess(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-identity-signer-mismatch'), { attestation: artifact, bytes }, new Date('2026-08-28T12:01:00.000Z'))).toThrow('signer keys do not match');
+  });
+
+  it('does not let telemetry failures alter verification semantics or leak secrets', async () => {
+    const publish = vi.fn().mockRejectedValue(new Error(`sensitive\n${'x'.repeat(1000)}`));
+    const checked = verifier(false, { publish });
+    const assessment = checked.assess(gateway, makeIdentity('2026-08-28T12:00:00.000Z', 'nonce-telemetry'), undefined, new Date('2026-08-28T12:01:00.000Z'));
+    expect(assessment.identityVerified).toBe(true);
+    await Promise.resolve();
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ type: 'gateway.security.verified', gatewayId: gateway.id }));
+    expect(publish.mock.calls[0]?.[0].reason).not.toContain('x'.repeat(1000));
   });
 
   it('supports digest-only verification without accepting malformed digests', () => {
