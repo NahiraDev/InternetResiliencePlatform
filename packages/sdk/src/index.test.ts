@@ -96,11 +96,26 @@ describe('InternetResilienceClient', () => {
       })) as unknown as typeof fetch,
     });
     await expect(client.capabilities()).rejects.toEqual(
-      expect.objectContaining<ProductApiError>({
+      expect.objectContaining({
         status: 406,
         code: 'API_VERSION_NOT_SUPPORTED',
+        name: 'ProductApiError',
+        message: 'The requested API version is not supported.',
       }),
     );
+  });
+
+  it('preserves ProductApiError as an Error instance', async () => {
+    const client = new InternetResilienceClient({
+      baseUrl: 'http://local',
+      fetch: (async () => ({
+        ok: false,
+        status: 401,
+        json: async () => ({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized.' } }),
+      })) as unknown as typeof fetch,
+    });
+
+    await expect(client.context()).rejects.toBeInstanceOf(ProductApiError);
   });
 
   it('propagates non-ok health responses with status-specific errors', async () => {
