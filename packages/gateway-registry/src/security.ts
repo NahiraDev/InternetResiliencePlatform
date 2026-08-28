@@ -271,9 +271,7 @@ export class GatewaySecurityVerifier {
     }
     if (this.seenNonces.has(key)) throw new Error('attestation nonce has already been used');
     if (this.seenNonces.size >= this.policy.maxTrackedNonces) {
-      const oldestKey = this.seenNonces.keys().next().value;
-      if (oldestKey === undefined) throw new Error('nonce tracking capacity is exhausted');
-      this.seenNonces.delete(oldestKey);
+      throw new Error('nonce tracking capacity is exhausted');
     }
     this.seenNonces.set(key, expiresAt);
   }
