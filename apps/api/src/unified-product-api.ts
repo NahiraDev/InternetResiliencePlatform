@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
+import { UnauthorizedAppError } from '@irp/core';
 
 export const PRODUCT_API_VERSION = '1' as const;
 export const PRODUCT_API_PATH = `/api/v${PRODUCT_API_VERSION}` as const;
@@ -197,6 +197,28 @@ const authenticate = async (request: FastifyRequest) => {
   return principal;
 };
 
+const hasCapability = async (
+  request: FastifyRequest,
+  principal: Parameters<FastifyRequest['jwtAuth']['authenticate']>[0] extends never ? never : NonNullable<Awaited<ReturnType<FastifyRequest['jwtAuth']['authenticate']>>>,
+  capability: ProductCapability,
+): Promise<boolean> => {
+  if (capability.status !== 'implemented') return false;
+  if (capability.requiredPermissions.length === 0) return true;
+  for (const permission of capability.requiredPermissions) {
+    if (
+      await request.rbac.authorize({
+        principal,
+        resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
+        action: capability.kind === 'mutate' ? 'POST' : 'GET',
+        requiredPermissions: [permission],
+      })
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export interface UnifiedProductApiHandle {
   manifest: ProductApiManifest;
 }
@@ -215,17 +237,10 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
 
   app.get(`${PRODUCT_API_PATH}/product/context`, async (request) => {
     const principal = await authenticate(request);
-    const available = capabilities
-      .filter((capability) => capability.status === 'implemented')
-      .filter((capability) => capability.requiredPermissions.length === 0 || capability.requiredPermissions.some((permission) => {
-        return request.rbac.authorize({
-          principal,
-          resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
-          action: capability.kind === 'mutate' ? 'POST' : 'GET',
-          requiredPermissions: [permission],
-        });
-      }))
-      .map((capability) => capability.id);
+    const visibleCapabilities = [] as string[];
+    for (const capability of capabilities) {
+      if (await hasCapability(request, principal, capability)) visibleCapabilities.push(capability.id);
+    }
 
     return {
       success: true,
@@ -237,7 +252,7 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
           scopes: principal.scopes,
           ...(principal.organizationId ? { organizationId: principal.organizationId } : {}),
         },
-        capabilities: [...new Set(await Promise.all(available.map(async (id) => id)))],
+        capabilities: visibleCapabilities,
       } satisfies ProductApiContext,
     };
   });
