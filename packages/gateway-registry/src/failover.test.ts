@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { GatewayHealth } from './health.js';
 import type { GatewayMetadata } from './index.js';
+import type { GatewaySelectionCandidate } from './selection.js';
 import { MultiGatewayFailover } from './failover.js';
 
 const gateway = (id: string, overrides: Partial<GatewayMetadata> = {}): GatewayMetadata => ({
@@ -39,7 +40,7 @@ const health = (
 
 describe('MultiGatewayFailover', () => {
   it('fails over to the highest-ranked healthy candidate and verifies the switch', async () => {
-    const switchGateway = vi.fn(async () => ({ healthy: true, reason: 'post-switch probe passed' }));
+    const switchGateway = vi.fn(async (_candidate: GatewaySelectionCandidate, _reason: string) => ({ healthy: true, reason: 'post-switch probe passed' }));
     const failover = new MultiGatewayFailover({ switchGateway });
 
     const result = await failover.failover({
@@ -61,7 +62,7 @@ describe('MultiGatewayFailover', () => {
       expect.objectContaining({ gatewayId: 'gw-b', attempt: 1, switched: true, verified: true }),
     ]);
     expect(switchGateway).toHaveBeenCalledTimes(1);
-    expect(switchGateway.mock.calls[0]?.[0].gateway.id).toBe('gw-b');
+    expect(switchGateway.mock.calls[0]?.[0]?.gateway.id).toBe('gw-b');
   });
 
   it('skips failed candidates, quarantines them, and succeeds on the next verified gateway', async () => {
@@ -131,7 +132,7 @@ describe('MultiGatewayFailover', () => {
 
   it('rejects concurrent operations on the same failover engine', async () => {
     let release!: () => void;
-    const switchGateway = vi.fn(() => new Promise<{ healthy: boolean }>((resolve) => {
+    const switchGateway = vi.fn((_candidate: GatewaySelectionCandidate, _reason: string) => new Promise<{ healthy: boolean }>((resolve) => {
       release = () => resolve({ healthy: true });
     }));
     const failover = new MultiGatewayFailover({ switchGateway });
