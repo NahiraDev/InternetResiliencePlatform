@@ -60,7 +60,7 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(updated.provisioning.configurationVersion).toBe('2026.08.28.2');
   });
 
-  it('performs explicit idempotent lifecycle operations and rejects retired gateways', () => {
+  it('performs explicit idempotent lifecycle operations and respects canonical retirement', () => {
     const { manager, registry } = createManager();
     const activated = manager.setDesiredState('gw-1', 'active', 'activate gateway');
     expect(activated.gateway.lifecycle).toBe('active');
@@ -72,14 +72,15 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(() => manager.setDesiredState('gw-1', 'active', 'unsafe restore')).toThrow('retired gateways');
   });
 
-  it('enforces capacity bounds for reservation and release', () => {
+  it('enforces capacity bounds for reservation, allocation and release', () => {
     const { manager } = createManager();
     manager.setCapacityLimit('gw-1', 100);
+    expect(manager.setAllocatedCapacity('gw-1', 50).capacity.allocated).toBe(50);
     expect(manager.reserveCapacity('gw-1', 40).capacity.reserved).toBe(40);
-    expect(manager.reserveCapacity('gw-1', 60).capacity.reserved).toBe(100);
-    expect(() => manager.reserveCapacity('gw-1', 1)).toThrow('capacity allocation exceeds limit');
-    expect(manager.releaseCapacity('gw-1', 25).capacity.reserved).toBe(75);
-    expect(() => manager.releaseCapacity('gw-1', 76)).toThrow('cannot release more reserved capacity');
+    expect(() => manager.reserveCapacity('gw-1', 11)).toThrow('capacity allocation exceeds limit');
+    expect(manager.releaseCapacity('gw-1', 25).capacity.reserved).toBe(15);
+    expect(() => manager.releaseCapacity('gw-1', 16)).toThrow('cannot release more reserved capacity');
+    expect(() => manager.setAllocatedCapacity('gw-1', 61)).toThrow('capacity allocation exceeds limit');
     expect(() => manager.reserveCapacity('gw-1', 0)).toThrow('positive number');
     expect(() => manager.setCapacityLimit('gw-1', -1)).toThrow('non-negative number');
   });
