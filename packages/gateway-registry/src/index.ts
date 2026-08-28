@@ -180,3 +180,4 @@ export * from './health.js';
 export * from './discovery.js';
 export * from './selection.js';
 export * from './failover.js';
+export * from './fleet.js';
