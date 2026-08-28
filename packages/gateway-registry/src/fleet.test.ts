@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { InMemoryGatewayFleetManager, type GatewayProvisioningMetadata } from './fleet.js';
+import {
+  InMemoryGatewayFleetManager,
+  type GatewayFleetTelemetry,
+  type GatewayProvisioningMetadata,
+} from './fleet.js';
 import { InMemoryGatewayRegistry, type GatewayMetadata } from './index.js';
 
 const provisioning: GatewayProvisioningMetadata = {
@@ -30,7 +34,7 @@ const gateway = (overrides: Partial<GatewayMetadata> = {}): GatewayMetadata => (
 
 const createManager = () => {
   const registry = new InMemoryGatewayRegistry();
-  const publish = vi.fn();
+  const publish = vi.fn<GatewayFleetTelemetry['publish']>();
   const manager = new InMemoryGatewayFleetManager(registry, { publish });
   manager.register(gateway(), provisioning);
   return { manager, registry, publish };
@@ -141,6 +145,6 @@ describe('InMemoryGatewayFleetManager', () => {
       reason: 'upgrade',
     });
     expect(publish).toHaveBeenCalled();
-    expect(publish.mock.calls.every((call) => call.length === 1 && call[0].gatewayId === 'gw-1')).toBe(true);
+    expect(publish.mock.calls.every(([event]) => event?.gatewayId === 'gw-1')).toBe(true);
   });
 });
