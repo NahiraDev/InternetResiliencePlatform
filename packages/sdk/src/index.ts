@@ -86,7 +86,7 @@ interface ApiErrorBody {
 export class InternetResilienceClient {
   private readonly fetcher: typeof fetch;
   private readonly baseUrl: string;
-  private readonly accessToken?: string;
+  private readonly accessToken: string | undefined;
   private readonly apiVersion: typeof PRODUCT_API_VERSION;
 
   constructor(private readonly options: SdkOptions) {
