@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implementation started; verification required.**
+**Implementation complete; final CI verification in progress.**
 
 ## Objective
 
@@ -89,6 +89,7 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 - Verification has no network dependency and performs no provider/tunnel/route/DNS mutation.
 - Security rejection is fail-closed: invalid evidence throws and cannot produce a verified assessment.
 - Telemetry contains only gateway ID, timestamp and a bounded failure reason; it contains no signature, key material or artifact bytes.
+- Telemetry sink failures are observational and cannot change verification success/failure semantics.
 - Artifact digest verification uses SHA-256 and rejects malformed digests.
 - The implementation uses Node's standard cryptographic primitives; no additional cryptographic dependency is introduced.
 
@@ -98,14 +99,16 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 
 1. valid identity plus matching artifact verification;
 2. tampered signed identity payload rejection;
-3. expired and future-dated attestation rejection;
-4. identity and artifact nonce replay rejection;
-5. saturated nonce tracking rejection;
-6. revoked key and provider-policy rejection;
-7. artifact digest mismatch rejection;
-8. mismatched identity/artifact signer rejection;
-9. digest-only verification and malformed digest rejection;
-10. explicit opt-out of mandatory artifact evidence.
+3. authenticated provider identity mismatch rejection;
+4. expired and future-dated attestation rejection;
+5. identity and artifact nonce replay rejection;
+6. saturated nonce tracking rejection;
+7. revoked key and provider-policy rejection;
+8. artifact digest mismatch rejection;
+9. mismatched identity/artifact signer rejection;
+10. telemetry failure isolation and bounded reason behavior;
+11. digest-only verification and malformed digest rejection;
+12. explicit opt-out of mandatory artifact evidence.
 
 ## Acceptance criteria
 
@@ -125,6 +128,10 @@ The verifier hashes the supplied artifact bytes and requires an exact digest mat
 - [ ] `pnpm build` passes for the final Phase 55 commit.
 - [ ] `pnpm validate` passes for the final Phase 55 commit.
 - [ ] Required CI checks are green for the final Phase 55 commit.
+
+### CI remediation gate
+
+The repository currently contains a malformed `pnpm-lock.yaml` produced by accumulated dependency/merge updates. Phase 55 is not considered releasable until the lockfile is regenerated from the committed workspace manifests and the complete validation suite passes against that regenerated lockfile. The temporary PR-scoped repair workflow exists only to produce that canonical lockfile; it must not remain as a permanent auto-repair mechanism after the lockfile has been committed.
 
 ## Explicit non-goals
 
