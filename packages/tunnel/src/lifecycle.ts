@@ -201,7 +201,12 @@ export class AutomatedTunnelLifecycle {
     this.lock(tunnelId);
     try {
       const current = this.requireTunnel(tunnelId);
-      const configuration: TunnelConfiguration = { ...current.configuration, ...changes, endpoint: changes.endpoint ?? current.configuration.endpoint, authentication: changes.authentication ?? current.configuration.authentication, credentialRef: changes.credentialRef ?? current.configuration.credentialRef };
+      const configuration: TunnelConfiguration = {
+        ...current.configuration,
+        ...(changes.endpoint ? { endpoint: changes.endpoint } : {}),
+        ...(changes.authentication ? { authentication: changes.authentication } : {}),
+        ...(changes.credentialRef !== undefined ? { credentialRef: changes.credentialRef } : {}),
+      };
       validateTunnelConfiguration(configuration);
       this.tunnels.set(tunnelId, { ...current, endpoint: configuration.endpoint, configuration });
       await this.emit('tunnel.lifecycle.rotation_requested', tunnelId, { endpointChanged: Boolean(changes.endpoint), credentialChanged: Boolean(changes.credentialRef || changes.authentication) });
@@ -230,54 +235,27 @@ export class AutomatedTunnelLifecycle {
       try { await withTimeout(provider.disconnect(connection, this.options.disconnectTimeoutMs), this.options.disconnectTimeoutMs, 'retry disconnect'); }
       finally { this.connections.delete(connection.id); }
     }
-    try { await this.adapter.cleanup(tunnel); } catch { await this.emit('tunnel.lifecycle.rollback_failed', tunnelId, { phase: 'retry-cleanup' }); }
-    let retryable = tunnel;
-    if (retryable.state !== 'failed') retryable = transitionTunnel(retryable, 'failed');
-    retryable = transitionTunnel(retryable, 'recovering');
-    this.tunnels.set(tunnelId, retryable);
+    await this.adapter.cleanup(tunnel);
+    this.tunnels.set(tunnelId, transitionTunnel({ ...tunnel, state: 'failed' }, 'recovering'));
   }
 
   private async rollbackCreatedTunnel(tunnel: Tunnel, provider: TunnelProvider): Promise<void> {
-    try {
-      const connection = this.getConnection(tunnel.id);
-      if (connection) await provider.disconnect(connection, this.options.disconnectTimeoutMs);
-      await this.adapter.cleanup(tunnel);
-      await provider.destroy(tunnel);
-    } catch { await this.emit('tunnel.lifecycle.rollback_failed', tunnel.id, {}); }
-    finally {
-      const connection = this.getConnection(tunnel.id);
-      if (connection) this.connections.delete(connection.id);
-      this.tunnels.delete(tunnel.id);
-    }
+    try { const connection = this.getConnection(tunnel.id); if (connection) { await provider.disconnect(connection, this.options.disconnectTimeoutMs); this.connections.delete(connection.id); } await this.adapter.cleanup(tunnel); await provider.destroy(tunnel); this.tunnels.delete(tunnel.id); }
+    catch { await this.emit('tunnel.lifecycle.rollback_failed', tunnel.id, {}); }
   }
 
-  private toDisconnecting(tunnel: Tunnel): Tunnel {
-    if (tunnel.state === 'connected' || tunnel.state === 'degraded' || tunnel.state === 'failed') return transitionTunnel(tunnel, 'disconnecting');
-    if (tunnel.state === 'disconnected') return tunnel;
-    throw tunnelErrors.state(`Cannot disconnect tunnel in state ${tunnel.state}`, { tunnelId: tunnel.id });
-  }
-
-  private async markFailed(tunnelId: string, error: unknown): Promise<void> {
+  private markFailed(tunnelId: string, error: unknown): void {
     const tunnel = this.tunnels.get(tunnelId);
     if (!tunnel || tunnel.state === 'destroyed') return;
-    try { if (tunnel.state !== 'failed') this.tunnels.set(tunnelId, transitionTunnel(tunnel, 'failed')); }
-    catch { this.tunnels.set(tunnelId, { ...tunnel, state: 'failed' }); }
-    await this.emit('tunnel.lifecycle.failed', tunnelId, { error: error instanceof TunnelError ? error.code : 'unknown' });
+    const failed = { ...tunnel, state: 'failed' as const };
+    this.tunnels.set(tunnelId, failed);
+    void this.emit('tunnel.lifecycle.failed', tunnelId, { error: error instanceof TunnelError ? error.code : 'unknown' });
   }
 
-  private requireProvider(providerId: string): TunnelProvider {
-    const provider = this.registry.get(providerId);
-    if (!provider) throw tunnelErrors.dependency('Tunnel provider unavailable', { providerId });
-    return provider;
-  }
-
-  private requireTunnel(tunnelId: string): Tunnel {
-    const tunnel = this.tunnels.get(tunnelId);
-    if (!tunnel) throw tunnelErrors.configuration('Unknown tunnel', { tunnelId });
-    return tunnel;
-  }
-
+  private toDisconnecting(tunnel: Tunnel): Tunnel { return tunnel.state === 'disconnecting' ? tunnel : transitionTunnel(tunnel, 'disconnecting'); }
+  private requireTunnel(tunnelId: string): Tunnel { const tunnel = this.tunnels.get(tunnelId); if (!tunnel) throw tunnelErrors.configuration('Tunnel not found', { tunnelId }); return tunnel; }
+  private requireProvider(providerId: string): TunnelProvider { const provider = this.registry.get(providerId); if (!provider) throw tunnelErrors.dependency('Tunnel provider not found', { providerId }); return provider; }
   private lock(tunnelId: string): void { if (this.locks.has(tunnelId)) throw tunnelErrors.state('Concurrent tunnel lifecycle operation rejected', { tunnelId }); this.locks.add(tunnelId); }
   private unlock(tunnelId: string): void { this.locks.delete(tunnelId); }
-  private async emit(type: string, aggregateId: string, payload: Record<string, unknown>): Promise<void> { await this.events?.publish({ id: `evt_${randomUUID()}`, type, aggregateId, occurredAt: new Date(), payload, metadata: { phase: '52' } }); }
+  private async emit(type: string, aggregateId: string, payload: unknown): Promise<void> { if (!this.events) return; await this.events.publish({ id: randomUUID(), type, aggregateId, occurredAt: new Date(), payload }); }
 }
