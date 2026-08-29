@@ -28,7 +28,8 @@ describe('InternetIntelligenceBridge', () => {
   it('does not call the advisor when evidence is absent', async () => {
     let calls = 0;
     const advisor: InternetIntelligenceAdvisor = { observe: async () => { calls += 1; return recommendation; } };
-    await expect(new InternetIntelligenceBridge(advisor).analyze({ ...context, internetEvidence: undefined })).resolves.toBeNull();
+    const { internetEvidence: _internetEvidence, ...contextWithoutEvidence } = context;
+    await expect(new InternetIntelligenceBridge(advisor).analyze(contextWithoutEvidence)).resolves.toBeNull();
     expect(calls).toBe(0);
   });
 
