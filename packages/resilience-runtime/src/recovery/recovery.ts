@@ -8,11 +8,33 @@ export class FailoverRecoveryProvider {
   ) {}
 
   async recover(plan: ActionPlan, reason: string, context: RuntimeContext): Promise<RecoveryPlan> {
-    const adapter = this.adapters.findForAction(
+    // Security-triggered recovery must fail closed rather than attempting a mutation.
+    if (reason.toLowerCase().includes('security')) {
+      return deepFreeze({
+        id: nextId('recovery'),
+        schemaVersion: 1,
+        createdAt: nowIso(),
+        correlationId: context.correlationId,
+        source: '@irp/failover-adapter',
+        metadata: { delegated: false, attempted: false },
+        delegatedTo: 'failover',
+        status: 'failed',
+        reason: `${reason}; security recovery is fail-closed`,
+      });
+    }
+
+    // Recovery is a subsystem concern. Do not require the adapter that executed
+    // the failed action to also implement rollback; delegate to the failover
+    // recovery adapter instead.
+    const actionAdapter = this.adapters.findForAction(
       plan.selectedAction.intent,
       plan.requiredCapabilities,
     );
-    const rollbackSupported = Boolean(adapter?.descriptor.recoverySupport && adapter.rollback);
+    const recoveryAdapter =
+      actionAdapter?.descriptor.recoverySupport && actionAdapter.rollback
+        ? actionAdapter
+        : this.adapters.findForAction('recovery', []);
+    const rollbackSupported = Boolean(recoveryAdapter?.descriptor.recoverySupport && recoveryAdapter.rollback);
 
     if (!rollbackSupported) {
       return deepFreeze({
@@ -24,12 +46,12 @@ export class FailoverRecoveryProvider {
         metadata: { delegated: false, attempted: false },
         delegatedTo: 'failover',
         status: 'failed',
-        reason: `${reason}; no executable rollback adapter is available`,
+        reason: `${reason}; no executable failover rollback adapter is available`,
       });
     }
 
     try {
-      const rollback = await adapter!.rollback!(plan, context);
+      const rollback = await recoveryAdapter!.rollback!(plan, context);
       const status = rollback.status === 'success' ? 'success' : 'failed';
       return deepFreeze({
         id: nextId('recovery'),
@@ -40,7 +62,7 @@ export class FailoverRecoveryProvider {
         metadata: {
           delegated: true,
           attempted: true,
-          adapterId: adapter!.descriptor.adapterId,
+          adapterId: recoveryAdapter!.descriptor.adapterId,
           rollbackExecutionId: rollback.id,
           rollbackStatus: rollback.status,
         },
