@@ -41,7 +41,69 @@ export class ProviderInfoProbe implements NetworkProbe { name = 'provider-info';
 export class PacketLossProbe implements NetworkProbe<{ attempts: number; timeoutMs: number; host: string }, { attempts: number; lost: number; lossRatio: number; method: string }> { name = 'packet-loss'; type = 'packet_loss' as const; constructor(public config = { attempts: 5, timeoutMs: 1500, host: '1.1.1.1' }) {} async execute(context: ProbeContext) { const s = performance.now(); let lost = 0; for (let i = 0; i < this.config.attempts; i += 1) { if (context.signal.aborted) return result(this.type, this.name, s, false, { attempts: i, lost, lossRatio: i ? lost / i : 1, method: 'ICMP echo via system ping' }, 'operation aborted', context.now()); try { await withTimeout(this.config.timeoutMs + 500, context.signal, () => execFileAsync('ping', ['-n', '-c', '1', '-W', String(Math.max(1, Math.ceil(this.config.timeoutMs / 1000))), this.config.host]).then(() => undefined)); } catch { lost += 1; } } const ratio = this.config.attempts ? lost / this.config.attempts : 1; return result(this.type, this.name, s, ratio < 1, { attempts: this.config.attempts, lost, lossRatio: ratio, method: 'ICMP echo via system ping' }, ratio === 1 ? 'all ICMP probes failed' : undefined, context.now()); } }
 export class StabilityProbe implements NetworkProbe<{ attempts: number; timeoutMs: number; host: string }, { attempts: number; lost: number; lossRatio: number; method: string }> { name = 'connection-stability'; type = 'stability' as const; constructor(public config = { attempts: 5, timeoutMs: 1500, host: '1.1.1.1' }) {} async execute(context: ProbeContext) { const r = await new PacketLossProbe(this.config).execute(context); return { ...r, name: this.name, probeType: this.type }; } }
 
-export class ThroughputProbe implements NetworkProbe<{ downloadUrl?: string; uploadUrl?: string; bytes: number; timeoutMs: number }, { downloadMbps?: number; uploadMbps?: number; bytes: number; measured: boolean }> { name = 'throughput'; type = 'throughput' as const; constructor(public config = { bytes: 1024 * 1024, timeoutMs: 10000, downloadUrl: undefined as string | undefined, uploadUrl: undefined as string | undefined }) {} private async transfer(context: ProbeContext, url: string, method: 'GET' | 'POST', bytes: number) { const start = performance.now(); const u = new URL(url); const client = u.protocol === 'http:' ? httpRequest : httpsRequest; return new Promise<{ elapsedMs: number; transferred: number }>((resolve, reject) => { const req = client(u, { method, timeout: this.config.timeoutMs, headers: method === 'POST' ? { 'content-length': String(bytes), 'content-type': 'application/octet-stream' } : { range: `bytes=0-${bytes - 1}` } }, (res) => { let transferred = 0; res.on('data', (chunk: Buffer) => { transferred += chunk.length; if (method === 'GET' && transferred >= bytes) req.destroy(); }); res.on('end', () => resolve({ elapsedMs: performance.now() - start, transferred })); }); const abort = () => { req.destroy(); reject(abortError()); }; context.signal.addEventListener('abort', abort, { once: true }); req.once('timeout', () => { req.destroy(); reject(new Error('throughput request timed out')); }); req.once('error', reject); if (method === 'POST') { const chunk = Buffer.alloc(Math.min(64 * 1024, bytes)); let remaining = bytes; while (remaining > 0) { if (context.signal.aborted) return abort(); const n = Math.min(remaining, chunk.length); req.write(chunk.subarray(0, n)); remaining -= n; } req.end(); } else req.end(); }); } async execute(context: ProbeContext) { const s = performance.now(); if (!this.config.downloadUrl && !this.config.uploadUrl) return result(this.type, this.name, s, false, { bytes: this.config.bytes, measured: false }, 'throughput endpoint is not configured', context.now()); try { const metadata: { downloadMbps?: number; uploadMbps?: number; bytes: number; measured: boolean } = { bytes: this.config.bytes, measured: true }; if (this.config.downloadUrl) { const d = await this.transfer(context, this.config.downloadUrl, 'GET', this.config.bytes); if (d.transferred > 0) metadata.downloadMbps = Number(((d.transferred * 8) / (d.elapsedMs / 1000) / 1_000_000).toFixed(2)); } if (this.config.uploadUrl) { const u = await this.transfer(context, this.config.uploadUrl, 'POST', this.config.bytes); metadata.uploadMbps = Number(((this.config.bytes * 8) / (u.elapsedMs / 1000) / 1_000_000).toFixed(2)); } const measured = metadata.downloadMbps !== undefined || metadata.uploadMbps !== undefined; return result(this.type, this.name, s, measured, metadata, measured ? undefined : 'throughput transfer produced no bytes', context.now()); } catch (e) { return result(this.type, this.name, s, false, { bytes: this.config.bytes, measured: false }, e instanceof Error ? e.message : String(e), context.now()); } } }
+type ThroughputConfig = { downloadUrl?: string; uploadUrl?: string; bytes: number; timeoutMs: number };
+type ThroughputMetadata = { downloadMbps?: number; uploadMbps?: number; bytes: number; measured: boolean };
+export class ThroughputProbe implements NetworkProbe<ThroughputConfig, ThroughputMetadata> {
+  name = 'throughput';
+  type = 'throughput' as const;
+  constructor(public config: ThroughputConfig = { bytes: 1024 * 1024, timeoutMs: 10000 }) {}
+  private async transfer(context: ProbeContext, url: string, method: 'GET' | 'POST', bytes: number): Promise<{ elapsedMs: number; transferred: number }> {
+    const start = performance.now();
+    const u = new URL(url);
+    const client = u.protocol === 'http:' ? httpRequest : httpsRequest;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error, value?: { elapsedMs: number; transferred: number }) => {
+        if (settled) return;
+        settled = true;
+        context.signal.removeEventListener('abort', abort);
+        if (error) reject(error); else resolve(value!);
+      };
+      const abort = () => { req.destroy(); finish(abortError()); };
+      const req = client(u, { method, timeout: this.config.timeoutMs, headers: method === 'POST' ? { 'content-length': String(bytes), 'content-type': 'application/octet-stream' } : { range: `bytes=0-${bytes - 1}` } }, (res) => {
+        let transferred = 0;
+        res.on('data', (chunk: Buffer) => {
+          if (transferred < bytes) transferred += Math.min(chunk.length, bytes - transferred);
+        });
+        res.on('end', () => finish(undefined, { elapsedMs: performance.now() - start, transferred }));
+      });
+      context.signal.addEventListener('abort', abort, { once: true });
+      req.once('timeout', () => { req.destroy(); finish(new Error('throughput request timed out')); });
+      req.once('error', (error) => finish(error));
+      if (method === 'POST') {
+        const chunk = Buffer.alloc(Math.min(64 * 1024, bytes));
+        let remaining = bytes;
+        while (remaining > 0) {
+          if (context.signal.aborted) return abort();
+          const n = Math.min(remaining, chunk.length);
+          req.write(chunk.subarray(0, n));
+          remaining -= n;
+        }
+        req.end();
+      } else req.end();
+    });
+  }
+  async execute(context: ProbeContext): Promise<ProbeResult<ThroughputMetadata>> {
+    const s = performance.now();
+    if (!this.config.downloadUrl && !this.config.uploadUrl) return result(this.type, this.name, s, false, { bytes: this.config.bytes, measured: false }, 'throughput endpoint is not configured', context.now());
+    try {
+      const metadata: ThroughputMetadata = { bytes: this.config.bytes, measured: true };
+      if (this.config.downloadUrl) {
+        const d = await this.transfer(context, this.config.downloadUrl, 'GET', this.config.bytes);
+        if (d.transferred > 0 && d.elapsedMs > 0) metadata.downloadMbps = Number(((d.transferred * 8) / (d.elapsedMs / 1000) / 1_000_000).toFixed(2));
+      }
+      if (this.config.uploadUrl) {
+        const u = await this.transfer(context, this.config.uploadUrl, 'POST', this.config.bytes);
+        if (u.transferred > 0 && u.elapsedMs > 0) metadata.uploadMbps = Number(((u.transferred * 8) / (u.elapsedMs / 1000) / 1_000_000).toFixed(2));
+      }
+      const measured = metadata.downloadMbps !== undefined || metadata.uploadMbps !== undefined;
+      metadata.measured = measured;
+      return result(this.type, this.name, s, measured, metadata, measured ? undefined : 'throughput transfer produced no bytes', context.now());
+    } catch (e) {
+      return result(this.type, this.name, s, false, { bytes: this.config.bytes, measured: false }, e instanceof Error ? e.message : String(e), context.now());
+    }
+  }
+}
 
 export const defaultNetworkProbes = (): NetworkProbe[] => [new DnsLatencyProbe(), new TcpLatencyProbe(), new HttpAvailabilityProbe(), new PacketLossProbe(), new StabilityProbe(), new ThroughputProbe(), new IpCapabilityProbe(), new ProviderInfoProbe()];
 
@@ -52,9 +114,30 @@ export class NetworkMonitoringService {
   private abortController: AbortController | undefined;
   constructor(private readonly probes: NetworkProbe[] = defaultNetworkProbes(), private readonly store = createNetworkTelemetryStore(), private readonly intervalMs = 60_000, private readonly retries = 1) {}
   start(): void { this.timer ??= setInterval(() => { void this.runOnce(); }, this.intervalMs); }
-  stop(): void { if (this.timer) clearInterval(this.timer); this.timer = undefined; this.abortController?.abort(); }
+  stop(): void { if (this.timer) clearInterval(this.timer); this.timer = undefined; this.abortController?.abort(); this.abortController = undefined; }
   async runOnce(): Promise<MonitoringSnapshot> { if (this.running) return this.running; this.running = this.collectOnce(); try { return await this.running; } finally { this.running = undefined; } }
-  private async collectOnce(): Promise<MonitoringSnapshot> { this.abortController?.abort(); this.abortController = new AbortController(); const context: ProbeContext = { signal: this.abortController.signal, now: () => new Date().toISOString() }; const measurements: NetworkMeasurement[] = []; for (const probe of this.probes) { let r: ProbeResult | undefined; const attempts: Array<{ success: boolean; latencyMs: number; error?: string }> = []; for (let attempt = 0; attempt <= this.retries; attempt += 1) { r = await probe.execute(context); attempts.push({ success: r.success, latencyMs: r.latencyMs, ...(r.error ? { error: r.error } : {}) }); if (r.success || context.signal.aborted) break; } const m: NetworkMeasurement = { id: crypto.randomUUID(), timestamp: r?.timestamp ?? context.now(), probeType: probe.type, latency: r?.latencyMs ?? null, success: Boolean(r?.success), error: r?.error ?? null, metadata: { ...(r?.metadata ?? {}), attempts, finalAttempt: attempts.length } }; measurements.push(m); this.store.measurements.push(m); this.failures.set(probe.name, m.success ? 0 : (this.failures.get(probe.name) ?? 0) + 1); } const score = calculateHealthScore(measurements); this.store.healthScores.push(score); return this.snapshot(measurements, score); }
+  private async collectOnce(): Promise<MonitoringSnapshot> {
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    const context: ProbeContext = { signal: this.abortController.signal, now: () => new Date().toISOString() };
+    const measurements: NetworkMeasurement[] = [];
+    for (const probe of this.probes) {
+      let r: ProbeResult | undefined;
+      const attempts: Array<{ success: boolean; latencyMs: number; error?: string }> = [];
+      for (let attempt = 0; attempt <= this.retries; attempt += 1) {
+        r = await probe.execute(context);
+        attempts.push({ success: r.success, latencyMs: r.latencyMs, ...(r.error ? { error: r.error } : {}) });
+        if (r.success || context.signal.aborted) break;
+      }
+      const m: NetworkMeasurement = { id: crypto.randomUUID(), timestamp: r?.timestamp ?? context.now(), probeType: probe.type, latency: r?.latencyMs ?? null, success: Boolean(r?.success), error: r?.error ?? null, metadata: { ...(r?.metadata ?? {}), attempts, finalAttempt: attempts.length } };
+      measurements.push(m);
+      this.store.measurements.push(m);
+      this.failures.set(probe.name, m.success ? 0 : (this.failures.get(probe.name) ?? 0) + 1);
+    }
+    const score = calculateHealthScore(measurements);
+    this.store.healthScores.push(score);
+    return this.snapshot(measurements, score);
+  }
   snapshot(measurements = this.store.measurements.slice(-this.probes.length), score = this.store.healthScores.at(-1) ?? calculateHealthScore(measurements)): MonitoringSnapshot { const failures = Object.fromEntries(this.failures); const issues = measurements.filter((m) => !m.success && m.metadata['scorable'] !== false).map((m) => `${m.probeType}: ${m.error ?? 'failed'}`); return { status: score.score >= 80 ? 'healthy' : score.score >= 50 ? 'degraded' : 'unhealthy', score, measurements, failures, issues }; }
   measurements(): NetworkMeasurement[] { return [...this.store.measurements]; }
 }
