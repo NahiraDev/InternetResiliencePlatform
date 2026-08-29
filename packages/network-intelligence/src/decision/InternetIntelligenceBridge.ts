@@ -1,10 +1,6 @@
-import type {
-  DecisionModelProvider,
-  DecisionResult,
-  NetworkDecisionContext,
-} from './NetworkDecisionEngine.js';
+import type { DecisionModelProvider, DecisionResult, NetworkDecisionContext } from './NetworkDecisionEngine.js';
 
-/** Minimal structural contract so network-intelligence does not depend on the agent package. */
+/** Structural contract deliberately avoids a dependency from network-intelligence to the agent package. */
 export interface InternetIntelligenceAdvisor {
   observe(evidence: InternetEvidence): Promise<AgentRecommendation>;
 }
@@ -38,30 +34,25 @@ export interface AgentRecommendation {
 }
 
 export interface InternetIntelligenceBridgeOptions {
-  /** Do not let the advisory layer block the authoritative decision path. */
   timeoutMs?: number;
 }
 
 export class InternetIntelligenceBridge {
   private readonly timeoutMs: number;
 
-  constructor(
-    private readonly advisor: InternetIntelligenceAdvisor,
-    options: InternetIntelligenceBridgeOptions = {},
-  ) {
+  constructor(private readonly advisor: InternetIntelligenceAdvisor, options: InternetIntelligenceBridgeOptions = {}) {
     this.timeoutMs = Math.max(1, Math.min(5_000, options.timeoutMs ?? 400));
   }
 
   async analyze(context: NetworkDecisionContext): Promise<AgentRecommendation | null> {
-    const evidence = toInternetEvidence(context);
+    const evidence = context.internetEvidence;
+    if (!evidence) return null;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       return await Promise.race([
         this.advisor.observe(evidence),
-        new Promise<null>((resolve) => {
-          controller.signal.addEventListener('abort', () => resolve(null), { once: true });
-        }),
+        new Promise<null>((resolve) => controller.signal.addEventListener('abort', () => resolve(null), { once: true })),
       ]);
     } catch {
       return null;
@@ -89,47 +80,4 @@ export class InternetIntelligenceBridge {
       },
     };
   }
-}
-
-function toInternetEvidence(context: NetworkDecisionContext): InternetEvidence {
-  const candidates = context.candidates;
-  const metrics = candidates.map((candidate) => candidate.metrics);
-  const numberValue = (key: keyof InternetEvidence): number | null => {
-    const values = metrics
-      .map((item) => item[key as keyof typeof item])
-      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-    return values.length ? Math.min(...values) : null;
-  };
-  const average = (key: 'latencyMs' | 'jitterMs' | 'packetLossRatio'): number | null => {
-    const values = metrics
-      .map((item) => item[key])
-      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
-  };
-  const reachable = candidates.some((candidate) => candidate.health === 'healthy' || candidate.health === 'degraded');
-  const latencyMs = average('latencyMs');
-  const jitterMs = average('jitterMs');
-  const packetLossRatio = average('packetLossRatio') ?? 0;
-  const dnsLookupMs = numberValue('dnsHealth');
-  const httpResponseMs = numberValue('throughputMbps');
-  const httpsHandshakeMs = numberValue('tunnelHealth');
-  const qualityScore = candidates.length
-    ? Math.round((candidates.reduce((sum, candidate) => sum + (candidate.score ?? 0), 0) / candidates.length) * 100)
-    : 0;
-  return {
-    timestamp: context.timestamp,
-    latencyMs,
-    jitterMs,
-    packetLossRatio: Math.max(0, Math.min(1, packetLossRatio)),
-    dnsLookupMs,
-    httpResponseMs,
-    httpsHandshakeMs,
-    ipv4Connectivity: reachable,
-    ipv6Connectivity: Boolean(context.connectivity),
-    gatewayReachable: reachable,
-    internetReachable: reachable,
-    qualityScore: Math.max(0, Math.min(100, qualityScore)),
-    ...(context.currentRoute ? { destination: context.currentRoute } : {}),
-    ...(context.currentResolver ? { resolver: context.currentResolver } : {}),
-  };
 }
