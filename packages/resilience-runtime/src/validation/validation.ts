@@ -26,7 +26,8 @@ export class RuntimeActionValidator {
         if (!adapter.descriptor.verificationSupport) reasons.push(`adapter ${adapter.descriptor.adapterId} does not support verification`);
       }
     }
-    if (activeOperation) reasons.push('conflicting operation is active');
+    const dependencyKeys = [...plan.dependencies, plan.selectedAction.intent];
+    if (activeOperation || dependencyKeys.some((key) => this.active.has(key))) reasons.push('conflicting operation is active');
     return deepFreeze({ id: nextId('validation'), schemaVersion: 1, createdAt: nowIso(), correlationId: context.correlationId, source: 'resilience-runtime', metadata: {}, valid: reasons.length === 0, reasons, policy });
   }
 }
