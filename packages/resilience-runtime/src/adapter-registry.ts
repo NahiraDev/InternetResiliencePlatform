@@ -107,6 +107,12 @@ export class DeterministicRuntimeAdapter implements RuntimeAdapter {
   async verify(plan: ActionPlan, _execution: ActionExecution, context: RuntimeContext) {
     return createAdapterVerification(plan, context, this.verificationStatus);
   }
+  async rollback(plan: ActionPlan, context: RuntimeContext) {
+    if (!this.descriptor.recoverySupport) {
+      return createAdapterExecution(plan, context, context.mode !== 'live', 'failed');
+    }
+    return createAdapterExecution(plan, context, context.mode !== 'live', 'success');
+  }
 }
 export const createDefaultRuntimeAdapterRegistry = () => {
   const r = new RuntimeAdapterRegistry();
