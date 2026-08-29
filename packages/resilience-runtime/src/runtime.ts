@@ -1,5 +1,16 @@
 import { createRuntimeContext } from './context/context.js';
-import type { RuntimeContext, RuntimeSnapshot, RuntimeCounters, DecisionOutcome, RuntimeState } from './domain/types.js';
+import type {
+  RuntimeContext,
+  RuntimeSnapshot,
+  RuntimeCounters,
+  DecisionOutcome,
+  RuntimeState,
+  ObservationBatch,
+  Incident,
+  CandidateAction,
+  ActionPlan,
+  ActionValidation,
+} from './domain/types.js';
 import { RuntimeStateMachine } from './state/state-machine.js';
 import { ObservationAggregator } from './observations/observations.js';
 import { IncidentCorrelator } from './incidents/incidents.js';
@@ -87,7 +98,16 @@ export class ResilienceRuntime {
       await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
     } finally { this.validator.release(lockKey); }
   }
-  private async recordBlocked(context: RuntimeContext, before: RuntimeState, observations: any, found: any, candidates: any, plan: any, start: number, validation?: any) {
+  private async recordBlocked(
+    context: RuntimeContext,
+    before: RuntimeState,
+    observations: ObservationBatch,
+    found: readonly Incident[],
+    candidates: readonly CandidateAction[],
+    plan: ActionPlan,
+    start: number,
+    validation?: ActionValidation,
+  ) {
     await this.state.transition('blocked', context.correlationId); this.counters = { ...this.counters, blockedTotal: this.counters.blockedTotal + 1 };
     const record = createDecisionRecord({ context, before, after: this.state.current(), observations, incidents: found, policyEvaluation: plan.policyResult, candidates, selectedPlan: plan, validation, outcome: 'blocked', confidence: plan.confidence, durationMs: Date.now() - start });
     await this.decisions.put(record); this.last = record; await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
