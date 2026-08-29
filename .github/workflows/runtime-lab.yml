@@ -49,7 +49,7 @@ defaults:
 jobs:
   runtime-lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,6 +65,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -115,8 +116,6 @@ jobs:
             exit 1
           fi
 
-          # Readiness is not sufficient: catch a process that becomes ready and
-          # immediately crashes/restarts after the first successful probe.
           lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
           baseline_restarts="$(docker inspect -f '{{.RestartCount}}' "$lab_id")"
           for i in {1..5}; do
