@@ -78,18 +78,33 @@ export class ResilienceRuntime {
     try {
       const validation = await this.validator.validate(plan, context, false);
       if (!validation.valid) return this.recordBlocked(context, before, observations, found, candidates, plan, start, validation);
-      let outcome: DecisionOutcome = 'simulated'; let execution; let verification; let recovery;
-      const executor = new CoordinatedActionExecutor(this.adapters); const verifier = new RuntimeActionVerifier(this.adapters); const recoveryProvider = new FailoverRecoveryProvider(this.adapters);
-      if (context.mode === 'simulation') { execution = await executor.execute(plan, context); verification = await verifier.verify(plan, execution, context); outcome = 'simulated'; }
-      else {
+      let outcome: DecisionOutcome = 'simulated';
+      let execution;
+      let verification;
+      let recovery;
+      const executor = new CoordinatedActionExecutor(this.adapters);
+      const verifier = new RuntimeActionVerifier(this.adapters);
+      const recoveryProvider = new FailoverRecoveryProvider(this.adapters);
+
+      // Simulation is a planning/validation path: it must not create an
+      // execution record or invoke adapter execution/verification. The lower
+      // level executor still supports simulation for callers that explicitly
+      // exercise that component.
+      if (context.mode === 'simulation') {
+        outcome = 'simulated';
+      } else {
         await this.state.transition('executing', context.correlationId);
         execution = await executor.execute(plan, context);
         await this.events.emit('runtime.execution.completed', { correlationId: context.correlationId, status: execution.status });
         await this.state.transition('verifying', context.correlationId);
         verification = await verifier.verify(plan, execution, context);
         await this.events.emit('runtime.verification.completed', { correlationId: context.correlationId, status: verification.status });
-        if (verification.status === 'failed') { await this.state.transition('recovering', context.correlationId); recovery = await recoveryProvider.recover(plan, 'verification failed', context); outcome = 'degraded'; await this.state.transition('degraded', context.correlationId); }
-        else outcome = execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
+        if (verification.status === 'failed') {
+          await this.state.transition('recovering', context.correlationId);
+          recovery = await recoveryProvider.recover(plan, 'verification failed', context);
+          outcome = 'degraded';
+          await this.state.transition('degraded', context.correlationId);
+        } else outcome = execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
       }
       const record = createDecisionRecord({ context, before, after: this.state.current(), observations, incidents: found, policyEvaluation: plan.policyResult, candidates, selectedPlan: plan, validation, executionResult: execution, verificationResult: verification, recoveryResult: recovery, outcome, confidence: plan.confidence, durationMs: Date.now() - start });
       await this.decisions.put(record); this.last = record;
@@ -114,6 +129,6 @@ export class ResilienceRuntime {
   }
   async getRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     const lastIncidents = await this.incidents.list(); const state = this.state.current(); const evidenceBacked = Boolean(this.last?.verificationResult?.status === 'success' || this.last?.outcome === 'simulated' || this.last?.outcome === 'blocked');
-    return { state, activeIncident: lastIncidents.at(-1), recentObservations: this.last?.observations, policySnapshot: this.last?.runtimeContext ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot : createRuntimeContext().policySnapshot, currentPlan: this.last?.selectedPlan, currentAction: this.last?.selectedPlan?.selectedAction, verificationStatus: this.last?.verificationResult, recoveryStatus: this.last?.recoveryResult, lastDecision: this.last, health: { status: state === 'blocked' ? 'degraded' : state === 'failed' ? 'failed' : evidenceBacked ? 'healthy' : 'unknown', reason: evidenceBacked ? 'backed by cycle evidence' : 'no verified health evidence' }, uptimeMs: Date.now() - this.started, counters: this.counters, mode: this.last?.runtimeContext.mode ?? 'safe' };
+    return { state, activeIncident: lastIncidents.at(-1), recentObservations: this.last?.observations, policySnapshot: this.last?.runtimeContext ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot : createRuntimeContext().policySnapshot, currentPlan: this.last?.selectedPlan, currentAction: this.last?.selectedPlan?.selectedAction, verificationStatus: this.last?.verificationResult, recoveryStatus: this.last?.recoveryResult, lastDecision: this.last, health: { status: state === 'blocked' ? 'degraded' : state === 'failed' ? 'failed' : evidenceBacked ? 'healthy' : 'unknown', reason: evidenceBacked ? 'backed by cycle evidence' : 'no evidence yet' }, uptimeMs: Date.now() - this.started, counters: this.counters, mode: this.last?.runtimeContext.mode ?? 'safe' };
   }
 }
