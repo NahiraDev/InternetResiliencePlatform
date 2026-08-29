@@ -1,41 +1,22 @@
-# InternetResiliencePlatform — Agent Continuation Contract
+# InternetResiliencePlatform Agent Quick Start
 
-This repository is designed to be continued by different engineering agents or accounts without relying on conversational memory.
+1. Read `PROJECT_STATE.md`.
+2. Identify the active phase and its verification status.
+3. Read the phase document and relevant architecture contracts.
+4. Read `.github/AGENT_PROTOCOL.md`.
+5. If touching CI/runtime, read `.github/CI_CONTRACT.md`.
+6. Declare a bounded scope before editing.
+7. Implement, test, typecheck, lint and build as applicable.
+8. Record evidence and hand off; never infer completion from source presence alone.
 
-## Required startup procedure
+Preferred agent routing:
 
-Before changing code:
+| Task | Agent |
+|---|---|
+| Feature/phase implementation | `irp-phase-implementer` |
+| GitHub Actions / Runtime Lab / Public Runtime Lab | `irp-ci-runtime-engineer` |
+| Architecture/domain review | `irp-architecture-reviewer` |
+| Tests/flakiness/runtime verification | `irp-test-verification-engineer` |
+| Integration/final gate/release readiness | `irp-integration-release-engineer` |
 
-1. Read `ROADMAP.md`.
-2. Read `PROJECT_STATE.md`.
-3. Inspect the current implementation and relevant tests.
-4. Identify the current phase and its incomplete acceptance criteria.
-5. Run or inspect the smallest relevant verification first, then the complete repository gates before declaring completion.
-
-## Phase progression
-
-- The roadmap contains exactly 40 phases.
-- Do not invent additional phases unless the user explicitly changes the product scope.
-- Do not skip a failing phase merely to advance the phase number.
-- A phase is complete only when its implementation, tests, CI, and required runtime verification pass.
-- Update `PROJECT_STATE.md` whenever a phase materially changes status or a blocker/fix becomes important for continuation.
-
-## Current handoff
-
-Read `PROJECT_STATE.md` for the authoritative current phase, verification state, latest fix, and next-phase brief.
-
-## Engineering constraints
-
-- Headless/core-first architecture.
-- No dashboard, Electron UI, or mobile UI work unless explicitly requested.
-- Core network intelligence, autonomous decision-making, destination-aware routing, verification, resilience, security, and runtime correctness take priority.
-- Use pnpm; do not introduce npm-based workflows.
-- Do not weaken CI gates to make a build green.
-- Fix root causes and preserve production behavior.
-- Do not modify `README.md` unless the user explicitly requests it.
-- Avoid duplicate abstractions; extend existing contracts when appropriate.
-- Every autonomous network action must remain policy-bounded, observable, verifiable, reversible, and protected against route flapping.
-
-## Definition of done
-
-A change is not done until the relevant deterministic tests pass and the repository's CI/runtime gates provide evidence that the change works in the intended production path.
+Parallel execution is allowed only when file/package ownership is disjoint. Contract changes always require integration review.
