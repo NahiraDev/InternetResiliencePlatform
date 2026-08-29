@@ -5,10 +5,15 @@ import type {
   ActionVerification,
   RuntimeContext,
 } from '../domain/types.js';
-import { RuntimeAdapterRegistry, createAdapterVerification } from '../adapter-registry.js';
+import {
+  RuntimeAdapterRegistry,
+  createDefaultRuntimeAdapterRegistry,
+} from '../adapter-registry.js';
 
 export class RuntimeActionVerifier {
-  constructor(private readonly adapters: RuntimeAdapterRegistry = new RuntimeAdapterRegistry()) {}
+  constructor(
+    private readonly adapters: RuntimeAdapterRegistry = createDefaultRuntimeAdapterRegistry(),
+  ) {}
 
   async verify(
     plan: ActionPlan,
