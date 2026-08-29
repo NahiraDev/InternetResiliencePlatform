@@ -33,3 +33,4 @@ export * from './utils/Retry.js';
 export * from './utils/Statistics.js';
 export * from './utils/Timeout.js';
 export * from './decision/NetworkDecisionEngine.js';
+export * from './decision/InternetIntelligenceBridge.js';
