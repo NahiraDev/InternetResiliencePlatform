@@ -17,7 +17,6 @@ on:
       - 'pnpm-lock.yaml'
 
 permissions:
-  actions: write
   contents: read
 
 # Only one public soak may own the public lab at a time. A newer main commit
@@ -42,30 +41,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Cancel stale public lab runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for status in in_progress queued; do
-            while IFS= read -r run_id; do
-              [ -n "$run_id" ] || continue
-              if [ "$run_id" = "$GITHUB_RUN_ID" ]; then
-                continue
-              fi
-              echo "Cancelling stale Public Runtime Lab run $run_id (status=$status)."
-              gh run cancel "$run_id" --force || true
-            done < <(
-              gh run list \
-                --workflow public-runtime-lab.yml \
-                --branch main \
-                --status "$status" \
-                --limit 50 \
-                --json databaseId \
-                --jq '.[].databaseId'
-            )
-          done
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
