@@ -1,11 +1,17 @@
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
 import type { ActionExecution, ActionPlan, RuntimeContext } from '../domain/types.js';
-import { RuntimeAdapterRegistry, createAdapterExecution } from '../adapter-registry.js';
+import {
+  RuntimeAdapterRegistry,
+  createAdapterExecution,
+  createDefaultRuntimeAdapterRegistry,
+} from '../adapter-registry.js';
 
 export class CoordinatedActionExecutor {
   private readonly inFlight = new Map<string, Promise<ActionExecution>>();
 
-  constructor(private readonly adapters: RuntimeAdapterRegistry) {}
+  constructor(
+    private readonly adapters: RuntimeAdapterRegistry = createDefaultRuntimeAdapterRegistry(),
+  ) {}
 
   async execute(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
     const key = String(plan.metadata['idempotencyKey'] ?? plan.id);
