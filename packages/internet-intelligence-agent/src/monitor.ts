@@ -20,7 +20,7 @@ export class InternetIntelligenceMonitor {
   private readonly runImmediately: boolean;
   private readonly onRecommendation: ((recommendation: AgentRecommendation) => void | Promise<void>) | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
-  private running: Promise<void> | undefined;
+  private running: Promise<AgentRecommendation | null> | undefined;
 
   constructor(
     private readonly source: InternetEvidenceSource,
