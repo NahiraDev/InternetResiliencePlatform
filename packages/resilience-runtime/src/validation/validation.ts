@@ -4,49 +4,29 @@ import { RuntimePolicyArbitrator } from '../policy/policy.js';
 import { RuntimeAdapterRegistry, createDefaultRuntimeAdapterRegistry } from '../adapter-registry.js';
 
 export class RuntimeActionValidator {
-  constructor(
-    private readonly policy = new RuntimePolicyArbitrator(),
-    private readonly adapters: RuntimeAdapterRegistry = createDefaultRuntimeAdapterRegistry(),
-  ) {}
-
+  private readonly active = new Set<string>();
+  constructor(private readonly policy = new RuntimePolicyArbitrator(), private readonly adapters: RuntimeAdapterRegistry = createDefaultRuntimeAdapterRegistry()) {}
+  lock(key: string): boolean { if (this.active.has(key)) return false; this.active.add(key); return true; }
+  release(key: string): void { this.active.delete(key); }
+  isActive(key: string): boolean { return this.active.has(key); }
   async validate(plan: ActionPlan, context: RuntimeContext, activeOperation = false): Promise<ActionValidation> {
     const reasons: string[] = [];
-    const policyResult = await this.policy.evaluate(plan, context);
-    reasons.push(...policyResult.reasons);
-
+    const policy = await this.policy.evaluate(plan, context);
+    reasons.push(...policy.reasons);
     if (context.cancelled) reasons.push('context is cancelled');
-    if (plan.selectedAction.intent !== 'noop' && context.mode === 'safe' && !context.securityContext.trusted)
-      reasons.push('safe mode requires trusted authorization for mutation');
-    if (plan.selectedAction.intent !== 'noop' && context.configuration.maxActionsPerCycle < 1)
-      reasons.push('action budget exhausted');
-    if (context.observationSnapshot?.stale)
-      reasons.push('stale telemetry cannot validate mutating plan');
-
+    if (plan.selectedAction.intent !== 'noop' && context.mode === 'safe' && !context.securityContext.trusted) reasons.push('safe mode requires trusted authorization for mutation');
+    if (plan.selectedAction.intent !== 'noop' && context.configuration.maxActionsPerCycle < 1) reasons.push('action budget exhausted');
+    if (context.observationSnapshot?.stale) reasons.push('stale telemetry cannot validate mutating plan');
     if (plan.selectedAction.intent !== 'noop') {
       const adapter = this.adapters.findForAction(plan.selectedAction.intent, plan.requiredCapabilities);
-      if (!adapter) {
-        reasons.push('no adapter satisfies the selected action and required capabilities');
-      } else {
-        if (context.mode === 'live' && !adapter.descriptor.supportsLive)
-          reasons.push(`adapter ${adapter.descriptor.adapterId} does not support live execution`);
-        if (context.mode !== 'live' && !adapter.descriptor.supportsSimulation)
-          reasons.push(`adapter ${adapter.descriptor.adapterId} does not support simulation`);
-        if (!adapter.descriptor.verificationSupport)
-          reasons.push(`adapter ${adapter.descriptor.adapterId} does not support verification`);
+      if (!adapter) reasons.push('no adapter satisfies the selected action and required capabilities');
+      else {
+        if (context.mode === 'live' && !adapter.descriptor.supportsLive) reasons.push(`adapter ${adapter.descriptor.adapterId} does not support live execution`);
+        if (context.mode !== 'live' && !adapter.descriptor.supportsSimulation) reasons.push(`adapter ${adapter.descriptor.adapterId} does not support simulation`);
+        if (!adapter.descriptor.verificationSupport) reasons.push(`adapter ${adapter.descriptor.adapterId} does not support verification`);
       }
     }
-
     if (activeOperation) reasons.push('conflicting operation is active');
-    return deepFreeze({
-      id: nextId('validation'),
-      schemaVersion: 1,
-      createdAt: nowIso(),
-      correlationId: context.correlationId,
-      source: 'resilience-runtime',
-      metadata: {},
-      valid: reasons.length === 0,
-      reasons,
-      policy: policyResult,
-    });
+    return deepFreeze({ id: nextId('validation'), schemaVersion: 1, createdAt: nowIso(), correlationId: context.correlationId, source: 'resilience-runtime', metadata: {}, valid: reasons.length === 0, reasons, policy });
   }
 }
