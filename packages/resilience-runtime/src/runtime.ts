@@ -74,10 +74,13 @@ export class ResilienceRuntime {
     if (!plan.policyResult.allowed) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
     await this.state.transition('validating', context.correlationId);
     const lockKey = plan.dependencies.join('|') || plan.selectedAction.intent;
-    if (!this.validator.lock(lockKey)) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
     try {
+      // Validate before acquiring the lock so the validator can distinguish an
+      // already-active conflicting operation from this cycle's eventual lock.
       const validation = await this.validator.validate(plan, context, false);
       if (!validation.valid) return this.recordBlocked(context, before, observations, found, candidates, plan, start, validation);
+      if (!this.validator.lock(lockKey)) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
+
       let outcome: DecisionOutcome = 'simulated';
       let execution;
       let verification;
