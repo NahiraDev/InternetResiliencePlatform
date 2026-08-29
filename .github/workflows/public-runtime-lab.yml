@@ -19,11 +19,11 @@ on:
 permissions:
   contents: read
 
-# A six-hour public soak is evidence, not a preview job. Never cancel the
-# previous main run just because another commit arrived.
+# Only one public soak may own the public lab at a time. A newer main commit
+# supersedes the previous soak so stale public tunnels/runners do not pile up.
 concurrency:
-  group: public-runtime-lab-${{ github.run_id }}
-  cancel-in-progress: false
+  group: public-runtime-lab-main
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '24'
@@ -102,8 +102,6 @@ jobs:
             exit 1
           fi
 
-          # Detect the same crash/restart-after-readiness race that previously
-          # produced connection resets while the workflow still appeared healthy.
           lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
           gateway_id="$(docker compose -f "$COMPOSE_FILE" ps -q public-gateway)"
           baseline_lab_restarts="$(docker inspect -f '{{.RestartCount}}' "$lab_id")"
