@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { DatabaseClient } from '@irp/database';
 
@@ -8,6 +8,16 @@ export const notificationTypeSchema = z.enum(['incident-opened', 'incident-updat
 export type IncidentSeverity = z.infer<typeof incidentSeveritySchema>;
 export type IncidentStatus = z.infer<typeof incidentStatusSchema>;
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
+
+export const runtimeIncidentInputSchema = z.object({
+  source: z.string().trim().min(1).max(128).optional(),
+  classification: z.string().trim().min(1).max(128),
+  rootCause: z.string().trim().min(1).max(512),
+  affectedComponents: z.array(z.string().trim().min(1).max(128)).max(32),
+  evidence: z.array(z.string().trim().min(1).max(2048)).max(64),
+  correlationReason: z.string().trim().min(1).max(2048),
+  confidence: z.number().finite().min(0).max(1),
+});
 
 export interface IncidentRecord {
   id: string;
@@ -42,15 +52,7 @@ export interface NotificationRecord {
   createdAt: string;
 }
 
-export interface RuntimeIncidentInput {
-  source?: string;
-  classification: string;
-  rootCause: string;
-  affectedComponents: readonly string[];
-  evidence: readonly string[];
-  correlationReason: string;
-  confidence: number;
-}
+export type RuntimeIncidentInput = z.infer<typeof runtimeIncidentInputSchema>;
 
 const severityFor = (classification: string, confidence: number): IncidentSeverity => {
   if (classification === 'security_failure' || classification === 'policy_violation') return 'critical';
@@ -106,23 +108,24 @@ export class NotificationIncidentCenter {
   constructor(private readonly db?: DatabaseClient) {}
 
   async open(input: RuntimeIncidentInput): Promise<IncidentRecord> {
-    const fingerprint = fingerprintFor(input);
+    const validated = runtimeIncidentInputSchema.parse(input);
+    const fingerprint = fingerprintFor(validated);
     const current = await this.getByFingerprint(fingerprint);
     const timestamp = now();
-    const severity = severityFor(input.classification, input.confidence);
+    const severity = severityFor(validated.classification, validated.confidence);
 
     const incident: IncidentRecord = current
       ? {
           ...current,
-          title: input.rootCause,
+          title: validated.rootCause,
           severity: current.severity === 'critical' || severity === 'critical' ? 'critical' : current.severity === 'warning' || severity === 'warning' ? 'warning' : 'info',
           status: current.status === 'resolved' ? 'open' : current.status,
-          rootCause: input.rootCause,
-          affectedComponents: [...input.affectedComponents],
-          evidence: [...input.evidence],
-          correlationReason: input.correlationReason,
-          confidence: Math.max(current.confidence, input.confidence),
-          source: input.source ?? current.source,
+          rootCause: validated.rootCause,
+          affectedComponents: [...validated.affectedComponents],
+          evidence: [...validated.evidence],
+          correlationReason: validated.correlationReason,
+          confidence: Math.max(current.confidence, validated.confidence),
+          source: validated.source ?? current.source,
           occurrenceCount: current.occurrenceCount + 1,
           lastSeenAt: timestamp,
           acknowledgedAt: current.status === 'resolved' ? null : current.acknowledgedAt,
@@ -130,18 +133,18 @@ export class NotificationIncidentCenter {
           updatedAt: timestamp,
         }
       : {
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           fingerprint,
-          title: input.rootCause,
+          title: validated.rootCause,
           severity,
           status: 'open',
-          source: input.source ?? 'resilience-runtime',
-          classification: input.classification,
-          rootCause: input.rootCause,
-          affectedComponents: [...input.affectedComponents],
-          evidence: [...input.evidence],
-          correlationReason: input.correlationReason,
-          confidence: input.confidence,
+          source: validated.source ?? 'resilience-runtime',
+          classification: validated.classification,
+          rootCause: validated.rootCause,
+          affectedComponents: [...validated.affectedComponents],
+          evidence: [...validated.evidence],
+          correlationReason: validated.correlationReason,
+          confidence: validated.confidence,
           occurrenceCount: 1,
           firstSeenAt: timestamp,
           lastSeenAt: timestamp,
@@ -247,12 +250,13 @@ export class NotificationIncidentCenter {
     if (!this.db) {
       const current = this.memoryNotifications.get(id);
       if (!current) return null;
+      if (current.readAt) return current;
       const updated = { ...current, readAt: now() };
       this.memoryNotifications.set(id, updated);
       return updated;
     }
     const rows = (await this.db.$queryRaw`
-      UPDATE "Notification" SET "readAt" = NOW() WHERE id = CAST(${id} AS uuid)
+      UPDATE "Notification" SET "readAt" = COALESCE("readAt", NOW()) WHERE id = CAST(${id} AS uuid)
       RETURNING id::text AS "id", "incidentId"::text AS "incidentId", type, severity,
                 title, message, actionable, "readAt", "createdAt"
     `) as unknown as NotificationDbRow[];
@@ -284,7 +288,7 @@ export class NotificationIncidentCenter {
 
   private async emitNotification(incident: IncidentRecord, type: NotificationType) {
     const notification: NotificationRecord = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       incidentId: incident.id,
       type,
       severity: incident.severity,
