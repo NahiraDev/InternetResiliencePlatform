@@ -59,15 +59,6 @@ export class NodeHTTPProvider implements HTTPProvider {
 
       req.once('socket', (socket) => {
         const tlsSocket = socket as TLSSocket;
-        if (tlsSocket.authorized !== undefined) {
-          resolve({
-            handshakeMs: performance.now() - start,
-            authorized: tlsSocket.authorized,
-          });
-          req.destroy();
-          return;
-        }
-
         tlsSocket.once('secureConnect', () => {
           resolve({
             handshakeMs: performance.now() - start,
