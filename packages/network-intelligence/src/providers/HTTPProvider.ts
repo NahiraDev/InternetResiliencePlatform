@@ -1,44 +1,98 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
+import type { TLSSocket } from 'node:tls';
 import { performance } from 'node:perf_hooks';
 import { URL } from 'node:url';
+
 export interface HTTPResult {
   responseMs: number;
   statusCode: number;
   bytes: number;
 }
+
 export interface TLSResult {
   handshakeMs: number;
   authorized: boolean;
 }
+
 export interface PublicIPResult {
   ip: string | null;
   asn: number | null;
   isp: string | null;
 }
+
 export interface BandwidthResult {
   mbps: number;
 }
+
 export interface HTTPProvider {
   request(url: string, signal: AbortSignal): Promise<HTTPResult>;
   tlsHandshake(url: string, signal: AbortSignal): Promise<TLSResult>;
   publicIp(url: string, signal: AbortSignal): Promise<PublicIPResult>;
   bandwidth(url: string, signal: AbortSignal): Promise<BandwidthResult>;
 }
+
 export class NodeHTTPProvider implements HTTPProvider {
   async request(url: string, signal: AbortSignal): Promise<HTTPResult> {
     return fetchLike(url, signal);
   }
+
   async tlsHandshake(url: string, signal: AbortSignal): Promise<TLSResult> {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') {
+      throw new Error('TLS handshake requires an https URL');
+    }
+
     const start = performance.now();
-    await fetchLike(url, signal);
-    return { handshakeMs: performance.now() - start, authorized: true };
+    return new Promise((resolve, reject) => {
+      const req = httpsRequest(
+        u,
+        {
+          method: 'HEAD',
+          signal,
+          agent: false,
+        },
+        (res) => {
+          res.resume();
+        },
+      );
+
+      req.once('socket', (socket) => {
+        const tlsSocket = socket as TLSSocket;
+        if (tlsSocket.authorized !== undefined) {
+          resolve({
+            handshakeMs: performance.now() - start,
+            authorized: tlsSocket.authorized,
+          });
+          req.destroy();
+          return;
+        }
+
+        tlsSocket.once('secureConnect', () => {
+          resolve({
+            handshakeMs: performance.now() - start,
+            authorized: tlsSocket.authorized,
+          });
+          req.destroy();
+        });
+      });
+
+      req.once('error', reject);
+      req.end();
+    });
   }
+
   async publicIp(url: string, signal: AbortSignal): Promise<PublicIPResult> {
     const res = await fetch(url, { signal });
-    const json = (await res.json()) as { ip?: string; asn?: number; org?: string; isp?: string };
+    const json = (await res.json()) as {
+      ip?: string;
+      asn?: number;
+      org?: string;
+      isp?: string;
+    };
     return { ip: json.ip ?? null, asn: json.asn ?? null, isp: json.isp ?? json.org ?? null };
   }
+
   async bandwidth(url: string, signal: AbortSignal): Promise<BandwidthResult> {
     const start = performance.now();
     const r = await fetchLike(url, signal);
@@ -46,6 +100,7 @@ export class NodeHTTPProvider implements HTTPProvider {
     return { mbps: (r.bytes * 8) / 1_000_000 / seconds };
   }
 }
+
 const fetchLike = async (url: string, signal: AbortSignal): Promise<HTTPResult> =>
   new Promise((resolve, reject) => {
     const start = performance.now();
