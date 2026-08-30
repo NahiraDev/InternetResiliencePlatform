@@ -185,6 +185,6 @@ IRP treats gateways and tunnels as managed network providers. A provider is only
 
 ## Current implementation truth
 
-The canonical implementation boundary is now **Phase 51 — Automatic Gateway Selection**, which is complete and verified on `main`. Phase 52 — Automated Tunnel Lifecycle is the next unstarted phase. Historical phase numbering for 00–45 remains governed by the phase-history evidence matrix; entries that still explicitly require verification are not silently converted into completion claims.
+The canonical implementation boundary is now **Phase 59 — Notifications & Incident Center**, which has started on `phase/59-notifications-incident-center`. Phase 58 — Real Network Measurements has been merged to `main`; remaining verification evidence is still governed by the project-state verification rules. Phase 59 is intentionally not marked complete until its persistence, API, runtime integration, UI, tests and CI/runtime evidence satisfy the definition of done.
 
 The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**

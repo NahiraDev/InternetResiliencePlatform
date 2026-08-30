@@ -4,10 +4,11 @@
 
 ## Current State
 
-- **Current phase:** Phase 58 — Real Network Measurements (**implementation started; verification required**).
-- **Phase 58:** implementation is isolated on `phase/58-real-network-measurements`; it has not been merged to `main` and remains subject to full repository/runtime verification.
-- **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification is required before it can be accepted as complete.
-- **Phase 53:** implementation is complete in the repository, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
+- **Current phase:** Phase 59 — Notifications & Incident Center (**implementation started; verification required**).
+- **Phase 59:** implementation is isolated on `phase/59-notifications-incident-center`; it is not merged to `main` and remains subject to full repository/database/runtime verification.
+- **Phase 58:** implementation is merged to `main`; final verification evidence for the latest follow-up fixes must remain green before the phase is treated as fully closed.
+- **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification remains required.
+- **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
 - **Phase 52:** implementation is complete, but final repository/runtime verification is still required before it can be accepted as complete.
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
@@ -19,21 +20,42 @@
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
+- **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 58 — Real Network Measurements
+## Phase 59 — Notifications & Incident Center
 
-**Implementation started; verification required.** Phase 58 hardens `@irp/network-intelligence` so network evidence is based on actual bounded measurements rather than synthetic or mislabeled values.
+**Implementation started; verification required.** The phase introduces a server-authoritative incident lifecycle and persisted in-product notification center on top of evidence produced by the runtime and Phase 58 real measurements.
 
 ### Implementation evidence
 
-- `packages/network-intelligence/src/providers/PingProvider.ts`
-- `packages/network-intelligence/src/providers/HTTPProvider.ts`
-- `packages/network-intelligence/src/metrics/PacketLossMetric.ts`
-- `packages/network-intelligence/src/metrics/BandwidthMetric.ts`
-- `packages/network-intelligence/src/metrics/GatewayMetric.ts`
-- `packages/network-intelligence/src/metrics/CaptivePortalMetric.ts`
-- `docs/phases/phase-58.md`
+- `apps/api/src/notifications.ts`
+- `apps/api/src/notifications.test.ts`
+- `apps/api/src/notifications-api.ts`
+- `apps/api/src/remote-entrypoint.ts`
+- `packages/database/prisma/schema.prisma`
+- `packages/database/prisma/migrations/20260830230000_phase_59_notifications/migration.sql`
+- `docs/phases/phase-59.md`
+
+### Current guarantees
+
+- deterministic incident fingerprinting collapses repeated matching observations into one logical incident;
+- incident lifecycle is `open` → `acknowledged` → `resolved`;
+- a later matching observation reopens the same logical incident identity instead of creating a duplicate;
+- incident evidence, affected components, correlation reason and confidence are retained;
+- security and policy failures map to critical severity;
+- PostgreSQL persistence and a deterministic in-memory test adapter share the same domain contract;
+- notification read/unread state is supported;
+- authenticated/RBAC-protected API routes expose incident and notification inspection and operator actions;
+- the notification layer has no route, DNS, tunnel or gateway execution authority.
+
+### Verification status
+
+Phase 59 is **not marked complete**. Completion requires `pnpm validate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, migration validation and required CI/runtime evidence on the final Phase 59 commit.
+
+## Phase 58 — Real Network Measurements
+
+Implementation is merged to `main`. It hardens `@irp/network-intelligence` so network evidence is based on actual bounded measurements rather than synthetic or mislabeled values.
 
 ### Measurement guarantees
 
@@ -46,26 +68,6 @@
 - existing mockable providers remain available for deterministic tests;
 - measurement code does not mutate routes, DNS, tunnels or gateway state;
 - Internet Intelligence remains advisory and does not gain execution authority.
-
-### Verification status
-
-Phase 58 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI/runtime verification for the final Phase 58 commit.
-
-## Phase 57 — Control Loop Integrity & Real Postconditions
-
-Phase 57 requires real adapter-observed postconditions, fail-closed unsupported live actions, and canonical reconciliation. Measurement follow-up work continues in Phase 58.
-
-## Phase 54 — Gateway Fleet Operations
-
-Implementation is in `@irp/gateway-registry`; verification remains required.
-
-## Phase 53 — Multi-Gateway Failover
-
-Implementation is in `@irp/gateway-registry`; verification remains required.
-
-## Phase 52 — Automated Tunnel Lifecycle
-
-Implementation is in `@irp/tunnel`; repository/runtime verification remains required.
 
 ## Verification Rules
 
