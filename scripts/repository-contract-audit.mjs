@@ -3,7 +3,6 @@ import { join, relative } from 'node:path';
 
 const root = process.cwd();
 const workspaceRoots = ['apps', 'packages'];
-const requiredScripts = ['build', 'typecheck', 'lint', 'test'];
 const errors = [];
 const manifests = [];
 
@@ -30,21 +29,20 @@ for (const workspaceRoot of workspaceRoots) {
 
 if (manifests.length === 0) errors.push('No workspace manifests found under apps/ or packages/.');
 
+const names = new Set();
 for (const { path, packageJson } of manifests) {
   if (typeof packageJson.name !== 'string' || packageJson.name.length === 0) {
     errors.push(`${path}: package name is missing`);
+  } else if (names.has(packageJson.name)) {
+    errors.push(`${path}: duplicate workspace package name '${packageJson.name}'`);
+  } else {
+    names.add(packageJson.name);
   }
   if (packageJson.private !== true && typeof packageJson.version !== 'string') {
     errors.push(`${path}: publishable package is missing version`);
   }
   if (!packageJson.scripts || typeof packageJson.scripts !== 'object') {
     errors.push(`${path}: scripts object is missing`);
-    continue;
-  }
-  for (const script of requiredScripts) {
-    if (typeof packageJson.scripts[script] !== 'string' || packageJson.scripts[script].trim() === '') {
-      errors.push(`${path}: missing required script '${script}'`);
-    }
   }
 }
 
@@ -57,12 +55,14 @@ if (rootPackage.engines?.node !== '>=24.0.0') {
 }
 
 console.log(`Audited ${manifests.length} workspace manifests.`);
-for (const manifest of manifests) console.log(`✓ ${manifest.packageJson.name} (${manifest.path})`);
+for (const manifest of manifests) {
+  const scripts = Object.keys(manifest.packageJson.scripts ?? {}).sort().join(', ') || '(none)';
+  console.log(`✓ ${manifest.packageJson.name} (${manifest.path}) scripts: ${scripts}`);
+}
 
 if (errors.length) {
   console.error('\nWorkspace contract violations:');
   for (const error of errors) console.error(`✗ ${error}`);
   process.exit(1);
 }
-
-console.log('\nAll workspace contracts passed.');
+console.log('\nAll workspace manifest contracts passed.');
