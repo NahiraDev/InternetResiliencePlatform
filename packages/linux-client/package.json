@@ -12,10 +12,5 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js"
-  },
-  "devDependencies": {
-    "@types/node": "^26.3.0",
-    "typescript": "^6.0.3",
-    "vitest": "^3.2.7"
   }
 }
