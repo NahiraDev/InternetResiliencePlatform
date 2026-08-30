@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import { describe, expect, it, vi } from 'vitest';
 import {
   NetworkMonitor,
@@ -12,6 +15,7 @@ import {
   type PingProvider,
   type PublicIPResult,
 } from './index.js';
+
 const ping: PingProvider = {
   async ping() {
     return { latencyMs: 40, success: true };
@@ -36,6 +40,7 @@ const http: HTTPProvider = {
     return { mbps: 50 };
   },
 };
+
 describe('quality calculation', () => {
   it('is deterministic and bounded', () => {
     const base = {
@@ -70,6 +75,7 @@ describe('quality calculation', () => {
     ).toBeLessThan(40);
   });
 });
+
 describe('statistics', () => {
   it('calculates average jitter and loss', () => {
     expect(average([1, 2, 3])).toBe(2);
@@ -77,6 +83,7 @@ describe('statistics', () => {
     expect(packetLossRatio([true, false, false, true])).toBe(0.5);
   });
 });
+
 describe('sampling', () => {
   it('builds immutable snapshots from providers', async () => {
     const sampler = new NetworkSampler(
@@ -123,6 +130,7 @@ describe('sampling', () => {
     expect(snap.qualityScore).toBeGreaterThan(0);
   });
 });
+
 describe('monitor history and events', () => {
   it('stores history and emits typed events', async () => {
     const sampler = new NetworkSampler(
@@ -250,6 +258,7 @@ it('reports running health while started and stops cleanly', () => {
   monitor.stop();
   expect(monitor.health().running).toBe(false);
 });
+
 describe('scheduler', () => {
   it('runs immediately, suppresses overlapping scheduler executions, and supports restart', async () => {
     vi.useFakeTimers();
@@ -289,6 +298,7 @@ describe('scheduler', () => {
     expect(scheduler.isRunning()).toBe(false);
   });
 });
+
 import {
   ASNMetric,
   ISPMetric,
@@ -302,7 +312,7 @@ import {
   withTimeout,
   retry,
 } from './index.js';
-import { createServer } from 'node:http';
+
 describe('additional providers and metrics', () => {
   it('covers metadata and ip metrics', async () => {
     expect(await new ASNMetric(http, 'u').measure(new AbortController().signal)).toBe(64500);
@@ -322,8 +332,9 @@ describe('additional providers and metrics', () => {
       await new NodeDNSProvider().lookup('localhost', new AbortController().signal),
     ).toBeDefined();
   });
-  it('covers node http provider against a local server', async () => {
-    const server = createServer((req, res) => {
+
+  it('covers node http provider against local HTTP and HTTPS servers', async () => {
+    const httpServer = createHttpServer((req, res) => {
       res.setHeader('content-type', 'application/json');
       res.end(
         req.url === '/ip'
@@ -331,24 +342,53 @@ describe('additional providers and metrics', () => {
           : 'hello',
       );
     });
-    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const httpsServer = createHttpsServer(
+      {
+        key: readFileSync(new URL('./providers/__fixtures__/localhost-test-key.pem', import.meta.url)),
+        cert: readFileSync(new URL('./providers/__fixtures__/localhost-test-cert.pem', import.meta.url)),
+      },
+      (_req, res) => res.end('hello over tls'),
+    );
+
+    await Promise.all([
+      new Promise<void>((resolve) => httpServer.listen(0, resolve)),
+      new Promise<void>((resolve) => httpsServer.listen(0, resolve)),
+    ]);
+
     try {
-      const address = server.address();
-      if (typeof address === 'string' || address === null) throw new Error('missing port');
-      const url = `http://127.0.0.1:${address.port}`;
+      const httpAddress = httpServer.address();
+      const httpsAddress = httpsServer.address();
+      if (
+        typeof httpAddress === 'string' ||
+        httpAddress === null ||
+        typeof httpsAddress === 'string' ||
+        httpsAddress === null
+      ) {
+        throw new Error('missing test server port');
+      }
+
+      const httpUrl = `http://127.0.0.1:${httpAddress.port}`;
+      const httpsUrl = `https://127.0.0.1:${httpsAddress.port}`;
       const provider = new NodeHTTPProvider();
-      expect((await provider.request(url, new AbortController().signal)).statusCode).toBe(200);
-      expect((await provider.tlsHandshake(url, new AbortController().signal)).authorized).toBe(
-        true,
-      );
-      expect((await provider.publicIp(`${url}/ip`, new AbortController().signal)).isp).toBe(
+      expect((await provider.request(httpUrl, new AbortController().signal)).statusCode).toBe(200);
+      const tls = await provider.tlsHandshake(httpsUrl, new AbortController().signal);
+      expect(tls.handshakeMs).toBeGreaterThanOrEqual(0);
+      expect(tls.authorized).toBe(false);
+      await expect(
+        provider.tlsHandshake(httpUrl, new AbortController().signal),
+      ).rejects.toThrow('TLS handshake requires an https URL');
+      expect((await provider.publicIp(`${httpUrl}/ip`, new AbortController().signal)).isp).toBe(
         'Local Org',
       );
-      expect((await provider.bandwidth(url, new AbortController().signal)).mbps).toBeGreaterThan(0);
+      expect((await provider.bandwidth(httpUrl, new AbortController().signal)).mbps).toBeGreaterThan(0);
     } finally {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await Promise.all([
+        new Promise<void>((resolve) => httpServer.close(() => resolve())),
+        new Promise<void>((resolve) => httpsServer.close(() => resolve())),
+      ]);
     }
   });
+
   it('covers retry and timeout failures', async () => {
     await expect(
       withTimeout(async () => new Promise((resolve) => setTimeout(resolve, 20)), 1),
@@ -382,6 +422,7 @@ describe('additional providers and metrics', () => {
     ).rejects.toThrow('plain');
     expect(new TimeoutError().name).toBe('TimeoutError');
   });
+
   it('emits change events and unsubscribe works', async () => {
     let n = 0;
     const h = (): void => {
