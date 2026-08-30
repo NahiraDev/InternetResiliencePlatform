@@ -1,36 +1,126 @@
 name: Regional Validation
 
-# Intentionally isolated from the standard CI workflow.
-# This workflow executes from the configured regional vantage point and
-# uses a public HTTPS IP/country endpoint when no operator endpoint is set.
+# Phase 41 — External Regional Validation.
+# The workflow is intentionally isolated from normal CI because real regional
+# evidence requires a runner physically located in the target region.
+# A hosted preflight prevents GitHub from leaving the actual regional job in
+# Queued forever when the required runner is offline/unregistered.
 
 on:
   workflow_dispatch:
     inputs:
       expected_country:
-        description: Expected egress country code
+        description: Expected egress country code reported by the controlled regional probe
         required: false
         default: IR
         type: string
       probe_url:
-        description: HTTPS endpoint returning the runner public IP and country
+        description: Controlled HTTPS regional probe endpoint. Configure this as a repository/environment secret when possible.
         required: false
-        default: https://ipapi.co/json/
+        default: ''
         type: string
 
 permissions:
   contents: read
+  actions: read
 
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
-  IRP_REGIONAL_PROBE_URL: https://ipapi.co/json/
+  REGIONAL_RUNNER_LABEL: iran
+  IRP_REGIONAL_PROBE_URL: ${{ secrets.IRP_REGIONAL_PROBE_URL }}
 
 jobs:
+  regional-runner-preflight:
+    name: Regional runner preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+      reason: ${{ steps.check.outputs.reason }}
+    steps:
+      - name: Check for an online idle regional runner
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_LABEL: ${{ env.REGIONAL_RUNNER_LABEL }}
+        run: |
+          set -euo pipefail
+
+          runners_json="$(curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 2 \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runners?per_page=100")"
+
+          matching="$(jq --arg label "$EXPECTED_LABEL" '[
+            .runners[]
+            | select(.status == "online" and .busy == false)
+            | select(any(.labels[]?; (.name | ascii_downcase) == ($label | ascii_downcase)))
+          ]')"
+
+          count="$(jq 'length' <<<"$matching")"
+          if [ "$count" -gt 0 ]; then
+            runner_name="$(jq -r '.[0].name' <<<"$matching")"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "reason=online idle regional runner available: ${runner_name}" >> "$GITHUB_OUTPUT"
+            {
+              echo '## Regional Runner Preflight'
+              echo
+              echo "PASS — online idle runner with label \\`${EXPECTED_LABEL}\\`: \\`${runner_name}\\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo "reason=no online idle runner with label ${EXPECTED_LABEL}" >> "$GITHUB_OUTPUT"
+            {
+              echo '## Regional Runner Preflight'
+              echo
+              echo "FAIL — no online idle self-hosted runner with label \\`${EXPECTED_LABEL}\\`."
+              echo
+              echo 'The regional job is deliberately not scheduled, so it cannot remain Queued indefinitely.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  regional-validation-unavailable:
+    name: Regional validation unavailable
+    needs: regional-runner-preflight
+    if: needs.regional-runner-preflight.outputs.available != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Emit deterministic failure evidence
+        env:
+          REASON: ${{ needs.regional-runner-preflight.outputs.reason }}
+        run: |
+          set -euo pipefail
+          cat > regional-validation.json <<EOF
+          {
+            "schemaVersion": 2,
+            "status": "blocked",
+            "deterministic": true,
+            "reason": "${REASON}",
+            "runnerLabel": "${REGIONAL_RUNNER_LABEL}",
+            "message": "No matching online idle regional runner was available; regional evidence was not fabricated."
+          }
+          EOF
+          cat regional-validation.json
+          cat regional-validation.json >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Upload blocked evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: regional-validation-blocked-${{ github.run_id }}
+          path: regional-validation.json
+          if-no-files-found: error
+          retention-days: 14
+
   regional-validation:
     name: Regional evidence probe
-    # Regional evidence still requires the actual regional runner.
-    # The `iran` label prevents GitHub-hosted runners from being treated as Iran.
+    needs: regional-runner-preflight
+    if: needs.regional-runner-preflight.outputs.available == 'true'
     runs-on: [self-hosted, linux, iran]
     timeout-minutes: 10
     steps:
@@ -48,10 +138,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Resolve controlled regional probe endpoint
+        id: endpoint
+        env:
+          INPUT_PROBE_URL: ${{ inputs.probe_url }}
+          SECRET_PROBE_URL: ${{ secrets.IRP_REGIONAL_PROBE_URL }}
+        run: |
+          set -euo pipefail
+          endpoint="${INPUT_PROBE_URL:-${SECRET_PROBE_URL:-}}"
+          if [ -z "$endpoint" ]; then
+            echo 'No controlled regional probe endpoint configured.' >&2
+            exit 1
+          fi
+          printf 'url=%s\n' "$endpoint" >> "$GITHUB_OUTPUT"
+
       - name: Run regional probe
         id: probe
         env:
-          IRP_REGIONAL_PROBE_URL: ${{ inputs.probe_url || secrets.IRP_REGIONAL_PROBE_URL || env.IRP_REGIONAL_PROBE_URL }}
+          IRP_REGIONAL_PROBE_URL: ${{ steps.endpoint.outputs.url }}
           IRP_EXPECTED_COUNTRY: ${{ inputs.expected_country }}
         run: |
           set -o pipefail
@@ -69,7 +173,7 @@ jobs:
             if [ -s regional-validation.json ]; then
               cat regional-validation.json
             else
-              echo '{"schemaVersion":1,"status":"no-result","error":"Regional probe produced no evidence file."}'
+              echo '{"schemaVersion":2,"status":"no-result","error":"Regional probe produced no evidence file."}'
             fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
