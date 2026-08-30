@@ -216,3 +216,61 @@ model NetworkHealthScore {
   factors Json @default("{}")
   @@index([timestamp])
 }
+
+enum IncidentSeverity {
+  info
+  warning
+  critical
+}
+
+enum IncidentStatus {
+  open
+  acknowledged
+  resolved
+}
+
+enum NotificationType {
+  incident_opened
+  incident_updated
+  incident_resolved
+  action_required
+}
+
+model Incident {
+  id String @id @default(uuid()) @db.Uuid
+  fingerprint String @unique
+  title String
+  severity IncidentSeverity
+  status IncidentStatus @default(open)
+  source String
+  classification String
+  rootCause String
+  affectedComponents Json
+  evidence Json
+  correlationReason String
+  confidence Float
+  occurrenceCount Int @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt DateTime?
+  updatedAt DateTime @updatedAt
+  notifications Notification[]
+  @@index([status, severity, lastSeenAt])
+  @@index([source, lastSeenAt])
+}
+
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+  incidentId String @db.Uuid
+  type NotificationType
+  severity IncidentSeverity
+  title String
+  message String
+  actionable Boolean @default(false)
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  @@index([readAt, createdAt])
+  @@index([incidentId, createdAt])
+}
