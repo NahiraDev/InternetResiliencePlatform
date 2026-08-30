@@ -4,13 +4,14 @@
 
 ## Current State
 
-- **Current phase:** Phase 60 — Administration & Self-Hosting (**implementation started; verification required**).
-- **Phase 60:** implementation is isolated on `phase/60-administration-self-hosting`; it is not merged to `main` and remains subject to full repository/runtime verification.
-- **Phase 59:** implementation is merged to `main`; CI is green after the final API lint fix. Remaining Phase 59 completion evidence must still satisfy the phase verification rules.
-- **Phase 58:** implementation is merged to `main`; final verification evidence for the latest follow-up fixes must remain green before the phase is treated as fully closed.
+- **Current phase:** Phase 61 — Linux Full Client (**implementation started; verification required**).
+- **Phase 61:** implementation is isolated on `phase/61-linux-full-client`; it is not merged to `main` and remains subject to full repository/runtime verification.
+- **Phase 60:** implementation was merged to `main` by PR #170; its final verification status remains governed by the phase verification rules.
+- **Phase 59:** implementation is merged to `main`; final closure remains governed by repository/runtime evidence.
+- **Phase 58:** implementation is merged to `main`; final verification evidence remains required.
 - **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification remains required.
-- **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
-- **Phase 52:** implementation is complete, but final repository/runtime verification is still required before it can be accepted as complete.
+- **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified fix is accepted on `main`.
+- **Phase 52:** implementation is complete, but final repository/runtime verification is still required.
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
 - **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
@@ -20,42 +21,44 @@
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
-- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
+- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic. Desktop clients consume shared capability contracts and do not duplicate routing/policy intelligence.
 - **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
 - **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
+- **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 60 — Administration & Self-Hosting
+## Phase 61 — Linux Full Client
 
-**Implementation started; verification required.** Phase 60 turns the unified control plane into an operator-manageable, self-hostable deployment while preserving the existing safety boundaries.
-
-### Initial scope
-
-- deterministic self-hosted control-plane deployment contract;
-- explicit configuration validation and safe configuration inspection;
-- database migration lifecycle and startup/readiness policy;
-- backup and restore workflows with integrity validation;
-- authenticated/RBAC-protected administrative operations;
-- deterministic operator tooling and failure semantics;
-- auditability for administrative actions;
-- runtime verification for database, container and restore paths.
-
-### Non-goals
-
-- no routing, DNS, gateway, tunnel or failover authority in the administration layer;
-- no automatic destructive migration or implicit database reset;
-- no plaintext secret persistence in backups or logs;
-- no bypass of existing authentication/RBAC/audit contracts;
-- no changes to trusted-source artifact workflow semantics.
+**Implementation started; verification required.**
 
 ### Implementation evidence
 
-- `docs/phases/phase-60.md`
-- `packages/config/src/index.ts` is the existing configuration foundation and must be extended rather than duplicated.
-- Existing API authentication/RBAC, database and runtime contracts are the integration points for the phase.
+- `packages/linux-client/package.json`
+- `packages/linux-client/src/index.ts`
+- `packages/linux-client/src/index.test.ts`
+- `packages/linux-client/systemd/irp-linux-client.service`
+- `docs/phases/phase-61.md`
 
-### Verification Rules
+### Current guarantees
+
+- Linux diagnostics use bounded `execFile` calls rather than shell interpolation.
+- Interface, route and resolver state are presented as observations; the client does not mutate network state.
+- Autonomous mode is explicit, deterministic and locally controlled; it does not bypass the shared safety/policy boundary.
+- The local control surface binds to loopback only by default.
+- systemd service hardening includes `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem` and restricted home access.
+
+### Remaining verification
+
+- frozen-lockfile install;
+- repository typecheck, lint, tests and build;
+- Linux host runtime verification for `ip`/`resolvectl` diagnostics;
+- systemd install/start/restart/stop verification;
+- desktop UI/tray integration verification on supported Linux desktop environments;
+- security review of local control and service boundaries;
+- green CI.
+
+## Verification Rules
 
 A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
 
@@ -71,52 +74,6 @@ For every phase:
 8. require green CI before marking the phase complete.
 
 For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
-
-## Phase 59 — Notifications & Incident Center
-
-Implementation is merged to `main`. The phase introduces a server-authoritative incident lifecycle and persisted in-product notification center on top of evidence produced by the runtime and Phase 58 real measurements.
-
-### Implementation evidence
-
-- `apps/api/src/notifications.ts`
-- `apps/api/src/notifications.test.ts`
-- `apps/api/src/notifications-api.ts`
-- `apps/api/src/remote-entrypoint.ts`
-- `packages/database/prisma/schema.prisma`
-- `packages/database/prisma/migrations/20260830230000_phase_59_notifications/migration.sql`
-- `docs/phases/phase-59.md`
-
-### Current guarantees
-
-- deterministic incident fingerprinting collapses repeated matching observations into one logical incident;
-- incident lifecycle is `open` → `acknowledged` → `resolved`;
-- a later matching observation reopens the same logical incident identity instead of creating a duplicate;
-- incident evidence, affected components, correlation reason and confidence are retained;
-- security and policy failures map to critical severity;
-- PostgreSQL persistence and a deterministic in-memory test adapter share the same domain contract;
-- notification read/unread state is supported;
-- authenticated/RBAC-protected API routes expose incident and notification inspection and operator actions;
-- the notification layer has no route, DNS, tunnel or gateway execution authority.
-
-### Verification status
-
-Phase 59 is merged to `main`; its final closure remains governed by the repository verification rules and runtime evidence requirements.
-
-## Phase 58 — Real Network Measurements
-
-Implementation is merged to `main`. It hardens `@irp/network-intelligence` so network evidence is based on actual bounded measurements rather than synthetic or mislabeled values.
-
-### Measurement guarantees
-
-- production ping uses the platform ICMP utility without shell interpolation;
-- packet loss is derived from actual ping success/failure observations;
-- TLS timing measures the actual TLS handshake rather than total HTTP request duration;
-- bandwidth is based on actual bytes transferred and elapsed time;
-- captive-portal detection exposes redirect evidence as a signal rather than proof of filtering;
-- measurement providers remain cancellable and bounded;
-- existing mockable providers remain available for deterministic tests;
-- measurement code does not mutate routes, DNS, tunnels or gateway state;
-- Internet Intelligence remains advisory and does not gain execution authority.
 
 ## Product Objective
 
