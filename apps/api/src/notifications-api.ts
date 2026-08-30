@@ -1,11 +1,14 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { NotFoundAppError, ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
+import { NotFoundAppError, ForbiddenAppError, UnauthorizedAppError, ValidationAppError } from '@irp/core';
 import { createPrismaClient } from '@irp/database';
 import {
   NotificationIncidentCenter,
   incidentStatusSchema,
   notificationsStatusSchema,
+  runtimeIncidentInputSchema,
 } from './notifications.js';
+
+const uuidSchema = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const authenticate = async (request: FastifyRequest) => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
@@ -22,6 +25,14 @@ const requirePermission = async (request: FastifyRequest, permission: string) =>
     requiredPermissions: [permission],
   });
   if (!allowed) throw new ForbiddenAppError();
+};
+
+const routeId = (request: FastifyRequest): string => {
+  const id = (request.params as { id?: unknown }).id;
+  if (typeof id !== 'string' || !uuidSchema.test(id)) {
+    throw new ValidationAppError('A valid UUID is required for the resource id.');
+  }
+  return id;
 };
 
 export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
@@ -43,24 +54,21 @@ export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
 
   app.get('/api/v1/incidents/:id', async (request) => {
     await requirePermission(request, 'runtime.read');
-    const id = String((request.params as { id: string }).id);
-    const incident = await center.get(id);
+    const incident = await center.get(routeId(request));
     if (!incident) throw new NotFoundAppError('incident');
     return { success: true, data: incident };
   });
 
   app.post('/api/v1/incidents/:id/acknowledge', async (request) => {
     await requirePermission(request, 'runtime.admin');
-    const id = String((request.params as { id: string }).id);
-    const incident = await center.acknowledge(id);
+    const incident = await center.acknowledge(routeId(request));
     if (!incident) throw new NotFoundAppError('incident');
     return { success: true, data: incident };
   });
 
   app.post('/api/v1/incidents/:id/resolve', async (request) => {
     await requirePermission(request, 'runtime.admin');
-    const id = String((request.params as { id: string }).id);
-    const incident = await center.resolve(id);
+    const incident = await center.resolve(routeId(request));
     if (!incident) throw new NotFoundAppError('incident');
     return { success: true, data: incident };
   });
@@ -76,34 +84,18 @@ export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
 
   app.post('/api/v1/notifications/:id/read', async (request) => {
     await requirePermission(request, 'runtime.read');
-    const id = String((request.params as { id: string }).id);
-    const notification = await center.markRead(id);
+    const notification = await center.markRead(routeId(request));
     if (!notification) throw new NotFoundAppError('notification');
     return { success: true, data: notification };
   });
 
   app.post('/api/v1/incidents/events', async (request) => {
     await requirePermission(request, 'runtime.admin');
-    const input = request.body as Record<string, unknown>;
-    const classification = String(input.classification ?? 'transient_anomaly');
-    const rootCause = String(input.rootCause ?? 'Unclassified network degradation');
-    const confidence = Number(input.confidence ?? 0);
-    const affectedComponents = Array.isArray(input.affectedComponents)
-      ? input.affectedComponents.map(String)
-      : [];
-    const evidence = Array.isArray(input.evidence) ? input.evidence.map(String) : [];
-    if (!incidentStatusSchema.safeParse(input.status).success && input.status !== undefined) {
-      throw new ForbiddenAppError('Invalid incident status for ingestion.');
+    const parsed = runtimeIncidentInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationAppError('Invalid incident event payload.', { issues: parsed.error.issues });
     }
-    const incident = await center.open({
-      ...(typeof input.source === 'string' ? { source: input.source } : {}),
-      classification,
-      rootCause,
-      affectedComponents,
-      evidence,
-      correlationReason: String(input.correlationReason ?? 'No correlation reason provided.'),
-      confidence: Math.max(0, Math.min(1, Number.isFinite(confidence) ? confidence : 0)),
-    });
+    const incident = await center.open(parsed.data);
     return { success: true, data: incident };
   });
 
