@@ -1,7 +1,8 @@
 name: Regional Validation
 
 # Intentionally isolated from the standard CI workflow.
-# This workflow must execute from a controlled regional vantage point.
+# This workflow executes from the configured regional vantage point and
+# uses a public HTTPS IP/country endpoint when no operator endpoint is set.
 
 on:
   workflow_dispatch:
@@ -12,9 +13,9 @@ on:
         default: IR
         type: string
       probe_url:
-        description: HTTPS endpoint controlled by the operator that reports the runner egress IP and country
+        description: HTTPS endpoint returning the runner public IP and country
         required: false
-        default: ''
+        default: https://ipapi.co/json/
         type: string
 
 permissions:
@@ -23,12 +24,13 @@ permissions:
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
+  IRP_REGIONAL_PROBE_URL: https://ipapi.co/json/
 
 jobs:
   regional-validation:
     name: Regional evidence probe
-    # Never use GitHub-hosted ubuntu-latest for regional evidence.
-    # Configure an actual regional machine as a self-hosted runner with the `iran` label.
+    # Regional evidence still requires the actual regional runner.
+    # The `iran` label prevents GitHub-hosted runners from being treated as Iran.
     runs-on: [self-hosted, linux, iran]
     timeout-minutes: 10
     steps:
@@ -49,7 +51,7 @@ jobs:
       - name: Run regional probe
         id: probe
         env:
-          IRP_REGIONAL_PROBE_URL: ${{ inputs.probe_url || secrets.IRP_REGIONAL_PROBE_URL }}
+          IRP_REGIONAL_PROBE_URL: ${{ inputs.probe_url || secrets.IRP_REGIONAL_PROBE_URL || env.IRP_REGIONAL_PROBE_URL }}
           IRP_EXPECTED_COUNTRY: ${{ inputs.expected_country }}
         run: |
           set -o pipefail
