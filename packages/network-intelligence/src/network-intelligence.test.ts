@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   ASNMetric,
+  DEFAULT_MONITOR_OPTIONS,
   ISPMetric,
   IPv4Metric,
   IPv6Metric,
@@ -184,7 +185,14 @@ describe('monitor history and events', () => {
     const now = () => (sample === 0 ? new Date(Date.now() - 10_000).toISOString() : new Date().toISOString());
     const monitor = new NetworkMonitor(
       new NetworkSampler({ ping: dynamicPing, dns, http: dynamicHttp }, { ...samplerOptions(), pingAttempts: 2, now }),
-      { maxHistoryMs: 1_000, packetLossHighThreshold: 0.1, latencyChangeThresholdMs: 1, qualityChangeThreshold: 1, bandwidthChangeThresholdMbps: 1 },
+      {
+        ...DEFAULT_MONITOR_OPTIONS,
+        maxHistoryMs: 1_000,
+        packetLossHighThreshold: 0.1,
+        latencyChangeThresholdMs: 1,
+        qualityChangeThreshold: 1,
+        bandwidthChangeThresholdMbps: 1,
+      },
     );
     const offline = vi.fn();
     monitor.subscribe('network.offline', offline);
@@ -289,7 +297,12 @@ describe('additional providers and metrics', () => {
     const changingPing: PingProvider = { async ping() { return { latencyMs: latency, success: true }; } };
     const monitor = new NetworkMonitor(
       new NetworkSampler({ ping: changingPing, dns, http }, samplerOptions()),
-      { latencyChangeThresholdMs: 1, qualityChangeThreshold: 1, bandwidthChangeThresholdMbps: 1 },
+      {
+        ...DEFAULT_MONITOR_OPTIONS,
+        latencyChangeThresholdMs: 1,
+        qualityChangeThreshold: 1,
+        bandwidthChangeThresholdMbps: 1,
+      },
     );
     monitor.subscribe('latency.changed', handler);
     await monitor.collect();
