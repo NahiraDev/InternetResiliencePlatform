@@ -1,11 +1,5 @@
 export type NetworkIntelligenceStatus = 'healthy' | 'degraded' | 'offline';
-
-export interface NetworkIntelligenceSnapshot {
-  status: NetworkIntelligenceStatus;
-  score: number;
-  measuredAt: Date;
-}
-
+export interface NetworkIntelligenceSnapshot { status: NetworkIntelligenceStatus; score: number; measuredAt: Date; }
 export * from './core/NetworkMonitor.js';
 export * from './core/NetworkSampler.js';
 export * from './core/Scheduler.js';
@@ -13,6 +7,7 @@ export * from './events/NetworkEvents.js';
 export * from './identity/IdentityAssurance.js';
 export * from './metrics/ASNMetric.js';
 export * from './metrics/BandwidthMetric.js';
+export * from './metrics/CaptivePortalMetric.js';
 export * from './metrics/DNSMetric.js';
 export * from './metrics/GatewayMetric.js';
 export * from './metrics/HTTPMetric.js';

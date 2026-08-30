@@ -4,15 +4,16 @@
 
 ## Current State
 
-- **Current phase:** Phase 54 — Gateway Fleet Operations (**implementation started; verification required**).
+- **Current phase:** Phase 58 — Real Network Measurements (**implementation started; verification required**).
+- **Phase 58:** implementation is isolated on `phase/58-real-network-measurements`; it has not been merged to `main` and remains subject to full repository/runtime verification.
 - **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification is required before it can be accepted as complete.
 - **Phase 53:** implementation is complete in the repository, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
 - **Phase 52:** implementation is complete, but final repository/runtime verification is still required before it can be accepted as complete.
 - **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
-- **Phase 47:** verified green by CI and accepted as complete.
-- **Phase 48:** implementation is complete and accepted after verification.
-- **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
 - **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
+- **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
+- **Phase 48:** secure tunnel abstraction is complete and accepted after verification.
+- **Phase 47:** gateway discovery and health is verified green and accepted.
 - **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
@@ -20,141 +21,51 @@
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 54 — Gateway Fleet Operations
+## Phase 58 — Real Network Measurements
 
-**Implementation started; verification required.** Phase 54 adds `InMemoryGatewayFleetManager` to the canonical `@irp/gateway-registry` package.
+**Implementation started; verification required.** Phase 58 hardens `@irp/network-intelligence` so network evidence is based on actual bounded measurements rather than synthetic or mislabeled values.
 
 ### Implementation evidence
 
-- `packages/gateway-registry/src/fleet.ts`
-- `packages/gateway-registry/src/fleet.test.ts`
-- exported through `packages/gateway-registry/src/index.ts`
-- phase record: `docs/phases/phase-54.md`
-- architecture contract: `docs/architecture/gateway-and-tunnel-architecture.md`
+- `packages/network-intelligence/src/providers/PingProvider.ts`
+- `packages/network-intelligence/src/providers/HTTPProvider.ts`
+- `packages/network-intelligence/src/metrics/PacketLossMetric.ts`
+- `packages/network-intelligence/src/metrics/BandwidthMetric.ts`
+- `packages/network-intelligence/src/metrics/GatewayMetric.ts`
+- `packages/network-intelligence/src/metrics/CaptivePortalMetric.ts`
+- `docs/phases/phase-58.md`
 
-### Fleet guarantees
+### Measurement guarantees
 
-- provisioning metadata is explicit and separate from actual provider infrastructure creation;
-- gateway desired state supports active, draining and disabled operations;
-- canonical registry lifecycle remains authoritative, including out-of-band retirement;
-- capacity limits, reservations and reported allocation are bounded by invariants;
-- maintenance windows are validated metadata and expose deterministic active-window checks;
-- upgrade intent follows scheduled → in-progress → succeeded/failed state transitions;
-- terminal upgrade states require completion timestamps;
-- fleet operations return defensive copies;
-- lifecycle, capacity, maintenance and upgrade mutations emit operational telemetry without secret material;
-- no fleet method directly creates tunnels, mutates routes/DNS or executes provider-specific provisioning/upgrade logic.
+- production ping uses the platform ICMP utility without shell interpolation;
+- packet loss is derived from actual ping success/failure observations;
+- TLS timing measures the actual TLS handshake rather than total HTTP request duration;
+- bandwidth is based on actual bytes transferred and elapsed time;
+- captive-portal detection exposes redirect evidence as a signal rather than proof of filtering;
+- measurement providers remain cancellable and bounded;
+- existing mockable providers remain available for deterministic tests;
+- measurement code does not mutate routes, DNS, tunnels or gateway state;
+- Internet Intelligence remains advisory and does not gain execution authority.
 
 ### Verification status
 
-Phase 54 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI verification for the final Phase 54 commit. Phase 53 and Phase 52 outstanding verification gates remain explicitly tracked and are not silently converted into completion claims.
+Phase 58 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI/runtime verification for the final Phase 58 commit.
+
+## Phase 57 — Control Loop Integrity & Real Postconditions
+
+Phase 57 requires real adapter-observed postconditions, fail-closed unsupported live actions, and canonical reconciliation. Measurement follow-up work continues in Phase 58.
+
+## Phase 54 — Gateway Fleet Operations
+
+Implementation is in `@irp/gateway-registry`; verification remains required.
 
 ## Phase 53 — Multi-Gateway Failover
 
-**Implementation started; verification required.** Phase 53 adds `MultiGatewayFailover` to the canonical `@irp/gateway-registry` package.
-
-### Implementation evidence
-
-- `packages/gateway-registry/src/failover.ts`
-- `packages/gateway-registry/src/failover.test.ts`
-- exported through `packages/gateway-registry/src/index.ts`
-- phase record: `docs/phases/phase-53.md`
-- architecture contract: `docs/architecture/gateway-and-tunnel-architecture.md`
-
-### Safety and failover guarantees
-
-- failover operations are serialized;
-- a healthy/degraded current gateway is retained when `requireCurrentUnhealthy` is enabled;
-- candidate eligibility and ranking remain delegated to the Phase 51 selector;
-- the current gateway and explicitly failed gateways are excluded from failover targets;
-- failover attempts are bounded and deterministic;
-- failed targets are quarantined for a bounded cooldown;
-- a target is selected only after post-switch verification reports healthy;
-- gateway/health input objects are never mutated;
-- the coordinator does not directly mutate routes, DNS, tunnel state or platform networking;
-- executor failures are treated as atomic switch failures and never as proof of a successful transition;
-- telemetry contains operational gateway/attempt metadata without introducing secret material.
-
-### Verification status
-
-Phase 53 is **not marked complete**. Completion requires repository validation, typecheck, lint, relevant tests/builds and CI verification for the final Phase 53 commit. Phase 52's outstanding verification gate must also remain explicitly tracked.
+Implementation is in `@irp/gateway-registry`; verification remains required.
 
 ## Phase 52 — Automated Tunnel Lifecycle
 
-**Implementation complete; repository/runtime verification in progress.** The canonical `@irp/tunnel` package now contains `AutomatedTunnelLifecycle` with bounded establish/connect/retry/reconnect/rotation/disconnect/destroy/shutdown behavior.
-
-### Implementation evidence
-
-- `packages/tunnel/src/lifecycle.ts`
-- `packages/tunnel/src/lifecycle.test.ts`
-- exported through `packages/tunnel/src/index.ts`
-- phase record: `docs/phases/phase-52.md`
-
-### Safety and lifecycle guarantees
-
-- provider protocol/scope/routing/capability compatibility is checked before establishment;
-- platform route context is validated before connection;
-- full-tunnel/strict lifecycle requires a configured kill-switch implementation;
-- kill switch remains enabled during establishment and is disabled only after post-connect health verification;
-- health verification requires healthy status, connectivity, handshake and authentication evidence;
-- connect attempts are bounded and timeout-protected;
-- retry follows the canonical `failed → recovering → connecting` state path;
-- concurrent operations on one tunnel are rejected;
-- failed establishment is rolled back through provider/adapter cleanup and destruction;
-- endpoint/credential-reference rotation is followed by verified reconnect;
-- lifecycle events carry `phase: 52` metadata;
-- no secret material is emitted by the lifecycle telemetry contract.
-
-### Workflow audit and fixes
-
-The Runtime Lab and Public Runtime Lab workflows were audited as part of Phase 52. The audit found three material gaps:
-
-1. changes under `packages/tunnel/**` did not trigger the runtime verification workflows;
-2. main-branch runtime evidence could be cancelled by a newer push because of `cancel-in-progress: true`;
-3. readiness was not followed by a stability window that detects immediate process/container restarts.
-
-Both workflows were corrected to include the tunnel package, preserve main-branch evidence, and assert post-readiness container stability/restart counts.
-
-### Verification status
-
-The Phase 52 implementation is **not yet marked complete**. Completion requires the final commit's repository CI, Runtime Lab and required Public Runtime Lab verification to pass.
-
-## Phase 51 — Automatic Gateway Selection
-
-**Complete / verified.** Phase 51 adds a side-effect-free gateway selection primitive to the canonical gateway domain. Selection consumes existing inventory and health contracts plus optional capacity evidence and never creates tunnels or mutates routes/DNS.
-
-### Verification evidence
-
-- Verification commit: `ec6daceb56f98f9dff84bafe1d9cf20532c30a61`.
-- CI run `33104741177` (`CI #770`) passed.
-- CI job `98631462114` passed repository gates: integrity, documentation, lint, typecheck, test, fresh coverage, build, deterministic smoke test and production Docker runtime smoke test.
-- CodeQL, Docker Publish and Datadog Synthetics for the verification commit passed.
-
-## Phase 50 — Additional Tunnel Providers
-
-Phase 50 extends the canonical `@irp/tunnel` abstraction with an OpenVPN provider without creating a second tunnel lifecycle or decision model.
-
-## Phase 49 — WireGuard Provider
-
-The first concrete tunnel provider is implemented inside the canonical `@irp/tunnel` package so it consumes the Phase 48 contract directly without introducing another tunnel abstraction or workspace dependency.
-
-## Phase 48 — Secure Tunnel Abstraction
-
-The authoritative tunnel implementation is `@irp/tunnel`. Existing provider-neutral lifecycle/state/provider contracts were retained and hardened rather than creating a parallel abstraction.
-
-## Phase 47 — Gateway Discovery & Health
-
-Implemented and verified provider-neutral gateway discovery, health classification, quality scoring, freshness validation and bounded probing without route/DNS/tunnel/failover mutation.
-
-## Phase 46 — Gateway Registry
-
-Implemented and verified gateway inventory primitives including stable identity, endpoint metadata, ownership/provider metadata, capabilities, lifecycle, trust, bounded filtering, defensive copies and safe retirement/removal.
-
-## Earlier Security/Intelligence Contracts
-
-- Phase 43: signed distributed probe federation with replay protection, revocation, bounded ingestion and regional comparison.
-- Phase 44: deterministic historical/federated analytics, percentiles, trends, confidence, anomaly detection and insufficient-data semantics.
-- Phase 45: explicit egress identity, destination identity and policy assurance with independent egress evidence and bounded freshness validation.
+Implementation is in `@irp/tunnel`; repository/runtime verification remains required.
 
 ## Verification Rules
 
