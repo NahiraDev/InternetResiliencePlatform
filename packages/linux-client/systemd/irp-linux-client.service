@@ -1,0 +1,18 @@
+[Unit]
+Description=Internet Resilience Platform Linux Full Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /usr/lib/irp/linux-client/dist/index.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/irp
+
+[Install]
+WantedBy=multi-user.target
