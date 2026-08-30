@@ -3,7 +3,6 @@ import { NotFoundAppError, ForbiddenAppError, UnauthorizedAppError, ValidationAp
 import { createPrismaClient } from '@irp/database';
 import {
   NotificationIncidentCenter,
-  incidentStatusSchema,
   notificationsStatusSchema,
   runtimeIncidentInputSchema,
 } from './notifications.js';
@@ -46,10 +45,7 @@ export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
   app.get('/api/v1/incidents', async (request) => {
     await requirePermission(request, 'runtime.read');
     const query = notificationsStatusSchema.parse(request.query);
-    return {
-      success: true,
-      data: await center.listIncidents(query.limit, query.status),
-    };
+    return { success: true, data: await center.listIncidents(query.limit, query.status) };
   });
 
   app.get('/api/v1/incidents/:id', async (request) => {
@@ -76,10 +72,7 @@ export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
   app.get('/api/v1/notifications', async (request) => {
     await requirePermission(request, 'runtime.read');
     const query = notificationsStatusSchema.parse(request.query);
-    return {
-      success: true,
-      data: await center.listNotifications(query.limit, query.unreadOnly),
-    };
+    return { success: true, data: await center.listNotifications(query.limit, query.unreadOnly) };
   });
 
   app.post('/api/v1/notifications/:id/read', async (request) => {
