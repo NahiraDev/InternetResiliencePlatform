@@ -4,8 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 59 — Notifications & Incident Center (**implementation started; verification required**).
-- **Phase 59:** implementation is isolated on `phase/59-notifications-incident-center`; it is not merged to `main` and remains subject to full repository/database/runtime verification.
+- **Current phase:** Phase 60 — Administration & Self-Hosting (**implementation started; verification required**).
+- **Phase 60:** implementation is isolated on `phase/60-administration-self-hosting`; it is not merged to `main` and remains subject to full repository/runtime verification.
+- **Phase 59:** implementation is merged to `main`; CI is green after the final API lint fix. Remaining Phase 59 completion evidence must still satisfy the phase verification rules.
 - **Phase 58:** implementation is merged to `main`; final verification evidence for the latest follow-up fixes must remain green before the phase is treated as fully closed.
 - **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification remains required.
 - **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified Phase 53 fix is accepted on `main`.
@@ -21,11 +22,59 @@
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
 - **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic.
 - **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
+- **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
+- **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 60 — Administration & Self-Hosting
+
+**Implementation started; verification required.** Phase 60 turns the unified control plane into an operator-manageable, self-hostable deployment while preserving the existing safety boundaries.
+
+### Initial scope
+
+- deterministic self-hosted control-plane deployment contract;
+- explicit configuration validation and safe configuration inspection;
+- database migration lifecycle and startup/readiness policy;
+- backup and restore workflows with integrity validation;
+- authenticated/RBAC-protected administrative operations;
+- deterministic operator tooling and failure semantics;
+- auditability for administrative actions;
+- runtime verification for database, container and restore paths.
+
+### Non-goals
+
+- no routing, DNS, gateway, tunnel or failover authority in the administration layer;
+- no automatic destructive migration or implicit database reset;
+- no plaintext secret persistence in backups or logs;
+- no bypass of existing authentication/RBAC/audit contracts;
+- no changes to trusted-source artifact workflow semantics.
+
+### Implementation evidence
+
+- `docs/phases/phase-60.md`
+- `packages/config/src/index.ts` is the existing configuration foundation and must be extended rather than duplicated.
+- Existing API authentication/RBAC, database and runtime contracts are the integration points for the phase.
+
+### Verification Rules
+
+A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
+
+For every phase:
+
+1. inspect existing implementation before adding abstractions;
+2. preserve compatible contracts unless a breaking change is explicitly required;
+3. add normal, boundary, invalid and failure-path tests;
+4. run repository validation, typecheck, lint, relevant tests and build;
+5. apply security/abuse review to security-sensitive changes;
+6. verify runtime behavior for networking/process/container changes;
+7. update documentation and project state;
+8. require green CI before marking the phase complete.
+
+For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
 
 ## Phase 59 — Notifications & Incident Center
 
-**Implementation started; verification required.** The phase introduces a server-authoritative incident lifecycle and persisted in-product notification center on top of evidence produced by the runtime and Phase 58 real measurements.
+Implementation is merged to `main`. The phase introduces a server-authoritative incident lifecycle and persisted in-product notification center on top of evidence produced by the runtime and Phase 58 real measurements.
 
 ### Implementation evidence
 
@@ -51,7 +100,7 @@
 
 ### Verification status
 
-Phase 59 is **not marked complete**. Completion requires `pnpm validate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, migration validation and required CI/runtime evidence on the final Phase 59 commit.
+Phase 59 is merged to `main`; its final closure remains governed by the repository verification rules and runtime evidence requirements.
 
 ## Phase 58 — Real Network Measurements
 
@@ -68,23 +117,6 @@ Implementation is merged to `main`. It hardens `@irp/network-intelligence` so ne
 - existing mockable providers remain available for deterministic tests;
 - measurement code does not mutate routes, DNS, tunnels or gateway state;
 - Internet Intelligence remains advisory and does not gain execution authority.
-
-## Verification Rules
-
-A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
-
-For every phase:
-
-1. inspect existing implementation before adding abstractions;
-2. preserve compatible contracts unless a breaking change is explicitly required;
-3. add normal, boundary, invalid and failure-path tests;
-4. run repository validation, typecheck, lint, relevant tests and build;
-5. apply security/abuse review to security-sensitive changes;
-6. verify runtime behavior for networking/process/container changes;
-7. update documentation and project state;
-8. require green CI before marking the phase complete.
-
-For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
 
 ## Product Objective
 
