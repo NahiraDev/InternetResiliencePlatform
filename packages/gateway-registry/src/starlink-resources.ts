@@ -8,9 +8,10 @@ export type StarlinkResourceId =
   | 'starlinux-pi-starlink'
   | 'gbrandt-pi-starlink'
   | 'raspberry-gateway'
-  | 'realink-setalink';
+  | 'realink-setalink'
+  | 'starlink-vpn-compatibility';
 
-export type StarlinkResourceKind = 'architecture' | 'self-hosted' | 'service' | 'software';
+export type StarlinkResourceKind = 'architecture' | 'self-hosted' | 'service' | 'software' | 'documentation';
 export type StarlinkResourceLifecycle = 'active' | 'needs-verification' | 'unverified';
 export type StarlinkTunnelProtocol = 'wireguard' | 'openvpn' | 'vless' | 'vmess' | 'reality' | 'shadowsocks' | 'trojan' | 'socks5' | 'zerotier' | 'l2tp' | 'sstp' | 'ikev2' | 'pptp' | 'ssh' | 'http-proxy';
 export type StarlinkResourceCapability =
@@ -28,7 +29,8 @@ export type StarlinkResourceCapability =
   | 'ddns'
   | 'remote-access'
   | 'mikrotik'
-  | 'router-gateway';
+  | 'router-gateway'
+  | 'cgnat-compatible';
 
 export interface StarlinkResourceSource {
   url: string;
@@ -138,6 +140,7 @@ export const STARLINK_RESOURCES: readonly StarlinkResource[] = [
     sources: [
       { url: 'https://github.com/nasnet-community/connect', kind: 'github', verifiedAt },
       { url: 'https://connect.starlink4iran.com/', kind: 'project-site', verifiedAt },
+      { url: 'https://connect.starlink4iran.com/fa/', kind: 'project-site', verifiedAt },
     ],
     notes: ['This is a self-hosted/community networking project, not a catalog of public VPN credentials.'],
   },
@@ -196,6 +199,20 @@ export const STARLINK_RESOURCES: readonly StarlinkResource[] = [
     requiresUserOwnedStarlink: false,
     sources: [{ url: 'https://setalink.no/', kind: 'official-service', verifiedAt }],
     notes: ['Service claims and free quota are provider-controlled and must be revalidated before use.', 'No public connection URI is assumed or stored.'],
+  },
+  {
+    id: 'starlink-vpn-compatibility',
+    name: 'Starlink VPN Compatibility Guidance',
+    kind: 'documentation',
+    lifecycle: 'active',
+    description: 'Official Starlink guidance covering VPN/site-to-site compatibility and common CGNAT limitations.',
+    protocols: ['wireguard', 'openvpn', 'sstp', 'ikev2', 'l2tp', 'pptp'],
+    capabilities: ['cgnat-compatible'],
+    freeTier: true,
+    publicEndpointProvided: false,
+    requiresUserOwnedStarlink: true,
+    sources: [{ url: 'https://starlink.com/tv/support/article/e5dc0b86-09b4-084b-918b-3fa181e5fb5d', kind: 'official-docs', verifiedAt }],
+    notes: ['Compatibility guidance is documentation, not a gateway or endpoint.', 'Actual behavior depends on the Starlink service/network configuration.'],
   },
 ];
 
