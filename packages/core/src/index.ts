@@ -4,6 +4,17 @@ import type { AppConfig } from '@irp/config';
 import type { Logger } from '@irp/logger';
 import { createAllBuiltinProviders } from '@irp/dns/provider-registry';
 import { type BenchmarkSample, type DnsProvider, type DnsQuestion } from '@irp/dns';
+export { createMobileClientState, MobileClientCore } from './mobile-client.js';
+export type {
+  MobileClientEvent,
+  MobileClientListener,
+  MobileClientPolicy,
+  MobileClientState,
+  MobileConnectionState,
+  MobileDiagnosticsAdapter,
+  MobileNetworkSnapshot,
+  MobilePlatform,
+} from './mobile-client.js';
 
 export interface Lifecycle {
   start(): Promise<void>;
