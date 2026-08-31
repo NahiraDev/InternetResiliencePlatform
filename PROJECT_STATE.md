@@ -4,8 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 61 — Linux Full Client (**implementation started; verification required**).
-- **Phase 61:** implementation is isolated on `phase/61-linux-full-client`; it is not merged to `main` and remains subject to full repository/runtime verification.
+- **Current phase:** Phase 62 — macOS Full Client (**implementation started; verification required**).
+- **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
+- **Phase 61:** implementation remains subject to full repository/runtime verification under the phase verification rules.
 - **Phase 60:** implementation was merged to `main` by PR #170; its final verification status remains governed by the phase verification rules.
 - **Phase 59:** implementation is merged to `main`; final closure remains governed by repository/runtime evidence.
 - **Phase 58:** implementation is merged to `main`; final verification evidence remains required.
@@ -25,37 +26,41 @@
 - **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
 - **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
 - **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
+- **macOS client strategy:** Phase 62 owns macOS process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 61 — Linux Full Client
+## Phase 62 — macOS Full Client
 
 **Implementation started; verification required.**
 
 ### Implementation evidence
 
-- `packages/linux-client/package.json`
-- `packages/linux-client/src/index.ts`
-- `packages/linux-client/src/index.test.ts`
-- `packages/linux-client/systemd/irp-linux-client.service`
-- `docs/phases/phase-61.md`
+- `packages/macos-client/package.json`
+- `packages/macos-client/tsconfig.json`
+- `packages/macos-client/src/index.ts`
+- `packages/macos-client/tests/index.test.ts`
+- `packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist`
+- `docs/phases/phase-62.md`
+- `.github/workflows/macos-client.yml`
 
 ### Current guarantees
 
-- Linux diagnostics use bounded `execFile` calls rather than shell interpolation.
+- macOS diagnostics use bounded `execFile` calls rather than shell interpolation.
 - Interface, route and resolver state are presented as observations; the client does not mutate network state.
 - Autonomous mode is explicit, deterministic and locally controlled; it does not bypass the shared safety/policy boundary.
 - The local control surface binds to loopback only by default.
-- systemd service hardening includes `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem` and restricted home access.
+- Non-macOS environments report a deterministic unsupported state rather than pretending macOS runtime evidence exists.
+- launchd lifecycle contract declares background execution, launch-at-login and restart behavior without granting network-policy authority.
 
 ### Remaining verification
 
-- frozen-lockfile install;
+- frozen-lockfile install after importer synchronization;
 - repository typecheck, lint, tests and build;
-- Linux host runtime verification for `ip`/`resolvectl` diagnostics;
-- systemd install/start/restart/stop verification;
-- desktop UI/tray integration verification on supported Linux desktop environments;
-- security review of local control and service boundaries;
+- real macOS host diagnostics using `ifconfig`, `route` and `scutil`;
+- launchd install/start/restart/stop verification;
+- desktop UI/tray integration verification on supported macOS environments;
+- security review of local control and process/lifecycle boundaries;
 - green CI.
 
 ## Verification Rules
