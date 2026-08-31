@@ -3,7 +3,7 @@ import { getStarlinkResource, listStarlinkResources, STARLINK_RESOURCES } from '
 
 describe('Starlink resource catalog', () => {
   it('contains every supplied resource without treating sample endpoints as public configs', () => {
-    expect(STARLINK_RESOURCES).toHaveLength(10);
+    expect(STARLINK_RESOURCES).toHaveLength(11);
     expect(STARLINK_RESOURCES.every((resource) => resource.publicEndpointProvided === false)).toBe(true);
     expect(getStarlinkResource('egret')?.requiresUserOwnedStarlink).toBe(true);
     expect(getStarlinkResource('realink-setalink')?.requiresUserOwnedStarlink).toBe(false);
@@ -32,7 +32,12 @@ describe('Starlink resource catalog', () => {
 
   it('keeps catalog entries immutable from callers', () => {
     const result = listStarlinkResources({ protocol: 'wireguard' });
-    result[0].protocols.push('openvpn');
-    expect(listStarlinkResources({ protocol: 'openvpn' }).find((resource) => resource.id === result[0].id)?.protocols).not.toContain('openvpn');
+    const first = result.at(0);
+    expect(first).toBeDefined();
+    first?.protocols.push('openvpn');
+    expect(first?.protocols).toContain('openvpn');
+    expect(
+      listStarlinkResources({ protocol: 'openvpn' }).some((resource) => resource.id === first?.id),
+    ).toBe(false);
   });
 });
