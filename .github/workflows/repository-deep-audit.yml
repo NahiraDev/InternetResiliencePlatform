@@ -132,6 +132,21 @@ jobs:
         env:
           IRP_API_URL: http://127.0.0.1:8080
         run: pnpm diagnostics:strict
+      - name: Stop local API before Docker smoke
+        if: ${{ success() }}
+        run: |
+          if [ -f /tmp/irp-api.pid ]; then
+            kill "$(cat /tmp/irp-api.pid)" 2>/dev/null || true
+            for _ in $(seq 1 20); do
+              if ! kill -0 "$(cat /tmp/irp-api.pid)" 2>/dev/null; then break; fi
+              sleep 0.5
+            done
+          fi
+          if ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
+            echo 'Port 8080 is still occupied after stopping local API' >&2
+            ss -ltnp '( sport = :8080 )' >&2 || true
+            exit 1
+          fi
       - name: Docker runtime smoke
         run: pnpm docker:smoke
       - name: Linux client smoke
@@ -140,7 +155,6 @@ jobs:
           pid=$!
           cleanup() {
             kill "$pid" 2>/dev/null || true
-            if [ -f /tmp/irp-api.pid ]; then kill "$(cat /tmp/irp-api.pid)" 2>/dev/null || true; fi
           }
           trap cleanup EXIT
           ready=false
