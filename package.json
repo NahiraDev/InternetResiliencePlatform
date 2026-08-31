@@ -25,6 +25,8 @@
     "diagnostics": "node scripts/operational-diagnostics.mjs",
     "diagnostics:strict": "node scripts/operational-diagnostics.mjs --strict",
     "regional:online": "node scripts/regional-online-test.mjs",
+    "runtime:integration": "node tools/runtime-lab/package-integration.mjs",
+    "runtime:integration:strict": "node tools/runtime-lab/package-integration.mjs --strict",
     "runtime:lab": "docker compose -f ops/observability/docker-compose.yml up --build"
   },
   "dependencies": {
