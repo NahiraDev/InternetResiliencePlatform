@@ -137,27 +137,41 @@ jobs:
       - name: Stop local API before Docker smoke
         if: ${{ always() }}
         run: |
-          set -u
+          set -euo pipefail
           pid=''
           if [ -s /tmp/irp-api.pid ]; then
             pid="$(cat /tmp/irp-api.pid)"
           fi
 
-          if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-            kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
-            for _ in $(seq 1 30); do
-              if ! kill -0 "$pid" 2>/dev/null; then break; fi
-              sleep 0.5
-            done
-            kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+          # Stop the complete process group first; pnpm/node may spawn the
+          # actual server as a child and leaving that child alive poisons the
+          # fixed diagnostics port for the following Docker smoke stage.
+          if [ -n "$pid" ]; then
+            kill -TERM -- "-$pid" 2>/dev/null || true
+            kill -TERM "$pid" 2>/dev/null || true
           fi
 
-          for _ in $(seq 1 10); do
+          for _ in $(seq 1 30); do
             if ! ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
               break
             fi
             sleep 0.5
           done
+
+          # If a child process escaped the process group, terminate the
+          # listener itself. This is deliberately scoped to TCP/8080 only.
+          if ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
+            listener_pids="$(ss -ltnp '( sport = :8080 )' 2>/dev/null | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | sort -u)"
+            for listener_pid in $listener_pids; do
+              kill -TERM "$listener_pid" 2>/dev/null || true
+            done
+            for _ in $(seq 1 20); do
+              if ! ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
+                break
+              fi
+              sleep 0.5
+            done
+          fi
 
           if ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
             echo 'Port 8080 is still occupied after stopping local API' >&2
