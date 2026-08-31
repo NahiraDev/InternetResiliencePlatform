@@ -34,14 +34,10 @@ export type MobileClientListener = (event: MobileClientEvent) => void;
 
 const isMobilePlatform = (value: string): value is MobilePlatform => value === 'ios' || value === 'android';
 
-const assertMobilePlatform = (platform: string): asserts platform is MobilePlatform => {
+export const createMobileClientState = (platform: string): MobileClientState => {
   if (!isMobilePlatform(platform)) {
     throw new Error(`Unsupported mobile platform: ${platform}`);
   }
-};
-
-export const createMobileClientState = (platform: string): MobileClientState => {
-  assertMobilePlatform(platform);
   return {
     platform,
     connection: 'unknown',
@@ -82,7 +78,9 @@ export class MobileClientCore {
 
   async refresh(adapter: MobileDiagnosticsAdapter): Promise<MobileNetworkSnapshot> {
     const snapshot = await adapter.snapshot();
-    assertMobilePlatform(snapshot.platform);
+    if (!isMobilePlatform(snapshot.platform)) {
+      throw new Error(`Unsupported diagnostics platform: ${snapshot.platform}`);
+    }
     if (snapshot.platform !== this.state.platform) {
       throw new Error(`Diagnostics platform mismatch: expected ${this.state.platform}, received ${snapshot.platform}`);
     }
