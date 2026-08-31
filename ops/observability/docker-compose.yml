@@ -69,6 +69,7 @@ services:
     image: caddy:2.10-alpine
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../..:/workspace:ro
     ports:
       - "8081:8081"
     depends_on:
