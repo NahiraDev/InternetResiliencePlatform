@@ -1,6 +1,6 @@
 import Foundation
 
-public struct IRPPacketRoute: Equatable, Sendable {
+public struct IRPPacketRoute: Codable, Equatable, Sendable {
     public let destinationAddress: String
     public let subnetMask: String
 
@@ -10,7 +10,7 @@ public struct IRPPacketRoute: Equatable, Sendable {
     }
 }
 
-public struct IRPPacketTunnelConfiguration: Equatable, Sendable {
+public struct IRPPacketTunnelConfiguration: Codable, Equatable, Sendable {
     public let remoteAddress: String
     public let localAddress: String
     public let subnetMask: String
