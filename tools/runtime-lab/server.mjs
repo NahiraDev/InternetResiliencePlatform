@@ -26,6 +26,7 @@ function setGauge(name, labels = {}, value = 0) {
 function escapeLabel(value) {
   return String(value).replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll('\n', '\\n');
 }
+
 function renderMetric(entry) {
   const labels = Object.entries(entry.labels).map(([k, v]) => `${k}="${escapeLabel(v)}"`).join(',');
   return `${entry.name}${labels ? `{${labels}}` : ''} ${entry.value}`;
