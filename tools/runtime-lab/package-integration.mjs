@@ -80,7 +80,7 @@ const runtime = results.filter((item) => item.mode === 'runtime-import');
 const report = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
-  overall: results.some((item) => item.state === 'failed') ? 'unhealthy' : results.some((item) => item.state === 'degraded' || item.state === 'unavailable') ? 'degraded' : 'healthy',
+  overall: runtime.some((item) => item.state === 'failed') ? 'unhealthy' : runtime.some((item) => item.state === 'degraded') ? 'degraded' : 'healthy',
   totals: { packages: results.length, runtime: runtime.length, executed: results.filter((item) => item.state === 'executed').length, failed: results.filter((item) => item.state === 'failed').length, unavailable: results.filter((item) => item.state === 'unavailable').length, integrations: results.reduce((n, item) => n + (item.integrations?.length ?? 0), 0), integrated: results.reduce((n, item) => n + (item.integrations?.filter((i) => i.state === 'integrated').length ?? 0), 0) },
   packages: results,
 };
