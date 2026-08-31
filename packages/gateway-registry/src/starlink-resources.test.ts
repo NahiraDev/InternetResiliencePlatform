@@ -32,12 +32,12 @@ describe('Starlink resource catalog', () => {
 
   it('keeps catalog entries immutable from callers', () => {
     const result = listStarlinkResources({ protocol: 'wireguard' });
-    const first = result.at(0);
-    expect(first).toBeDefined();
-    first?.protocols.push('openvpn');
-    expect(first?.protocols).toContain('openvpn');
+    const target = result.find((resource) => resource.id === 'getastatic');
+    expect(target).toBeDefined();
+    target?.protocols.push('openvpn');
+    expect(target?.protocols).toContain('openvpn');
     expect(
-      listStarlinkResources({ protocol: 'openvpn' }).some((resource) => resource.id === first?.id),
+      listStarlinkResources({ protocol: 'openvpn' }).some((resource) => resource.id === 'getastatic'),
     ).toBe(false);
   });
 });
