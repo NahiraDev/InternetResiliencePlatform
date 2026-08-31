@@ -185,6 +185,6 @@ IRP treats gateways and tunnels as managed network providers. A provider is only
 
 ## Current implementation truth
 
-The canonical implementation boundary is now **Phase 59 — Notifications & Incident Center**, which has started on `phase/59-notifications-incident-center`. Phase 58 — Real Network Measurements has been merged to `main`; remaining verification evidence is still governed by the project-state verification rules. Phase 59 is intentionally not marked complete until its persistence, API, runtime integration, UI, tests and CI/runtime evidence satisfy the definition of done.
+The canonical implementation boundary is now **Phase 62 — macOS Full Client**, which is implemented on `main` and remains open only for repository, native-macOS runtime, security and CI verification evidence. Phase 61 — Linux Full Client remains governed by its explicit verification gate. Earlier phases retain their existing verification status and must not be treated as complete merely because source code is present.
 
 The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**
