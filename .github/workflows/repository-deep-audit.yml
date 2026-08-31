@@ -114,7 +114,9 @@ jobs:
           API_PORT: 8080
           TELEMETRY_ENABLED: 'false'
         run: |
-          pnpm --filter @irp/api start > /tmp/irp-api.log 2>&1 &
+          set -euo pipefail
+          rm -f /tmp/irp-api.pid /tmp/irp-api.log
+          setsid pnpm --filter @irp/api start > /tmp/irp-api.log 2>&1 &
           echo $! > /tmp/irp-api.pid
           ready=false
           for _ in $(seq 1 60); do
@@ -133,24 +135,42 @@ jobs:
           IRP_API_URL: http://127.0.0.1:8080
         run: pnpm diagnostics:strict
       - name: Stop local API before Docker smoke
-        if: ${{ success() }}
+        if: ${{ always() }}
         run: |
-          if [ -f /tmp/irp-api.pid ]; then
-            kill "$(cat /tmp/irp-api.pid)" 2>/dev/null || true
-            for _ in $(seq 1 20); do
-              if ! kill -0 "$(cat /tmp/irp-api.pid)" 2>/dev/null; then break; fi
+          set -u
+          pid=''
+          if [ -s /tmp/irp-api.pid ]; then
+            pid="$(cat /tmp/irp-api.pid)"
+          fi
+
+          if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+            for _ in $(seq 1 30); do
+              if ! kill -0 "$pid" 2>/dev/null; then break; fi
               sleep 0.5
             done
+            kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
           fi
+
+          for _ in $(seq 1 10); do
+            if ! ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
+              break
+            fi
+            sleep 0.5
+          done
+
           if ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
             echo 'Port 8080 is still occupied after stopping local API' >&2
             ss -ltnp '( sport = :8080 )' >&2 || true
             exit 1
           fi
+          rm -f /tmp/irp-api.pid
       - name: Docker runtime smoke
         run: pnpm docker:smoke
       - name: Linux client smoke
         run: |
+          set -euo pipefail
+          rm -f /tmp/irp-linux-client.log
           pnpm --filter @irp/linux-client start > /tmp/irp-linux-client.log 2>&1 &
           pid=$!
           cleanup() {
@@ -180,6 +200,7 @@ jobs:
     steps:
       - name: Require all audit stages to pass
         run: |
+          set -euo pipefail
           test '${{ needs.inventory.result }}' = success
           test '${{ needs.workspace.result }}' = success
           test '${{ needs.runtime.result }}' = success
