@@ -1,0 +1,41 @@
+name: Repository Health Dashboard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: repository-health-dashboard
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Publish health dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dashboard
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/health
+
+      - name: Deploy dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4
