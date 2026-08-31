@@ -4,6 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    # Run the full repository health audit automatically every day.
+    - cron: '17 2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -142,14 +145,10 @@ jobs:
           if [ -s /tmp/irp-api.pid ]; then
             pid="$(cat /tmp/irp-api.pid)"
           fi
-
-          # Stop the complete process group first; pnpm/node may spawn the
-          # actual server as a child.
           if [ -n "$pid" ]; then
             kill -TERM -- "-$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
           fi
-
           wait_for_port_release() {
             for _ in $(seq 1 20); do
               if ! ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
@@ -159,28 +158,20 @@ jobs:
             done
             return 1
           }
-
           wait_for_port_release || true
-
-          # A spawned child can escape the original pnpm process group. Find
-          # only listeners bound to TCP/8080, terminate them, then force-kill
-          # only those remaining listeners if graceful shutdown is insufficient.
           listener_pids() {
             ss -ltnp '( sport = :8080 )' 2>/dev/null \
               | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' \
               | sort -u
           }
-
           for listener_pid in $(listener_pids); do
             kill -TERM "$listener_pid" 2>/dev/null || true
           done
           wait_for_port_release || true
-
           for listener_pid in $(listener_pids); do
             kill -KILL "$listener_pid" 2>/dev/null || true
           done
           wait_for_port_release || true
-
           if ss -ltn '( sport = :8080 )' | grep -q ':8080'; then
             echo 'Port 8080 is still occupied after stopping local API' >&2
             ss -ltnp '( sport = :8080 )' >&2 || true
