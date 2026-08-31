@@ -1,64 +1,31 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0f14"><title>IRP Runtime Live</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#05090d"><title>IRP Runtime Radar</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:#0b0f14;color:#e6edf3}main{max-width:1500px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}.title h1{margin:0;font-size:26px}.muted{color:#8b949e}.status{border:1px solid #30363d;border-radius:999px;padding:7px 11px;font-size:12px}.ok{color:#3fb950}.bad{color:#f85149}.warn{color:#d29922}.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.card{background:#111820;border:1px solid #30363d;border-radius:11px;padding:14px}.value{font-size:24px;font-weight:700;margin-top:5px}.section{margin-top:16px}.section h2{font-size:17px;margin:0 0 9px}.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}.check{border:1px solid #30363d;border-radius:9px;padding:12px;background:#111820}.checkhead{display:flex;justify-content:space-between;gap:8px}.pill{border-radius:999px;background:#21262d;padding:3px 7px;font-size:11px}.meta{font-size:12px;margin-top:7px;color:#8b949e}.log{background:#0d1117;border:1px solid #30363d;border-radius:9px;padding:12px;max-height:430px;overflow:auto;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}.toolbar{display:flex;gap:7px;align-items:center}.toolbar button{background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:7px;padding:7px 10px;cursor:pointer}a{color:#58a6ff;text-decoration:none}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start;flex-direction:column}}
+:root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at center,#102019 0,#070b10 42%,#030507 100%);color:#d9e2e8;min-height:100vh}main{max-width:1500px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px}.title h1{margin:2px 0;font-size:25px;letter-spacing:.02em}.muted{color:#7f909a}.status{border:1px solid #30413b;border-radius:999px;padding:7px 11px;font-size:12px}.ok{color:#45e08a}.bad{color:#ff6675}.warn{color:#e7bd55}.toolbar{display:flex;gap:8px;align-items:center}.toolbar button{background:#10171b;color:#d9e2e8;border:1px solid #30413b;border-radius:7px;padding:7px 10px;cursor:pointer}.radar-layout{display:grid;grid-template-columns:minmax(500px,1.55fr) minmax(300px,.8fr);gap:14px}.panel{background:rgba(7,13,16,.86);border:1px solid #263831;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden}.radar-panel{min-height:650px;position:relative}.radar{position:absolute;inset:28px;display:grid;place-items:center}.scope{width:min(75vw,570px);height:min(75vw,570px);max-width:570px;max-height:570px;border-radius:50%;position:relative;overflow:hidden;border:1px solid rgba(69,224,138,.45);background:radial-gradient(circle,rgba(69,224,138,.08),rgba(0,0,0,.12) 58%,rgba(0,0,0,.4));box-shadow:0 0 50px rgba(69,224,138,.08),inset 0 0 50px rgba(69,224,138,.06)}.scope:before,.scope:after{content:"";position:absolute;inset:16%;border:1px solid rgba(69,224,138,.22);border-radius:50%}.scope:after{inset:32%}.cross-x,.cross-y{position:absolute;background:rgba(69,224,138,.16)}.cross-x{left:0;right:0;top:50%;height:1px}.cross-y{top:0;bottom:0;left:50%;width:1px}.sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 315deg,rgba(69,224,138,.05) 326deg,rgba(69,224,138,.5) 350deg,rgba(69,224,138,.03) 360deg);animation:sweep 2.8s linear infinite}.sweep:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 0,rgba(69,224,138,.5),transparent 38%);transform:rotate(0deg)}@keyframes sweep{to{transform:rotate(360deg)}}.blip{position:absolute;width:10px;height:10px;border-radius:50%;background:#45e08a;box-shadow:0 0 12px #45e08a;transform:translate(-50%,-50%);animation:pulse 1.5s ease-in-out infinite}.blip.bad{background:#ff6675;box-shadow:0 0 12px #ff6675}.blip.warn{background:#e7bd55;box-shadow:0 0 12px #e7bd55}@keyframes pulse{50%{opacity:.45;transform:translate(-50%,-50%) scale(.65)}}.node-label{position:absolute;transform:translate(-50%,14px);font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#9eb0b8;white-space:nowrap}.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#45e08a}.center strong{display:block;font-size:17px}.radar-title{position:absolute;left:18px;top:16px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#8ba19a;letter-spacing:.08em}.side{display:grid;gap:14px;align-content:start}.summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:14px}.metric{border:1px solid #263831;background:#0b1215;border-radius:10px;padding:12px}.metric .value{font-size:19px;font-weight:700;margin-top:5px}.checks{padding:14px;display:grid;gap:8px}.check{border:1px solid #263831;border-radius:9px;padding:10px;background:#0b1215}.checkhead{display:flex;justify-content:space-between;gap:8px}.pill{border-radius:999px;background:#17201f;padding:3px 7px;font-size:10px}.meta{font-size:11px;margin-top:6px;color:#7f909a}.log{margin:0 14px 14px;background:#05090b;border:1px solid #263831;border-radius:9px;padding:10px;max-height:220px;overflow:auto;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}.footer{margin-top:12px;font-size:11px}@media(max-width:950px){.radar-layout{grid-template-columns:1fr}.radar-panel{min-height:560px}.scope{width:min(82vw,500px);height:min(82vw,500px)}}
 </style></head>
 <body><main>
-<div class="top"><div><div class="muted">Internet Resilience Platform</div><h1>Runtime Live Dashboard</h1><div class="muted">Live view of API health, network intelligence, platform state and metrics</div></div><div class="toolbar"><span id="status" class="status warn">Connecting…</span><button id="refresh" type="button">Refresh</button></div></div>
-<div class="grid"><div class="card"><div class="muted">Overall</div><div id="overall" class="value">—</div></div><div class="card"><div class="muted">API</div><div id="api" class="value">—</div></div><div class="card"><div class="muted">Network</div><div id="network" class="value">—</div></div><div class="card"><div class="muted">Platform</div><div id="platform" class="value">—</div></div><div class="card"><div class="muted">Metrics</div><div id="metrics" class="value">—</div></div></div>
-<section class="section"><h2>Runtime checks</h2><div id="checks" class="checks"><div class="card muted">Loading…</div></div></section>
-<section class="section"><h2>Live diagnostic stream</h2><div id="log" class="log">Waiting for runtime…</div></section>
-<section class="section"><div class="muted">Endpoint: <span id="endpoint">—</span> · Polling every 1 second · Browser-side only; no credentials required</div></section>
+<header class="top"><div><div class="muted">INTERNET RESILIENCE PLATFORM / RUNTIME</div><h1>Network Operations Radar</h1><div class="muted">Live runtime topology, health probes and route state</div></div><div class="toolbar"><span id="status" class="status warn">SCANNING</span><button id="refresh" type="button">Scan now</button></div></header>
+<div class="radar-layout">
+<section class="panel radar-panel"><div class="radar-title">LIVE SCOPE · 1s SWEEP</div><div class="radar"><div class="scope"><div class="sweep"></div><div class="cross-x"></div><div class="cross-y"></div><div class="center"><strong id="scopeState">SCANNING</strong><span id="scopeTime">—</span></div><div id="blips"></div></div></div></section>
+<aside class="side">
+<section class="panel summary"><div class="metric"><div class="muted">OVERALL</div><div id="overall" class="value">—</div></div><div class="metric"><div class="muted">LATENCY</div><div id="latency" class="value">—</div></div><div class="metric"><div class="muted">NODES</div><div id="nodes" class="value">0/5</div></div><div class="metric"><div class="muted">METRICS</div><div id="metrics" class="value">—</div></div></section>
+<section class="panel"><div class="checks" id="checks"><div class="muted">Initializing probes…</div></div></section>
+<section class="panel"><div style="padding:14px 14px 0"><strong>Diagnostic stream</strong></div><div id="log" class="log">Waiting for runtime…</div></section>
+</aside></div>
+<div class="footer muted">Target: <span id="endpoint">—</span> · Browser-side live probe · <a href="../../" style="color:inherit">IRP</a></div>
 </main>
 <script>
 (()=>{
-  const params=new URLSearchParams(window.location.search);
-  const configuredApi=params.get('api');
-  const base=(configuredApi||'http://127.0.0.1:8080').replace(/\/$/,'');
-  const paths=[['live','/api/v1/live'],['readiness','/api/v1/ready'],['network','/api/v1/health/network'],['platform','/api/v1/platform/status'],['metrics','/api/v1/metrics']];
-  const get=(id)=>document.getElementById(id);
-  const esc=(value)=>String(value==null?'':value).replace(/[&<>"']/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]||char));
-  const cls=(state)=>state==='healthy'?'ok':state==='unhealthy'?'bad':state==='degraded'?'warn':'muted';
-  let busy=false;
-  get('endpoint').textContent=base;
-  async function check(name,path){
-    const started=performance.now();
-    try{
-      const response=await fetch(base+path,{cache:'no-store',headers:{accept:'application/json'}});
-      const text=await response.text();
-      let data=null;
-      try{data=text?JSON.parse(text):null;}catch(_error){data=null;}
-      const state=response.ok?'healthy':(response.status>=500||response.status===429?'unhealthy':'degraded');
-      return {name,path,state,status:response.status,latency:Math.round(performance.now()-started),data};
-    }catch(error){
-      return {name,path,state:'unhealthy',latency:Math.round(performance.now()-started),error:error instanceof Error?error.name:String(error)};
-    }
-  }
-  async function load(){
-    if(busy)return;
-    busy=true;
-    try{
-      const results=await Promise.all(paths.map(([name,path])=>check(name,path)));
-      const bad=results.some((item)=>item.state==='unhealthy');
-      const degraded=results.some((item)=>item.state==='degraded');
-      const overall=bad?'unhealthy':degraded?'degraded':'healthy';
-      get('overall').textContent=overall;get('overall').className='value '+cls(overall);
-      const map=Object.fromEntries(results.map((item)=>[item.name,item]));
-      ['live','network','platform','metrics'].forEach((key)=>{const target=key==='live'?'api':key;const state=map[key].state;get(target).textContent=state;get(target).className='value '+cls(state);});
-      get('checks').innerHTML=results.map((item)=>`<div class="check"><div class="checkhead"><strong>${esc(item.name)}</strong><span class="pill ${cls(item.state)}">${esc(item.state)}</span></div><div class="meta">${esc(item.path)} · ${item.status==null?'no response':item.status} · ${item.latency} ms${item.error?' · '+esc(item.error):''}</div></div>`).join('');
-      const now=new Date().toLocaleTimeString();
-      get('status').textContent=`Live · ${now}`;get('status').className='status '+cls(overall);
-      const entry={at:new Date().toISOString(),overall,checks:results.map((item)=>({name:item.name,state:item.state,status:item.status,latencyMs:item.latency,error:item.error}))};
-      const existing=get('log').textContent;
-      const lines=existing==='Waiting for runtime…'?[]:existing.split('\n');
-      lines.push(JSON.stringify(entry));
-      get('log').textContent=lines.slice(-80).join('\n');
-    }finally{busy=false;}
-  }
-  get('refresh').addEventListener('click',load);
-  void load();
-  window.setInterval(()=>{void load();},1000);
+const params=new URLSearchParams(location.search),base=(params.get('api')||'http://127.0.0.1:8080').replace(/\/$/,'');
+const paths=[['live','/api/v1/live'],['readiness','/api/v1/ready'],['network','/api/v1/health/network'],['platform','/api/v1/platform/status'],['metrics','/api/v1/metrics']];
+const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cls=s=>s==='healthy'?'ok':s==='unhealthy'?'bad':s==='degraded'?'warn':'muted';let busy=false;
+$('endpoint').textContent=base;
+async function probe(name,path){const t=performance.now();try{const r=await fetch(base+path,{cache:'no-store',headers:{accept:'application/json'}});const text=await r.text();let data=null;try{data=text?JSON.parse(text):null}catch{}return{name,path,status:r.status,latency:Math.round(performance.now()-t),state:r.ok?'healthy':r.status>=500||r.status===429?'unhealthy':'degraded',data}}catch(e){return{name,path,latency:Math.round(performance.now()-t),state:'offline',error:e instanceof Error?e.name:String(e)}}}
+function drawBlips(results){$('blips').innerHTML=results.map((r,i)=>{const positions=[[50,18],[82,50],[65,80],[35,80],[18,50]],p=positions[i];return `<span class="blip ${cls(r.state)}" style="left:${p[0]}%;top:${p[1]}%" title="${esc(r.name)}: ${esc(r.state)}"><span class="node-label">${esc(r.name)}</span></span>`}).join('')}
+async function load(){if(busy)return;busy=true;try{const results=await Promise.all(paths.map(p=>probe(...p)));const bad=results.some(r=>r.state==='unhealthy'||r.state==='offline'),deg=results.some(r=>r.state==='degraded');const overall=bad?'unhealthy':deg?'degraded':'healthy',healthy=results.filter(r=>r.state==='healthy').length,avg=Math.round(results.reduce((a,r)=>a+r.latency,0)/results.length);$('overall').textContent=overall;$('overall').className='value '+cls(overall);$('latency').textContent=avg+' ms';$('nodes').textContent=healthy+'/5';$('metrics').textContent=results.find(r=>r.name==='metrics')?.state||'—';$('metrics').className='value '+cls(results.find(r=>r.name==='metrics')?.state);$('scopeState').textContent=overall.toUpperCase();$('scopeState').className=cls(overall);$('scopeTime').textContent=new Date().toLocaleTimeString();$('status').textContent='LIVE · '+new Date().toLocaleTimeString();$('status').className='status '+cls(overall);drawBlips(results);$('checks').innerHTML=results.map(r=>`<div class="check"><div class="checkhead"><strong>${esc(r.name)}</strong><span class="pill ${cls(r.state)}">${esc(r.state)}</span></div><div class="meta">${esc(r.path)} · ${r.status??'no response'} · ${r.latency} ms${r.error?' · '+esc(r.error):''}</div></div>`).join('');const entry=JSON.stringify({at:new Date().toISOString(),overall,checks:results.map(r=>({name:r.name,state:r.state,status:r.status,latencyMs:r.latency,error:r.error}))});const old=$('log').textContent==='Waiting for runtime…'?[]:$('log').textContent.split('\n');old.push(entry);$('log').textContent=old.slice(-60).join('\n')}finally{busy=false}}
+$('refresh').addEventListener('click',load);void load();setInterval(()=>void load(),1000);
 })();
 </script></body></html>
