@@ -82,7 +82,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Run workspace check
-        run: pnpm -r run ${{ matrix.check }}
+        run: pnpm exec turbo run ${{ matrix.check }}
 
   runtime:
     name: Product runtime verification
@@ -106,7 +106,7 @@ jobs:
       - name: Frozen install
         run: pnpm install --frozen-lockfile
       - name: Build workspace graph for runtime
-        run: pnpm -r run build
+        run: pnpm exec turbo run build
       - name: Start API for runtime diagnostics
         env:
           NODE_ENV: test
