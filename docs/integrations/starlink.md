@@ -2,7 +2,7 @@
 
 ## Status
 
-Starlink is integrated as a first-class connectivity resource through `@irp/starlink` and the existing `@irp/connectivity` provider contract.
+Starlink is integrated as a first-class connectivity resource through `@irp/connectivity/starlink` and the existing `@irp/connectivity` provider contract.
 
 The integration is intentionally **monitor-first**: IRP observes and scores the Starlink uplink, but it does not claim ownership of dish power, firmware, account state, or router configuration.
 
