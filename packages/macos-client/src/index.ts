@@ -8,6 +8,8 @@ export type MacOSNetworkSnapshot = {
   interfaces: string;
   routes: string;
   dns: string;
+  networkServices: string;
+  vpnServices: string;
   capturedAt: string;
   platform: 'darwin' | 'unsupported';
 };
@@ -41,17 +43,21 @@ export class MacOSSystem implements MacOSSystemAdapter {
         interfaces: 'unavailable: macOS platform required',
         routes: 'unavailable: macOS platform required',
         dns: 'unavailable: macOS platform required',
+        networkServices: 'unavailable: macOS platform required',
+        vpnServices: 'unavailable: macOS platform required',
         capturedAt: new Date().toISOString(),
         platform: 'unsupported',
       };
     }
 
-    const [interfaces, routes, dns] = await Promise.all([
+    const [interfaces, routes, dns, networkServices, vpnServices] = await Promise.all([
       command('ifconfig', []),
       command('route', ['-n', 'get', 'default']),
       command('scutil', ['--dns']),
+      command('networksetup', ['-listallnetworkservices']),
+      command('scutil', ['--nc', 'list']),
     ]);
-    return { interfaces, routes, dns, capturedAt: new Date().toISOString(), platform: 'darwin' };
+    return { interfaces, routes, dns, networkServices, vpnServices, capturedAt: new Date().toISOString(), platform: 'darwin' };
   }
 
   async setAutonomousMode(enabled: boolean): Promise<void> {
@@ -69,10 +75,10 @@ function escapeHtml(value: string): string {
 
 const html = (snapshot: MacOSNetworkSnapshot, policy: MacOSClientPolicy): string => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IRP macOS Client</title><style>body{font:15px system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}</style></head>
+<title>IRP macOS Client</title><style>body{font:15px system-ui,sans-serif;max-width:1100px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style></head>
 <body><h1>Internet Resilience Platform</h1><p>macOS Full Client</p><p>Autonomous mode: <strong>${policy.autonomousMode ? 'enabled' : 'disabled'}</strong></p>
 <form method="post" action="/policy"><button name="autonomousMode" value="${policy.autonomousMode ? 'false' : 'true'}">${policy.autonomousMode ? 'Disable' : 'Enable'} autonomous mode</button></form>
-<h2>Network diagnostics</h2><pre>${escapeHtml(JSON.stringify(snapshot, null, 2))}</pre></body></html>`;
+<div class="grid"><section><h2>Network interfaces</h2><pre>${escapeHtml(snapshot.interfaces)}</pre></section><section><h2>Default route</h2><pre>${escapeHtml(snapshot.routes)}</pre></section><section><h2>DNS</h2><pre>${escapeHtml(snapshot.dns)}</pre></section><section><h2>Network services</h2><pre>${escapeHtml(snapshot.networkServices)}</pre></section><section><h2>VPN services</h2><pre>${escapeHtml(snapshot.vpnServices)}</pre></section></div></body></html>`;
 
 export class MacOSClientServer {
   private readonly server = createServer((request, response) => void this.handle(request, response));
