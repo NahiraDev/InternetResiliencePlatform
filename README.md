@@ -22,7 +22,7 @@ Observe → Measure → Detect → Diagnose → Decide
 
 ## Current implementation truth
 
-The repository is under active development. The roadmap contains **70 phases**, but the project is not 70 phases complete. Current implementation work is in the Phase 43/44 federation and analytics area, with final verification gates still required. A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security, and integration gates.
+The repository is under active development. The roadmap contains **70 phases**, but the project is not 70 phases complete. Current implementation work is at **Phase 65 — iOS Full Client**, with repository, security and native iOS verification gates still required. A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security and integration gates.
 
 ## Product roadmap
 
@@ -55,6 +55,7 @@ The current repository includes:
 - Data analytics primitives over historical/federated evidence
 - Docker production/runtime smoke validation
 - Repository integrity validation and CI enforcement
+- Platform client foundations for Linux, macOS, Windows, the shared mobile core, and the iOS Full Client boundary
 
 The long-term goal is to evaluate degradation, choose an authorized recovery path, verify the result, recover safely when an action is ineffective, and expose the same capability model to every supported client.
 
@@ -114,6 +115,7 @@ The deterministic smoke suite runs local examples and does not mutate host netwo
 ```text
 apps/                 Application entry points
 packages/             Reusable IRP packages
+clients/ios/          Native iOS Full Client boundary
 examples/             Capability-oriented runnable examples
 docs/                 User-facing and maintainer documentation
 scripts/              Validation, smoke tests, and operational tooling

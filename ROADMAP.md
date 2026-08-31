@@ -185,6 +185,6 @@ IRP treats gateways and tunnels as managed network providers. A provider is only
 
 ## Current implementation truth
 
-The canonical implementation boundary is now **Phase 62 — macOS Full Client**, which is implemented on `main` and remains open only for repository, native-macOS runtime, security and CI verification evidence. Phase 61 — Linux Full Client remains governed by its explicit verification gate. Earlier phases retain their existing verification status and must not be treated as complete merely because source code is present.
+The canonical implementation boundary is now **Phase 65 — iOS Full Client**, implemented on the Phase 65 branch with native SwiftUI, control-plane session lifecycle and Keychain-backed credential storage. Phase 64 remains implemented but is still open for repository/runtime verification. Phase 61–63 retain their explicit platform verification gates. Phase 65 also remains open until iOS simulator/device UI verification, security review and repository CI are green.
 
 The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**

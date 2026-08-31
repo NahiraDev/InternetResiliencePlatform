@@ -29,7 +29,11 @@ The repository contains additional packages and applications. This page intentio
 
 Phase 64 extends `@irp/core` with a platform-neutral `MobileClientCore` boundary. It owns client-local state, policy state representation, diagnostics adapter contracts and change events. It does **not** own routing, DNS, gateway, tunnel, failover or privileged networking mutations.
 
-Native iOS/Android networking behavior must remain behind platform adapters introduced in Phases 65–68.
+## iOS Full Client
+
+Phase 65 adds the native iOS client boundary under `clients/ios`. It owns SwiftUI presentation, control-plane session lifecycle, Keychain-backed refresh-token storage, diagnostics/analytics presentation and explicit policy requests. It does **not** execute routing, DNS, gateway, tunnel, failover or other privileged networking mutations.
+
+Native Network Extension behavior is intentionally deferred to Phase 66.
 
 ## Dependency guidance
 
