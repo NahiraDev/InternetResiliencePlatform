@@ -4,8 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 65 — iOS Full Client (**implementation started; repository/native verification required**).
-- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification is still required before closure.
+- **Current phase:** Phase 66 — iOS Network Integration (**implementation started; repository/native/runtime verification required**).
+- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present. Signed physical-device verification and a concrete authorized tunnel transport remain required before closure.
+- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification remains required before closure.
 - **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
 - **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
 - **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
@@ -33,8 +34,49 @@
 - **Windows client strategy:** Phase 63 owns Windows process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
 - **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
+- **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 66 — iOS Network Integration
+
+**Implementation started; verification required.**
+
+### Implementation evidence
+
+- `clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift`
+- `clients/ios/Sources/IRPiOSClient/NetworkExtensionAdapter.swift`
+- `clients/ios/Sources/IRPiOSClient/NetworkExtensionController.swift`
+- `clients/ios/PacketTunnel/PacketTunnelProvider.swift`
+- `clients/ios/PacketTunnel/Info.plist`
+- `clients/ios/PacketTunnel/PacketTunnel.entitlements`
+- `clients/ios/App/IRP.entitlements`
+- `clients/ios/App/IRPiOSApp.swift`
+- `clients/ios/App/Info.plist`
+- `clients/ios/IRP.xcodeproj/project.pbxproj`
+- `clients/ios/IRP.xcodeproj/xcshareddata/xcschemes/IRP.xcscheme`
+- `clients/ios/Tests/IRPiOSClientTests/PacketTunnelConfigurationTests.swift`
+- `.github/workflows/ios-network-integration.yml`
+- `docs/phases/phase-66.md`
+
+### Current guarantees
+
+- Packet tunnel configuration is validated before native network settings are created.
+- IPv4, DNS, MTU, included routes and excluded routes map deterministically to `NEPacketTunnelNetworkSettings`.
+- The containing app manages `NETunnelProviderManager`; it does not edit host routing tables directly.
+- The packet tunnel provider reads the control-plane-generated provider configuration and fails closed if no authorized concrete transport is available.
+- The packet tunnel extension uses the dedicated Apple packet-tunnel extension point and `packet-tunnel-provider` entitlement.
+- No WireGuard/OpenVPN implementation, gateway scoring, destination policy or failover algorithm is duplicated in iOS code.
+
+### Remaining verification
+
+- repository `pnpm validate`, typecheck, lint, tests and build;
+- Swift package tests/build;
+- Xcode project compilation against an iOS Simulator SDK;
+- entitlement and extension metadata validation;
+- signed physical iPhone installation and Network Extension lifecycle smoke test;
+- concrete authorized tunnel transport integration and end-to-end packet forwarding;
+- security review of entitlements, credential/session boundaries and fail-closed startup behavior.
 
 ## Phase 65 — iOS Full Client
 
