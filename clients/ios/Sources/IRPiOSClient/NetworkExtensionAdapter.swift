@@ -73,7 +73,7 @@ public final class IRPPacketTunnelProvider: NEPacketTunnelProvider {
                 do {
                     try await transport.start(configuration: configuration, packetFlow: self.packetFlow)
                 } catch {
-                    self.cancelTunnel(with: .failed)
+                    self.cancelTunnel(withError: error)
                 }
             }
             completionHandler(nil)
