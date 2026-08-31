@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+
 defaults:
   run:
     shell: bash
@@ -30,6 +34,17 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Verify Xcode toolchain
         run: |
