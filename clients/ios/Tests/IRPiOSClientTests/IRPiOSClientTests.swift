@@ -45,8 +45,8 @@ private final class MockControlPlane: IRPControlPlaneClient, @unchecked Sendable
     }
 }
 
-@MainActor
 final class IRPiOSClientTests: XCTestCase {
+    @MainActor
     func testEnrollmentStoresRefreshTokenAndPublishesState() async throws {
         let api = MockControlPlane()
         let store = IRPMemoryTokenStore()
@@ -60,6 +60,7 @@ final class IRPiOSClientTests: XCTestCase {
         XCTAssertEqual(try store.read(), "refresh-token")
     }
 
+    @MainActor
     func testRefreshUpdatesSnapshotAndAnalyticsAtomically() async throws {
         let api = MockControlPlane()
         let session = IRPClientSession(
@@ -75,6 +76,7 @@ final class IRPiOSClientTests: XCTestCase {
         XCTAssertEqual(session.state.analytics?.sampleCount, 10)
     }
 
+    @MainActor
     func testRefreshFailureLeavesPreviousStateUnchanged() async throws {
         let api = MockControlPlane()
         api.error = TestError.adapterUnavailable
@@ -89,6 +91,7 @@ final class IRPiOSClientTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testPolicyFailureDoesNotMutateLocalState() async throws {
         let api = MockControlPlane()
         api.error = TestError.policyRejected
@@ -103,6 +106,7 @@ final class IRPiOSClientTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testSignOutClearsEnrollmentAndSecureToken() throws {
         let store = IRPMemoryTokenStore(token: "refresh-token")
         let api = MockControlPlane()
