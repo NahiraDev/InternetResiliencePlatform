@@ -79,6 +79,4 @@ public enum IRPPacketTunnelConfigurationCoding {
         try JSONEncoder().encode(configuration)
     }
 }
-
-extension IRPPacketTunnelConfiguration: Codable {}
 #endif
