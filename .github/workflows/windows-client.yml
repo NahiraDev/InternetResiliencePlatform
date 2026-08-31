@@ -51,17 +51,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm --filter @irp/windows-client typecheck
+      - name: Typecheck Windows client
+        run: pnpm exec tsc -p packages/windows-client/tsconfig.json --noEmit
 
-      - name: Lint
-        run: pnpm --filter @irp/windows-client lint
+      - name: Lint Windows client
+        run: pnpm exec eslint packages/windows-client/src --ext .ts
 
-      - name: Test
-        run: pnpm --filter @irp/windows-client test
+      - name: Test Windows client
+        run: pnpm exec vitest run packages/windows-client
 
-      - name: Build
-        run: pnpm --filter @irp/windows-client build
+      - name: Build Windows client
+        run: pnpm exec tsc -p packages/windows-client/tsconfig.json
 
       - name: Verify native command surface
         shell: pwsh
