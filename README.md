@@ -121,3 +121,83 @@ docs/                 User-facing and maintainer documentation
 scripts/              Validation, smoke tests, and operational tooling
 .github/workflows/    CI, security, Docker, and validation workflows
 ```
+
+IRP uses pnpm workspaces and Turborepo. The root `package.json` and workspace manifests are the canonical source for package and tooling boundaries.
+
+## Architecture
+
+At a high level:
+
+```text
+                 IRP Core / Control Plane
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+           Web          Desktop        Mobile
+             │             │             │
+             └─────────────┼─────────────┘
+                           │
+                  Shared capabilities
+                           │
+             Measurement / Intelligence
+                           │
+               Policy / Safety / Audit
+                           │
+             Recovery / Failover / Tunnel
+                           │
+                  Verification / Rollback
+                           │
+                    Telemetry / History
+```
+
+Detailed architecture is documented in [`docs/architecture/`](docs/architecture/).
+
+## Examples
+
+Examples are capability-oriented rather than phase-oriented. Current examples include:
+
+- `basic-api` — read-only platform status API interaction
+- `connectivity` — platform connectivity status inspection
+- `network-measurement` — bounded DNS measurement
+- `dns-diagnostics` — DNS timing and address inspection
+- `failover` — deterministic candidate-selection simulation
+- `autopilot` — policy-controlled decision-loop simulation
+
+See [`examples/README.md`](examples/README.md) for prerequisites, safety boundaries, and run commands.
+
+## Safety model
+
+IRP is designed for authorized, user-configured connectivity mechanisms. Example and simulation layers do not modify system routes, DNS configuration, firewall state, tunnels, or other host networking.
+
+Future gateway/tunnel automation is constrained to authorized endpoints and must pass authentication, capability, health, policy/safety, audit and verification gates. An IP location alone is never treated as proof of service capability.
+
+Consequential recovery actions are explicit, policy-controlled, auditable, bounded, reversible, and independently verified.
+
+See [`SECURITY.md`](SECURITY.md) and [`docs/security/security-architecture.md`](docs/security/security-architecture.md).
+
+## Documentation policy
+
+`docs/` is the canonical user-facing documentation tree. Prefer updating an existing canonical document instead of creating a new document for the same concept.
+
+- Product documentation describes behavior that exists and can be verified.
+- Planned behavior is labeled as planned.
+- Phase records are implementation/audit notes.
+- Generated reports, temporary verification dumps, and one-off notes do not belong in public documentation navigation.
+
+See [`docs/README.md`](docs/README.md) for the documentation map and rules.
+
+## Contributing
+
+Contributions should preserve the repository's validation and documentation contracts.
+
+Before submitting a change, run the relevant checks locally and keep documentation aligned with the implementation. Pull requests are the preferred review mechanism for changes to `main`.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
+## Security
+
+Please do not report security vulnerabilities through public issues. Follow the process in [`SECURITY.md`](SECURITY.md).
+
+## License
+
+Licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
