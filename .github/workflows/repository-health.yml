@@ -28,48 +28,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Verify toolchain
         run: |
           node --version
           pnpm --version
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Repository validation
         if: matrix.check == 'validate'
         run: pnpm validate
-
       - name: Documentation validation
         if: matrix.check == 'docs'
         run: pnpm validate:docs
-
+      - name: Build workspace graph for typecheck
+        if: matrix.check == 'typecheck'
+        run: pnpm -r run build
       - name: Typecheck all workspaces
         if: matrix.check == 'typecheck'
         run: pnpm -r run typecheck
-
       - name: Lint all workspaces
         if: matrix.check == 'lint'
         run: pnpm -r run lint
-
+      - name: Build workspace graph for tests
+        if: matrix.check == 'test'
+        run: pnpm -r run build
       - name: Test all workspaces
         if: matrix.check == 'test'
         run: pnpm -r run test
-
       - name: Build all workspaces
         if: matrix.check == 'build'
         run: pnpm -r run build
@@ -80,26 +76,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Audit every workspace manifest
         run: node scripts/repository-contract-audit.mjs
-
       - name: Verify dependency graph
         run: pnpm list --depth -1 --recursive
 
@@ -110,32 +101,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Build everything
         run: pnpm -r run build
-
       - name: Example smoke tests
         run: pnpm examples:smoke
-
       - name: Strict operational diagnostics
         run: pnpm diagnostics:strict
-
       - name: Linux client smoke
         run: |
           pnpm --filter @irp/linux-client start > /tmp/irp-linux-client.log 2>&1 &
@@ -159,23 +143,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
-
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
       - name: Docker smoke
         run: pnpm docker:smoke
 
@@ -187,7 +167,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Capture environment
         run: |
           node --version || true
