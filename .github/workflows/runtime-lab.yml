@@ -31,8 +31,6 @@ on:
 permissions:
   contents: read
 
-# PR runs may cancel obsolete work. Main runs must never be silently cancelled,
-# otherwise a green-looking repository can have its only runtime evidence cancelled.
 concurrency:
   group: runtime-lab-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -71,7 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Start runtime lab
-        run: docker compose -f "$COMPOSE_FILE" up -d --no-build
+        run: docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans
 
       - name: Verify runtime containers
         run: |
