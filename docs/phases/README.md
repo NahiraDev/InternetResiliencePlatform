@@ -12,7 +12,8 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Current phase:** Phase 63 — Windows Full Client (**implementation in progress; native Windows verification required**).
+- **Current phase:** Phase 64 — Shared Mobile Client Core (**implementation started; repository/runtime verification required**).
+- **Phase 63:** Windows Full Client implementation is on `main`; native Windows verification is still required.
 - **Phase 62:** macOS Full Client implementation is on `main`; final repository/native runtime/security verification is governed by its phase record and CI evidence.
 - **Phase 61:** Linux Full Client remains governed by its explicit verification gate.
 
@@ -27,6 +28,7 @@ Phase records are implementation and audit evidence. They are **not** the produc
 | 56 | Unified Product API | **Implementation complete / verification in progress** | [`phase-56.md`](phase-56.md) |
 | 62 | macOS Full Client | **Implementation complete / verification required** | [`phase-62.md`](phase-62.md) |
 | 63 | Windows Full Client | **Implementation in progress / native verification required** | [`phase-63.md`](phase-63.md) |
+| 64 | Shared Mobile Client Core | **Implementation in progress / repository and runtime verification required** | [`phase-64.md`](phase-64.md) |
 
 ## Historical phases 01–38
 

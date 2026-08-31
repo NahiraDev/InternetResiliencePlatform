@@ -182,3 +182,4 @@ export * from './selection.js';
 export * from './failover.js';
 export * from './fleet.js';
 export * from './security.js';
+export * from './starlink-resources.js';

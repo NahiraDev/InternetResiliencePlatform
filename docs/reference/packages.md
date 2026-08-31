@@ -9,7 +9,7 @@ IRP is a workspace monorepo. Packages should expose narrow responsibilities and 
 | `@irp/auth` | Authentication, credentials, authorization primitives |
 | `@irp/config` | Configuration loading and validation |
 | `@irp/connectivity` | Connectivity abstractions and provider-facing behavior |
-| `@irp/core` | Shared core/domain primitives |
+| `@irp/core` | Shared core/domain primitives, including the platform-neutral mobile client core |
 | `@irp/database` | PostgreSQL/Prisma persistence boundary |
 | `@irp/dns` | DNS domain and resolver-related functionality |
 | `@irp/events` | Event contracts and event infrastructure |
@@ -24,6 +24,12 @@ IRP is a workspace monorepo. Packages should expose narrow responsibilities and 
 | `@irp/resilience-runtime` | Resilience control-loop/runtime behavior |
 
 The repository contains additional packages and applications. This page intentionally highlights architectural boundaries rather than duplicating the workspace manifest.
+
+## Mobile client core
+
+Phase 64 extends `@irp/core` with a platform-neutral `MobileClientCore` boundary. It owns client-local state, policy state representation, diagnostics adapter contracts and change events. It does **not** own routing, DNS, gateway, tunnel, failover or privileged networking mutations.
+
+Native iOS/Android networking behavior must remain behind platform adapters introduced in Phases 65–68.
 
 ## Dependency guidance
 

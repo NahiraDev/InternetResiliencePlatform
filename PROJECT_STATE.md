@@ -4,7 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 62 — macOS Full Client (**implementation started; verification required**).
+- **Current phase:** Phase 64 — Shared Mobile Client Core (**implementation started; repository/runtime verification required**).
+- **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; final repository verification and public runtime HTML verification are still required before closure.
+- **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
 - **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
 - **Phase 61:** implementation remains subject to full repository/runtime verification under the phase verification rules.
 - **Phase 60:** implementation was merged to `main` by PR #170; its final verification status remains governed by the phase verification rules.
@@ -27,41 +29,70 @@
 - **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
 - **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **macOS client strategy:** Phase 62 owns macOS process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
+- **Windows client strategy:** Phase 63 owns Windows process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
+- **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 62 — macOS Full Client
+## Phase 64 — Shared Mobile Client Core
 
 **Implementation started; verification required.**
 
 ### Implementation evidence
 
-- `packages/macos-client/package.json`
-- `packages/macos-client/tsconfig.json`
-- `packages/macos-client/src/index.ts`
-- `packages/macos-client/tests/index.test.ts`
-- `packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist`
-- `docs/phases/phase-62.md`
-- `.github/workflows/macos-client.yml`
+- `packages/core/src/mobile-client.ts`
+- `packages/core/tests/mobile-client.test.ts`
+- `packages/core/src/index.ts`
+- `docs/phases/phase-64.md`
+- `docs/reference/packages.md`
+- `docs/runtime/index.html`
 
 ### Current guarantees
 
-- macOS diagnostics use bounded `execFile` calls rather than shell interpolation.
-- Interface, route and resolver state are presented as observations; the client does not mutate network state.
-- Autonomous mode is explicit, deterministic and locally controlled; it does not bypass the shared safety/policy boundary.
-- The local control surface binds to loopback only by default.
-- Non-macOS environments report a deterministic unsupported state rather than pretending macOS runtime evidence exists.
-- launchd lifecycle contract declares background execution, launch-at-login and restart behavior without granting network-policy authority.
+- iOS and Android are the only accepted mobile platform identifiers.
+- Initial client state is deterministic and platform-neutral.
+- Client policy state is isolated from caller-owned state snapshots.
+- Diagnostics are read-only through an adapter contract; the core does not execute native networking commands.
+- Platform-mismatched diagnostics are rejected before state mutation.
+- Adapter failures leave the previous client state unchanged.
+- Policy, snapshot and connection transitions are observable through local events.
+- The runtime dashboard now resolves hosted HTTP(S) deployments to same-origin `/runtime-api`; explicit `?api=` overrides remain supported, while local `file://` use continues to target the local runtime lab at `127.0.0.1:8080`.
 
 ### Remaining verification
 
-- frozen-lockfile install after importer synchronization;
+- repository `pnpm validate`;
 - repository typecheck, lint, tests and build;
-- real macOS host diagnostics using `ifconfig`, `route` and `scutil`;
-- launchd install/start/restart/stop verification;
-- desktop UI/tray integration verification on supported macOS environments;
-- security review of local control and process/lifecycle boundaries;
-- green CI.
+- `@irp/core` mobile-core test execution;
+- public runtime dashboard loading through the Caddy `/runtime/` route with `/runtime-api` SSE connectivity;
+- runtime/public soak verification and CI.
+
+## Phase 63 — Windows Full Client
+
+**Implementation in progress; verification required.**
+
+### Implementation evidence
+
+- `packages/windows-client/package.json`
+- `packages/windows-client/tsconfig.json`
+- `packages/windows-client/src/index.ts`
+- `packages/windows-client/tests/index.test.ts`
+- `docs/phases/phase-63.md`
+- `.github/workflows/windows-client.yml`
+
+### Current guarantees
+
+- Windows diagnostics use bounded `execFile` calls rather than shell interpolation.
+- Interface, route and resolver state are presented as observations; the client does not mutate network state.
+- Autonomous mode is explicit, deterministic and locally controlled; it does not bypass the shared safety/policy boundary.
+- The local control surface binds to loopback only by default.
+- Non-Windows environments report a deterministic unsupported state rather than pretending Windows runtime evidence exists.
+
+### Remaining verification
+
+- real Windows diagnostics using `ipconfig`, `route` and `netsh`;
+- Windows service lifecycle verification;
+- desktop UI/tray integration verification on supported Windows environments;
+- repository typecheck/lint/test/build and Windows CI green.
 
 ## Verification Rules
 
