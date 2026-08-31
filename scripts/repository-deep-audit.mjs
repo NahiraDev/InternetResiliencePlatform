@@ -32,10 +32,10 @@ const relFiles = files.map((file) => relative(root, file));
 
 for (const rel of relFiles) {
   const text = readFileSync(join(root, rel), 'utf8');
-  if (/(^|\\n)(?:<{7}|={7}|>{7})(?:\\n|$)/.test(text)) {
+  if (/(^|\n)(?:<{7}|={7}|>{7})(?:\n|$)/.test(text)) {
     findings.push({ severity: 'P0', kind: 'merge-conflict', path: rel, detail: 'merge-conflict marker present' });
   }
-  if (rel.startsWith('.github/workflows/') && /\\.ya?ml$/.test(rel)) workflowFiles.push({ path: rel, text });
+  if (rel.startsWith('.github/workflows/') && /\.ya?ml$/.test(rel)) workflowFiles.push({ path: rel, text });
 }
 
 for (const workspaceRoot of ['apps', 'packages']) {
@@ -53,11 +53,11 @@ for (const workspaceRoot of ['apps', 'packages']) {
     const rel = relative(root, path);
     const sourceFiles = files.filter((file) => {
       const candidate = relative(root, file);
-      return candidate.startsWith(`${workspaceRoot}/${entry.name}/src/`) && /\\.(?:ts|tsx|js|mjs|cjs)$/.test(candidate) && !/\\.(?:test|spec)\\./.test(candidate);
+      return candidate.startsWith(`${workspaceRoot}/${entry.name}/src/`) && /\.(?:ts|tsx|js|mjs|cjs)$/.test(candidate) && !/\.(?:test|spec)\./.test(candidate);
     });
     const testFiles = files.filter((file) => {
       const candidate = relative(root, file);
-      return candidate.startsWith(`${workspaceRoot}/${entry.name}/`) && /(?:^|[\\/])(src|test|tests)[\\/].*\\.(?:test|spec)\\.(?:ts|tsx|js|mjs|cjs)$/.test(candidate);
+      return candidate.startsWith(`${workspaceRoot}/${entry.name}/`) && /(?:^|[\/])(src|test|tests)[\/].*\.(?:test|spec)\.(?:ts|tsx|js|mjs|cjs)$/.test(candidate);
     });
     const scripts = pkg.scripts ?? {};
     for (const script of ['build', 'lint', 'test', 'typecheck']) {
@@ -80,9 +80,9 @@ for (const workflow of workflowFiles) {
   const { path, text } = workflow;
   if (!/^name:\s*.+$/m.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'workflow name missing' });
   if (!/^(?:on|['"]on['"]):/m.test(text)) findings.push({ severity: 'P0', kind: 'workflow-contract', path, detail: 'workflow trigger missing' });
-  if (!/actions\\/checkout@v[0-9]+/.test(text) && !/actions\\/download-artifact@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'no checkout or approved artifact handoff' });
-  if (!/actions\\/setup-node@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'setup-node missing' });
-  if (!/pnpm\\/action-setup@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'pnpm setup missing' });
+  if (!/actions\/checkout@v[0-9]+/.test(text) && !/actions\/download-artifact@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'no checkout or approved artifact handoff' });
+  if (!/actions\/setup-node@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'setup-node missing' });
+  if (!/pnpm\/action-setup@v[0-9]+/.test(text)) findings.push({ severity: 'P1', kind: 'workflow-contract', path, detail: 'pnpm setup missing' });
 }
 
 for (const forbidden of ['package-lock.json', 'yarn.lock', 'bun.lockb']) {
@@ -98,7 +98,7 @@ const report = {
 };
 
 const reportPath = join(root, 'docs/audits/repository-deep-audit.json');
-writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\\n`);
+writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 
 console.log(`Repository deep audit: ${workspaces.length} workspaces, ${workflowFiles.length} workflows, ${findings.length} finding(s).`);
 for (const finding of findings) console.log(`[${finding.severity}] ${finding.kind} ${finding.path}: ${finding.detail}`);
