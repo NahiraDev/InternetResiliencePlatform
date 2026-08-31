@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -49,6 +51,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Synchronize workspace lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           pnpm install --lockfile-only --ignore-scripts
           if ! git diff --quiet -- pnpm-lock.yaml; then
@@ -58,6 +61,12 @@ jobs:
             git commit -m 'chore(lockfile): sync workspace importers'
             git push origin HEAD:main
           fi
+
+      - name: Verify workspace lockfile
+        if: github.event_name == 'pull_request'
+        run: |
+          pnpm install --lockfile-only --ignore-scripts
+          git diff --exit-code -- pnpm-lock.yaml
 
       - name: Verify frozen install
         run: pnpm install --frozen-lockfile
@@ -80,7 +89,8 @@ jobs:
           command -v ifconfig
           command -v route
           command -v scutil
-          node -e "import('./packages/macos-client/dist/index.js').then(async ({MacOSSystem}) => { const s = await new MacOSSystem().snapshot(); if (s.platform !== 'darwin') process.exit(2); console.log(JSON.stringify({platform:s.platform, capturedAt:s.capturedAt})); })"
+          command -v networksetup
+          node -e "import('./packages/macos-client/dist/index.js').then(async ({MacOSSystem}) => { const s = await new MacOSSystem().snapshot(); if (s.platform !== 'darwin') process.exit(2); for (const key of ['interfaces','routes','dns','networkServices','vpnServices']) if (s[key].startsWith('unavailable:')) process.exit(3); console.log(JSON.stringify({platform:s.platform, capturedAt:s.capturedAt, networkServices:s.networkServices.split('\n').length, vpnServices:s.vpnServices.split('\n').length})); }).catch((e)=>{console.error(e);process.exit(1);})"
 
       - name: Verify launchd contract
         run: |
