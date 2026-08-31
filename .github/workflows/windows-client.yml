@@ -1,0 +1,73 @@
+name: Windows Full Client
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'packages/windows-client/**'
+      - '.github/workflows/windows-client.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/windows-client/**'
+      - '.github/workflows/windows-client.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  windows-client:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter @irp/windows-client typecheck
+
+      - name: Lint
+        run: pnpm --filter @irp/windows-client lint
+
+      - name: Test
+        run: pnpm --filter @irp/windows-client test
+
+      - name: Build
+        run: pnpm --filter @irp/windows-client build
+
+      - name: Verify native command surface
+        shell: pwsh
+        run: |
+          if ($env:OS -ne 'Windows_NT') { throw 'Windows runner required' }
+          if (-not (Get-Command ipconfig -ErrorAction SilentlyContinue)) { throw 'ipconfig missing' }
+          if (-not (Get-Command route -ErrorAction SilentlyContinue)) { throw 'route missing' }
+          if (-not (Get-Command netsh -ErrorAction SilentlyContinue)) { throw 'netsh missing' }
+          node --input-type=module -e "import('./packages/windows-client/dist/index.js').then(async ({WindowsSystem}) => { const s = await new WindowsSystem().snapshot(); if (s.platform !== 'win32') process.exit(2); for (const key of ['interfaces','routes','dns']) { if (!s[key] || s[key].startsWith('unavailable:')) process.exit(3); } console.log(JSON.stringify({platform:s.platform,capturedAt:s.capturedAt})); })"
