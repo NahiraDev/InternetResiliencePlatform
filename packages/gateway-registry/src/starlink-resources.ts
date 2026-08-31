@@ -197,7 +197,7 @@ export const STARLINK_RESOURCES: readonly StarlinkResource[] = [
     sources: [{ url: 'https://setalink.no/', kind: 'official-service', verifiedAt }],
     notes: ['Service claims and free quota are provider-controlled and must be revalidated before use.', 'No public connection URI is assumed or stored.'],
   },
-] as const;
+];
 
 export function getStarlinkResource(id: StarlinkResourceId): StarlinkResource | undefined {
   return STARLINK_RESOURCES.find((resource) => resource.id === id);
