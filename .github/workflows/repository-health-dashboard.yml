@@ -45,10 +45,17 @@ jobs:
         with:
           enablement: true
 
+      - name: Stage dashboards
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -R docs/health _site/health
+          cp -R docs/runtime _site/runtime
+
       - name: Upload dashboard
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/health
+          path: _site
 
       - name: Deploy dashboard
         id: deployment
