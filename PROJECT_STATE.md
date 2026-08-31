@@ -4,8 +4,9 @@
 
 ## Current State
 
-- **Current phase:** Phase 64 — Shared Mobile Client Core (**implementation started; repository/runtime verification required**).
-- **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; final repository verification and public runtime HTML verification are still required before closure.
+- **Current phase:** Phase 65 — iOS Full Client (**implementation started; repository/native verification required**).
+- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification is still required before closure.
+- **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
 - **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
 - **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
 - **Phase 61:** implementation remains subject to full repository/runtime verification under the phase verification rules.
@@ -24,15 +25,42 @@
 - **Core architecture:** headless Core + unified Control Plane + full-capability clients.
 - **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
 - **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
-- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic. Desktop clients consume shared capability contracts and do not duplicate routing/policy intelligence.
+- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic. Desktop and mobile clients consume shared capability contracts and do not duplicate routing/policy intelligence.
 - **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
 - **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
 - **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **macOS client strategy:** Phase 62 owns macOS process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **Windows client strategy:** Phase 63 owns Windows process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
 - **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
+- **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 65 — iOS Full Client
+
+**Implementation started; verification required.**
+
+### Implementation evidence
+
+- `clients/ios/Package.swift`
+- `clients/ios/Sources/IRPiOSClient/Models.swift`
+- `clients/ios/Sources/IRPiOSClient/SecureStore.swift`
+- `clients/ios/Sources/IRPiOSClient/ClientSession.swift`
+- `clients/ios/Sources/IRPiOSClient/Views.swift`
+- `clients/ios/Tests/IRPiOSClientTests/IRPiOSClientTests.swift`
+- `clients/ios/README.md`
+- `docs/phases/phase-65.md`
+- `.github/workflows/ios-client.yml`
+
+### Current guarantees
+
+- Enrollment persists the returned refresh credential only through the secure-store abstraction; the production Apple implementation uses Keychain.
+- Session restore requires both a stored credential and an enrolled device identity.
+- Snapshot and analytics refresh state only after both control-plane reads succeed, preventing partial refresh publication.
+- Policy changes are delegated to the Control Plane; failed policy requests leave local policy state unchanged.
+- Sign-out removes the stored refresh credential and clears local enrollment state.
+- SwiftUI presentation is read-oriented and contains no routing, DNS, gateway, tunnel or failover authority.
+- Phase 65 introduces no Network Extension entitlement or privileged networking path.
 
 ## Phase 64 — Shared Mobile Client Core
 
@@ -56,7 +84,7 @@
 - Platform-mismatched diagnostics are rejected before state mutation.
 - Adapter failures leave the previous client state unchanged.
 - Policy, snapshot and connection transitions are observable through local events.
-- The runtime dashboard now resolves hosted HTTP(S) deployments to same-origin `/runtime-api`; explicit `?api=` overrides remain supported, while local `file://` use continues to target the local runtime lab at `127.0.0.1:8080`.
+- The runtime dashboard resolves hosted HTTP(S) deployments to same-origin `/runtime-api`; explicit `?api=` overrides remain supported, while local `file://` use continues to target the local runtime lab at `127.0.0.1:8080`.
 
 ### Remaining verification
 
