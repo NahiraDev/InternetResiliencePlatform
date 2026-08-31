@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <title>IRP Repository Health</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:#0b0f14;color:#e6edf3}main{max-width:1400px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}.title h1{margin:0 0 6px;font-size:28px}.muted{color:#8b949e}.status{border:1px solid #30363d;border-radius:999px;padding:8px 12px;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}.card{background:#111820;border:1px solid #30363d;border-radius:12px;padding:16px}.metric{font-size:25px;font-weight:700;margin-top:5px}.ok{color:#3fb950}.bad{color:#f85149}.warn{color:#d29922}.neutral{color:#8b949e}.section{margin:20px 0}.section h2{font-size:18px;margin:0 0 10px}.runs{display:grid;gap:10px}.run{background:#111820;border:1px solid #30363d;border-radius:10px;padding:14px}.runhead{display:flex;justify-content:space-between;gap:12px}.runname{font-weight:650}.pill{display:inline-block;border-radius:999px;padding:3px 8px;font-size:12px;margin-right:6px;background:#21262d}.meta{font-size:12px;color:#8b949e;margin-top:8px;word-break:break-word}.jobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:7px;margin-top:10px}.job{border:1px solid #30363d;border-radius:8px;padding:8px;font-size:12px;display:flex;justify-content:space-between;gap:8px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.toolbar button{background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:7px;padding:7px 11px;cursor:pointer}.toolbar button:hover{background:#30363d}a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}.error{padding:12px;border:1px solid #f85149;border-radius:8px;background:#2b1518;color:#ffb4b4}pre{white-space:pre-wrap;word-break:break-word;background:#0d1117;padding:12px;border-radius:8px;border:1px solid #30363d;font-size:12px;max-height:360px;overflow:auto}@media(max-width:800px){main{padding:14px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.top{display:block}.status{display:inline-block;margin-top:12px}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="title"><h1>Internet Resilience Platform</h1><div class="muted">Live repository health, CI/CD and runtime verification</div></div>
+    <div class="toolbar"><span id="connection" class="status">Connecting…</span><button id="refresh">Refresh</button></div>
+  </div>
+
+  <section class="grid">
+    <div class="card"><div class="muted">Latest main commit</div><div id="commit" class="metric neutral">—</div></div>
+    <div class="card"><div class="muted">Latest CI</div><div id="ci" class="metric neutral">—</div></div>
+    <div class="card"><div class="muted">Deep Audit</div><div id="audit" class="metric neutral">—</div></div>
+    <div class="card"><div class="muted">Workflows shown</div><div id="count" class="metric neutral">—</div></div>
+  </section>
+
+  <section class="section"><h2>Workflow activity</h2><div id="runs" class="runs"><div class="card muted">Loading…</div></div></section>
+  <section class="section"><h2>Repository state</h2><pre id="details">Loading…</pre></section>
+</main>
+<script>
+(() => {
+  const owner='NahiraDev', repo='InternetResiliencePlatform', api=`https://api.github.com/repos/${owner}/${repo}`;
+  const runsUrl=`${api}/actions/runs?branch=main&per_page=30`;
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const stateClass=(s)=>s==='success'?'ok':(['failure','cancelled','timed_out','action_required'].includes(s)?'bad':(['queued','in_progress','waiting','requested','pending'].includes(s)?'warn':'neutral'));
+  const stateText=(run)=>run.status==='completed'?(run.conclusion||'completed').replaceAll('_',' '):run.status.replaceAll('_',' ');
+  async function get(url){const r=await fetch(url,{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);return r.json()}
+  async function load(){
+    $('connection').textContent='Refreshing…'; $('connection').className='status warn';
+    try {
+      const [r, c]=await Promise.all([get(runsUrl),get(`${api}/commits/main`)]);
+      const runs=r.workflow_runs||[];
+      const latest=runs[0];
+      const audit=runs.find(x=>x.name.toLowerCase().includes('deep audit'));
+      $('commit').textContent=c.sha.slice(0,7);
+      $('ci').textContent=latest?stateText(latest):'—'; $('ci').className=`metric ${stateClass(latest?.conclusion||latest?.status)}`;
+      $('audit').textContent=audit?stateText(audit):'—'; $('audit').className=`metric ${stateClass(audit?.conclusion||audit?.status)}`;
+      $('count').textContent=String(runs.length);
+      $('details').textContent=JSON.stringify({repository:`${owner}/${repo}`,branch:'main',latestCommit:{sha:c.sha,message:c.commit?.message?.split('\n')[0],author:c.commit?.author?.name,date:c.commit?.author?.date},updatedAt:new Date().toISOString()},null,2);
+      $('runs').innerHTML=runs.length?runs.map(run=>`<article class="run"><div class="runhead"><div class="runname"><a href="${esc(run.html_url)}" target="_blank" rel="noreferrer">${esc(run.name)}</a></div><span class="pill ${stateClass(run.conclusion||run.status)}">${esc(stateText(run))}</span></div><div class="meta">${esc(run.event)} · ${esc(run.head_branch||'—')} · ${esc(run.head_sha?.slice(0,7)||'—')} · ${esc(new Date(run.updated_at||run.created_at).toLocaleString())}</div><div class="jobs" id="jobs-${run.id}"><span class="muted">Loading jobs…</span></div></article>`).join(''):'<div class="card muted">No workflow runs found.</div>';
+      await Promise.all(runs.slice(0,12).map(async run=>{try{const j=await get(`${api}/actions/runs/${run.id}/jobs?per_page=100`);const el=$(`jobs-${run.id}`);if(el)el.innerHTML=(j.jobs||[]).map(job=>`<div class="job"><span>${esc(job.name)}</span><span class="${stateClass(job.conclusion||job.status)}">${esc(job.conclusion||job.status)}</span></div>`).join('')||'<span class="muted">No jobs</span>';}catch(e){const el=$(`jobs-${run.id}`);if(el)el.innerHTML='<span class="muted">Job details unavailable</span>';}}));
+      $('connection').textContent=`Live · ${new Date().toLocaleTimeString()}`; $('connection').className='status ok';
+    } catch(e) {
+      $('connection').textContent='API error'; $('connection').className='status bad';
+      $('runs').innerHTML=`<div class="error">Unable to read GitHub Actions data: ${esc(e.message)}<br><span class="muted">The dashboard is static and requires access to the public GitHub API.</span></div>`;
+    }
+  }
+  $('refresh').addEventListener('click',load); load(); setInterval(load,15000);
+})();
+</script>
+</body>
+</html>
