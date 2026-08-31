@@ -72,8 +72,6 @@ final class IRPPacketTunnelProvider: NEPacketTunnelProvider {
                 return
             }
 
-            // The native Network Extension boundary is intentionally fail-closed
-            // until a concrete, authorized IRP tunnel transport is supplied.
             self.transportTask = Task {
                 do {
                     try await self.runTransport(configuration: configuration)
