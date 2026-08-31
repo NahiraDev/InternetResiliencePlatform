@@ -12,47 +12,29 @@ Phase records are implementation and audit evidence. They are **not** the produc
 ## Current boundary
 
 - **Roadmap:** 70 phases (0–70).
-- **Current phase:** Phase 56 — Unified Product API (**implementation complete; final verification required**).
-- **Phase 55:** Gateway Security & Supply-Chain Hardening is implemented; final verification status is tracked by its phase record and CI evidence.
-- **Phase 52:** Automated Tunnel Lifecycle is implementation-complete but remains pending final repository/runtime verification.
-- **Phase 51:** Automatic Gateway Selection is complete and verified by repository CI.
-- **Phase 49:** WireGuard provider implementation is complete after CI and Linux runtime verification.
-- **Phase 50:** OpenVPN provider implementation is complete after repository/runtime verification.
+- **Current phase:** Phase 63 — Windows Full Client (**implementation in progress; native Windows verification required**).
+- **Phase 62:** macOS Full Client implementation is on `main`; final repository/native runtime/security verification is governed by its phase record and CI evidence.
+- **Phase 61:** Linux Full Client remains governed by its explicit verification gate.
 
-## Canonical records with current verification status
+## Current records
 
 | Phase | Area | Status | Record |
 | ---: | --- | --- | --- |
-| 00 | Bootstrap | Historical baseline | [`phase-00.md`](phase-00.md) |
-| 39 | Device identity / remote client security | Implemented / verification as documented | [`phase-39.md`](phase-39.md) |
-| 40 | End-to-end resilience validation | Merged / verification evidence required | [`phase-40.md`](phase-40.md) |
-| 40 | Validation evidence | Evidence record | [`phase-40-evidence.md`](phase-40-evidence.md) |
-| 41 | External regional validation | Tooling present / independent validation required | [`phase-41.md`](phase-41.md) |
-| 42 | Remote client API integration | Implemented / verify current state | [`phase-42.md`](phase-42.md) |
-| 43 | Distributed probe federation | Implemented / final CI-runtime gate required | [`phase-43.md`](phase-43.md) |
-| 44 | Data analytics & decision intelligence | Implemented / final CI-runtime gate required | [`phase-44.md`](phase-44.md) |
-| 45 | Network identity & destination policy assurance | Implementation started / verification required | [`phase-45.md`](phase-45.md) |
-| 49 | WireGuard provider | Complete / verified | [`phase-49.md`](phase-49.md) |
-| 50 | Additional tunnel providers | Complete / verified | [`phase-50.md`](phase-50.md) |
 | 51 | Automatic Gateway Selection | **Complete / verified** | [`phase-51.md`](phase-51.md) |
 | 52 | Automated Tunnel Lifecycle | **Implementation complete / verification in progress** | [`phase-52.md`](phase-52.md) |
 | 53 | Multi-Gateway Failover | **Implementation started / verification required** | [`phase-53.md`](phase-53.md) |
 | 55 | Gateway Security & Supply-Chain Hardening | **Implementation complete / verification in progress** | [`phase-55.md`](phase-55.md) |
 | 56 | Unified Product API | **Implementation complete / verification in progress** | [`phase-56.md`](phase-56.md) |
+| 62 | macOS Full Client | **Implementation complete / verification required** | [`phase-62.md`](phase-62.md) |
+| 63 | Windows Full Client | **Implementation in progress / native verification required** | [`phase-63.md`](phase-63.md) |
 
 ## Historical phases 01–38
 
 Canonical records for Phase 01–38 are intentionally **not** being generated mechanically. Git history proves that substantial implementation work occurred, but historical phase numbering drift means old phase numbers do not map one-to-one to the current 70-phase product contract.
 
-Use the [Historical Phase Evidence Matrix](../audits/phase-history-evidence-matrix.md) to see:
+Use the [Historical Phase Evidence Matrix](../audits/phase-history-evidence-matrix.md) to see historical implementation evidence, numbering drift, commit anchors and remaining reconciliation work.
 
-- the current roadmap contract;
-- historical implementation evidence;
-- known numbering drift;
-- commit/merge anchors;
-- which phases still require code/test/ADR/runtime reconciliation.
-
-A historical evidence entry is not a completion claim. A phase becomes a canonical completed record only after the historical capability cluster is mapped to the current contract and its acceptance evidence is sufficiently reconstructed.
+A historical evidence entry is not a completion claim. A phase becomes a canonical completed record only after its capability cluster is mapped to the current contract and its acceptance evidence is sufficiently reconstructed.
 
 ## Future phase records
 
