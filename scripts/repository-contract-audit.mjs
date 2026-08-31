@@ -30,6 +30,7 @@ for (const workspaceRoot of workspaceRoots) {
 if (manifests.length === 0) errors.push('No workspace manifests found under apps/ or packages/.');
 
 const names = new Set();
+const requiredScripts = ['build', 'typecheck', 'lint', 'test'];
 for (const { path, packageJson } of manifests) {
   if (typeof packageJson.name !== 'string' || packageJson.name.length === 0) {
     errors.push(`${path}: package name is missing`);
@@ -43,6 +44,12 @@ for (const { path, packageJson } of manifests) {
   }
   if (!packageJson.scripts || typeof packageJson.scripts !== 'object') {
     errors.push(`${path}: scripts object is missing`);
+    continue;
+  }
+  for (const script of requiredScripts) {
+    if (typeof packageJson.scripts[script] !== 'string' || packageJson.scripts[script].trim() === '') {
+      errors.push(`${path}: required '${script}' script is missing`);
+    }
   }
 }
 
