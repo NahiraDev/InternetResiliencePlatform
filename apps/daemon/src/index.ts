@@ -6,6 +6,7 @@ import { createLogger } from '@irp/logger';
 import {
   ResilienceRuntime,
   RuntimeScheduler,
+  type Observation,
   type ObservationProvider,
   type ObservationProviderResult,
   type RuntimeContext,
@@ -15,9 +16,18 @@ import {
 const execFileAsync = promisify(execFile);
 
 export type DaemonLifecycle =
-  'created' | 'initialized' | 'ready' | 'running' | 'stopping' | 'stopped';
+  | 'created'
+  | 'initialized'
+  | 'ready'
+  | 'running'
+  | 'stopping'
+  | 'stopped';
 
-const makeObservation = (context: RuntimeContext, metric: string, available: boolean) => ({
+const makeObservation = (
+  context: RuntimeContext,
+  metric: string,
+  available: boolean,
+): Observation => ({
   id: `linux-${metric}-${context.correlationId}`,
   schemaVersion: 1,
   createdAt: new Date().toISOString(),
@@ -63,17 +73,24 @@ export class LinuxObservationProvider implements ObservationProvider {
     );
     return {
       providerId: this.id,
-      observations: results.map(({ metric, available }) => makeObservation(context, metric, available)),
+      observations: results.map(({ metric, available }) =>
+        makeObservation(context, metric, available),
+      ),
       collectedAt: new Date().toISOString(),
-      errors: results.filter((r) => !r.available).map((r) => `${r.metric} probe unavailable`),
+      errors: results
+        .filter((r) => !r.available)
+        .map((r) => `${r.metric} probe unavailable`),
     };
   }
 }
 
 export class RuntimeDaemonHost {
   lifecycle: DaemonLifecycle = 'created';
-  readonly runtime = new ResilienceRuntime([new LinuxObservationProvider()], { runtimeId: 'daemon-runtime' });
+  readonly runtime = new ResilienceRuntime([new LinuxObservationProvider()], {
+    runtimeId: 'daemon-runtime',
+  });
   readonly scheduler: RuntimeScheduler;
+
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {
       enabled: false,
@@ -85,20 +102,24 @@ export class RuntimeDaemonHost {
       ...config,
     });
   }
+
   async initialize() {
     this.lifecycle = 'initialized';
     this.lifecycle = 'ready';
   }
+
   async start() {
     if (this.lifecycle === 'created') await this.initialize();
     this.lifecycle = 'running';
     this.scheduler.start();
   }
+
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
     this.lifecycle = 'stopped';
   }
+
   health() {
     return {
       lifecycle: this.lifecycle,
@@ -115,11 +136,16 @@ export const createDaemon = (): Application => {
   const logger = createLogger(config.logger.level);
   return new Application(config, logger);
 };
-export const createRuntimeDaemonHost = (config?: Partial<RuntimeSchedulerConfig>) =>
-  new RuntimeDaemonHost(config);
+
+export const createRuntimeDaemonHost = (
+  config?: Partial<RuntimeSchedulerConfig>,
+) => new RuntimeDaemonHost(config);
+
 if (process.argv[1]?.endsWith('index.js')) {
   const daemon = createDaemon();
-  const host = createRuntimeDaemonHost({ enabled: process.env.IRP_RUNTIME_ENABLED === '1' });
+  const host = createRuntimeDaemonHost({
+    enabled: process.env.IRP_RUNTIME_ENABLED === '1',
+  });
   await host.start();
   await daemon.start();
   const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
