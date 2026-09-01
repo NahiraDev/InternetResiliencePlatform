@@ -14,12 +14,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             var snapshot by remember { mutableStateOf(diagnostics.snapshot()) }
             val state by session.state.collectAsStateCompat()
+            val scope = rememberCoroutineScope()
 
             MaterialTheme {
                 Column(
@@ -52,7 +56,7 @@ class MainActivity : ComponentActivity() {
                                     enabled = state.enrolled,
                                     onCheckedChange = { enabled ->
                                         // Policy authority remains the Control Plane; this call is intentionally explicit.
-                                        kotlinx.coroutines.MainScope().launch { session.setAutonomousMode(enabled) }
+                                        scope.launch { runCatching { session.setAutonomousMode(enabled) } }
                                     },
                                 )
                             }
@@ -81,6 +85,3 @@ private fun StatusCard(snapshot: NetworkSnapshot) {
         }
     }
 }
-
-@Composable
-private fun <T> androidx.compose.runtime.State<T>.collectAsStateCompat(): androidx.compose.runtime.State<T> = this
