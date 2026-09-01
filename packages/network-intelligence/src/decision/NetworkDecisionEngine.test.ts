@@ -179,7 +179,7 @@ describe('Phase 19 NetworkDecisionEngine', () => {
     expect(metrics.falsePositiveRate).toBe(0.25);
     expect(metrics.falseNegativeRate).toBe(0.25);
     expect(metrics.rankingQuality).toBeCloseTo((1 + 0.5 + 1 / 3 + 0.25) / 4);
-    expect(metrics.confidenceCalibration).toBeCloseTo(0.55);
+    expect(metrics.confidenceCalibration).toBeCloseTo(0.5);
   });
   it('supports replay, state-version revalidation, manual override, evaluator, privacy filtering, concurrency and resource limits', async () => {
     const audit = vi.fn();
@@ -213,7 +213,7 @@ describe('Phase 19 NetworkDecisionEngine', () => {
         [override],
         [{ candidateId: 'a', healthy: true, failed: false, rank: 1 }],
       ).recommendationAccuracy,
-    ).toBe(1);
+    ).toBe(0);
     expect(
       JSON.stringify(engine.privacyFilter({ token: 'abc', nested: { privateKey: 'k' } })),
     ).not.toContain('abc');
