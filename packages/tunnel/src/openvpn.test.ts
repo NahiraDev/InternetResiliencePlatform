@@ -1,3 +1,4 @@
+import { writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { OpenVPNProvider, type OpenVPNCommandRunner, type OpenVPNCredentialStore } from './openvpn.js';
 import type { TunnelConfiguration } from './index.js';
@@ -76,6 +77,29 @@ describe('OpenVPNProvider', () => {
     const provider = new OpenVPNProvider({ commandRunner: runner, credentialStore });
     const tunnel = await provider.create(config());
     await expect(provider.connect(tunnel)).rejects.not.toThrow(/SECRET-CERTIFICATE/);
+  });
+
+  it('waits for connected evidence before reporting a successful connection', async () => {
+    const runner: OpenVPNCommandRunner = {
+      async run(_command, args) {
+        const pidPath = args[args.indexOf('--writepid') + 1];
+        const statusPath = args[args.indexOf('--status') + 1];
+        if (!pidPath || !statusPath) throw new Error('missing runtime paths');
+        await writeFile(pidPath, '99999\n');
+        await writeFile(statusPath, 'TITLE,OpenVPN 2.6\n');
+        return { stdout: '', stderr: '', exitCode: 0 };
+      },
+    };
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true as never);
+    const provider = new OpenVPNProvider({
+      commandRunner: runner,
+      credentialStore,
+      startupTimeoutMs: 20,
+      pollIntervalMs: 1,
+    });
+    const tunnel = await provider.create(config());
+    await expect(provider.connect(tunnel)).rejects.toThrow(/healthy tunnel evidence/);
+    kill.mockRestore();
   });
 
   it('exposes bounded provider capabilities', () => {
