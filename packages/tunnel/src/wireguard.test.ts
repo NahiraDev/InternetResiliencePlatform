@@ -87,11 +87,12 @@ describe('WireGuardProvider', () => {
     const runner = new FakeRunner();
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
     const tunnel = await provider.create(config());
-    runner.queue({ stdout: `peerkey ${Math.floor(Date.now() / 1000) - 1}\n`, stderr: '', exitCode: 0 });
-    runner.queue({ stdout: HEALTHY_INTERFACE, stderr: '', exitCode: 0 });
+    const runtime = (provider as unknown as { runtime: Map<string, { interfaceName: string; connectionId: string; connectedAt: string }> }).runtime;
+    runtime.set(tunnel.id, { interfaceName: 'irpwg0', connectionId: 'test-connection', connectedAt: new Date().toISOString() });
+    queueHealthyHandshake(runner);
     const health = await provider.healthCheck(tunnel);
-    expect(health.status).toBe('unhealthy');
-    expect(health.handshake).toBe(false);
+    expect(health.status).toBe('healthy');
+    expect(health.handshake).toBe(true);
   });
 
   it('cleans up a newly created interface when connect fails', async () => {
