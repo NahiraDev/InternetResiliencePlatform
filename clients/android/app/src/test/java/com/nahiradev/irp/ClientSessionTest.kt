@@ -13,16 +13,21 @@ private class MemoryTokenStore : SecureTokenStore {
 }
 
 private class FakeControlPlane : ControlPlaneClient {
-    var lastPolicy: Policy? = null
     override suspend fun enroll(deviceName: String) = DeviceEnrollment("android-1", deviceName, "refresh-token")
     override suspend fun snapshot(deviceId: String) = NetworkSnapshot(
         ConnectionState.ONLINE, 1, true, true, java.time.Instant.EPOCH,
     )
     override suspend fun analytics(deviceId: String) = AnalyticsSummary(10, 99.0, 24.0, 0.1)
-    override suspend fun setPolicy(deviceId: String, policy: Policy): Policy {
-        lastPolicy = policy
-        return policy
-    }
+    override suspend fun setPolicy(deviceId: String, policy: Policy): Policy = policy
+}
+
+private class DenyingControlPlane : ControlPlaneClient {
+    override suspend fun enroll(deviceName: String) = DeviceEnrollment("android-1", deviceName, "refresh-token")
+    override suspend fun snapshot(deviceId: String) = NetworkSnapshot(
+        ConnectionState.ONLINE, 1, true, true, java.time.Instant.EPOCH,
+    )
+    override suspend fun analytics(deviceId: String) = AnalyticsSummary(10, 99.0, 24.0, 0.1)
+    override suspend fun setPolicy(deviceId: String, policy: Policy): Policy = error("denied")
 }
 
 class ClientSessionTest {
@@ -50,10 +55,7 @@ class ClientSessionTest {
 
     @Test
     fun failedPolicyDoesNotMutateLocalPolicy() = runTest {
-        val controlPlane = object : FakeControlPlane() {
-            override suspend fun setPolicy(deviceId: String, policy: Policy): Policy = error("denied")
-        }
-        val session = ClientSession(controlPlane, MemoryTokenStore())
+        val session = ClientSession(DenyingControlPlane(), MemoryTokenStore())
         session.enroll("Pixel test")
 
         runCatching { session.setAutonomousMode(true) }
