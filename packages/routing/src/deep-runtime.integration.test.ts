@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { RoutingEngine, parseDestination, type DiscoveredRoute, type RoutePlan } from './index.js';
+import { InMemoryEventBus } from '@irp/events';
 import { KernelRuntime, createContract } from '@irp/kernel';
+import { RoutingEngine, parseDestination, type DiscoveredRoute } from './index.js';
 
 const route = (id: string, pathType: string, destination = '0.0.0.0/0'): DiscoveredRoute => ({
   id,
@@ -73,14 +74,14 @@ describe('routing runtime integration guards', () => {
     expect(plan.verification.status).toBe('failed');
   });
 
-  it('does not report recovery success when route application fails', async () => {
-    const kernel = runtimeKernel();
-    const engine = new RoutingEngine({ kernel, principal: { id: 'operator', capabilities: ['network.route'] } });
-    const decision = await engine.decide({
-      destination: parseDestination('9.9.9.9'),
-      routes: [route('direct', 'direct')],
-    });
-    const failedPlan: RoutePlan = { ...decision.plan, verification: { ...decision.plan.verification, status: 'failed' } };
-    expect(failedPlan.verification.status).toBe('failed');
+  it('reports recovery failure when verification prevents route activation', async () => {
+    const events = new InMemoryEventBus();
+    let failed = false;
+    events.subscribe('routing.recovery.failed', () => { failed = true; });
+    const engine = new RoutingEngine({ kernel: runtimeKernel(), principal: { id: 'operator', capabilities: ['network.route'] }, events });
+    engine.registerProvider({ id: 'rejecting-verifier', discoverRoutes: async () => [], verify: async () => false });
+    const plan = await engine.recover({ destination: parseDestination('9.9.9.9'), routes: [route('direct', 'direct')] });
+    expect(plan.verification.status).toBe('failed');
+    expect(failed).toBe(true);
   });
 });
