@@ -30,3 +30,11 @@ The foundation does not execute privileged route mutation or firewall changes. C
 ## Definition of done
 
 Phase 63 is **in progress** until native Windows CI and runtime evidence are green. Source implementation alone does not mark the phase complete.
+
+## Status
+
+**In progress.** The platform boundary is implemented, but completion remains blocked until native Windows CI and runtime evidence demonstrate the diagnostics and integration contract on an actual Windows host.
+
+## Verification
+
+Repository verification covers validation, typecheck, lint, tests, and build. Phase closure additionally requires successful execution of the Windows-specific CI job and captured runtime evidence from the native platform boundary.
