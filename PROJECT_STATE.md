@@ -4,11 +4,12 @@
 
 ## Current State
 
-- **Current phase:** Phase 68 — Android-native VPN/network integration (**implementation started; verification required**).
-- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Android CI/emulator/device verification and concrete authorized packet forwarding remain required before closure.
-- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present. Android emulator/device verification and canonical Control Plane transport integration remain required before closure.
-- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present. Signed physical-device verification and a concrete authorized tunnel transport remain required before closure.
-- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification remains required before closure.
+- **Current phase:** Phase 69 — Cross-platform production hardening (**implementation started; verification required**).
+- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on the Phase 69 branch. Full repository/runtime/security/device evidence remains required before closure.
+- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Phase 68 implementation was merged before Phase 69 work; final evidence remains governed by the phase verification rules.
+- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present.
+- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present.
+- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered.
 - **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
 - **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
 - **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
@@ -39,41 +40,43 @@
 - **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
 - **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
 - **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
+- **Production hardening strategy:** Phase 69 owns cross-platform release readiness, compatibility evidence, accessibility/localization acceptance, upgrade/rollback safety, security audit controls, bounded chaos/soak verification, backup/restore verification and release engineering. It does not move product authority into clients.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 68 — Android-native VPN/network integration
+## Phase 69 — Cross-Platform Production Hardening
 
-**Implementation started; verification required.**
+**Implementation in progress; verification required.**
 
 ### Implementation evidence
 
-- `clients/android/app/src/main/java/com/nahiradev/irp/VpnTunnel.kt`
-- `clients/android/app/src/main/AndroidManifest.xml`
-- `clients/android/app/src/test/java/com/nahiradev/irp/VpnTunnelConfigTest.kt`
-- `docs/phases/phase-68.md`
+- `docs/phases/phase-69.md`
+- `docs/release/phase-69-compatibility-matrix.md`
+- `ops/release/phase-69-readiness.json`
+- `ops/release/phase-69-release-checklist.md`
+- `scripts/phase69-readiness.mjs`
+- `.github/workflows/phase-69-hardening.yml`
 
 ### Current guarantees
 
-- Android VPN execution is isolated behind `VpnTunnelController` and `VpnService`.
-- Tunnel configuration is strongly typed and rejects malformed virtual addresses, prefixes, remote endpoints and MTUs.
-- Valid configuration maps deterministically to Android VPN address, route, DNS and MTU settings.
-- Packet forwarding is an explicit dependency rather than a duplicate protocol implementation.
-- The default unavailable transport fails closed before leaving a black-hole VPN interface behind.
-- VPN service cleanup closes the descriptor and transport on stop/destruction.
-- The VPN service is non-exported and protected by `BIND_VPN_SERVICE`.
-- Gateway selection, destination policy, failover and tunnel protocol selection remain outside the Android client.
+- Production-hardening acceptance criteria are explicit and machine-readable.
+- Cross-platform support is represented as evidence-driven compatibility rows rather than implied certification.
+- A bounded readiness harness exercises release rules, deterministic failure injection and backup/restore round trips without mutating the host network.
+- Phase-specific CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
+- Required checks do not intentionally use false-green mechanisms such as `continue-on-error` or shell success overrides.
+- Upgrade policy prohibits destructive downgrade migrations and defines rollback around compatible artifacts or verified backups.
 
 ### Remaining verification
 
-- Android dependency resolution and Gradle unit tests.
-- Debug APK compilation.
-- Repository `pnpm validate`, typecheck, lint, tests and build.
-- Android emulator smoke test.
-- Physical-device installation and VPN lifecycle verification.
-- Concrete Control Plane-authorized packet-forwarding transport integration.
-- Security review of VPN permissions, exported components, configuration validation and fail-closed startup.
-- Green CI.
+- Full repository `validate`, typecheck, lint, tests and build.
+- Security analysis/dependency review and artifact audit.
+- Platform runtime evidence for Linux, macOS, Windows, iOS and Android.
+- Control-plane/gateway runtime evidence.
+- Real upgrade/rollback rehearsal against a representative deployment.
+- Real backup/restore rehearsal against representative control-plane state.
+- Runtime chaos/soak evidence in an isolated provisioned environment.
+- Accessibility/localization verification on each applicable user-facing client.
+- Green CI and release-engineering sign-off.
 
 ## Verification Rules
 

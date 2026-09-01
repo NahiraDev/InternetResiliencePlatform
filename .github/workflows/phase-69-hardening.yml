@@ -1,0 +1,107 @@
+name: Phase 69 Production Hardening
+
+on:
+  pull_request:
+    paths:
+      - 'PROJECT_STATE.md'
+      - 'ROADMAP.md'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/**'
+      - 'ops/release/**'
+      - 'docs/phases/phase-69.md'
+      - 'docs/release/**'
+      - '.github/CI_CONTRACT.md'
+      - '.github/workflows/**'
+      - 'clients/**'
+      - 'packages/**'
+      - 'apps/**'
+  push:
+    branches: [main]
+    paths:
+      - 'PROJECT_STATE.md'
+      - 'ROADMAP.md'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/**'
+      - 'ops/release/**'
+      - 'docs/phases/phase-69.md'
+      - 'docs/release/**'
+      - '.github/CI_CONTRACT.md'
+      - '.github/workflows/**'
+      - 'clients/**'
+      - 'packages/**'
+      - 'apps/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-69-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  readiness:
+    name: Production hardening readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Phase 69 readiness contract
+        run: pnpm phase69:readiness
+
+  repository-gates:
+    name: Repository production gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: readiness
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Repository validation
+        run: pnpm validate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
