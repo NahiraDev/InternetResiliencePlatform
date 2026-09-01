@@ -37,6 +37,7 @@ export type PathCapability =
   | string;
 export type RoutingActionType = 'noop' | 'apply-route' | 'rollback-route' | 'verify-route';
 export type CandidateDecision = 'eligible' | 'selected' | 'rejected';
+export type DestinationRouteIntent = 'direct' | 'vpn-required' | 'vpn-preferred' | 'unknown';
 export type CandidateRejectionReason =
   | 'interface-unavailable'
   | 'provider-unavailable'
@@ -52,7 +53,8 @@ export type CandidateRejectionReason =
   | 'invalid-configuration'
   | 'no-destination-match'
   | 'flapping-stabilization'
-  | 'unknown-path-type';
+  | 'unknown-path-type'
+  | 'destination-requires-vpn';
 
 export interface RoutingDestination {
   kind: 'ip' | 'cidr' | 'hostname' | 'service' | 'domain-profile' | 'network-segment' | 'default';
@@ -306,6 +308,7 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
 };
 const PRECEDENCE = [
   'security validation',
+  'destination route intent',
   'manual deny/require',
   'policy deny',
   'address-family constraints',
@@ -463,9 +466,13 @@ export class RoutingEngine {
     const matched = longestPrefix(routes, context.destination);
     const paths = await this.paths(matched, context);
     const policyDecisions: RoutingPolicyDecision[] = [];
-    const candidates = await Promise.all(
-      paths.map((p) => this.candidate(p, context, policyDecisions, now)),
-    );
+    const candidateResults: { candidate: RouteCandidate; policies: RoutingPolicyDecision[] }[] = [];
+    for (const path of paths) {
+      const result = await this.candidate(path, context, now);
+      candidateResults.push(result);
+      policyDecisions.push(...result.policies);
+    }
+    const candidates = candidateResults.map((r) => r.candidate);
     const eligible = candidates.filter((c) => c.eligibility !== 'rejected');
     this.applyScores(eligible, context);
     eligible.sort(
@@ -610,7 +617,12 @@ export class RoutingEngine {
     await this.emit('routing.recovery.started', { destination: context.destination });
     const decision = await this.decide(context);
     const plan = await this.applyPlan(decision.plan);
-    await this.emit('routing.recovery.succeeded', { planId: plan.id });
+    await this.emit(
+      plan.verification.status === 'succeeded' || plan.actions[0]?.type === 'noop'
+        ? 'routing.recovery.succeeded'
+        : 'routing.recovery.failed',
+      { planId: plan.id },
+    );
     return plan;
   }
   setManualOverride(
@@ -651,9 +663,8 @@ export class RoutingEngine {
   private async candidate(
     path: NetworkPath,
     context: RoutingDecisionContext,
-    policyDecisions: RoutingPolicyDecision[],
     now: Date,
-  ): Promise<RouteCandidate> {
+  ): Promise<{ candidate: RouteCandidate; policies: RoutingPolicyDecision[] }> {
     const source = context.connectivitySources?.find(
       (s) =>
         s.sourceId === path.route.source ||
@@ -685,6 +696,11 @@ export class RoutingEngine {
       c.rejectionReason = r;
       c.explanation.push(e);
     };
+    const intent = context.destination.metadata?.routeIntent as DestinationRouteIntent | undefined;
+    if (intent === 'vpn-required' && path.type !== 'vpn')
+      reject('destination-requires-vpn', `destination requires VPN but path type is ${path.type}`);
+    else if (intent === 'vpn-preferred' && path.type !== 'vpn')
+      c.policyScore -= 20;
     if (!this.config.allowedPathTypes.includes(path.type))
       reject('unknown-path-type', `path type ${path.type} is not enabled`);
     else if (path.route.state === 'disabled') reject('provider-disabled', 'route is disabled');
@@ -712,6 +728,7 @@ export class RoutingEngine {
       reject('provider-disabled', 'connectivity provider is disabled');
     else if (path.route.gateway && health?.gatewayReachable === false)
       reject('gateway-unreachable', 'gateway is unreachable');
+    const policies: RoutingPolicyDecision[] = [];
     for (const policy of this.policies) {
       const policyContext: RoutingPolicyContext = {
         destination: context.destination,
@@ -722,7 +739,7 @@ export class RoutingEngine {
         ...(context.manualOverride ? { manualOverride: context.manualOverride } : {}),
       };
       const decision = await policy.evaluate(policyContext);
-      policyDecisions.push(decision);
+      policies.push(decision);
       if (!decision.allowed) {
         reject('policy-prohibited', decision.reason ?? 'policy rejected route');
         await this.emit('routing.policy.rejected', {
@@ -733,7 +750,7 @@ export class RoutingEngine {
       if (decision.scoreAdjustment) c.policyScore += decision.scoreAdjustment;
     }
     const o = context.manualOverride;
-    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime()) return c;
+    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime()) return { candidate: c, policies };
     if (o?.mode === 'deny-path' && o.target === path.id) reject('manual-override', o.reason);
     if (o?.mode === 'require-path' && o.target !== path.id) reject('manual-override', o.reason);
     if (o?.mode === 'prefer-path' && o.target === path.id) c.policyScore += 25;
@@ -746,7 +763,7 @@ export class RoutingEngine {
       eligible: c.eligibility !== 'rejected',
       rejectionReason: c.rejectionReason,
     });
-    return c;
+    return { candidate: c, policies };
   }
   private applyScores(candidates: RouteCandidate[], context: RoutingDecisionContext): void {
     for (const c of candidates) {
@@ -791,17 +808,19 @@ export class RoutingEngine {
   private async commit(plan: RoutePlan, key: string): Promise<RoutePlan> {
     await this.emit('routing.transition.started', { planId: plan.id });
     try {
-      await this.options.kernel?.execute('routing', 'applyRoutePlan', plan, {
+      if (!this.options.kernel) throw new Error('Live route application requires a KernelRuntime');
+      await this.options.kernel.execute('routing', 'applyRoutePlan', plan, {
         ...(this.options.principal ? { principal: this.options.principal } : {}),
         priority: 'high',
         persist: true,
       });
+      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((plan: RoutePlan) => Promise<boolean>)[];
+      if (!verifiers.length) throw new Error('Live route application requires at least one verification provider');
       let verified = true;
-      for (const verify of this.providers.map((p) => p.verify).filter(Boolean))
-        verified = verified && (await verify!(plan));
+      for (const verify of verifiers) verified = (await verify(plan)) && verified;
       if (!verified) {
         plan.verification.status = 'failed';
-        await this.options.kernel?.execute('routing', 'rollbackRoutePlan', plan, {
+        await this.options.kernel.execute('routing', 'rollbackRoutePlan', plan, {
           ...(this.options.principal ? { principal: this.options.principal } : {}),
           priority: 'critical',
           persist: true,
@@ -838,9 +857,7 @@ export class RoutingEngine {
   }
   private isFlapping(now: number): boolean {
     const recent = this.history.filter((h) => now - h.at <= this.config.flappingWindowMs);
-    return (
-      recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2
-    );
+    return recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2;
   }
   private async emit(type: string, payload: unknown): Promise<void> {
     const event: DomainEvent = {
@@ -863,9 +880,7 @@ function inferFamily(ip: string): Exclude<AddressFamily, 'dual'> {
   return ip.includes(':') ? 'ipv6' : 'ipv4';
 }
 function isIp(value: string): boolean {
-  return (
-    /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'))
-  );
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'));
 }
 function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint {
   if (family === 'ipv4') return ip.split('.').reduce((a, p) => (a << 8n) + BigInt(Number(p)), 0n);
@@ -874,12 +889,7 @@ function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint 
     .split(':')
     .reduce((a, p) => (a << 16n) + BigInt(Number.parseInt(p || '0', 16)), 0n);
 }
-function cidrContains(
-  cidrIp: string,
-  prefix: number,
-  ip: string,
-  family: Exclude<AddressFamily, 'dual'>,
-): boolean {
+function cidrContains(cidrIp: string, prefix: number, ip: string, family: Exclude<AddressFamily, 'dual'>): boolean {
   if (prefix === 0) return true;
   const bits = BigInt(family === 'ipv4' ? 32 : 128);
   const shift = bits - BigInt(prefix);
