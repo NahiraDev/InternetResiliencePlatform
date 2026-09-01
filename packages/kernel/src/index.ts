@@ -222,19 +222,22 @@ export class WorkflowEngine {
       }
       return { workflowId: def.id, simulated: simulate, steps };
     };
+    const timeoutMs = def.timeoutMs;
+    let timeoutWatcher: NodeJS.Timeout | undefined;
     try {
       return await Promise.race([
         execute(),
         new Promise<WorkflowResult>((_, reject) => {
-          if (def.timeoutMs === undefined) return;
-          const check = () => {
-            if (linked.timedOut()) reject(new KernelError('WORKFLOW_TIMEOUT', `Workflow timed out after ${def.timeoutMs}ms`, { workflowId: def.id, timeoutMs: def.timeoutMs }));
-            else if (!linked.controller.signal.aborted) setTimeout(check, Math.max(1, def.timeoutMs));
-          };
-          setTimeout(check, Math.max(1, def.timeoutMs));
+          if (timeoutMs === undefined) return;
+          timeoutWatcher = setTimeout(() => {
+            if (linked.timedOut()) reject(new KernelError('WORKFLOW_TIMEOUT', `Workflow timed out after ${timeoutMs}ms`, { workflowId: def.id, timeoutMs }));
+          }, Math.max(1, timeoutMs));
         }),
       ]);
-    } finally { linked.cleanup(); }
+    } finally {
+      if (timeoutWatcher) clearTimeout(timeoutWatcher);
+      linked.cleanup();
+    }
   }
 }
 
