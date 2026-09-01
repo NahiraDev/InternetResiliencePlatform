@@ -28,7 +28,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val diagnostics = AndroidNetworkDiagnosticsAdapter(this)
-        val session = ClientSession(UnconfiguredControlPlaneClient(), AndroidKeyStoreTokenStore(this))
+        val session = ClientSession(
+            UnconfiguredControlPlaneClient(),
+            AndroidKeyStoreTokenStore(this),
+            AndroidIdentityStore(this),
+        )
+        session.restoreSession()
 
         setContent {
             var snapshot by remember { mutableStateOf(diagnostics.snapshot()) }
@@ -55,7 +60,6 @@ class MainActivity : ComponentActivity() {
                                     checked = state.policy.autonomousMode,
                                     enabled = state.enrolled,
                                     onCheckedChange = { enabled ->
-                                        // Policy authority remains the Control Plane; this call is intentionally explicit.
                                         scope.launch { runCatching { session.setAutonomousMode(enabled) } }
                                     },
                                 )
