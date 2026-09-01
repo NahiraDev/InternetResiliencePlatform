@@ -100,11 +100,11 @@ jobs:
 
       - name: Show Docker Compose logs
         if: always()
-        run: docker compose logs --no-color || true
+        run: docker compose logs --no-color
 
       - name: Remove Docker Compose runtime
         if: always()
-        run: docker compose down --volumes --remove-orphans || true
+        run: docker compose down --volumes --remove-orphans
 
       - name: Create trusted source artifact
         if: github.ref == 'refs/heads/main'
