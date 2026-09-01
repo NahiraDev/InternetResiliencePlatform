@@ -197,6 +197,30 @@ describe('routing engine decisions', () => {
     expect(applied).toEqual([`apply:${plan.id}`, `rollback:${plan.id}`]);
   });
 
+  it('does not report a live route application as successful without a kernel runtime', async () => {
+    const engine = new RoutingEngine();
+    const decision = await engine.decide({
+      destination: parseDestination('8.8.8.8'),
+      routes: [route('eth', '0.0.0.0/0')],
+    });
+    const plan = await engine.applyPlan(decision.plan);
+    expect(plan.verification.status).toBe('failed');
+  });
+
+  it('does not report failover or recovery as successful when no path is executable', async () => {
+    const engine = new RoutingEngine();
+    const failover = await engine.failover({
+      destination: parseDestination('8.8.8.8'),
+      routes: [route('bad', '0.0.0.0/0', 1, 10)],
+    });
+    const recovery = await engine.recover({
+      destination: parseDestination('8.8.8.8'),
+      routes: [route('bad', '0.0.0.0/0', 1, 10)],
+    });
+    expect(failover.selectedPath).toBeUndefined();
+    expect(recovery.selectedPath).toBeUndefined();
+  });
+
   it('is idempotent for concurrent route change requests', async () => {
     const kernel = new KernelRuntime(undefined, {
       id: 'operator',
