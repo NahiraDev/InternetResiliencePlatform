@@ -77,7 +77,7 @@ describe('WireGuardProvider', () => {
     const tunnel = await provider.create(config());
     const connection = await provider.connect(tunnel);
     expect(connection.state).toBe('connected');
-    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip', 'wg', 'ip']);
+    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip', 'wg']);
     const wgCall = runner.calls.find((call) => call.command === 'wg');
     expect(wgCall?.args).toContain('private-key');
     expect(wgCall?.args.join(' ')).not.toContain(PRIVATE_KEY);
