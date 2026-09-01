@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 
-export type KernelState =
-  'created' | 'bootstrapping' | 'running' | 'draining' | 'stopped' | 'failed';
-export type ServiceState =
-  'registered' | 'starting' | 'healthy' | 'degraded' | 'unhealthy' | 'stopped';
+export type KernelState = 'created' | 'bootstrapping' | 'running' | 'draining' | 'stopped' | 'failed';
+export type ServiceState = 'registered' | 'starting' | 'healthy' | 'degraded' | 'unhealthy' | 'stopped';
 export type LifecycleState<T extends string> = T;
 export type Capability = `${string}.${string}`;
 export const KernelCapabilities = [
@@ -187,7 +185,7 @@ export interface WorkflowDefinition { id: string; trigger: string; steps: Workfl
 export interface WorkflowStep { id: string; capability: Capability; action: string; input?: unknown; retry?: number; condition?: (context: KernelContext) => boolean | Promise<boolean>; }
 export interface WorkflowResult { workflowId: string; simulated: boolean; steps: { id: string; action: string; status: 'skipped' | 'predicted' | 'completed'; durationMs: number; }[]; }
 
-function createLinkedAbortController(parent: AbortSignal, timeoutMs?: number): { controller: AbortController; cleanup: () => void; timedOut: () => boolean } {
+function createLinkedAbortController(parent: AbortSignal, timeoutMs?: number, timeoutCode = 'TIMEOUT'): { controller: AbortController; cleanup: () => void; timedOut: () => boolean } {
   const controller = new AbortController();
   let timedOut = false;
   let timer: NodeJS.Timeout | undefined;
@@ -196,7 +194,7 @@ function createLinkedAbortController(parent: AbortSignal, timeoutMs?: number): {
   else parent.addEventListener('abort', onAbort, { once: true });
   if (timeoutMs !== undefined) {
     if (!Number.isFinite(timeoutMs) || timeoutMs < 0) throw new KernelError('TIMEOUT_INVALID', `Invalid timeout: ${timeoutMs}`);
-    timer = setTimeout(() => { timedOut = true; controller.abort(new KernelError('TIMEOUT', `Operation timed out after ${timeoutMs}ms`)); }, timeoutMs);
+    timer = setTimeout(() => { timedOut = true; controller.abort(new KernelError(timeoutCode, `Operation timed out after ${timeoutMs}ms`)); }, timeoutMs);
   }
   return {
     controller,
@@ -209,7 +207,7 @@ export class WorkflowEngine {
   constructor(private readonly bus: MessageBus) {}
   async run(def: WorkflowDefinition, context: KernelContext, simulate = false): Promise<WorkflowResult> {
     const steps: WorkflowResult['steps'] = [];
-    const linked = createLinkedAbortController(context.signal, def.timeoutMs);
+    const linked = createLinkedAbortController(context.signal, def.timeoutMs, 'WORKFLOW_TIMEOUT');
     const workflowContext = { ...context, signal: linked.controller.signal };
     const execute = async (): Promise<WorkflowResult> => {
       for (const step of def.steps) {
