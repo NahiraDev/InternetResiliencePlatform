@@ -411,6 +411,8 @@ importers:
         specifier: 3.2.7
         version: 3.2.7(@types/node@26.4.0)(jiti@2.7.0)(supports-color@7.2.0)(yaml@2.9.0)
 
+  packages/linux-client: {}
+
   packages/logger:
     dependencies:
       pino:
@@ -429,6 +431,8 @@ importers:
       vitest:
         specifier: 3.2.7
         version: 3.2.7(@types/node@26.4.0)(jiti@2.7.0)(supports-color@7.2.0)(yaml@2.9.0)
+
+  packages/macos-client: {}
 
   packages/metrics:
     devDependencies:
@@ -878,6 +882,8 @@ importers:
       vitest:
         specifier: 3.2.7
         version: 3.2.7(@types/node@26.4.0)(jiti@2.7.0)(supports-color@7.2.0)(yaml@2.9.0)
+
+  packages/windows-client: {}
 
 packages:
 
