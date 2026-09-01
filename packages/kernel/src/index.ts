@@ -186,21 +186,55 @@ export class ConfigurationStore {
 export interface WorkflowDefinition { id: string; trigger: string; steps: WorkflowStep[]; timeoutMs?: number; }
 export interface WorkflowStep { id: string; capability: Capability; action: string; input?: unknown; retry?: number; condition?: (context: KernelContext) => boolean | Promise<boolean>; }
 export interface WorkflowResult { workflowId: string; simulated: boolean; steps: { id: string; action: string; status: 'skipped' | 'predicted' | 'completed'; durationMs: number; }[]; }
+
+function createLinkedAbortController(parent: AbortSignal, timeoutMs?: number): { controller: AbortController; cleanup: () => void; timedOut: () => boolean } {
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: NodeJS.Timeout | undefined;
+  const onAbort = () => controller.abort(parent.reason);
+  if (parent.aborted) controller.abort(parent.reason);
+  else parent.addEventListener('abort', onAbort, { once: true });
+  if (timeoutMs !== undefined) {
+    if (!Number.isFinite(timeoutMs) || timeoutMs < 0) throw new KernelError('TIMEOUT_INVALID', `Invalid timeout: ${timeoutMs}`);
+    timer = setTimeout(() => { timedOut = true; controller.abort(new KernelError('TIMEOUT', `Operation timed out after ${timeoutMs}ms`)); }, timeoutMs);
+  }
+  return {
+    controller,
+    cleanup: () => { parent.removeEventListener('abort', onAbort); if (timer) clearTimeout(timer); },
+    timedOut: () => timedOut,
+  };
+}
+
 export class WorkflowEngine {
   constructor(private readonly bus: MessageBus) {}
   async run(def: WorkflowDefinition, context: KernelContext, simulate = false): Promise<WorkflowResult> {
     const steps: WorkflowResult['steps'] = [];
-    const timeout = def.timeoutMs !== undefined ? setTimeout(() => undefined, def.timeoutMs) : undefined;
-    try {
+    const linked = createLinkedAbortController(context.signal, def.timeoutMs);
+    const workflowContext = { ...context, signal: linked.controller.signal };
+    const execute = async (): Promise<WorkflowResult> => {
       for (const step of def.steps) {
         const started = performance.now();
-        if (step.condition && !(await step.condition(context))) { steps.push({ id: step.id, action: step.action, status: 'skipped', durationMs: 0 }); continue; }
-        context.capabilities.assert(context.principal, step.capability);
-        if (!simulate) await this.bus.command(step.action, step.input, context, { maxAttempts: step.retry ?? 1 });
+        if (workflowContext.signal.aborted) throw new KernelError('WORKFLOW_CANCELLED', `Workflow cancelled: ${def.id}`);
+        if (step.condition && !(await step.condition(workflowContext))) { steps.push({ id: step.id, action: step.action, status: 'skipped', durationMs: 0 }); continue; }
+        workflowContext.capabilities.assert(workflowContext.principal, step.capability);
+        if (!simulate) await this.bus.command(step.action, step.input, workflowContext, { maxAttempts: step.retry ?? 1 });
         steps.push({ id: step.id, action: step.action, status: simulate ? 'predicted' : 'completed', durationMs: performance.now() - started });
       }
       return { workflowId: def.id, simulated: simulate, steps };
-    } finally { if (timeout) clearTimeout(timeout); }
+    };
+    try {
+      return await Promise.race([
+        execute(),
+        new Promise<WorkflowResult>((_, reject) => {
+          if (def.timeoutMs === undefined) return;
+          const check = () => {
+            if (linked.timedOut()) reject(new KernelError('WORKFLOW_TIMEOUT', `Workflow timed out after ${def.timeoutMs}ms`, { workflowId: def.id, timeoutMs: def.timeoutMs }));
+            else if (!linked.controller.signal.aborted) setTimeout(check, Math.max(1, def.timeoutMs));
+          };
+          setTimeout(check, Math.max(1, def.timeoutMs));
+        }),
+      ]);
+    } finally { linked.cleanup(); }
   }
 }
 
@@ -221,9 +255,17 @@ export class KernelRuntime {
     this.registry.register({ id: contract.namespace, kind: 'contract', version: contract.version, priority: 100, state: 'healthy', value: contract, health: () => 'healthy' });
   }
   async execute<I, O>(namespace: ContractNamespace, operation: string, input: I, options: OperationOptions = {}): Promise<O> {
+    const linked = createLinkedAbortController(this.abort.signal, options.timeoutMs);
     const messageOptions: Partial<KernelMessage> = { maxAttempts: 3 };
     if (options.priority) messageOptions.priority = options.priority; if (options.persist !== undefined) messageOptions.persist = options.persist;
-    return this.bus.command<I, O>(`${namespace}.${operation}`, input, this.context(options.principal), messageOptions);
+    const context = this.context(options.principal);
+    const operationContext = { ...context, signal: linked.controller.signal };
+    try {
+      return await this.bus.command<I, O>(`${namespace}.${operation}`, input, operationContext, messageOptions);
+    } catch (error) {
+      if (linked.timedOut()) throw new KernelError('OPERATION_TIMEOUT', `Operation timed out after ${options.timeoutMs}ms`, { namespace, operation, timeoutMs: options.timeoutMs });
+      throw error;
+    } finally { linked.cleanup(); }
   }
   async start(): Promise<void> {
     if (this.state === 'running') return; this.state = 'bootstrapping';
