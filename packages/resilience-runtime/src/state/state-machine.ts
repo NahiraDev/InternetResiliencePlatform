@@ -42,7 +42,6 @@ export class RuntimeStateMachine {
     if (!legalTransitions[this.state].includes(to))
       throw new Error(`Illegal runtime transition ${this.state} -> ${to}`);
     const from = this.state;
-    this.state = to;
     const transition = {
       id: nextId('transition'),
       schemaVersion: 1,
@@ -57,6 +56,7 @@ export class RuntimeStateMachine {
     if (to === 'blocked') await this.events?.emit('runtime.blocked', transition);
     if (to === 'degraded') await this.events?.emit('runtime.degraded', transition);
     if (to === 'failed') await this.events?.emit('runtime.failed', transition);
+    this.state = to;
     return transition;
   }
   async fail(correlationId = 'state') {

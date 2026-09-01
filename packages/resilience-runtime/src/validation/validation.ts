@@ -14,6 +14,9 @@ export class RuntimeActionValidator {
     const policy = await this.policy.evaluate(plan, context);
     reasons.push(...policy.reasons);
     if (context.cancelled) reasons.push('context is cancelled');
+    const deadlineMs = Date.parse(context.deadline);
+    if (!Number.isFinite(deadlineMs)) reasons.push('context deadline is invalid');
+    else if (Date.now() >= deadlineMs) reasons.push('context deadline has expired');
     if (plan.selectedAction.intent !== 'noop' && context.mode === 'safe' && !context.securityContext.trusted) reasons.push('safe mode requires trusted authorization for mutation');
     if (plan.selectedAction.intent !== 'noop' && context.configuration.maxActionsPerCycle < 1) reasons.push('action budget exhausted');
     if (context.observationSnapshot?.stale) reasons.push('stale telemetry cannot validate mutating plan');

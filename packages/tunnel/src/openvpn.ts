@@ -230,14 +230,15 @@ export class OpenVPNProvider implements TunnelProvider {
         statusPath,
       });
 
-      const health = await this.healthCheck(tunnel);
-      if (health.status === 'unhealthy') {
-        await this.stopRuntime(tunnel.id, pid);
+      const health = await this.waitForHealthy(tunnel);
+      if (health.status !== 'healthy') {
+        await this.stopRuntime(tunnel.id, pid, Math.min(this.commandTimeoutMs, this.startupTimeoutMs));
         throw new TunnelError(
-          'OpenVPN process started but did not provide healthy tunnel evidence',
+          'OpenVPN process started but did not provide healthy tunnel evidence before the startup deadline',
           'OpenVPNHealthCheckFailed',
           'dependencyFailure',
           true,
+          { healthStatus: health.status },
         );
       }
 
@@ -314,6 +315,16 @@ export class OpenVPNProvider implements TunnelProvider {
     } catch {
       return { ...unknownHealth(checkedAt), status: 'unhealthy' };
     }
+  }
+
+  private async waitForHealthy(tunnel: Tunnel): Promise<TunnelHealth> {
+    const deadline = Date.now() + this.startupTimeoutMs;
+    let last = await this.healthCheck(tunnel);
+    while (last.status !== 'healthy' && Date.now() < deadline) {
+      await delay(Math.min(this.pollIntervalMs, Math.max(1, deadline - Date.now())));
+      last = await this.healthCheck(tunnel);
+    }
+    return last;
   }
 
   private async waitForPid(pidPath: string): Promise<number> {
