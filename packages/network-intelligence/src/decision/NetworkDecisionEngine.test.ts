@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DecisionEvaluator } from './DecisionEvaluator.js';
 import {
-  DecisionEvaluator,
   NetworkDecisionEngine,
   type DecisionCandidate,
   type NetworkDecisionContext,
@@ -145,6 +145,41 @@ describe('Phase 19 NetworkDecisionEngine', () => {
       engine.validateModelOutput({ selectedCandidate: candidate('ghost'), confidence: 2 }, ['ok'])
         .allowed,
     ).toBe(false);
+  });
+  it('evaluates intervention outcomes with correct accuracy, FP, FN, and ranking metrics', () => {
+    const evaluator = new DecisionEvaluator();
+    const makeDecision = (
+      candidateId: string,
+      recommendedAction: 'remain' | 'switch-route',
+      confidence = 0.9,
+    ) =>
+      ({
+        decisionId: `d-${candidateId}`,
+        selectedCandidate: candidate(candidateId),
+        recommendedAction,
+        confidence,
+      }) as never;
+
+    const metrics = evaluator.evaluate(
+      [
+        makeDecision('failed-intervention', 'switch-route'),
+        makeDecision('healthy-remain', 'remain'),
+        makeDecision('healthy-intervention', 'switch-route'),
+        makeDecision('failed-remain', 'remain'),
+      ],
+      [
+        { candidateId: 'failed-intervention', healthy: false, failed: true, rank: 1 },
+        { candidateId: 'healthy-remain', healthy: true, failed: false, rank: 2 },
+        { candidateId: 'healthy-intervention', healthy: true, failed: false, rank: 3 },
+        { candidateId: 'failed-remain', healthy: false, failed: true, rank: 4 },
+      ],
+    );
+
+    expect(metrics.recommendationAccuracy).toBe(0.5);
+    expect(metrics.falsePositiveRate).toBe(0.25);
+    expect(metrics.falseNegativeRate).toBe(0.25);
+    expect(metrics.rankingQuality).toBeCloseTo((1 + 0.5 + 1 / 3 + 0.25) / 4);
+    expect(metrics.confidenceCalibration).toBeCloseTo(0.55);
   });
   it('supports replay, state-version revalidation, manual override, evaluator, privacy filtering, concurrency and resource limits', async () => {
     const audit = vi.fn();
