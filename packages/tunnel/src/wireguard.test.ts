@@ -72,12 +72,13 @@ describe('WireGuardProvider', () => {
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     queueHealthyHandshake(runner);
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'], endpoint: '198.51.100.10:51820' }, addressCidr: '10.99.0.2/24' });
     const tunnel = await provider.create(config());
     const connection = await provider.connect(tunnel);
     expect(connection.state).toBe('connected');
-    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip', 'wg']);
+    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip', 'wg', 'ip']);
     const wgCall = runner.calls.find((call) => call.command === 'wg');
     expect(wgCall?.args).toContain('private-key');
     expect(wgCall?.args.join(' ')).not.toContain(PRIVATE_KEY);
@@ -101,7 +102,7 @@ describe('WireGuardProvider', () => {
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: 'permission denied', exitCode: 1 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
+    const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] });
     const tunnel = await provider.create(config());
     await expect(provider.connect(tunnel)).rejects.toThrow(/permission denied|WireGuard operation failed/);
     expect(runner.calls.at(-1)?.args).toEqual(['link', 'del', 'dev', 'irpwg0']);
