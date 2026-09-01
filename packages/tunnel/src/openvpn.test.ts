@@ -90,16 +90,25 @@ describe('OpenVPNProvider', () => {
         return { stdout: '', stderr: '', exitCode: 0 };
       },
     };
-    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true as never);
-    const provider = new OpenVPNProvider({
-      commandRunner: runner,
-      credentialStore,
-      startupTimeoutMs: 20,
-      pollIntervalMs: 1,
+    let alive = true;
+    const kill = vi.spyOn(process, 'kill').mockImplementation((_pid, signal) => {
+      if (signal !== 0) alive = false;
+      if (signal === 0 && !alive) throw Object.assign(new Error('not alive'), { code: 'ESRCH' });
+      return undefined as never;
     });
-    const tunnel = await provider.create(config());
-    await expect(provider.connect(tunnel)).rejects.toThrow(/healthy tunnel evidence/);
-    kill.mockRestore();
+    try {
+      const provider = new OpenVPNProvider({
+        commandRunner: runner,
+        credentialStore,
+        startupTimeoutMs: 20,
+        pollIntervalMs: 1,
+        commandTimeoutMs: 20,
+      });
+      const tunnel = await provider.create(config());
+      await expect(provider.connect(tunnel)).rejects.toThrow(/healthy tunnel evidence/);
+    } finally {
+      kill.mockRestore();
+    }
   });
 
   it('exposes bounded provider capabilities', () => {
