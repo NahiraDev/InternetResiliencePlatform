@@ -4,9 +4,13 @@
 
 ## Current State
 
-- **Current phase:** Phase 66 — iOS Network Integration (**implementation started; repository/native/runtime verification required**).
-- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present. Signed physical-device verification and a concrete authorized tunnel transport remain required before closure.
-- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification remains required before closure.
+- **Current phase:** Phase 70 — IRP v1.0 Production Certification (**implementation started; certification evidence required**).
+- **Phase 70:** versioned certification manifest, fail-closed evidence contract, certification verifier, evidence secret-scan and Phase 70 CI gates are implemented on the Phase 70 branch. Production certification is not claimed until runtime, device, regional, security, recovery and release evidence is independently verified.
+- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on `main`; full repository/runtime/security/device evidence remains required before closure.
+- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Final evidence remains governed by the phase verification rules.
+- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present.
+- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present.
+- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered.
 - **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
 - **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
 - **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
@@ -35,134 +39,47 @@
 - **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
 - **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
 - **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
+- **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
+- **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
+- **Production hardening strategy:** Phase 69 owns cross-platform release readiness, compatibility evidence, accessibility/localization acceptance, upgrade/rollback safety, security audit controls, bounded chaos/soak verification, backup/restore verification and release engineering. It does not move product authority into clients.
+- **v1.0 certification strategy:** Phase 70 owns the final evidence contract and release gate. It aggregates verified repository, runtime, security, recovery, regional, platform, device and release-engineering evidence without treating source presence or a contract check as certification.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 66 — iOS Network Integration
+## Phase 70 — IRP v1.0 Production Certification
 
-**Implementation started; verification required.**
-
-### Implementation evidence
-
-- `clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift`
-- `clients/ios/Sources/IRPiOSClient/NetworkExtensionAdapter.swift`
-- `clients/ios/Sources/IRPiOSClient/NetworkExtensionController.swift`
-- `clients/ios/PacketTunnel/PacketTunnelProvider.swift`
-- `clients/ios/PacketTunnel/Info.plist`
-- `clients/ios/PacketTunnel/PacketTunnel.entitlements`
-- `clients/ios/App/IRP.entitlements`
-- `clients/ios/App/IRPiOSApp.swift`
-- `clients/ios/App/Info.plist`
-- `clients/ios/IRP.xcodeproj/project.pbxproj`
-- `clients/ios/IRP.xcodeproj/xcshareddata/xcschemes/IRP.xcscheme`
-- `clients/ios/Tests/IRPiOSClientTests/PacketTunnelConfigurationTests.swift`
-- `.github/workflows/ios-network-integration.yml`
-- `docs/phases/phase-66.md`
-
-### Current guarantees
-
-- Packet tunnel configuration is validated before native network settings are created.
-- IPv4, DNS, MTU, included routes and excluded routes map deterministically to `NEPacketTunnelNetworkSettings`.
-- The containing app manages `NETunnelProviderManager`; it does not edit host routing tables directly.
-- The packet tunnel provider reads the control-plane-generated provider configuration and fails closed if no authorized concrete transport is available.
-- The packet tunnel extension uses the dedicated Apple packet-tunnel extension point and `packet-tunnel-provider` entitlement.
-- No WireGuard/OpenVPN implementation, gateway scoring, destination policy or failover algorithm is duplicated in iOS code.
-
-### Remaining verification
-
-- repository `pnpm validate`, typecheck, lint, tests and build;
-- Swift package tests/build;
-- Xcode project compilation against an iOS Simulator SDK;
-- entitlement and extension metadata validation;
-- signed physical iPhone installation and Network Extension lifecycle smoke test;
-- concrete authorized tunnel transport integration and end-to-end packet forwarding;
-- security review of entitlements, credential/session boundaries and fail-closed startup behavior.
-
-## Phase 65 — iOS Full Client
-
-**Implementation started; verification required.**
+**Implementation in progress; certification evidence required.**
 
 ### Implementation evidence
 
-- `clients/ios/Package.swift`
-- `clients/ios/Sources/IRPiOSClient/Models.swift`
-- `clients/ios/Sources/IRPiOSClient/SecureStore.swift`
-- `clients/ios/Sources/IRPiOSClient/ClientSession.swift`
-- `clients/ios/Sources/IRPiOSClient/Views.swift`
-- `clients/ios/Tests/IRPiOSClientTests/IRPiOSClientTests.swift`
-- `clients/ios/README.md`
-- `docs/phases/phase-65.md`
-- `.github/workflows/ios-client.yml`
+- `docs/phases/phase-70.md`
+- `ops/release/phase-70-certification.json`
+- `scripts/phase70-certification.mjs`
+- `.github/workflows/phase-70-certification.yml`
 
 ### Current guarantees
 
-- Enrollment persists the returned refresh credential only through the secure-store abstraction; the production Apple implementation uses Keychain.
-- Session restore requires both a stored credential and an enrolled device identity.
-- Snapshot and analytics refresh state only after both control-plane reads succeed, preventing partial refresh publication.
-- Policy changes are delegated to the Control Plane; failed policy requests leave local policy state unchanged.
-- Sign-out removes the stored refresh credential and clears local enrollment state.
-- SwiftUI presentation is read-oriented and contains no routing, DNS, gateway, tunnel or failover authority.
-- Phase 65 introduces no Network Extension entitlement or privileged networking path.
+- v1.0 certification requirements are explicit and machine-readable.
+- Supported product surfaces are represented across Core, API, gateways, web, Linux, macOS, Windows, iOS and Android.
+- Missing runtime/device/regional/release evidence is fail-closed and cannot be represented as certification.
+- Certification evidence receives an explicit secret-material safety scan.
+- Phase 69 repository/readiness gates are treated as prerequisites rather than silently assumed.
+- Phase 70 CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
+- Required checks do not intentionally use false-green mechanisms such as `continue-on-error` or shell success overrides.
 
-## Phase 64 — Shared Mobile Client Core
+### Remaining certification evidence
 
-**Implementation started; verification required.**
-
-### Implementation evidence
-
-- `packages/core/src/mobile-client.ts`
-- `packages/core/tests/mobile-client.test.ts`
-- `packages/core/src/index.ts`
-- `docs/phases/phase-64.md`
-- `docs/reference/packages.md`
-- `docs/runtime/index.html`
-
-### Current guarantees
-
-- iOS and Android are the only accepted mobile platform identifiers.
-- Initial client state is deterministic and platform-neutral.
-- Client policy state is isolated from caller-owned state snapshots.
-- Diagnostics are read-only through an adapter contract; the core does not execute native networking commands.
-- Platform-mismatched diagnostics are rejected before state mutation.
-- Adapter failures leave the previous client state unchanged.
-- Policy, snapshot and connection transitions are observable through local events.
-- The runtime dashboard resolves hosted HTTP(S) deployments to same-origin `/runtime-api`; explicit `?api=` overrides remain supported, while local `file://` use continues to target the local runtime lab at `127.0.0.1:8080`.
-
-### Remaining verification
-
-- repository `pnpm validate`;
-- repository typecheck, lint, tests and build;
-- `@irp/core` mobile-core test execution;
-- public runtime dashboard loading through the Caddy `/runtime/` route with `/runtime-api` SSE connectivity;
-- runtime/public soak verification and CI.
-
-## Phase 63 — Windows Full Client
-
-**Implementation in progress; verification required.**
-
-### Implementation evidence
-
-- `packages/windows-client/package.json`
-- `packages/windows-client/tsconfig.json`
-- `packages/windows-client/src/index.ts`
-- `packages/windows-client/tests/index.test.ts`
-- `docs/phases/phase-63.md`
-- `.github/workflows/windows-client.yml`
-
-### Current guarantees
-
-- Windows diagnostics use bounded `execFile` calls rather than shell interpolation.
-- Interface, route and resolver state are presented as observations; the client does not mutate network state.
-- Autonomous mode is explicit, deterministic and locally controlled; it does not bypass the shared safety/policy boundary.
-- The local control surface binds to loopback only by default.
-- Non-Windows environments report a deterministic unsupported state rather than pretending Windows runtime evidence exists.
-
-### Remaining verification
-
-- real Windows diagnostics using `ipconfig`, `route` and `netsh`;
-- Windows service lifecycle verification;
-- desktop UI/tray integration verification on supported Windows environments;
-- repository typecheck/lint/test/build and Windows CI green.
+- Full repository `validate`, typecheck, lint, tests and build.
+- Security analysis/dependency review and artifact integrity evidence.
+- Control-plane and gateway runtime evidence.
+- Regional public-IP/service evidence.
+- Real upgrade/rollback rehearsal against a representative deployment.
+- Real backup/restore rehearsal against representative control-plane state.
+- Runtime chaos/soak evidence in an isolated provisioned environment.
+- Accessibility/localization verification on each applicable user-facing client.
+- Linux, macOS, Windows, iOS and Android runtime evidence.
+- Signed iOS device smoke and Android device smoke evidence.
+- Release-engineering sign-off and final v1.0 certification review.
 
 ## Verification Rules
 

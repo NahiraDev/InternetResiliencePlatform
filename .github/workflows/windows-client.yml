@@ -58,7 +58,7 @@ jobs:
         run: pnpm exec eslint packages/windows-client/src --ext .ts
 
       - name: Test Windows client
-        run: pnpm exec vitest run packages/windows-client
+        run: pnpm --filter @irp/windows-client test
 
       - name: Build Windows client
         run: pnpm exec tsc -p packages/windows-client/tsconfig.json
