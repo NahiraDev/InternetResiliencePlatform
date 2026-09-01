@@ -11,6 +11,7 @@ class VpnTunnelConfigTest {
             prefixLength = 24,
             route = "0.0.0.0",
             routePrefixLength = 0,
+            remoteEndpoint = "198.51.100.10:51820",
             dnsServer = "1.1.1.1",
         )
 
@@ -26,6 +27,7 @@ class VpnTunnelConfigTest {
             prefixLength = 33,
             route = "0.0.0.0",
             routePrefixLength = 0,
+            remoteEndpoint = "198.51.100.10:51820",
         )
     }
 
@@ -36,6 +38,7 @@ class VpnTunnelConfigTest {
             prefixLength = 24,
             route = "",
             routePrefixLength = 0,
+            remoteEndpoint = "198.51.100.10:51820",
         )
     }
 }
