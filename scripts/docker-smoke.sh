@@ -6,9 +6,28 @@ api_port=${API_PORT:-8080}
 docker compose -f "$compose_file" config >/dev/null
 docker compose -f "$compose_file" build --pull
 docker compose -f "$compose_file" down --volumes --remove-orphans
-docker compose -f "$compose_file" up -d
 cleanup() { docker compose -f "$compose_file" down --volumes --remove-orphans; }
 trap cleanup EXIT
+
+# Bring PostgreSQL up first and wait for its actual container health state before
+# creating the API container. This avoids relying on Compose dependency ordering
+# for the API's first DNS lookup of the `postgres` service on CI runners.
+docker compose -f "$compose_file" up -d postgres
+postgres_container=$(docker compose -f "$compose_file" ps -q postgres)
+test -n "$postgres_container"
+for _ in $(seq 1 60); do
+  postgres_health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' "$postgres_container")
+  if [ "$postgres_health" = "healthy" ]; then break; fi
+  if [ "$postgres_health" = "unhealthy" ]; then
+    docker compose -f "$compose_file" ps >&2
+    docker compose -f "$compose_file" logs --no-color postgres >&2
+    exit 1
+  fi
+  sleep 2
+done
+test "$postgres_health" = "healthy"
+
+docker compose -f "$compose_file" up -d --force-recreate api
 
 wait_ready() {
   for _ in $(seq 1 90); do
