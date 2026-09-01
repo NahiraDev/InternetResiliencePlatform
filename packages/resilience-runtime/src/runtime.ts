@@ -148,10 +148,11 @@ export class ResilienceRuntime {
   async getRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     const lastIncidents = await this.incidents.list(); const state = this.state.current();
     const observations = this.last?.observations?.observations ?? [];
+    const hasEvidence = observations.length > 0 || Boolean(this.last?.verificationResult);
     const observationHealthy = observations.length > 0 && observations.every((o) => o.status === 'healthy' && o.freshnessMs >= 0);
     const verifiedHealthy = this.last?.verificationResult?.status === 'success';
     const healthStatus = state === 'blocked' ? 'degraded' : state === 'failed' ? 'failed' : verifiedHealthy || observationHealthy ? 'healthy' : 'unknown';
-    const healthReason = verifiedHealthy ? 'backed by verified action evidence' : observationHealthy ? 'backed by fresh healthy observations' : state === 'blocked' ? 'runtime policy or capability blocked the cycle' : state === 'failed' ? 'runtime cycle failed' : 'no verified healthy evidence';
+    const healthReason = verifiedHealthy ? 'backed by verified action evidence' : observationHealthy ? 'backed by fresh healthy observations' : state === 'blocked' ? 'runtime policy or capability blocked the cycle' : state === 'failed' ? 'runtime cycle failed' : hasEvidence ? 'no verified healthy evidence' : 'no evidence yet';
     return { state, activeIncident: lastIncidents.at(-1), recentObservations: this.last?.observations, policySnapshot: this.last?.runtimeContext ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot : createRuntimeContext().policySnapshot, currentPlan: this.last?.selectedPlan, currentAction: this.last?.selectedPlan?.selectedAction, verificationStatus: this.last?.verificationResult, recoveryStatus: this.last?.recoveryResult, lastDecision: this.last, health: { status: healthStatus, reason: healthReason }, uptimeMs: Date.now() - this.started, counters: this.counters, mode: this.last?.runtimeContext.mode ?? 'safe' };
   }
 }
