@@ -52,11 +52,11 @@ export class RuntimeStateMachine {
       from,
       to,
     };
+    this.state = to;
     await this.events?.emit('runtime.state.changed', transition);
     if (to === 'blocked') await this.events?.emit('runtime.blocked', transition);
     if (to === 'degraded') await this.events?.emit('runtime.degraded', transition);
     if (to === 'failed') await this.events?.emit('runtime.failed', transition);
-    this.state = to;
     return transition;
   }
   async fail(correlationId = 'state') {
