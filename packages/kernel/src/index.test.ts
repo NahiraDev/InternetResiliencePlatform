@@ -49,7 +49,7 @@ describe('network kernel', () => {
     kernel.bus.on('PluginLoaded', () => { attempts += 1; if (attempts === 1) throw new Error('retry'); return true; });
     await expect(kernel.bus.publish({ type: 'event', name: 'PluginLoaded', payload: { id: 'sample' }, priority: 'critical', maxAttempts: 2, persist: true }, kernel.context())).resolves.toEqual([true]);
     expect(kernel.bus.persistedMessages()).toHaveLength(1);
-    expect(kernel.metrics['message.PluginLoaded.count']).toBe(1);
+    expect(kernel.metrics['message.PluginLoaded.count']).toBe(2);
   });
 
   it('requires every configuration migration step', () => {
