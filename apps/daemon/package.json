@@ -14,6 +14,7 @@
   "dependencies": {
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
+    "@irp/linux-client": "workspace:*",
     "@irp/logger": "workspace:*",
     "@irp/resilience-runtime": "workspace:*"
   },
