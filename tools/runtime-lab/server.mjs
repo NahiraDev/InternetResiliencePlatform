@@ -235,7 +235,10 @@ const app = http.createServer((req, res) => {
     const scenarioCompleted = lastReport !== null;
     const scenarioPassed = lastReport?.status === 'passed';
     const packageReady = packageReport?.overall === 'healthy';
-    const ready = !shuttingDown && appListening && metricsListening && scenarioPassed && packageReady && !scenarioRunning;
+    // Readiness represents the latest completed health checks. Background scenario
+    // and package-audit runs are expected during the lab lifetime and must not
+    // transiently turn an already-ready runtime into a 503.
+    const ready = !shuttingDown && appListening && metricsListening && scenarioPassed && packageReady;
     res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify({ status: ready ? 'ready' : scenarioCompleted ? 'failed' : 'starting', appListening, metricsListening, scenarioCompleted, scenarioRunning, scenarioStatus: lastReport?.status ?? null, packageStatus: packageReport?.overall ?? 'starting', packageAuditRunning, failedCriteria: lastReport?.failedCriteria ?? [], error: lastReport?.error ?? null, traceId: lastReport?.traceId ?? null }));
     return;
