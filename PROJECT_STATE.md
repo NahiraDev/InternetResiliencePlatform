@@ -4,7 +4,8 @@
 
 ## Current State
 
-- **Current phase:** Phase 66 — iOS Network Integration (**implementation started; repository/native/runtime verification required**).
+- **Current phase:** Phase 67 — Android Full Client (**implementation started; repository/device/runtime verification required**).
+- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present. Android emulator/device verification and canonical Control Plane transport integration remain required before closure.
 - **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present. Signed physical-device verification and a concrete authorized tunnel transport remain required before closure.
 - **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered. iOS simulator/device verification remains required before closure.
 - **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
@@ -35,8 +36,57 @@
 - **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
 - **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
 - **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
+- **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
+- **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+
+## Phase 67 — Android Full Client
+
+**Implementation started; verification required.**
+
+### Implementation evidence
+
+- `clients/android/settings.gradle.kts`
+- `clients/android/build.gradle.kts`
+- `clients/android/app/build.gradle.kts`
+- `clients/android/app/src/main/AndroidManifest.xml`
+- `clients/android/app/src/main/java/com/nahiradev/irp/Models.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/SecureTokenStore.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/IdentityStore.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/ControlPlane.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/ClientSession.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/NetworkDiagnostics.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/ComposeCompat.kt`
+- `clients/android/app/src/main/java/com/nahiradev/irp/MainActivity.kt`
+- `clients/android/app/src/test/java/com/nahiradev/irp/ClientSessionTest.kt`
+- `clients/android/app/src/test/java/com/nahiradev/irp/SessionRestoreTest.kt`
+- `.github/workflows/android-client.yml`
+- `docs/phases/phase-67.md`
+
+### Current guarantees
+
+- Android is modeled as a full product client, not a dashboard-only viewer.
+- Enrollment and policy changes cross an explicit `ControlPlaneClient` boundary.
+- Refresh credentials are stored through an Android Keystore-backed AES-GCM store.
+- Device identity is persisted separately and restored only when both identity and credential are present.
+- Snapshot and analytics refresh state only after both Control Plane reads succeed.
+- Failed policy requests do not mutate local policy state.
+- Sign-out clears the stored credential, identity and local enrollment state.
+- Android connectivity inspection is read-only.
+- Phase 67 introduces no VPN/tunnel execution or privileged packet networking path.
+
+### Remaining verification
+
+- Android dependency resolution and Gradle unit tests.
+- Debug APK compilation.
+- Repository `pnpm validate`, typecheck, lint, tests and build.
+- Android emulator smoke test.
+- Physical-device installation and lifecycle verification.
+- Keystore behavior verification on supported API levels.
+- Control Plane transport integration against the canonical API.
+- Security review of credential storage, exported components, network transport and session boundaries.
+- Green CI.
 
 ## Phase 66 — iOS Network Integration
 
