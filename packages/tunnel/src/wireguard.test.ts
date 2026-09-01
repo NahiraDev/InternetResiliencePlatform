@@ -77,7 +77,7 @@ describe('WireGuardProvider', () => {
     const tunnel = await provider.create(config());
     const connection = await provider.connect(tunnel);
     expect(connection.state).toBe('connected');
-    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'wg', 'ip']);
+    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip', 'wg', 'ip']);
     const wgCall = runner.calls.find((call) => call.command === 'wg');
     expect(wgCall?.args).toContain('private-key');
     expect(wgCall?.args.join(' ')).not.toContain(PRIVATE_KEY);
@@ -85,9 +85,10 @@ describe('WireGuardProvider', () => {
 
   it('classifies a fresh WireGuard handshake and interface as healthy', async () => {
     const runner = new FakeRunner();
-    queueHealthyHandshake(runner);
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
     const tunnel = await provider.create(config());
+    runner.queue({ stdout: `peerkey ${Math.floor(Date.now() / 1000) - 1}\n`, stderr: '', exitCode: 0 });
+    runner.queue({ stdout: HEALTHY_INTERFACE, stderr: '', exitCode: 0 });
     const health = await provider.healthCheck(tunnel);
     expect(health.status).toBe('unhealthy');
     expect(health.handshake).toBe(false);
