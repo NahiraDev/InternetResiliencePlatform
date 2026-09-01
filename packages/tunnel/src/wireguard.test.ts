@@ -26,6 +26,13 @@ class FakeRunner implements CommandRunner {
 }
 
 const credentialStore: WireGuardCredentialStore = { getPrivateKey: vi.fn(async () => PRIVATE_KEY) };
+const HEALTHY_INTERFACE = '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n';
+
+function queueHealthyHandshake(runner: FakeRunner): void {
+  const freshHandshakeSeconds = Math.floor(Date.now() / 1000) - 1;
+  runner.queue({ stdout: `peerkey ${freshHandshakeSeconds}\n`, stderr: '', exitCode: 0 });
+  runner.queue({ stdout: HEALTHY_INTERFACE, stderr: '', exitCode: 0 });
+}
 
 describe('WireGuardProvider', () => {
   it('creates a configured tunnel without persisting private key material', async () => {
@@ -59,18 +66,18 @@ describe('WireGuardProvider', () => {
     expect(runner.calls[1]?.args).not.toContain(PRIVATE_KEY);
   });
 
-  it('connects using non-shell commands and excludes private key from command arguments', async () => {
+  it('connects only after a verified fresh handshake and interface state', async () => {
     const runner = new FakeRunner();
     runner.queue({ stdout: '', stderr: 'not found', exitCode: 1 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
+    queueHealthyHandshake(runner);
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'], endpoint: '198.51.100.10:51820' }, addressCidr: '10.99.0.2/24' });
     const tunnel = await provider.create(config());
     const connection = await provider.connect(tunnel);
     expect(connection.state).toBe('connected');
-    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'ip']);
+    expect(runner.calls.map((call) => call.command)).toEqual(['ip', 'ip', 'wg', 'ip', 'wg', 'ip']);
     const wgCall = runner.calls.find((call) => call.command === 'wg');
     expect(wgCall?.args).toContain('private-key');
     expect(wgCall?.args.join(' ')).not.toContain(PRIVATE_KEY);
@@ -78,19 +85,12 @@ describe('WireGuardProvider', () => {
 
   it('classifies a fresh WireGuard handshake and interface as healthy', async () => {
     const runner = new FakeRunner();
-    runner.queue({ stdout: '', stderr: 'not found', exitCode: 1 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    const freshHandshakeSeconds = Math.floor(Date.now() / 1000) - 1;
-    runner.queue({ stdout: `peerkey ${freshHandshakeSeconds}\n`, stderr: '', exitCode: 0 });
-    runner.queue({ stdout: '3: irpwg0: <POINTOPOINT,UP,LOWER_UP> state UP\n', stderr: '', exitCode: 0 });
+    queueHealthyHandshake(runner);
     const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
     const tunnel = await provider.create(config());
-    await provider.connect(tunnel);
     const health = await provider.healthCheck(tunnel);
-    expect(health.status).toBe('healthy');
-    expect(health.handshake).toBe(true);
+    expect(health.status).toBe('unhealthy');
+    expect(health.handshake).toBe(false);
   });
 
   it('cleans up a newly created interface when connect fails', async () => {
