@@ -1,0 +1,10 @@
+{
+  "phase": 70,
+  "name": "irp-v1-production-certification",
+  "version": 1,
+  "runtime": {"node": ">=24.0.0", "packageManager": "pnpm@11.21.0", "maxDurationSeconds": 300},
+  "platforms": ["core", "api", "gateways", "web", "linux", "macos", "windows", "ios", "android"],
+  "requiredEvidence": ["repository-gates", "phase-69-readiness", "security-audit", "artifact-integrity", "control-plane-runtime", "gateway-runtime", "regional-evidence", "upgrade-rollback", "backup-restore", "chaos-soak", "accessibility", "localization", "platform-runtime", "ios-device-smoke", "android-device-smoke", "release-engineering"],
+  "requiredPaths": ["PROJECT_STATE.md", "ROADMAP.md", ".github/CI_CONTRACT.md", ".github/workflows/ci.yml", ".github/workflows/phase-69-hardening.yml", ".github/workflows/runtime-lab.yml", ".github/workflows/regional-validation.yml", "docs/phases/phase-69.md", "docs/release/phase-69-compatibility-matrix.md", "ops/release/phase-69-readiness.json"],
+  "releaseRules": {"noFalseGreen": true, "noSkippedEvidence": true, "noUnsignedProductionCertification": true, "noSecretsInEvidence": true, "noDestructiveDowngrade": true, "runtimeEvidenceRequired": true, "deviceEvidenceRequired": true, "regionalEvidenceRequired": true, "artifactIntegrityRequired": true}
+}

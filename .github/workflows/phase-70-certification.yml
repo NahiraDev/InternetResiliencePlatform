@@ -1,0 +1,105 @@
+name: Phase 70 v1.0 Production Certification
+
+on:
+  pull_request:
+    paths:
+      - 'PROJECT_STATE.md'
+      - 'ROADMAP.md'
+      - 'README.md'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/phase70-certification.mjs'
+      - 'ops/release/phase-70-certification.json'
+      - 'docs/phases/phase-70.md'
+      - '.github/workflows/phase-70-certification.yml'
+      - 'clients/**'
+      - 'packages/**'
+      - 'apps/**'
+  push:
+    branches: [main]
+    paths:
+      - 'PROJECT_STATE.md'
+      - 'ROADMAP.md'
+      - 'README.md'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/phase70-certification.mjs'
+      - 'ops/release/phase-70-certification.json'
+      - 'docs/phases/phase-70.md'
+      - '.github/workflows/phase-70-certification.yml'
+      - 'clients/**'
+      - 'packages/**'
+      - 'apps/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-70-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  certification-contract:
+    name: v1.0 certification contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Phase 70 certification contract
+        run: pnpm phase70:certify
+
+  repository-gates:
+    name: Repository certification gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: certification-contract
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Repository validation
+        run: pnpm validate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

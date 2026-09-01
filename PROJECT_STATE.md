@@ -4,9 +4,10 @@
 
 ## Current State
 
-- **Current phase:** Phase 69 — Cross-platform production hardening (**implementation started; verification required**).
-- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on the Phase 69 branch. Full repository/runtime/security/device evidence remains required before closure.
-- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Phase 68 implementation was merged before Phase 69 work; final evidence remains governed by the phase verification rules.
+- **Current phase:** Phase 70 — IRP v1.0 Production Certification (**implementation started; certification evidence required**).
+- **Phase 70:** versioned certification manifest, fail-closed evidence contract, certification verifier, evidence secret-scan and Phase 70 CI gates are implemented on the Phase 70 branch. Production certification is not claimed until runtime, device, regional, security, recovery and release evidence is independently verified.
+- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on `main`; full repository/runtime/security/device evidence remains required before closure.
+- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Final evidence remains governed by the phase verification rules.
 - **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present.
 - **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present.
 - **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered.
@@ -41,42 +42,44 @@
 - **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
 - **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
 - **Production hardening strategy:** Phase 69 owns cross-platform release readiness, compatibility evidence, accessibility/localization acceptance, upgrade/rollback safety, security audit controls, bounded chaos/soak verification, backup/restore verification and release engineering. It does not move product authority into clients.
+- **v1.0 certification strategy:** Phase 70 owns the final evidence contract and release gate. It aggregates verified repository, runtime, security, recovery, regional, platform, device and release-engineering evidence without treating source presence or a contract check as certification.
 - **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
 - **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
 
-## Phase 69 — Cross-Platform Production Hardening
+## Phase 70 — IRP v1.0 Production Certification
 
-**Implementation in progress; verification required.**
+**Implementation in progress; certification evidence required.**
 
 ### Implementation evidence
 
-- `docs/phases/phase-69.md`
-- `docs/release/phase-69-compatibility-matrix.md`
-- `ops/release/phase-69-readiness.json`
-- `ops/release/phase-69-release-checklist.md`
-- `scripts/phase69-readiness.mjs`
-- `.github/workflows/phase-69-hardening.yml`
+- `docs/phases/phase-70.md`
+- `ops/release/phase-70-certification.json`
+- `scripts/phase70-certification.mjs`
+- `.github/workflows/phase-70-certification.yml`
 
 ### Current guarantees
 
-- Production-hardening acceptance criteria are explicit and machine-readable.
-- Cross-platform support is represented as evidence-driven compatibility rows rather than implied certification.
-- A bounded readiness harness exercises release rules, deterministic failure injection and backup/restore round trips without mutating the host network.
-- Phase-specific CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
+- v1.0 certification requirements are explicit and machine-readable.
+- Supported product surfaces are represented across Core, API, gateways, web, Linux, macOS, Windows, iOS and Android.
+- Missing runtime/device/regional/release evidence is fail-closed and cannot be represented as certification.
+- Certification evidence receives an explicit secret-material safety scan.
+- Phase 69 repository/readiness gates are treated as prerequisites rather than silently assumed.
+- Phase 70 CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
 - Required checks do not intentionally use false-green mechanisms such as `continue-on-error` or shell success overrides.
-- Upgrade policy prohibits destructive downgrade migrations and defines rollback around compatible artifacts or verified backups.
 
-### Remaining verification
+### Remaining certification evidence
 
 - Full repository `validate`, typecheck, lint, tests and build.
-- Security analysis/dependency review and artifact audit.
-- Platform runtime evidence for Linux, macOS, Windows, iOS and Android.
-- Control-plane/gateway runtime evidence.
+- Security analysis/dependency review and artifact integrity evidence.
+- Control-plane and gateway runtime evidence.
+- Regional public-IP/service evidence.
 - Real upgrade/rollback rehearsal against a representative deployment.
 - Real backup/restore rehearsal against representative control-plane state.
 - Runtime chaos/soak evidence in an isolated provisioned environment.
 - Accessibility/localization verification on each applicable user-facing client.
-- Green CI and release-engineering sign-off.
+- Linux, macOS, Windows, iOS and Android runtime evidence.
+- Signed iOS device smoke and Android device smoke evidence.
+- Release-engineering sign-off and final v1.0 certification review.
 
 ## Verification Rules
 
