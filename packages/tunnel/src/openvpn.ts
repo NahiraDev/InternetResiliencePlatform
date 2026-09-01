@@ -232,7 +232,7 @@ export class OpenVPNProvider implements TunnelProvider {
 
       const health = await this.waitForHealthy(tunnel);
       if (health.status !== 'healthy') {
-        await this.stopRuntime(tunnel.id, pid);
+        await this.stopRuntime(tunnel.id, pid, Math.min(this.commandTimeoutMs, this.startupTimeoutMs));
         throw new TunnelError(
           'OpenVPN process started but did not provide healthy tunnel evidence before the startup deadline',
           'OpenVPNHealthCheckFailed',
