@@ -60,10 +60,11 @@ const actualControls = new Set(Object.keys(manifest.releaseRules).map((key) => (
   backupRestoreMustRoundTrip: 'backup-restore',
 }[key])).filter(Boolean));
 
+const phaseRecord = await readFile(join(root, 'docs/phases/phase-69.md'), 'utf8');
 for (const control of ['compatibility-matrix', 'accessibility', 'localization']) {
   if (requiredControls.has(control)) {
-    const docs = await readFile(join(root, 'docs/phases/phase-69.md'), 'utf8');
-    if (!docs.includes(control === 'compatibility-matrix' ? 'Compatibility' : control[0].toUpperCase() + control.slice(1))) {
+    const marker = control === 'compatibility-matrix' ? 'compatibility' : control;
+    if (!phaseRecord.toLocaleLowerCase().includes(marker)) {
       fail(`control contract: ${control}`, 'missing from phase record');
     }
   }
@@ -124,9 +125,13 @@ try {
 }
 
 const compatibility = await readFile(join(root, 'docs/release/phase-69-compatibility-matrix.md'), 'utf8');
+const compatibilityRows = compatibility
+  .split('\n')
+  .filter((line) => /^\|\s*[^|]+\s*\|/.test(line))
+  .map((line) => line.split('|')[1].trim().toLocaleLowerCase());
 for (const platform of manifest.platforms) {
-  const label = platform[0].toUpperCase() + platform.slice(1);
-  if (!compatibility.includes(`| ${label} |`)) fail(`compatibility: ${platform}`, 'platform row missing');
+  const normalizedPlatform = platform.toLocaleLowerCase();
+  if (!compatibilityRows.includes(normalizedPlatform)) fail(`compatibility: ${platform}`, 'platform row missing');
   else pass(`compatibility: ${platform}`);
 }
 
