@@ -1,0 +1,53 @@
+{
+  "phase": 69,
+  "name": "cross-platform-production-hardening",
+  "version": 1,
+  "runtime": {
+    "node": ">=24.0.0",
+    "packageManager": "pnpm@11.21.0",
+    "maxDurationSeconds": 120
+  },
+  "performanceBudgets": {
+    "readinessSeconds": 30,
+    "soakIterations": 200,
+    "maxRecoverySteps": 8
+  },
+  "platforms": [
+    "linux",
+    "macos",
+    "windows",
+    "ios",
+    "android"
+  ],
+  "requiredControls": [
+    "accessibility",
+    "localization",
+    "upgrade-rollback",
+    "security-audit",
+    "compatibility-matrix",
+    "chaos-soak",
+    "backup-restore",
+    "release-engineering"
+  ],
+  "requiredPaths": [
+    "PROJECT_STATE.md",
+    "ROADMAP.md",
+    ".github/CI_CONTRACT.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/android-client.yml",
+    ".github/workflows/ios-client.yml",
+    ".github/workflows/macos-client.yml",
+    ".github/workflows/windows-client.yml",
+    "clients/android",
+    "clients/ios",
+    "docs/release/phase-69-compatibility-matrix.md"
+  ],
+  "releaseRules": {
+    "noFalseGreen": true,
+    "noUnboundedSleepAsReadiness": true,
+    "noDestructiveDowngrade": true,
+    "noSecretsInTelemetry": true,
+    "hostNetworkMutationForbidden": true,
+    "backupRestoreMustRoundTrip": true
+  }
+}
