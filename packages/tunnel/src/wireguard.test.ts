@@ -102,7 +102,7 @@ describe('WireGuardProvider', () => {
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
     runner.queue({ stdout: '', stderr: 'permission denied', exitCode: 1 });
     runner.queue({ stdout: '', stderr: '', exitCode: 0 });
-    const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] });
+    const provider = new WireGuardProvider({ commandRunner: runner, credentialStore, peer: { publicKey: PUBLIC_KEY, allowedIPs: ['0.0.0.0/0'] } });
     const tunnel = await provider.create(config());
     await expect(provider.connect(tunnel)).rejects.toThrow(/permission denied|WireGuard operation failed/);
     expect(runner.calls.at(-1)?.args).toEqual(['link', 'del', 'dev', 'irpwg0']);
