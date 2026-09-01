@@ -12,6 +12,10 @@
     "./starlink": {
       "types": "./dist/starlink.d.ts",
       "import": "./dist/starlink.js"
+    },
+    "./starlink-gateway": {
+      "types": "./dist/starlink-gateway.d.ts",
+      "import": "./dist/starlink-gateway.js"
     }
   },
   "files": [
