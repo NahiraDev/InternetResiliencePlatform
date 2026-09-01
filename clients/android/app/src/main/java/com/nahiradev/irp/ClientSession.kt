@@ -15,14 +15,22 @@ sealed class SessionError(message: String) : Exception(message) {
 class ClientSession(
     private val client: ControlPlaneClient,
     private val tokenStore: SecureTokenStore,
+    private val identityStore: IdentityStore = InMemoryIdentityStore(),
 ) {
     private val _state = MutableStateFlow(ClientState())
     val state: StateFlow<ClientState> = _state.asStateFlow()
 
     fun restoreSession(): Boolean {
         val token = tokenStore.read()
-        if (token.isNullOrEmpty()) return false
-        if (_state.value.deviceId == null) throw SessionError.InvalidEnrollment
+        val deviceId = identityStore.readDeviceId()
+        val deviceName = identityStore.readDeviceName()
+        if (token.isNullOrEmpty() || deviceId.isNullOrEmpty() || deviceName.isNullOrEmpty()) return false
+        _state.value = _state.value.copy(
+            enrolled = true,
+            deviceId = deviceId,
+            deviceName = deviceName,
+            revision = _state.value.revision + 1,
+        )
         return true
     }
 
@@ -32,6 +40,7 @@ class ClientSession(
             throw SessionError.InvalidEnrollment
         }
         tokenStore.write(enrollment.refreshToken)
+        identityStore.write(enrollment.deviceId, enrollment.deviceName)
         _state.value = ClientState(
             enrolled = true,
             deviceId = enrollment.deviceId,
@@ -60,6 +69,7 @@ class ClientSession(
 
     fun signOut() {
         tokenStore.remove()
+        identityStore.remove()
         _state.value = ClientState(revision = _state.value.revision + 1)
     }
 }
