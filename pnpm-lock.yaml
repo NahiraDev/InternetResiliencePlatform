@@ -689,12 +689,24 @@ importers:
 
   packages/resilience-runtime:
     dependencies:
+      '@irp/connectivity':
+        specifier: workspace:*
+        version: link:../connectivity
       '@irp/events':
         specifier: workspace:*
         version: link:../events
       '@irp/failover':
         specifier: workspace:*
         version: link:../failover
+      '@irp/internet-intelligence-agent':
+        specifier: workspace:*
+        version: link:../internet-intelligence-agent
+      '@irp/network-intelligence':
+        specifier: workspace:*
+        version: link:../network-intelligence
+      '@irp/routing':
+        specifier: workspace:*
+        version: link:../routing
       '@irp/telemetry':
         specifier: workspace:*
         version: link:../telemetry
