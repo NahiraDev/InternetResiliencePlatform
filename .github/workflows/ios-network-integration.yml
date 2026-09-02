@@ -5,12 +5,14 @@ on:
   pull_request:
     paths:
       - 'clients/ios/**'
+      - 'docs/phases/phase-65.md'
       - 'docs/phases/phase-66.md'
       - '.github/workflows/ios-network-integration.yml'
   push:
     branches: [main]
     paths:
       - 'clients/ios/**'
+      - 'docs/phases/phase-65.md'
       - 'docs/phases/phase-66.md'
       - '.github/workflows/ios-network-integration.yml'
 
@@ -27,9 +29,10 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # macOS 14 is deprecated and its default Xcode 15.4 is the toolchain
-    # that produced the xcodebuild SIGSEGV in CI. macOS 15 provides the
-    # supported Xcode 16 toolchain for this project.
+    # macOS 15 provides the supported Xcode 16 toolchain for this project.
+    # This workflow now owns both the Phase 65 Swift package checks and the
+    # Phase 66 packet-tunnel/Xcode integration checks; keeping a second iOS
+    # workflow would execute the same Swift tests/build for the same change.
     runs-on: macos-15
     timeout-minutes: 30
     steps:
