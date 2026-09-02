@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: irp
-      POSTGRES_PASSWORD: irp_dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: irp
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
@@ -23,10 +23,10 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
-      JWT_SECRET: ${JWT_SECRET:-change-me-only-for-local-compose-32}
-      REMOTE_CLIENT_CREDENTIAL_KEY: ${REMOTE_CLIENT_CREDENTIAL_KEY:-change-me-only-for-local-compose-credential-48}
-      REMOTE_CLIENT_REFRESH_KEY: ${REMOTE_CLIENT_REFRESH_KEY:-change-me-only-for-local-compose-refresh-48}
-      DATABASE_URL: postgresql://irp:irp_dev_password@postgres:5432/irp
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      REMOTE_CLIENT_CREDENTIAL_KEY: ${REMOTE_CLIENT_CREDENTIAL_KEY:?REMOTE_CLIENT_CREDENTIAL_KEY must be set}
+      REMOTE_CLIENT_REFRESH_KEY: ${REMOTE_CLIENT_REFRESH_KEY:?REMOTE_CLIENT_REFRESH_KEY must be set}
+      DATABASE_URL: postgresql://irp:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/irp
       DATABASE_READY_TIMEOUT_MS: 60000
       DATABASE_READY_INTERVAL_MS: 1000
     depends_on:
