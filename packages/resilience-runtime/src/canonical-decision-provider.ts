@@ -1,6 +1,8 @@
 import { InternetIntelligenceAgent, type AgentRecommendation } from '@irp/internet-intelligence-agent';
 import {
   InternetIntelligenceBridge,
+  NetworkDecisionEngine,
+  type DecisionType,
   type InternetEvidence,
 } from '@irp/network-intelligence';
 import { SubsystemDecisionAdapter } from './adapters/adapters.js';
@@ -10,18 +12,23 @@ import type { DecisionProvider } from './ports/ports.js';
 /**
  * Production decision boundary for the resilience runtime.
  *
- * The agent is advisory: it diagnoses evidence and biases the existing
- * bounded candidate planner. It never executes an action, changes policy, or
- * bypasses capability/security validation.
+ * The agent is advisory: it diagnoses evidence and biases candidate quality.
+ * NetworkDecisionEngine remains the ranking authority; policy, capability,
+ * security, validation, execution, verification, and recovery remain outside
+ * this provider and cannot be bypassed by the agent.
  */
 export class CanonicalDecisionProvider implements DecisionProvider {
   private readonly subsystem = new SubsystemDecisionAdapter();
+  private readonly engine: NetworkDecisionEngine;
   private readonly bridge: InternetIntelligenceBridge;
 
   constructor(
     agent = new InternetIntelligenceAgent(),
-    options: { agentTimeoutMs?: number } = {},
+    options: { agentTimeoutMs?: number; decisionTimeoutMs?: number } = {},
   ) {
+    this.engine = new NetworkDecisionEngine({
+      model: { timeoutMs: options.decisionTimeoutMs ?? 250, maxConcurrent: 1 },
+    });
     this.bridge = new InternetIntelligenceBridge(agent, {
       timeoutMs: options.agentTimeoutMs ?? 250,
     });
@@ -34,6 +41,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     const candidates = await this.subsystem.decide(incidents, context);
     if (!incidents.length || !context.observationSnapshot) return candidates;
 
+    const internetEvidence = toInternetEvidence(context.observationSnapshot);
     const recommendation = await this.bridge.analyze({
       timestamp: context.observationSnapshot.createdAt,
       versions: {
@@ -55,10 +63,43 @@ export class CanonicalDecisionProvider implements DecisionProvider {
         timestamp: candidate.createdAt,
         metadata: { runtimeIntent: candidate.intent },
       })),
-      internetEvidence: toInternetEvidence(context.observationSnapshot),
+      internetEvidence,
     });
 
-    return applyRecommendation(candidates, recommendation);
+    const intelligenceAdjusted = applyRecommendation(candidates, recommendation);
+    const decision = await this.engine.evaluate({
+      type: decisionType(intelligenceAdjusted[0]?.intent),
+      context: {
+        timestamp: context.observationSnapshot.createdAt,
+        versions: {
+          policyVersion: context.policySnapshot.schemaVersion.toString(),
+          networkStateVersion: context.observationSnapshot.schemaVersion.toString(),
+          securityStateVersion: context.securityContext.trusted ? 'trusted' : 'untrusted',
+        },
+        candidates: intelligenceAdjusted.map((candidate) => ({
+          id: candidate.id,
+          type: candidateType(candidate.intent),
+          capabilities: candidate.requiredCapabilities,
+          health: candidate.rejectionReasons.length ? 'unhealthy' : 'healthy',
+          metrics: {
+            recoveryCost: candidate.risk,
+            availabilityRatio: candidate.expectedBenefit,
+          },
+          policyCompatibility: candidate.rejectionReasons.length === 0,
+          securityCompatibility: context.securityContext.trusted,
+          timestamp: candidate.createdAt,
+          metadata: { runtimeIntent: candidate.intent },
+        })),
+        historicalObservations: {},
+        requiredCapabilities: context.capabilitySnapshot.capabilities,
+      },
+    });
+
+    const selectedId = decision.selectedCandidate?.id;
+    if (!selectedId) return intelligenceAdjusted;
+    const selected = intelligenceAdjusted.find((candidate) => candidate.id === selectedId);
+    if (!selected) return intelligenceAdjusted;
+    return [selected, ...intelligenceAdjusted.filter((candidate) => candidate.id !== selectedId)];
   }
 }
 
@@ -75,6 +116,22 @@ const candidateType = (intent: CandidateAction['intent']) => {
       return 'tunnel' as const;
     default:
       return 'route' as const;
+  }
+};
+
+const decisionType = (intent: CandidateAction['intent'] | undefined): DecisionType => {
+  switch (intent) {
+    case 'dns_switch':
+      return 'dnsDecision';
+    case 'connectivity_failover':
+    case 'provider_switch':
+      return 'failoverDecision';
+    case 'route_change':
+      return 'routeDecision';
+    case 'tunnel_switch':
+      return 'tunnelDecision';
+    default:
+      return 'connectivityDecision';
   }
 };
 
