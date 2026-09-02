@@ -3,11 +3,11 @@ name: IRP Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to publish, for example v1.0.0'
+        description: 'Existing version tag to publish, for example v1.0.0'
         required: true
         type: string
 
@@ -19,28 +19,45 @@ env:
   PNPM_VERSION: '11.21.0'
 
 jobs:
+  prepare:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate release tag
+        id: release
+        env:
+          INPUT_TAG: ${{ inputs.release_tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="$REF_NAME"
+          fi
+          printf '%s\n' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'
+          git rev-parse --verify "refs/tags/$TAG" >/dev/null
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using release tag: $TAG"
+
   android:
     name: Android APK
+    needs: prepare
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: clients/android
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
         with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -56,19 +73,30 @@ jobs:
       - name: Build Android debug APK
         run: gradle :app:assembleDebug --no-daemon
 
+      - name: Normalize Android asset name
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          APK="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          cp "$APK" "${GITHUB_WORKSPACE}/IRP-Android-debug-${RELEASE_TAG}.apk"
+
       - name: Publish Android asset
         uses: actions/upload-artifact@v7
         with:
           name: IRP-Android-debug
-          path: clients/android/app/build/outputs/apk/debug/*.apk
+          path: IRP-Android-debug-${{ needs.prepare.outputs.release_tag }}.apk
           if-no-files-found: error
 
   linux:
     name: Linux bundle
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -90,25 +118,30 @@ jobs:
         run: pnpm --filter @irp/linux-client build
 
       - name: Package Linux client
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           mkdir -p release/IRP-Linux
           cp -R packages/linux-client/dist release/IRP-Linux/dist
           cp packages/linux-client/package.json release/IRP-Linux/package.json
-          tar -C release -czf "IRP-Linux-${GITHUB_REF_NAME}.tar.gz" IRP-Linux
+          tar -C release -czf "IRP-Linux-${RELEASE_TAG}.tar.gz" IRP-Linux
 
       - name: Publish Linux asset
         uses: actions/upload-artifact@v7
         with:
           name: IRP-Linux
-          path: IRP-Linux-${{ github.ref_name }}.tar.gz
+          path: IRP-Linux-${{ needs.prepare.outputs.release_tag }}.tar.gz
           if-no-files-found: error
 
   macos:
     name: macOS bundle
+    needs: prepare
     runs-on: macos-15
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -130,29 +163,34 @@ jobs:
         run: pnpm --filter @irp/macos-client build
 
       - name: Package macOS client
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           mkdir -p release/IRP-macOS/launchd
           cp -R packages/macos-client/dist release/IRP-macOS/dist
           cp packages/macos-client/package.json release/IRP-macOS/package.json
           cp packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist release/IRP-macOS/launchd/
-          tar -C release -czf "IRP-macOS-${GITHUB_REF_NAME}.tar.gz" IRP-macOS
+          tar -C release -czf "IRP-macOS-${RELEASE_TAG}.tar.gz" IRP-macOS
 
       - name: Publish macOS asset
         uses: actions/upload-artifact@v7
         with:
           name: IRP-macOS
-          path: IRP-macOS-${{ github.ref_name }}.tar.gz
+          path: IRP-macOS-${{ needs.prepare.outputs.release_tag }}.tar.gz
           if-no-files-found: error
 
   windows:
     name: Windows bundle
+    needs: prepare
     runs-on: windows-2025
     defaults:
       run:
         shell: bash
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -174,25 +212,30 @@ jobs:
         run: pnpm exec tsc -p packages/windows-client/tsconfig.json
 
       - name: Package Windows client
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
           cp packages/windows-client/package.json release/IRP-Windows/package.json
-          powershell -NoProfile -Command "Compress-Archive -Path 'release/IRP-Windows' -DestinationPath 'IRP-Windows-${env:GITHUB_REF_NAME}.zip' -Force"
+          powershell -NoProfile -Command "Compress-Archive -Path 'release/IRP-Windows' -DestinationPath ('IRP-Windows-' + $env:RELEASE_TAG + '.zip') -Force"
 
       - name: Publish Windows asset
         uses: actions/upload-artifact@v7
         with:
           name: IRP-Windows
-          path: IRP-Windows-${{ github.ref_name }}.zip
+          path: IRP-Windows-${{ needs.prepare.outputs.release_tag }}.zip
           if-no-files-found: error
 
   ios-source:
     name: iOS developer bundle
+    needs: prepare
     runs-on: macos-15
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Verify Swift package
         run: |
@@ -200,81 +243,57 @@ jobs:
           swift build --package-path clients/ios
 
       - name: Package iOS source bundle
-        run: zip -r "IRP-iOS-source-${GITHUB_REF_NAME}.zip" clients/ios docs/phases/phase-65.md docs/phases/phase-66.md
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: zip -r "IRP-iOS-source-${RELEASE_TAG}.zip" clients/ios docs/phases/phase-65.md docs/phases/phase-66.md
 
       - name: Publish iOS developer asset
         uses: actions/upload-artifact@v7
         with:
           name: IRP-iOS-source
-          path: IRP-iOS-source-${{ github.ref_name }}.zip
+          path: IRP-iOS-source-${{ needs.prepare.outputs.release_tag }}.zip
           if-no-files-found: error
 
   publish:
     name: Create GitHub Release
-    needs: [android, linux, macos, windows, ios-source]
+    needs: [prepare, android, linux, macos, windows, ios-source]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout release commit
+      - name: Checkout release tag
         uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          ref: ${{ needs.prepare.outputs.release_tag }}
 
-      - name: Download Android asset
+      - name: Download release assets
         uses: actions/download-artifact@v8
         with:
-          name: IRP-Android-debug
-          path: release-assets/android
+          pattern: IRP-*
+          path: release-assets
+          merge-multiple: true
 
-      - name: Download Linux asset
-        uses: actions/download-artifact@v8
+      - name: Install Node.js
+        uses: actions/setup-node@v7
         with:
-          name: IRP-Linux
-          path: release-assets/linux
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Download macOS asset
-        uses: actions/download-artifact@v8
-        with:
-          name: IRP-macOS
-          path: release-assets/macos
-
-      - name: Download Windows asset
-        uses: actions/download-artifact@v8
-        with:
-          name: IRP-Windows
-          path: release-assets/windows
-
-      - name: Download iOS developer asset
-        uses: actions/download-artifact@v8
-        with:
-          name: IRP-iOS-source
-          path: release-assets/ios
-
-      - name: Resolve release tag
-        id: release
-        env:
-          INPUT_TAG: ${{ inputs.release_tag }}
-          REF_NAME: ${{ github.ref_name }}
+      - name: Validate Phase 71 release contract
         run: |
-          if [ -n "$INPUT_TAG" ]; then
-            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=$REF_NAME" >> "$GITHUB_OUTPUT"
-          fi
+          node scripts/phase71-release.mjs "${{ needs.prepare.outputs.release_tag }}" release-assets
 
-      - name: Verify release assets
-        run: |
-          test -n "$(find release-assets/android -type f -name '*.apk' -print -quit)"
-          test -n "$(find release-assets/linux -type f -name '*.tar.gz' -print -quit)"
-          test -n "$(find release-assets/macos -type f -name '*.tar.gz' -print -quit)"
-          test -n "$(find release-assets/windows -type f -name '*.zip' -print -quit)"
-          test -n "$(find release-assets/ios -type f -name '*.zip' -print -quit)"
+      - name: Generate SHA-256 checksums
+        working-directory: release-assets
+        run: sha256sum -- * > SHA256SUMS.txt
+
+      - name: Validate checksums file
+        working-directory: release-assets
+        run: sha256sum --check SHA256SUMS.txt
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
-          gh release create "$RELEASE_TAG" release-assets/android/*.apk release-assets/linux/*.tar.gz release-assets/macos/*.tar.gz release-assets/windows/*.zip release-assets/ios/*.zip \
+          gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \
             --generate-notes
