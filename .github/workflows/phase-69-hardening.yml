@@ -72,42 +72,6 @@ jobs:
       - name: Validate Phase 69 readiness contract
         run: pnpm phase69:readiness
 
-  repository-gates:
-    name: Repository production gates
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: readiness
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Repository validation
-        run: pnpm validate
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Tests
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+  # Repository validation, linting, typechecking, tests and build are owned by
+  # the primary CI workflow. Keeping them here would execute the same gates a
+  # second time for the same commit without adding certification signal.
