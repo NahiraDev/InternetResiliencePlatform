@@ -183,11 +183,13 @@ jobs:
       - name: Linux client smoke
         run: |
           set -euo pipefail
-          rm -f /tmp/irp-linux-client.log
-          pnpm --filter @irp/linux-client start > /tmp/irp-linux-client.log 2>&1 &
+          rm -f /tmp/irp-linux-client.log /tmp/irp-linux-client.pid
+          setsid node packages/linux-client/dist/index.js > /tmp/irp-linux-client.log 2>&1 &
           pid=$!
+          echo "$pid" > /tmp/irp-linux-client.pid
           cleanup() {
-            kill "$pid" 2>/dev/null || true
+            kill -TERM -- "-$pid" 2>/dev/null || true
+            kill -TERM "$pid" 2>/dev/null || true
           }
           trap cleanup EXIT
           ready=false
@@ -196,10 +198,16 @@ jobs:
               ready=true
               break
             fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo 'Linux client process exited before becoming ready' >&2
+              cat /tmp/irp-linux-client.log >&2 || true
+              exit 1
+            fi
             sleep 1
           done
           if [ "$ready" != true ]; then
-            cat /tmp/irp-linux-client.log
+            echo 'Linux client did not become ready on port 17861' >&2
+            cat /tmp/irp-linux-client.log >&2 || true
             exit 1
           fi
           grep -q 'Internet Resilience Platform' /tmp/irp-linux-client.html
