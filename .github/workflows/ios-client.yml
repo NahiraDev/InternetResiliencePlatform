@@ -1,0 +1,64 @@
+name: iOS Full Client
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'clients/ios/**'
+      - '.github/workflows/ios-client.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'clients/ios/**'
+      - '.github/workflows/ios-client.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  XCODE_PROJECT: clients/ios/IRP.xcodeproj
+  SWIFT_PACKAGE: clients/ios
+
+jobs:
+  ios-client:
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH="$(xcode-select -p)"
+          test -d "$XCODE_PATH"
+          xcodebuild -version
+          swift --version
+
+      - name: Verify Swift package
+        working-directory: clients/ios
+        run: |
+          swift package resolve
+          swift test
+
+      - name: Verify Xcode project
+        run: |
+          test -f "$XCODE_PROJECT/project.pbxproj"
+          xcodebuild -project "$XCODE_PROJECT" -list
+
+      - name: Build iOS app and packet tunnel
+        run: |
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme IRP \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
