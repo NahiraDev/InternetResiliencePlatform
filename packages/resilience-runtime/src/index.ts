@@ -23,5 +23,6 @@ export * from './observation-providers.js';
 export * from './scheduler.js';
 export * from './e2e-validation.js';
 export * from './federation/probe-federation.js';
+export * from './canonical-decision-provider.js';
 
 export * from './autopilot/autopilot.js';
