@@ -14,7 +14,6 @@ import type {
 import { RuntimeStateMachine } from './state/state-machine.js';
 import { ObservationAggregator } from './observations/observations.js';
 import { IncidentCorrelator } from './incidents/incidents.js';
-import { SubsystemDecisionAdapter } from './adapters/adapters.js';
 import { DeterministicPlanner } from './planning/planner.js';
 import { RuntimeActionValidator } from './validation/validation.js';
 import { CoordinatedActionExecutor } from './execution/execution.js';
@@ -25,7 +24,8 @@ import { InMemoryDecisionStore, InMemoryIncidentStore } from './stores/memory.js
 import { InMemoryEventSink } from './events/events.js';
 import { createDefaultRuntimeAdapterRegistry, type RuntimeAdapterRegistry } from './adapter-registry.js';
 import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
-import type { ObservationProvider } from './ports/ports.js';
+import type { DecisionProvider, ObservationProvider } from './ports/ports.js';
+import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
 
@@ -41,14 +41,16 @@ export class ResilienceRuntime {
   readonly instanceId: string;
   readonly adapters: RuntimeAdapterRegistry;
   private readonly validator: RuntimeActionValidator;
+  private readonly decisionProvider: DecisionProvider;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
-  constructor(private readonly providers: readonly ObservationProvider[] = [], options: { runtimeId?: string; instanceId?: string; adapters?: RuntimeAdapterRegistry } = {}) {
+  constructor(private readonly providers: readonly ObservationProvider[] = [], options: { runtimeId?: string; instanceId?: string; adapters?: RuntimeAdapterRegistry; decisionProvider?: DecisionProvider } = {}) {
     this.runtimeId = options.runtimeId ?? 'runtime-default';
     this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
     this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry();
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
+    this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
   }
   capabilities() { return this.adapters.list(); }
   async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) { return this.cycle(input); }
@@ -89,7 +91,7 @@ export class ResilienceRuntime {
     const found = await new IncidentCorrelator().correlate(observations, context);
     for (const i of found) { await this.incidents.put(i); await this.events.emit('runtime.incident.detected', { correlationId: context.correlationId, incidentId: i.id }); }
     await this.state.transition('planning', context.correlationId);
-    const candidates = await new SubsystemDecisionAdapter().decide(found, context);
+    const candidates = await this.decisionProvider.decide(found, context);
     const plan = await new DeterministicPlanner().plan(candidates, context);
     await this.events.emit('runtime.plan.created', { correlationId: context.correlationId, planId: plan.id });
     if (!plan.policyResult.allowed) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
