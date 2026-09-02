@@ -26,8 +26,17 @@ import { createDefaultRuntimeAdapterRegistry, type RuntimeAdapterRegistry } from
 import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
 import type { DecisionProvider, ObservationProvider } from './ports/ports.js';
 import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
+import type { CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
+
+export interface ResilienceRuntimeOptions {
+  runtimeId?: string;
+  instanceId?: string;
+  adapters?: RuntimeAdapterRegistry;
+  decisionProvider?: DecisionProvider;
+  networkControlPlane?: CanonicalNetworkControlPlane;
+}
 
 export class ResilienceRuntime {
   private readonly started = Date.now();
@@ -45,10 +54,13 @@ export class ResilienceRuntime {
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
-  constructor(private readonly providers: readonly ObservationProvider[] = [], options: { runtimeId?: string; instanceId?: string; adapters?: RuntimeAdapterRegistry; decisionProvider?: DecisionProvider } = {}) {
+  constructor(
+    private readonly providers: readonly ObservationProvider[] = [],
+    options: ResilienceRuntimeOptions = {},
+  ) {
     this.runtimeId = options.runtimeId ?? 'runtime-default';
     this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
-    this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry();
+    this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry(options.networkControlPlane);
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
   }
