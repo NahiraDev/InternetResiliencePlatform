@@ -284,18 +284,15 @@ const hasCapability = async (
     return capability.authentication === 'none' || capability.authentication === 'bearer';
   }
   for (const permission of capability.requiredPermissions) {
-    if (
-      await request.rbac.authorize({
-        principal,
-        resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
-        action: capability.kind === 'mutate' ? 'POST' : 'GET',
-        requiredPermissions: [permission],
-      })
-    ) {
-      return true;
-    }
+    const allowed = await request.rbac.authorize({
+      principal,
+      resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
+      action: capability.kind === 'mutate' ? 'POST' : 'GET',
+      requiredPermissions: [permission],
+    });
+    if (!allowed) return false;
   }
-  return false;
+  return true;
 };
 
 export interface UnifiedProductApiHandle {
