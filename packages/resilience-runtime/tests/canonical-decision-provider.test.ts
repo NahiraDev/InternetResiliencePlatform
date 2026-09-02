@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { ObservationBatch, RuntimeContext } from '../src/domain/types.js';
 import { CanonicalDecisionProvider } from '../src/canonical-decision-provider.js';
 
