@@ -22,11 +22,13 @@ Observe → Measure → Detect → Diagnose → Decide
 
 ## Current implementation truth
 
-The repository is under active development. The roadmap contains **70 phases**, but the project is not 70 phases complete. Current implementation work is at **Phase 70 — IRP v1.0 Production Certification**, with certification evidence still required. A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security, device and integration gates.
+The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** is now the active post-v1 delivery phase: the release pipeline and distribution contract are implemented, while certification still requires a real tagged GitHub Release and inspection of the published assets.
+
+A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security, device and integration gates.
 
 ## Product roadmap
 
-The 70 phases are organized into these tracks:
+The current roadmap is organized into these tracks:
 
 - **0–7:** Foundation & Engineering
 - **8–18:** Network Intelligence & Resilience
@@ -38,8 +40,13 @@ The 70 phases are organized into these tracks:
 - **61–63:** Linux/macOS/Windows Full Clients
 - **64–68:** iOS/Android Full Clients and native networking
 - **69–70:** Production Hardening & v1.0 Certification
+- **71–74:** Post-v1 distribution, signed mobile delivery, native installers and controlled updates
 
-See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/architecture/product-roadmap-70-phases.md`](docs/architecture/product-roadmap-70-phases.md) for dependencies, acceptance contracts and release gates.
+See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/architecture/post-v1-distribution-roadmap.md`](docs/architecture/post-v1-distribution-roadmap.md) for the post-v1 delivery sequence.
+
+## Downloads
+
+Published client artifacts are distributed through **[GitHub Releases](https://github.com/NahiraDev/InternetResiliencePlatform/releases)**. The canonical platform-specific guide is [`docs/downloads.md`](docs/downloads.md). iOS remains a source/developer bundle until signing and provisioning are configured.
 
 ## What exists today
 
@@ -57,6 +64,7 @@ The current repository includes:
 - Repository integrity validation and CI enforcement
 - Platform client foundations for Linux, macOS, Windows, the shared mobile core, iOS Full Client and native iOS Network Extension boundaries
 - A machine-readable Phase 70 v1.0 certification contract and fail-closed evidence verifier
+- A machine-readable Phase 71 release contract, asset verifier and checksum-validated GitHub Release pipeline
 
 The long-term goal is to evaluate degradation, choose an authorized recovery path, verify the result, recover safely when an action is ineffective, and expose the same capability model to every supported client.
 
@@ -65,13 +73,14 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 ### For users and external developers
 
 1. [Documentation index](docs/README.md)
-2. [Getting started](docs/getting-started/quick-start.md)
-3. [Development guide](docs/development.md)
-4. [Configuration](docs/configuration.md)
-5. [Current architecture](docs/current-architecture.md)
-6. [API reference](docs/api/platform-status-api.md)
-7. [Examples](examples/README.md)
-8. [Security architecture](docs/security/security-architecture.md)
+2. [Downloads](docs/downloads.md)
+3. [Getting started](docs/getting-started/quick-start.md)
+4. [Development guide](docs/development.md)
+5. [Configuration](docs/configuration.md)
+6. [Current architecture](docs/current-architecture.md)
+7. [API reference](docs/api/platform-status-api.md)
+8. [Examples](examples/README.md)
+9. [Security architecture](docs/security/security-architecture.md)
 
 ### For maintainers
 
@@ -79,6 +88,7 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 - [Architecture documentation](docs/architecture/README.md)
 - [Product architecture](docs/architecture/product-architecture.md)
 - [70-phase product plan](docs/architecture/product-roadmap-70-phases.md)
+- [Post-v1 distribution roadmap](docs/architecture/post-v1-distribution-roadmap.md)
 - [Documentation audit](docs/audits/documentation-audit-2026-08-23.md)
 - [Historical phase evidence matrix](docs/audits/phase-history-evidence-matrix.md)
 - [Operational documentation](docs/operations/)
@@ -118,87 +128,7 @@ apps/                 Application entry points
 packages/             Reusable IRP packages
 clients/ios/          Native iOS Full Client and Network Extension boundary
 examples/             Capability-oriented runnable examples
-docs/                 User-facing and maintainer documentation
-scripts/              Validation, smoke tests, and operational tooling
-.github/workflows/    CI, security, Docker, and validation workflows
+ops/                  Operational, release and deployment contracts
+scripts/              Repository validation and automation
+docs/                 Product, architecture, phase and operational documentation
 ```
-
-IRP uses pnpm workspaces and Turborepo. The root `package.json` and workspace manifests are the canonical source for package and tooling boundaries.
-
-## Architecture
-
-At a high level:
-
-```text
-                 IRP Core / Control Plane
-                           │
-             ┌─────────────┼─────────────┐
-             │             │             │
-           Web          Desktop        Mobile
-             │             │             │
-             └─────────────┼─────────────┘
-                           │
-                  Shared capabilities
-                           │
-             Measurement / Intelligence
-                           │
-               Policy / Safety / Audit
-                           │
-             Recovery / Failover / Tunnel
-                           │
-                  Verification / Rollback
-                           │
-                    Telemetry / History
-```
-
-Detailed architecture is documented in [`docs/architecture/`](docs/architecture/).
-
-## Examples
-
-Examples are capability-oriented rather than phase-oriented. Current examples include:
-
-- `basic-api` — read-only platform status API interaction
-- `connectivity` — platform connectivity status inspection
-- `network-measurement` — bounded DNS measurement
-- `dns-diagnostics` — DNS timing and address inspection
-- `failover` — deterministic candidate-selection simulation
-- `autopilot` — policy-controlled decision-loop simulation
-
-See [`examples/README.md`](examples/README.md) for prerequisites, safety boundaries, and run commands.
-
-## Safety model
-
-IRP is designed for authorized, user-configured connectivity mechanisms. Example and simulation layers do not modify system routes, DNS configuration, firewall state, tunnels, or other host networking.
-
-Future gateway/tunnel automation is constrained to authorized endpoints and must pass authentication, capability, health, policy/safety, audit and verification gates. An IP location alone is never treated as proof of service capability.
-
-Consequential recovery actions are explicit, policy-controlled, auditable, bounded, reversible, and independently verified.
-
-See [`SECURITY.md`](SECURITY.md) and [`docs/security/security-architecture.md`](docs/security/security-architecture.md).
-
-## Documentation policy
-
-`docs/` is the canonical user-facing documentation tree. Prefer updating an existing canonical document instead of creating a new document for the same concept.
-
-- Product documentation describes behavior that exists and can be verified.
-- Planned behavior is labeled as planned.
-- Phase records are implementation/audit notes.
-- Generated reports, temporary verification dumps, and one-off notes do not belong in public documentation navigation.
-
-See [`docs/README.md`](docs/README.md) for the documentation map and rules.
-
-## Contributing
-
-Contributions should preserve the repository's validation and documentation contracts.
-
-Before submitting a change, run the relevant checks locally and keep documentation aligned with the implementation. Pull requests are the preferred review mechanism for changes to `main`.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
-
-## Security
-
-Please do not report security vulnerabilities through public issues. Follow the process in [`SECURITY.md`](SECURITY.md).
-
-## License
-
-Licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
