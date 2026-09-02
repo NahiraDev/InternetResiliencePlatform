@@ -43,20 +43,36 @@ const resource = (id: string, priority: number): ConnectivityResource => ({
 class FakeConnectivityProvider implements ConnectivityProvider {
   readonly id = 'fake';
   readonly type = 'ethernet' as const;
-  readonly resources = [resource('eth0', 40), resource('wifi0', 95)];
+  readonly resources = [resource('eth0', 60), resource('wifi0', 95)];
   active = 'eth0';
 
-  async discover() { return this.resources; }
-  async getState(resourceId?: string) { return resourceId === this.active ? 'active' as const : 'available' as const; }
+  async discover() {
+    return this.resources;
+  }
+  async getState(resourceId?: string) {
+    return resourceId === this.active ? ('active' as const) : ('available' as const);
+  }
   async getHealth(resourceId?: string): Promise<ConnectivityHealth> {
     const item = this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
     return item.health!;
   }
-  async connect(resourceId: string) { this.active = resourceId; return { ok: true, resourceId, state: 'connected' as const }; }
-  async disconnect(resourceId: string) { return { ok: true, resourceId, state: 'available' as const }; }
-  async activate(resourceId: string) { this.active = resourceId; return { ok: true, resourceId, state: 'active' as const }; }
-  async deactivate(resourceId: string) { return { ok: true, resourceId, state: 'available' as const }; }
-  capabilities() { return resource('x', 100).capabilities; }
+  async connect(resourceId: string) {
+    this.active = resourceId;
+    return { ok: true, resourceId, state: 'connected' as const };
+  }
+  async disconnect(resourceId: string) {
+    return { ok: true, resourceId, state: 'available' as const };
+  }
+  async activate(resourceId: string) {
+    this.active = resourceId;
+    return { ok: true, resourceId, state: 'active' as const };
+  }
+  async deactivate(resourceId: string) {
+    return { ok: true, resourceId, state: 'available' as const };
+  }
+  capabilities() {
+    return resource('x', 100).capabilities;
+  }
 }
 
 const context = (mode: RuntimeContext['mode']): RuntimeContext => ({
@@ -64,39 +80,83 @@ const context = (mode: RuntimeContext['mode']): RuntimeContext => ({
   correlationId: 'test-correlation',
   mode,
   policySnapshot: {
-    id: 'policy', schemaVersion: 1, createdAt: new Date().toISOString(), source: 'test', metadata: {},
+    id: 'policy',
+    schemaVersion: 1,
+    createdAt: new Date().toISOString(),
+    source: 'test',
+    metadata: {},
     policy: {
       allowedActions: ['connectivity_failover', 'provider_switch', 'route_change'],
-      deniedActions: [], capabilityRequirements: {}, securityConstraints: [], actionBudget: 1,
-      maxConcurrentActions: 1, confidenceThreshold: 0.5, telemetryFreshnessMs: 30_000,
-      simulationOnly: false, failClosed: true,
+      deniedActions: [],
+      capabilityRequirements: {},
+      securityConstraints: [],
+      actionBudget: 1,
+      maxConcurrentActions: 1,
+      confidenceThreshold: 0.5,
+      telemetryFreshnessMs: 30_000,
+      simulationOnly: false,
+      failClosed: true,
     },
   },
   capabilitySnapshot: {
-    id: 'capabilities', schemaVersion: 1, createdAt: new Date().toISOString(), source: 'test', metadata: {},
-    capabilities: ['connectivity.failover', 'route.write', 'network.observe'], trusted: true,
+    id: 'capabilities',
+    schemaVersion: 1,
+    createdAt: new Date().toISOString(),
+    source: 'test',
+    metadata: {},
+    capabilities: ['connectivity.failover', 'route.write', 'network.observe'],
+    trusted: true,
   },
   deadline: new Date(Date.now() + 10_000).toISOString(),
   cancelled: false,
   securityContext: { trusted: true },
   configuration: {
-    enabled: true, mode, cycleIntervalMs: 30_000, maxActionsPerCycle: 1, maxConcurrentActions: 1,
-    observationFreshnessMs: 30_000, decisionTimeoutMs: 1_000, verificationTimeoutMs: 1_000,
-    recoveryTimeoutMs: 5_000, persistenceMode: 'memory', replayEnabled: false,
+    enabled: true,
+    mode,
+    cycleIntervalMs: 30_000,
+    maxActionsPerCycle: 1,
+    maxConcurrentActions: 1,
+    observationFreshnessMs: 30_000,
+    decisionTimeoutMs: 1_000,
+    verificationTimeoutMs: 1_000,
+    recoveryTimeoutMs: 5_000,
+    persistenceMode: 'memory',
+    replayEnabled: false,
   },
 });
 
 const actionPlan = (intent: ActionPlan['selectedAction']['intent']): ActionPlan => ({
-  id: 'plan', schemaVersion: 1, createdAt: new Date().toISOString(), source: 'test', metadata: {},
+  id: 'plan',
+  schemaVersion: 1,
+  createdAt: new Date().toISOString(),
+  source: 'test',
+  metadata: {},
   selectedAction: {
-    id: 'action', schemaVersion: 1, createdAt: new Date().toISOString(), source: 'test', metadata: {},
-    intent, expectedBenefit: 0.9, risk: 0.1, confidence: 0.95,
+    id: 'action',
+    schemaVersion: 1,
+    createdAt: new Date().toISOString(),
+    source: 'test',
+    metadata: {},
+    intent,
+    expectedBenefit: 0.9,
+    risk: 0.1,
+    confidence: 0.95,
     requiredCapabilities: intent === 'route_change' ? ['route.write'] : ['connectivity.failover'],
-    dependencies: [], postconditions: ['network recovered'], verificationRequirements: ['health'], rejectionReasons: [],
+    dependencies: [],
+    postconditions: ['network recovered'],
+    verificationRequirements: ['health'],
+    rejectionReasons: [],
   },
-  alternatives: [], rejectionReasons: [], expectedBenefit: 0.9, risk: 0.1, confidence: 0.95,
-  policyResult: { allowed: true, reasons: [], requiredCapabilities: [] }, requiredCapabilities: [], dependencies: [],
-  expectedPostconditions: ['network recovered'], verificationRequirements: ['health'],
+  alternatives: [],
+  rejectionReasons: [],
+  expectedBenefit: 0.9,
+  risk: 0.1,
+  confidence: 0.95,
+  policyResult: { allowed: true, reasons: [], requiredCapabilities: [] },
+  requiredCapabilities: [],
+  dependencies: [],
+  expectedPostconditions: ['network recovered'],
+  verificationRequirements: ['health'],
 });
 
 describe('CanonicalNetworkRuntimeAdapter', () => {
