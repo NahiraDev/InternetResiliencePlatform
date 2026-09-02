@@ -44,8 +44,12 @@ const forbiddenWorkflowPatterns = [
 const workflowPaths = manifest.requiredPaths.filter((path) => path.startsWith('.github/workflows/'));
 for (const path of workflowPaths) {
   const content = await readFile(join(root, path), 'utf8');
+  // GitHub expression operators are not shell success overrides. Remove
+  // expression bodies before scanning workflow shell/configuration text so
+  // valid expressions such as `a || b` are not misclassified as `|| true`.
+  const workflowContent = content.replace(/\$\{\{[\s\S]*?\}\}/g, '');
   for (const { pattern, reason } of forbiddenWorkflowPatterns) {
-    if (pattern.test(content)) fail(`workflow safety: ${path}`, reason);
+    if (pattern.test(workflowContent)) fail(`workflow safety: ${path}`, reason);
   }
 }
 pass('workflow false-green policy');
