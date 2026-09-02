@@ -23,6 +23,7 @@
     "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
     "phase69:readiness": "node scripts/phase69-readiness.mjs",
     "phase70:certify": "node scripts/phase70-certification.mjs",
+    "phase71:release": "node scripts/phase71-release.mjs",
     "docker:smoke": "bash scripts/docker-smoke.sh",
     "diagnostics": "node scripts/operational-diagnostics.mjs",
     "diagnostics:strict": "node scripts/operational-diagnostics.mjs --strict",
