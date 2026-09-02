@@ -61,11 +61,17 @@ jobs:
             ls -1 /Applications/Xcode*.app 2>/dev/null || true
             exit 1
           fi
-          test -x "$DEVELOPER_DIR/usr/bin/xcodebuild"
-          test -x "$DEVELOPER_DIR/usr/bin/swift"
           echo "DEVELOPER_DIR=$DEVELOPER_DIR"
-          "$DEVELOPER_DIR/usr/bin/xcodebuild" -version
-          "$DEVELOPER_DIR/usr/bin/swift" --version
+          XCODEBUILD_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find xcodebuild)"
+          SWIFT_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find swift)"
+          test -n "$XCODEBUILD_PATH"
+          test -x "$XCODEBUILD_PATH"
+          test -n "$SWIFT_PATH"
+          test -x "$SWIFT_PATH"
+          echo "xcodebuild=$XCODEBUILD_PATH"
+          echo "swift=$SWIFT_PATH"
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
