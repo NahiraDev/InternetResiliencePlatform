@@ -1,0 +1,37 @@
+name: Temporary lockfile repair
+
+on:
+  push:
+    branches:
+      - feat/canonical-autonomous-runtime-agent
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_VERSION: '24'
+      PNPM_VERSION: '11.21.0'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Generate lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: canonical-runtime-pnpm-lockfile
+          path: pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 1
