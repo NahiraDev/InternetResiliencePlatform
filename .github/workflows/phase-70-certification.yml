@@ -24,7 +24,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'scripts/phase70-certification.mjs'
-      - 'ops/release/phase-70-certification.yml'
+      - 'ops/release/phase-70-certification.json'
       - 'clients/**'
       - 'packages/**'
       - 'apps/**'
