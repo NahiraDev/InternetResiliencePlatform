@@ -189,6 +189,9 @@ importers:
       '@irp/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@irp/connectivity':
+        specifier: workspace:*
+        version: link:../../packages/connectivity
       '@irp/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -198,6 +201,9 @@ importers:
       '@irp/resilience-runtime':
         specifier: workspace:*
         version: link:../../packages/resilience-runtime
+      '@irp/routing':
+        specifier: workspace:*
+        version: link:../../packages/routing
     devDependencies:
       '@types/node':
         specifier: ^26.3.0
