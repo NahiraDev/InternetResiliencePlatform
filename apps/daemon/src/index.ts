@@ -2,7 +2,9 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Application } from '@irp/core';
 import { loadConfig } from '@irp/config';
+import { ConnectivityManager } from '@irp/connectivity';
 import { createLogger } from '@irp/logger';
+import { RoutingEngine } from '@irp/routing';
 import {
   ResilienceRuntime,
   RuntimeScheduler,
@@ -86,8 +88,14 @@ export class LinuxObservationProvider implements ObservationProvider {
 
 export class RuntimeDaemonHost {
   lifecycle: DaemonLifecycle = 'created';
+  readonly connectivity = new ConnectivityManager();
+  readonly routing = new RoutingEngine();
   readonly runtime = new ResilienceRuntime([new LinuxObservationProvider()], {
     runtimeId: 'daemon-runtime',
+    networkControlPlane: {
+      connectivity: this.connectivity,
+      routing: this.routing,
+    },
   });
   readonly scheduler: RuntimeScheduler;
 
@@ -104,6 +112,7 @@ export class RuntimeDaemonHost {
   }
 
   async initialize() {
+    await this.connectivity.discoverResources();
     this.lifecycle = 'initialized';
     this.lifecycle = 'ready';
   }
@@ -126,6 +135,8 @@ export class RuntimeDaemonHost {
       scheduler: this.scheduler.status(),
       runtimeId: this.runtime.runtimeId,
       instanceId: this.runtime.instanceId,
+      connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id),
+      connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId),
       capabilities: this.runtime.capabilities(),
     };
   }

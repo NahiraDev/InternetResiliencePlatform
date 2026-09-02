@@ -15,9 +15,13 @@
     "coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
+    "@irp/connectivity": "workspace:*",
     "@irp/events": "workspace:*",
-    "@irp/telemetry": "workspace:*",
-    "@irp/failover": "workspace:*"
+    "@irp/failover": "workspace:*",
+    "@irp/internet-intelligence-agent": "workspace:*",
+    "@irp/network-intelligence": "workspace:*",
+    "@irp/routing": "workspace:*",
+    "@irp/telemetry": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
