@@ -55,16 +55,17 @@ jobs:
 
       - name: Select and verify Xcode
         run: |
-          test -d "$DEVELOPER_DIR" || {
+          if ! test -d "$DEVELOPER_DIR"; then
             echo "Required Xcode toolchain not found: $DEVELOPER_DIR" >&2
             echo 'Installed Xcode bundles:' >&2
             ls -1 /Applications/Xcode*.app 2>/dev/null || true
             exit 1
-          }
-          xcode-select -s "$DEVELOPER_DIR"
-          xcode-select -p
-          xcodebuild -version
-          swift --version
+          fi
+          test -x "$DEVELOPER_DIR/usr/bin/xcodebuild"
+          test -x "$DEVELOPER_DIR/usr/bin/swift"
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR"
+          "$DEVELOPER_DIR/usr/bin/xcodebuild" -version
+          "$DEVELOPER_DIR/usr/bin/swift" --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
