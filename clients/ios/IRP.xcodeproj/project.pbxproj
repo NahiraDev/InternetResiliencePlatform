@@ -29,20 +29,20 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B10000010000000000000001 /* IRPiOSApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = App/IRPiOSApp.swift; sourceTree = "<group>"; };
-		B10000010000000000000002 /* Models.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/Models.swift; sourceTree = "<group>"; };
-		B10000010000000000000003 /* SecureStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/SecureStore.swift; sourceTree = "<group>"; };
-		B10000010000000000000004 /* ClientSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/ClientSession.swift; sourceTree = "<group>"; };
-		B10000010000000000000005 /* Views.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/Views.swift; sourceTree = "<group>"; };
-		B10000010000000000000006 /* PacketTunnelConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/PacketTunnelConfiguration.swift; sourceTree = "<group>"; };
-		B10000010000000000000007 /* NetworkExtensionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sources/IRPiOSClient/NetworkExtensionController.swift; sourceTree = "<group>"; };
-		B10000010000000000000008 /* IRP.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App/IRP.entitlements; sourceTree = "<group>"; };
-		B10000010000000000000009 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PacketTunnel/PacketTunnelProvider.swift; sourceTree = "<group>"; };
-		B10000010000000000000010 /* PacketTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PacketTunnel/PacketTunnel.entitlements; sourceTree = "<group>"; };
-		B10000010000000000000011 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = App/Info.plist; sourceTree = "<group>"; };
+		B10000010000000000000001 /* IRPiOSApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IRPiOSApp.swift; sourceTree = "<group>"; };
+		B10000010000000000000002 /* Models.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		B10000010000000000000003 /* SecureStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		B10000010000000000000004 /* ClientSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClientSession.swift; sourceTree = "<group>"; };
+		B10000010000000000000005 /* Views.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		B10000010000000000000006 /* PacketTunnelConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PacketTunnelConfiguration.swift; sourceTree = "<group>"; };
+		B10000010000000000000007 /* NetworkExtensionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkExtensionController.swift; sourceTree = "<group>"; };
+		B10000010000000000000008 /* IRP.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = IRP.entitlements; sourceTree = "<group>"; };
+		B10000010000000000000009 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
+		B10000010000000000000010 /* PacketTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PacketTunnel.entitlements; sourceTree = "<group>"; };
+		B10000010000000000000011 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B10000010000000000000012 /* IRPPacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = IRPPacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000010000000000000013 /* IRP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IRP.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B10000010000000000000014 /* PacketTunnel Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = PacketTunnel/Info.plist; sourceTree = "<group>"; };
+		B10000010000000000000014 /* PacketTunnel Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,9 +52,9 @@
 
 /* Begin PBXGroup section */
 		G10000010000000000000001 = {isa = PBXGroup; children = (G10000010000000000000002, G10000010000000000000003, G10000010000000000000004, G10000010000000000000005); sourceTree = "<group>"; };
-		G10000010000000000000002 /* App */ = {isa = PBXGroup; children = (B10000010000000000000001, B10000010000000000000008, B10000010000000000000011); path = .; sourceTree = "<group>"; };
-		G10000010000000000000003 /* SharedSources */ = {isa = PBXGroup; children = (B10000010000000000000002, B10000010000000000000003, B10000010000000000000004, B10000010000000000000005, B10000010000000000000006, B10000010000000000000007); path = .; sourceTree = "<group>"; };
-		G10000010000000000000004 /* PacketTunnel */ = {isa = PBXGroup; children = (B10000010000000000000009, B10000010000000000000010, B10000010000000000000014); path = .; sourceTree = "<group>"; };
+		G10000010000000000000002 /* App */ = {isa = PBXGroup; children = (B10000010000000000000001, B10000010000000000000008, B10000010000000000000011); path = App; sourceTree = "<group>"; };
+		G10000010000000000000003 /* SharedSources */ = {isa = PBXGroup; children = (B10000010000000000000002, B10000010000000000000003, B10000010000000000000004, B10000010000000000000005, B10000010000000000000006, B10000010000000000000007); path = Sources/IRPiOSClient; sourceTree = "<group>"; };
+		G10000010000000000000004 /* PacketTunnel */ = {isa = PBXGroup; children = (B10000010000000000000009, B10000010000000000000010, B10000010000000000000014); path = PacketTunnel; sourceTree = "<group>"; };
 		G10000010000000000000005 /* Products */ = {isa = PBXGroup; children = (B10000010000000000000013, B10000010000000000000012); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -86,7 +86,7 @@
 /* Begin PBXProject section */
 		D10000010000000000000001 /* Project object */ = {
 			isa = PBXProject;
-			attributes = { LastUpgradeCheck = 1540; ORGANIZATIONNAME = NahiraDev; TargetAttributes = { E10000010000000000000001 = { CreatedOnToolsVersion = 15.4; }; E10000010000000000000002 = { CreatedOnToolsVersion = 15.4; }; } ; };
+			attributes = { LastUpgradeCheck = 1540; ORGANIZATIONNAME = NahiraDev; TargetAttributes = { E10000010000000000000001 = { CreatedOnToolsVersion = 15.4; }; E10000010000000000000002 = { CreatedOnToolsVersion = 15.4; }; }; };
 			buildConfigurationList = L10000010000000000000003;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;

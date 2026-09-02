@@ -28,11 +28,12 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
+  DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
 
 jobs:
   ios-client:
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -52,11 +53,25 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Select Xcode
+      - name: Select and verify Xcode
         run: |
-          xcode-select -p
-          xcodebuild -version
-          swift --version
+          if ! test -d "$DEVELOPER_DIR"; then
+            echo "Required Xcode toolchain not found: $DEVELOPER_DIR" >&2
+            echo 'Installed Xcode bundles:' >&2
+            ls -1 /Applications/Xcode*.app 2>/dev/null || true
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR"
+          XCODEBUILD_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find xcodebuild)"
+          SWIFT_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find swift)"
+          test -n "$XCODEBUILD_PATH"
+          test -x "$XCODEBUILD_PATH"
+          test -n "$SWIFT_PATH"
+          test -x "$SWIFT_PATH"
+          echo "xcodebuild=$XCODEBUILD_PATH"
+          echo "swift=$SWIFT_PATH"
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
@@ -72,12 +87,6 @@ jobs:
         run: |
           test -f "$XCODE_PROJECT/project.pbxproj"
           xcodebuild -list -project "$XCODE_PROJECT"
-          xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -scheme IRP \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -showBuildSettings >/dev/null
 
       - name: Validate Xcode project metadata
         run: |
@@ -111,8 +120,14 @@ jobs:
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
           echo 'iOS client source inventory passed'
 
-      # The hosted Xcode 16.4/macOS 15 image has reproduced xcodebuild exit 139
-      # during the target build phase for this legacy hand-authored project graph.
-      # Keep deterministic project/package validation here until the project is
-      # regenerated with a supported Xcode project format and the hosted target
-      # build is proven stable again.
+      - name: Build iOS app and packet tunnel
+        run: |
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme IRP \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
