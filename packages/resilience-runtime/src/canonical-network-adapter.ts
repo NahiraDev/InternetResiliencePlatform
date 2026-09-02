@@ -26,10 +26,7 @@ export interface CanonicalNetworkControlPlane {
   readonly destination?: RoutingDestination;
 }
 
-const destinationFromPlan = (
-  plan: ActionPlan,
-  fallback?: RoutingDestination,
-): RoutingDestination => {
+const destinationFromPlan = (plan: ActionPlan, fallback?: RoutingDestination): RoutingDestination => {
   const metadata = plan.selectedAction.metadata as Record<string, unknown>;
   const value = metadata.destination;
   if (typeof value === 'string') return parseDestination(value);
@@ -54,11 +51,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     adapterId: 'canonical-network-control-plane',
     subsystem: 'connectivity',
     version: '1.0.0',
-    capabilities: [
-      'connectivity.failover',
-      'route.write',
-      'network.observe',
-    ],
+    capabilities: ['connectivity.failover', 'route.write', 'network.observe'],
     supportedActions: ['connectivity_failover', 'provider_switch', 'route_change'],
     supportsSimulation: true,
     supportsSafe: true,
@@ -105,21 +98,13 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           await this.controlPlane.connectivity.discoverResources();
           const sources = this.controlPlane.connectivity.getAvailableSources();
           const destination = destinationFromPlan(plan, this.controlPlane.destination);
-          const decision = await this.controlPlane.routing.decide({
-            destination,
-            connectivitySources: sources,
-          });
+          const decision = await this.controlPlane.routing.decide({ destination, connectivitySources: sources });
           if (!decision.selected || !decision.plan.selectedPath) {
             return createAdapterExecution(plan, context, false, 'failed');
           }
           const applied = await this.controlPlane.routing.applyPlan(decision.plan);
-          const success = applied.verification.status === 'success';
-          const execution = createAdapterExecution(
-            plan,
-            context,
-            false,
-            success ? 'success' : 'failed',
-          );
+          const success = applied.verification.status === 'succeeded';
+          const execution = createAdapterExecution(plan, context, false, success ? 'success' : 'failed');
           return {
             ...execution,
             metadata: {
@@ -144,20 +129,14 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     }
   }
 
-  async verify(
-    plan: ActionPlan,
-    _execution: ActionExecution,
-    context: RuntimeContext,
-  ): Promise<ActionVerification> {
+  async verify(plan: ActionPlan, _execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
     if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
 
     try {
       if (plan.selectedAction.intent === 'connectivity_failover' || plan.selectedAction.intent === 'provider_switch') {
         const active = this.controlPlane.connectivity.getActiveSource();
         if (!active) return createAdapterVerification(plan, context, 'failed');
-        const health = await this.controlPlane.connectivity.registry
-          .get(active.providerId)
-          .getHealth(active.id);
+        const health = await this.controlPlane.connectivity.registry.get(active.providerId).getHealth(active.id);
         const healthy = health.status !== 'unhealthy' && health.internetReachable !== false;
         return createAdapterVerification(plan, context, healthy ? 'success' : 'failed');
       }
@@ -165,15 +144,8 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       if (plan.selectedAction.intent === 'route_change') {
         const destination = destinationFromPlan(plan, this.controlPlane.destination);
         const sources = this.controlPlane.connectivity.getAvailableSources();
-        const decision = await this.controlPlane.routing.decide({
-          destination,
-          connectivitySources: sources,
-        });
-        return createAdapterVerification(
-          plan,
-          context,
-          decision.selected && decision.plan.selectedPath ? 'success' : 'failed',
-        );
+        const decision = await this.controlPlane.routing.decide({ destination, connectivitySources: sources });
+        return createAdapterVerification(plan, context, decision.selected && decision.plan.selectedPath ? 'success' : 'failed');
       }
 
       return createAdapterVerification(plan, context, 'failed');
