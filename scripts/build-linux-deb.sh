@@ -45,11 +45,10 @@ if ! getent passwd irp >/dev/null 2>&1; then
 fi
 
 install -d -o irp -g irp -m 0750 /var/lib/irp
-systemctl daemon-reload 2>/dev/null || true
-
-if [ "$(ps -p 1 -o comm= 2>/dev/null || true)" = "systemd" ]; then
+if [ -d /run/systemd/system ]; then
+  systemctl daemon-reload
   systemctl enable irp-linux-client.service
-  systemctl restart irp-linux-client.service || systemctl start irp-linux-client.service
+  systemctl restart irp-linux-client.service
 fi
 exit 0
 EOF
@@ -57,9 +56,9 @@ EOF
 cat > "$PKG_ROOT/DEBIAN/prerm" <<'EOF'
 #!/bin/sh
 set -eu
-if [ "$(ps -p 1 -o comm= 2>/dev/null || true)" = "systemd" ]; then
-  systemctl stop irp-linux-client.service 2>/dev/null || true
-  systemctl disable irp-linux-client.service 2>/dev/null || true
+if [ -d /run/systemd/system ]; then
+  systemctl stop irp-linux-client.service
+  systemctl disable irp-linux-client.service
 fi
 exit 0
 EOF
