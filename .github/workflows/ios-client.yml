@@ -81,10 +81,14 @@ jobs:
               'name = IRPPacketTunnel;',
               'com.apple.product-type.application',
               'com.apple.product-type.app-extension',
+              'R10000010000000000000003 /* Embed Foundation Extensions */',
+              'A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */',
           ]
           missing = [item for item in required if item not in text]
           if missing:
               raise SystemExit(f'Missing Xcode project contract entries: {missing}')
+          if 'files = (A10000010000000000000009, A10000010000000000000006);' in text:
+              raise SystemExit('PacketTunnelConfiguration.swift must not be compiled by IRPPacketTunnel')
           print('Xcode project metadata contract passed')
           PY
 
@@ -96,7 +100,6 @@ jobs:
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
-            SWIFT_VERSION=5 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
