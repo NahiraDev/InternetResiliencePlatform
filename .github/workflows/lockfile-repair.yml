@@ -6,10 +6,11 @@ on:
       - feat/canonical-autonomous-runtime-agent
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -28,10 +29,14 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Generate lockfile
         run: pnpm install --lockfile-only --no-frozen-lockfile
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: canonical-runtime-pnpm-lockfile
-          path: pnpm-lock.yaml
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit generated lockfile
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo 'Lockfile already up to date.'
+            exit 0
+          fi
+          git commit -m 'chore: sync pnpm lockfile'
+          git push origin HEAD:${GITHUB_REF_NAME}
