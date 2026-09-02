@@ -6,6 +6,7 @@ import {
   type InternetEvidence,
 } from '@irp/network-intelligence';
 import { SubsystemDecisionAdapter } from './adapters/adapters.js';
+import { nextId, nowIso } from './domain/ids.js';
 import type { CandidateAction, Incident, ObservationBatch, RuntimeContext } from './domain/types.js';
 import type { DecisionProvider } from './ports/ports.js';
 
@@ -66,7 +67,11 @@ export class CanonicalDecisionProvider implements DecisionProvider {
       internetEvidence,
     });
 
-    const intelligenceAdjusted = applyRecommendation(candidates, recommendation);
+    const intelligenceAdjusted = ensureRecommendedCandidate(
+      applyRecommendation(candidates, recommendation),
+      recommendation,
+      context,
+    );
     const decision = await this.engine.evaluate({
       type: decisionType(intelligenceAdjusted[0]?.intent),
       context: {
@@ -153,6 +158,23 @@ const preferredIntent = (recommendation: AgentRecommendation): CandidateAction['
   }
 };
 
+const requiredCapabilities = (intent: CandidateAction['intent']): readonly string[] => {
+  switch (intent) {
+    case 'dns_switch':
+      return ['dns.write'];
+    case 'route_change':
+      return ['route.write'];
+    case 'connectivity_failover':
+      return ['connectivity.failover'];
+    case 'tunnel_switch':
+      return ['tunnel.write'];
+    case 'health_reprobe':
+      return ['network.observe'];
+    default:
+      return [];
+  }
+};
+
 const applyRecommendation = (
   candidates: readonly CandidateAction[],
   recommendation: AgentRecommendation | null,
@@ -179,6 +201,45 @@ const applyRecommendation = (
         }
       : candidate,
   );
+};
+
+const ensureRecommendedCandidate = (
+  candidates: readonly CandidateAction[],
+  recommendation: AgentRecommendation | null,
+  context: RuntimeContext,
+): readonly CandidateAction[] => {
+  if (!recommendation || recommendation.confidence < 0.65) return candidates;
+  const preferred = preferredIntent(recommendation);
+  if (!preferred || candidates.some((candidate) => candidate.intent === preferred)) return candidates;
+
+  const confidence = Math.max(0.65, Math.min(1, recommendation.confidence));
+  const candidate: CandidateAction = {
+    id: nextId('candidate'),
+    schemaVersion: 1,
+    createdAt: nowIso(),
+    correlationId: context.correlationId,
+    source: 'internet-intelligence-agent',
+    metadata: {
+      synthesized: true,
+      intelligence: {
+        diagnosis: recommendation.diagnosis,
+        confidence,
+        generatedBy: recommendation.generatedBy,
+        evidence: recommendation.evidence,
+      },
+    },
+    intent: preferred,
+    expectedBenefit: confidence,
+    risk: Math.max(0, 1 - confidence),
+    confidence,
+    requiredCapabilities: requiredCapabilities(preferred),
+    dependencies: [preferred],
+    postconditions: [`${preferred} verified`],
+    verificationRequirements: [`${preferred} postcondition`],
+    rollbackStrategy: preferred === 'connectivity_failover' ? 'restore-previous-source' : undefined,
+    rejectionReasons: [],
+  };
+  return [...candidates, candidate];
 };
 
 const metric = (batch: ObservationBatch, names: readonly string[]): number | null => {
