@@ -6,11 +6,15 @@ on:
     paths:
       - 'clients/ios/**'
       - '.github/workflows/ios-client.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   push:
     branches: [main]
     paths:
       - 'clients/ios/**'
       - '.github/workflows/ios-client.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
@@ -20,12 +24,14 @@ defaults:
     shell: bash
 
 env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
 
 jobs:
   ios-client:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -33,12 +39,27 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
       - name: Select Xcode
         run: |
-          XCODE_PATH="$(xcode-select -p)"
-          test -d "$XCODE_PATH"
+          xcode-select -p
           xcodebuild -version
           swift --version
+
+      - name: Verify workspace install
+        run: pnpm install --frozen-lockfile
 
       - name: Verify Swift package
         working-directory: clients/ios
@@ -49,7 +70,23 @@ jobs:
       - name: Verify Xcode project
         run: |
           test -f "$XCODE_PROJECT/project.pbxproj"
-          xcodebuild -project "$XCODE_PROJECT" -list
+
+      - name: Validate Xcode project metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('clients/ios/IRP.xcodeproj/project.pbxproj').read_text()
+          required = [
+              'name = IRP;',
+              'name = IRPPacketTunnel;',
+              'com.apple.product-type.application',
+              'com.apple.product-type.app-extension',
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit(f'Missing Xcode project contract entries: {missing}')
+          print('Xcode project metadata contract passed')
+          PY
 
       - name: Build iOS app and packet tunnel
         run: |
