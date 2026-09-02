@@ -1,7 +1,8 @@
-import { InternetIntelligenceAgent, type AgentRecommendation } from '@irp/internet-intelligence-agent';
+import { InternetIntelligenceAgent } from '@irp/internet-intelligence-agent';
 import {
   InternetIntelligenceBridge,
   NetworkDecisionEngine,
+  type AgentRecommendation,
   type DecisionType,
   type InternetEvidence,
 } from '@irp/network-intelligence';
@@ -35,10 +36,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     });
   }
 
-  async decide(
-    incidents: readonly Incident[],
-    context: RuntimeContext,
-  ): Promise<readonly CandidateAction[]> {
+  async decide(incidents: readonly Incident[], context: RuntimeContext): Promise<readonly CandidateAction[]> {
     const candidates = await this.subsystem.decide(incidents, context);
     if (!incidents.length || !context.observationSnapshot) return candidates;
 
@@ -55,10 +53,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
         type: candidateType(candidate.intent),
         capabilities: candidate.requiredCapabilities,
         health: candidate.rejectionReasons.length ? 'unhealthy' : 'healthy',
-        metrics: {
-          recoveryCost: candidate.risk,
-          availabilityRatio: candidate.expectedBenefit,
-        },
+        metrics: { recoveryCost: candidate.risk, availabilityRatio: candidate.expectedBenefit },
         policyCompatibility: candidate.rejectionReasons.length === 0,
         securityCompatibility: context.securityContext.trusted,
         timestamp: candidate.createdAt,
@@ -86,10 +81,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
           type: candidateType(candidate.intent),
           capabilities: candidate.requiredCapabilities,
           health: candidate.rejectionReasons.length ? 'unhealthy' : 'healthy',
-          metrics: {
-            recoveryCost: candidate.risk,
-            availabilityRatio: candidate.expectedBenefit,
-          },
+          metrics: { recoveryCost: candidate.risk, availabilityRatio: candidate.expectedBenefit },
           policyCompatibility: candidate.rejectionReasons.length === 0,
           securityCompatibility: context.securityContext.trusted,
           timestamp: candidate.createdAt,
@@ -110,68 +102,47 @@ export class CanonicalDecisionProvider implements DecisionProvider {
 
 const candidateType = (intent: CandidateAction['intent']) => {
   switch (intent) {
-    case 'dns_switch':
-      return 'dns-resolver' as const;
+    case 'dns_switch': return 'dns-resolver' as const;
     case 'connectivity_failover':
-    case 'provider_switch':
-      return 'connectivity-source' as const;
-    case 'route_change':
-      return 'route' as const;
-    case 'tunnel_switch':
-      return 'tunnel' as const;
-    default:
-      return 'route' as const;
+    case 'provider_switch': return 'connectivity-source' as const;
+    case 'route_change': return 'route' as const;
+    case 'tunnel_switch': return 'tunnel' as const;
+    default: return 'route' as const;
   }
 };
 
 const decisionType = (intent: CandidateAction['intent'] | undefined): DecisionType => {
   switch (intent) {
-    case 'dns_switch':
-      return 'dnsDecision';
+    case 'dns_switch': return 'dnsDecision';
     case 'connectivity_failover':
-    case 'provider_switch':
-      return 'failoverDecision';
-    case 'route_change':
-      return 'routeDecision';
-    case 'tunnel_switch':
-      return 'tunnelDecision';
-    default:
-      return 'connectivityDecision';
+    case 'provider_switch': return 'failoverDecision';
+    case 'route_change': return 'routeDecision';
+    case 'tunnel_switch': return 'tunnelDecision';
+    default: return 'connectivityDecision';
   }
 };
 
 const preferredIntent = (recommendation: AgentRecommendation): CandidateAction['intent'] | null => {
   switch (recommendation.diagnosis) {
-    case 'dns_failure':
-      return 'dns_switch';
+    case 'dns_failure': return 'dns_switch';
     case 'packet_loss':
-    case 'latency_degradation':
-      return 'route_change';
+    case 'latency_degradation': return 'route_change';
     case 'transport_failure':
     case 'upstream_or_egress_issue':
-    case 'ipv6_failure':
-      return 'connectivity_failover';
-    case 'tls_failure':
-      return 'health_reprobe';
-    default:
-      return null;
+    case 'ipv6_failure': return 'connectivity_failover';
+    case 'tls_failure': return 'health_reprobe';
+    default: return null;
   }
 };
 
 const requiredCapabilities = (intent: CandidateAction['intent']): readonly string[] => {
   switch (intent) {
-    case 'dns_switch':
-      return ['dns.write'];
-    case 'route_change':
-      return ['route.write'];
-    case 'connectivity_failover':
-      return ['connectivity.failover'];
-    case 'tunnel_switch':
-      return ['tunnel.write'];
-    case 'health_reprobe':
-      return ['network.observe'];
-    default:
-      return [];
+    case 'dns_switch': return ['dns.write'];
+    case 'route_change': return ['route.write'];
+    case 'connectivity_failover': return ['connectivity.failover'];
+    case 'tunnel_switch': return ['tunnel.write'];
+    case 'health_reprobe': return ['network.observe'];
+    default: return [];
   }
 };
 
