@@ -5,13 +5,19 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+User=irp
+Group=irp
+StateDirectory=irp
 ExecStart=/usr/bin/node /usr/lib/irp/linux-client/dist/index.js
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=read-only
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
 ReadWritePaths=/var/lib/irp
 
 [Install]

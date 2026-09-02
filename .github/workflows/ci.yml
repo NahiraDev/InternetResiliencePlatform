@@ -20,17 +20,83 @@ env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
 
-# Keep the primary CI path deterministic and self-contained. Docker runtime
-# verification is intentionally unconditional: a CI run must prove that the
-# production container can build, start, become ready, survive restart, and
-# shut down cleanly. Publishing is a release concern, not a runtime gate.
 defaults:
   run:
     shell: bash
 
 jobs:
+  linux-primary:
+    name: Linux primary device (Debian 13)
+    runs-on: ubuntu-latest
+    container: node:24-trixie
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Debian build tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git dpkg systemd
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          node --version
+          pnpm --version
+
+      - name: Require checked-in pnpm lockfile
+        run: test -f pnpm-lock.yaml
+
+      - name: Install dependencies with frozen lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Linux client typecheck
+        run: pnpm --filter @irp/linux-client typecheck
+
+      - name: Linux client lint
+        run: pnpm --filter @irp/linux-client lint
+
+      - name: Linux client tests
+        run: pnpm --filter @irp/linux-client test
+
+      - name: Linux client build
+        run: pnpm --filter @irp/linux-client build
+
+      - name: Verify systemd unit contract
+        run: |
+          systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'User=irp' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service
+
+      - name: Build Debian package
+        run: |
+          bash scripts/build-linux-deb.sh
+          test -s dist/linux/irp-linux-client_0.1.0_amd64.deb
+          test -s dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+
+      - name: Verify Debian package metadata and contents
+        run: |
+          dpkg-deb --info dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb | grep -Fq './usr/lib/irp/linux-client/dist/index.js'
+          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb | grep -Fq './usr/lib/systemd/system/irp-linux-client.service'
+          sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+
+      - name: Smoke test packaged Linux client
+        run: |
+          rm -rf /tmp/irp-linux-package
+          mkdir -p /tmp/irp-linux-package
+          dpkg-deb --extract dist/linux/irp-linux-client_0.1.0_amd64.deb /tmp/irp-linux-package
+          node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/index.js
+          test -f /tmp/irp-linux-package/usr/lib/systemd/system/irp-linux-client.service
+
   validate:
     name: Validate repository
+    needs: linux-primary
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -93,8 +159,6 @@ jobs:
       - name: Smoke test deterministic examples
         run: pnpm examples:smoke
 
-      # Always run the production runtime smoke test. Do not couple runtime
-      # correctness to image publishing/tag events.
       - name: Run production Docker runtime smoke test
         run: bash scripts/docker-smoke.sh
 
