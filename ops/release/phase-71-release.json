@@ -1,0 +1,14 @@
+{
+  "phase": 71,
+  "name": "Cross-Platform Distribution & GitHub Releases",
+  "releaseTagPattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+  "assets": [
+    { "platform": "android", "pattern": "^IRP-Android-debug-.*\\.apk$", "kind": "apk" },
+    { "platform": "linux", "pattern": "^IRP-Linux-.*\\.tar\\.gz$", "kind": "tarball" },
+    { "platform": "macos", "pattern": "^IRP-macOS-.*\\.tar\\.gz$", "kind": "tarball" },
+    { "platform": "windows", "pattern": "^IRP-Windows-.*\\.zip$", "kind": "zip" },
+    { "platform": "ios", "pattern": "^IRP-iOS-source-.*\\.zip$", "kind": "source" }
+  ],
+  "forbidden": ["*.ipa"],
+  "checksums": "SHA256SUMS.txt"
+}
