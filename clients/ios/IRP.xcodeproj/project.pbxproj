@@ -14,9 +14,7 @@
 		A10000010000000000000005 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000005 /* Views.swift */; };
 		A10000010000000000000006 /* PacketTunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000006 /* PacketTunnelConfiguration.swift */; };
 		A10000010000000000000007 /* NetworkExtensionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000007 /* NetworkExtensionController.swift */; };
-		A10000010000000000000008 /* IRP.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000008 /* IRP.entitlements */; };
 		A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000009 /* PacketTunnelProvider.swift */; };
-		A10000010000000000000010 /* PacketTunnel.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000010 /* PacketTunnel.entitlements */; };
 		A10000010000000000000011 /* IRPPacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B10000010000000000000012 /* IRPPacketTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -64,7 +62,7 @@
 		E10000010000000000000001 /* IRP */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = L10000010000000000000001;
-			buildPhases = (P10000010000000000000001, F10000010000000000000001, P10000010000000000000003);
+			buildPhases = (P10000010000000000000001, F10000010000000000000001, R10000010000000000000001, R10000010000000000000003);
 			buildRules = ();
 			dependencies = (J10000010000000000000001);
 			name = IRP;
@@ -75,7 +73,7 @@
 		E10000010000000000000002 /* IRPPacketTunnel */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = L10000010000000000000002;
-			buildPhases = (P10000010000000000000002, F10000010000000000000002);
+			buildPhases = (P10000010000000000000002, F10000010000000000000002, R10000010000000000000002);
 			buildRules = ();
 			dependencies = ();
 			name = IRPPacketTunnel;
@@ -88,7 +86,7 @@
 /* Begin PBXProject section */
 		D10000010000000000000001 /* Project object */ = {
 			isa = PBXProject;
-			attributes = { LastUpgradeCheck = 1540; ORGANIZATIONNAME = NahiraDev; TargetAttributes = { E10000010000000000000001 = { CreatedOnToolsVersion = 15.4; }; E10000010000000000000002 = { CreatedOnToolsVersion = 15.4; }; }; };
+			attributes = { LastUpgradeCheck = 1540; ORGANIZATIONNAME = NahiraDev; TargetAttributes = { E10000010000000000000001 = { CreatedOnToolsVersion = 15.4; }; E10000010000000000000002 = { CreatedOnToolsVersion = 15.4; }; } ; };
 			buildConfigurationList = L10000010000000000000003;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
@@ -105,13 +103,15 @@
 /* Begin PBXResourcesBuildPhase section */
 		R10000010000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		R10000010000000000000002 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		R10000010000000000000003 /* Embed Foundation Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (A10000010000000000000011); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		R10000010000000000000003 /* Embed Foundation Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (A10000010000000000000011); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		P10000010000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000001, A10000010000000000000002, A10000010000000000000003, A10000010000000000000004, A10000010000000000000005, A10000010000000000000006, A10000010000000000000007); runOnlyForDeploymentPostprocessing = 0; };
-		P10000010000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000009, A10000010000000000000006); runOnlyForDeploymentPostprocessing = 0; };
-		P10000010000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		P10000010000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000009); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -119,8 +119,8 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		K10000010000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.10; }; name = Debug; };
-		K10000010000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.10; }; name = Release; };
+		K10000010000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5; }; name = Debug; };
+		K10000010000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5; }; name = Release; };
 		K10000010000000000000003 /* Debug IRP */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; CODE_SIGN_ENTITLEMENTS = App/IRP.entitlements; INFOPLIST_FILE = App/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = com.nahiradev.irp; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
 		K10000010000000000000004 /* Release IRP */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_ENTITLEMENTS = App/IRP.entitlements; INFOPLIST_FILE = App/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = com.nahiradev.irp; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
 		K10000010000000000000005 /* Debug PacketTunnel */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGN_IDENTITY = ""; CODE_SIGN_ENTITLEMENTS = PacketTunnel/PacketTunnel.entitlements; INFOPLIST_FILE = PacketTunnel/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = com.nahiradev.irp.PacketTunnel; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = 1; }; name = Debug; };
