@@ -3,16 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"],
-    "paths": {
-      "@irp/connectivity": ["../connectivity/src/index.ts"],
-      "@irp/events": ["../events/src/index.ts"],
-      "@irp/failover": ["../failover/src/index.ts"],
-      "@irp/internet-intelligence-agent": ["../internet-intelligence-agent/src/index.ts"],
-      "@irp/network-intelligence": ["../network-intelligence/src/index.ts"],
-      "@irp/routing": ["../routing/src/index.ts"],
-      "@irp/telemetry": ["../telemetry/src/index.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }
