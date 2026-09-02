@@ -2,16 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "..",
-    "paths": {
-      "@irp/connectivity": ["../connectivity/src/index.ts"],
-      "@irp/events": ["../events/src/index.ts"],
-      "@irp/kernel": ["../kernel/src/index.ts"],
-      "@irp/shared": ["../shared/src/index.ts"],
-      "@irp/telemetry": ["../telemetry/src/index.ts"],
-      "@irp/network": ["../network/src/index.ts"],
-      "@irp/types": ["../types/src/index.ts"]
-    }
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"]
 }
