@@ -3,6 +3,14 @@ set -euo pipefail
 compose_file=${COMPOSE_FILE:-compose.yaml}
 api_port=${API_PORT:-8080}
 
+# Supply isolated test-only credentials so the production compose contract never
+# relies on committed fallback secrets. CI/local smoke values are intentionally
+# ephemeral and must never be reused for a real deployment.
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-irp_smoke_postgres_password}
+export JWT_SECRET=${JWT_SECRET:-irp_smoke_jwt_secret_012345678901234567890123456789}
+export REMOTE_CLIENT_CREDENTIAL_KEY=${REMOTE_CLIENT_CREDENTIAL_KEY:-irp_smoke_credential_key_012345678901234567890123}
+export REMOTE_CLIENT_REFRESH_KEY=${REMOTE_CLIENT_REFRESH_KEY:-irp_smoke_refresh_key_012345678901234567890123}
+
 docker compose -f "$compose_file" config >/dev/null
 docker compose -f "$compose_file" build --pull
 docker compose -f "$compose_file" down --volumes --remove-orphans
