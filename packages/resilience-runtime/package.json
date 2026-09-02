@@ -17,7 +17,9 @@
   "dependencies": {
     "@irp/events": "workspace:*",
     "@irp/telemetry": "workspace:*",
-    "@irp/failover": "workspace:*"
+    "@irp/failover": "workspace:*",
+    "@irp/internet-intelligence-agent": "workspace:*",
+    "@irp/network-intelligence": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
