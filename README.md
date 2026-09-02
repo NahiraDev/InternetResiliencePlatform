@@ -9,7 +9,7 @@
 
 **Internet Resilience Platform (IRP)** is an open-source TypeScript monorepo for measuring, diagnosing, and progressively automating recovery from unreliable network conditions.
 
-The product target is a policy-controlled Network Autopilot with one authoritative Core/Control Plane and full-capability clients across **Linux, macOS, Windows, iOS and Android**. Web is the unified control surface; Mobile is a Full Client, not a dashboard-only viewer.
+The first production device target is the **IRP Linux Full Client on Debian-based Linux**, with Debian 13 (trixie) as the reference baseline. Linux is the release-critical device gate. macOS, Windows, iOS and Android remain additional platform targets with their own verification gates.
 
 The governed loop is:
 
@@ -22,7 +22,9 @@ Observe → Measure → Detect → Diagnose → Decide
 
 ## Current implementation truth
 
-The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** is now the active post-v1 delivery phase: the release pipeline and distribution contract are implemented, while certification still requires a real tagged GitHub Release and inspection of the published assets.
+The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** is the active post-v1 delivery phase.
+
+The Linux primary-device contract is now explicit: the Debian-based Linux client is the first device release target, and its build, test, package and runtime gates are release-critical. iOS build failures remain visible and are not suppressed, but they do not block Linux-first delivery.
 
 A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security, device and integration gates.
 
@@ -46,7 +48,7 @@ See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/architecture/p
 
 ## Downloads
 
-Published client artifacts are distributed through **[GitHub Releases](https://github.com/NahiraDev/InternetResiliencePlatform/releases)**. The canonical platform-specific guide is [`docs/downloads.md`](docs/downloads.md). iOS remains a source/developer bundle until signing and provisioning are configured.
+Published client artifacts are distributed through **[GitHub Releases](https://github.com/NahiraDev/InternetResiliencePlatform/releases)**. The canonical platform-specific guide is [`docs/downloads.md`](docs/downloads.md). Linux is the first production device artifact; iOS remains a source/developer bundle until signing and provisioning are configured.
 
 ## What exists today
 
@@ -62,7 +64,8 @@ The current repository includes:
 - Data analytics primitives over historical/federated evidence
 - Docker production/runtime smoke validation
 - Repository integrity validation and CI enforcement
-- Platform client foundations for Linux, macOS, Windows, the shared mobile core, iOS Full Client and native iOS Network Extension boundaries
+- Linux Full Client package with systemd integration, local diagnostics and Debian package generation
+- Platform client foundations for macOS, Windows, the shared mobile core, iOS Full Client and native iOS Network Extension boundaries
 - A machine-readable Phase 70 v1.0 certification contract and fail-closed evidence verifier
 - A machine-readable Phase 71 release contract, asset verifier and checksum-validated GitHub Release pipeline
 
@@ -81,6 +84,7 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 7. [API reference](docs/api/platform-status-api.md)
 8. [Examples](examples/README.md)
 9. [Security architecture](docs/security/security-architecture.md)
+10. [Linux primary device contract](docs/release/linux-primary-platform.md)
 
 ### For maintainers
 
@@ -106,6 +110,7 @@ Requirements:
 - Node.js 24+
 - pnpm 11.21+
 - Docker for container/runtime validation
+- Debian-based Linux for the primary device runtime
 
 From the repository root:
 
@@ -117,6 +122,8 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm examples:smoke
+pnpm --filter @irp/linux-client test
+pnpm linux:package
 ```
 
 The deterministic smoke suite runs local examples and does not mutate host networking. API examples require the normal API service to be running; see [`examples/README.md`](examples/README.md).
@@ -126,6 +133,7 @@ The deterministic smoke suite runs local examples and does not mutate host netwo
 ```text
 apps/                 Application entry points
 packages/             Reusable IRP packages
+packages/linux-client/ Debian/Linux Full Client and systemd integration
 clients/ios/          Native iOS Full Client and Network Extension boundary
 examples/             Capability-oriented runnable examples
 ops/                  Operational, release and deployment contracts
