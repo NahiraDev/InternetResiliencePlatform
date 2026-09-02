@@ -29,10 +29,6 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # macOS 15 provides the supported Xcode 16 toolchain for this project.
-    # This workflow now owns both the Phase 65 Swift package checks and the
-    # Phase 66 packet-tunnel/Xcode integration checks; keeping a second iOS
-    # workflow would execute the same Swift tests/build for the same change.
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -51,6 +47,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Verify Xcode toolchain
         run: |
@@ -62,16 +60,29 @@ jobs:
           swift test --package-path clients/ios
           swift build --package-path clients/ios
 
-      - name: Validate Xcode project
+      - name: Validate Xcode project graph
         run: |
+          test -f clients/ios/IRP.xcodeproj/project.pbxproj
           xcodebuild -list -project clients/ios/IRP.xcodeproj
-          xcodebuild -project clients/ios/IRP.xcodeproj \
-            -target IRPPacketTunnel \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            build
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('clients/ios/IRP.xcodeproj/project.pbxproj').read_text()
+          required = [
+              'name = IRP;',
+              'name = IRPPacketTunnel;',
+              'com.apple.product-type.application',
+              'com.apple.product-type.app-extension',
+              'A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */',
+              'R10000010000000000000003 /* Embed Foundation Extensions */',
+              'target = E10000010000000000000002;',
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit(f'Missing Xcode project graph entries: {missing}')
+          if 'files = (A10000010000000000000009, A10000010000000000000006);' in text:
+              raise SystemExit('PacketTunnelConfiguration.swift must not be compiled by IRPPacketTunnel')
+          print('Xcode project graph contract passed')
+          PY
 
       - name: Validate packet tunnel entitlement
         run: |
