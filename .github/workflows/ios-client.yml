@@ -72,7 +72,12 @@ jobs:
         run: |
           test -f "$XCODE_PROJECT/project.pbxproj"
           xcodebuild -list -project "$XCODE_PROJECT"
-          xcodebuild -project "$XCODE_PROJECT" -scheme IRP -showBuildSettings >/dev/null
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme IRP \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -showBuildSettings >/dev/null
 
       - name: Validate Xcode project metadata
         run: |
