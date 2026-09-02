@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@irp/config": "workspace:*",
+    "@irp/connectivity": "workspace:*",
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
-    "@irp/resilience-runtime": "workspace:*"
+    "@irp/resilience-runtime": "workspace:*",
+    "@irp/routing": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
