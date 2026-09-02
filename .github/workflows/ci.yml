@@ -100,11 +100,21 @@ jobs:
 
       - name: Show Docker Compose logs
         if: always()
-        run: docker compose logs --no-color
+        env:
+          POSTGRES_PASSWORD: irp_ci_diagnostics_postgres_password
+          JWT_SECRET: irp_ci_diagnostics_jwt_secret_012345678901234567890123456789
+          REMOTE_CLIENT_CREDENTIAL_KEY: irp_ci_diagnostics_credential_key_012345678901234567890123
+          REMOTE_CLIENT_REFRESH_KEY: irp_ci_diagnostics_refresh_key_012345678901234567890123
+        run: docker compose logs --no-color || true
 
       - name: Remove Docker Compose runtime
         if: always()
-        run: docker compose down --volumes --remove-orphans
+        env:
+          POSTGRES_PASSWORD: irp_ci_diagnostics_postgres_password
+          JWT_SECRET: irp_ci_diagnostics_jwt_secret_012345678901234567890123456789
+          REMOTE_CLIENT_CREDENTIAL_KEY: irp_ci_diagnostics_credential_key_012345678901234567890123
+          REMOTE_CLIENT_REFRESH_KEY: irp_ci_diagnostics_refresh_key_012345678901234567890123
+        run: docker compose down --volumes --remove-orphans || true
 
       - name: Create trusted source artifact
         if: github.ref == 'refs/heads/main'
