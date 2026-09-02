@@ -52,11 +52,15 @@ export class RuntimeStateMachine {
       from,
       to,
     };
+
+    // Commit state only after the authoritative state-change event succeeds.
+    // This prevents an event-sink failure from leaving the state machine in a
+    // state that observers were never told about.
     await this.events?.emit('runtime.state.changed', transition);
+    this.state = to;
     if (to === 'blocked') await this.events?.emit('runtime.blocked', transition);
     if (to === 'degraded') await this.events?.emit('runtime.degraded', transition);
     if (to === 'failed') await this.events?.emit('runtime.failed', transition);
-    this.state = to;
     return transition;
   }
   async fail(correlationId = 'state') {

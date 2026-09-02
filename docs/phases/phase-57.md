@@ -42,3 +42,11 @@ An action MUST NOT be reported as successful merely because an adapter accepted/
 ## Completion criteria
 
 Phase 57 is complete only when a live control-loop action can be traced from a policy-approved plan through a real adapter mutation, real postcondition observation, and rollback/reconciliation on failure.
+
+## Status
+
+**In progress.** The control-loop contract and fail-closed semantics are implemented, but the phase is not considered complete until a real live adapter, real postcondition verification, and rollback/reconciliation evidence are available.
+
+## Verification
+
+Repository-level verification is performed by the CI validation, typecheck, lint, test, and build gates. Live completion additionally requires runtime evidence showing an authorized mutation, verified postconditions, and successful rollback/reconciliation on failure.

@@ -158,6 +158,25 @@ describe('Phase 23 live control plane integration', () => {
     await scheduler.runOnce();
     expect(scheduler.status().skippedTotal).toBe(1);
   });
+  it('scheduler enforces the execution budget and contains cycle rejection', async () => {
+    const runtime = new ResilienceRuntime();
+    const original = runtime.cycle.bind(runtime);
+    runtime.cycle = (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return original({ mode: 'simulation', securityContext: { trusted: true } });
+    }) as typeof runtime.cycle;
+    const scheduler = new RuntimeScheduler(runtime, {
+      enabled: false,
+      mode: 'simulation',
+      cycleIntervalMs: 1000,
+      maxConcurrentCycles: 1,
+      cooldownMs: 0,
+      executionBudgetMs: 5,
+    });
+    await scheduler.runOnce();
+    expect(scheduler.status().skippedTotal).toBe(1);
+    expect(scheduler.status().active).toBe(0);
+  });
   for (const [name, status] of [
     ['dns degraded', 'degraded'],
     ['security failure', 'failed'],

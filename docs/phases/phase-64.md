@@ -35,3 +35,11 @@ The autonomous-mode flag is state only. It is not an authorization grant and mus
 ## Definition of done
 
 Phase 64 is **in progress** until the repository verification gate and the public runtime HTML verification evidence are green. Source implementation alone does not mark the phase complete.
+
+## Status
+
+**In progress.** The shared client contract is implemented, but phase closure remains blocked until the repository gates and public runtime endpoint verification are green and the result is captured as evidence.
+
+## Verification
+
+Repository verification covers validation, typecheck, lint, tests, and build. The runtime dashboard requirement additionally needs a public-boundary verification that confirms `/runtime-api` resolution and the explicit `?api=` override on the deployed runtime surface.

@@ -27,6 +27,8 @@ import { createDefaultRuntimeAdapterRegistry, type RuntimeAdapterRegistry } from
 import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
 import type { ObservationProvider } from './ports/ports.js';
 
+const MAX_IDEMPOTENCY_ENTRIES = 1_000;
+
 export class ResilienceRuntime {
   private readonly started = Date.now();
   private counters: RuntimeCounters = { cyclesTotal: 0, cyclesFailedTotal: 0, decisionsTotal: 0, actionsTotal: 0, actionsFailedTotal: 0, verificationsFailedTotal: 0, recoveriesTotal: 0, rollbacksTotal: 0, blockedTotal: 0, degradedTotal: 0 };
@@ -54,7 +56,26 @@ export class ResilienceRuntime {
     if (input.idempotencyKey && this.idempotency.has(input.idempotencyKey)) return this.idempotency.get(input.idempotencyKey)!;
     if (this.inFlight) throw new Error('runtime cycle already active');
     this.inFlight = this.executeCycle(input);
-    try { const record = await this.inFlight; if (input.idempotencyKey) this.idempotency.set(input.idempotencyKey, record); return record; } finally { this.inFlight = undefined; }
+    try {
+      const record = await this.inFlight;
+      if (input.idempotencyKey) {
+        this.idempotency.set(input.idempotencyKey, record);
+        while (this.idempotency.size > MAX_IDEMPOTENCY_ENTRIES) this.idempotency.delete(this.idempotency.keys().next().value as string);
+      }
+      return record;
+    } catch (error) {
+      this.counters = { ...this.counters, cyclesFailedTotal: this.counters.cyclesFailedTotal + 1 };
+      try {
+        await this.state.fail(input.correlationId ?? 'runtime');
+      } catch {
+        // Preserve the original failure when the state machine cannot transition.
+      }
+      await this.events.emit('runtime.cycle.failed', {
+        correlationId: input.correlationId ?? 'runtime',
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
+    } finally { this.inFlight = undefined; }
   }
   private async executeCycle(input: Partial<RuntimeContext> = {}): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
     const start = Date.now(); let context = createRuntimeContext(input); const before = this.state.current();
@@ -75,8 +96,6 @@ export class ResilienceRuntime {
     await this.state.transition('validating', context.correlationId);
     const lockKey = plan.dependencies.join('|') || plan.selectedAction.intent;
     try {
-      // Validate before acquiring the lock so the validator can distinguish an
-      // already-active conflicting operation from this cycle's eventual lock.
       const validation = await this.validator.validate(plan, context, false);
       if (!validation.valid) return this.recordBlocked(context, before, observations, found, candidates, plan, start, validation);
       if (!this.validator.lock(lockKey)) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
@@ -89,10 +108,6 @@ export class ResilienceRuntime {
       const verifier = new RuntimeActionVerifier(this.adapters);
       const recoveryProvider = new FailoverRecoveryProvider(this.adapters);
 
-      // Simulation is a planning/validation path: it must not create an
-      // execution record or invoke adapter execution/verification. The lower
-      // level executor still supports simulation for callers that explicitly
-      // exercise that component.
       if (context.mode === 'simulation') {
         outcome = 'simulated';
       } else {
@@ -131,7 +146,13 @@ export class ResilienceRuntime {
     await this.decisions.put(record); this.last = record; await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
   }
   async getRuntimeSnapshot(): Promise<RuntimeSnapshot> {
-    const lastIncidents = await this.incidents.list(); const state = this.state.current(); const evidenceBacked = Boolean(this.last?.verificationResult?.status === 'success' || this.last?.outcome === 'simulated' || this.last?.outcome === 'blocked');
-    return { state, activeIncident: lastIncidents.at(-1), recentObservations: this.last?.observations, policySnapshot: this.last?.runtimeContext ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot : createRuntimeContext().policySnapshot, currentPlan: this.last?.selectedPlan, currentAction: this.last?.selectedPlan?.selectedAction, verificationStatus: this.last?.verificationResult, recoveryStatus: this.last?.recoveryResult, lastDecision: this.last, health: { status: state === 'blocked' ? 'degraded' : state === 'failed' ? 'failed' : evidenceBacked ? 'healthy' : 'unknown', reason: evidenceBacked ? 'backed by cycle evidence' : 'no evidence yet' }, uptimeMs: Date.now() - this.started, counters: this.counters, mode: this.last?.runtimeContext.mode ?? 'safe' };
+    const lastIncidents = await this.incidents.list(); const state = this.state.current();
+    const observations = this.last?.observations?.observations ?? [];
+    const hasEvidence = observations.length > 0 || Boolean(this.last?.verificationResult);
+    const observationHealthy = observations.length > 0 && observations.every((o) => o.status === 'healthy' && o.freshnessMs >= 0);
+    const verifiedHealthy = this.last?.verificationResult?.status === 'success';
+    const healthStatus = state === 'blocked' ? 'degraded' : state === 'failed' ? 'failed' : verifiedHealthy || observationHealthy ? 'healthy' : 'unknown';
+    const healthReason = verifiedHealthy ? 'backed by verified action evidence' : observationHealthy ? 'backed by fresh healthy observations' : state === 'blocked' ? 'runtime policy or capability blocked the cycle' : state === 'failed' ? 'runtime cycle failed' : hasEvidence ? 'no verified healthy evidence' : 'no evidence yet';
+    return { state, activeIncident: lastIncidents.at(-1), recentObservations: this.last?.observations, policySnapshot: this.last?.runtimeContext ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot : createRuntimeContext().policySnapshot, currentPlan: this.last?.selectedPlan, currentAction: this.last?.selectedPlan?.selectedAction, verificationStatus: this.last?.verificationResult, recoveryStatus: this.last?.recoveryResult, lastDecision: this.last, health: { status: healthStatus, reason: healthReason }, uptimeMs: Date.now() - this.started, counters: this.counters, mode: this.last?.runtimeContext.mode ?? 'safe' };
   }
 }
