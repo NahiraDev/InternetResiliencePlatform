@@ -2,11 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist",
-    "paths": {
-      "@irp/connectivity": ["../../packages/connectivity/src/index.ts"],
-      "@irp/routing": ["../../packages/routing/src/index.ts"]
-    }
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts"]
 }
