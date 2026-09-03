@@ -100,7 +100,6 @@ jobs:
         run: |
           /usr/bin/node /usr/lib/irp/linux-client/dist/index.js &
           client_pid=$!
-          trap 'kill "$client_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 20); do
             if curl --fail --silent --show-error http://127.0.0.1:17861/ >/tmp/irp-linux-client.html; then
               break
@@ -115,8 +114,6 @@ jobs:
           grep -Fq 'IRP Linux Client' /tmp/irp-linux-client.html
           grep -Fq 'Linux Full Client' /tmp/irp-linux-client.html
           kill "$client_pid"
-          wait "$client_pid" || test "$?" -eq 143
-          trap - EXIT
 
       - name: Upload Debian package evidence
         uses: actions/upload-artifact@v7.0.1
