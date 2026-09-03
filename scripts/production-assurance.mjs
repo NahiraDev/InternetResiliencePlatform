@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
@@ -27,6 +27,11 @@ const run = (command, args) => new Promise((resolve) => {
   child.on('error', (error) => resolve({ code: 1, stdout, stderr: `${stderr}${error instanceof Error ? error.message : String(error)}` }));
   child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
 });
+
+const diagnostic = (result) => {
+  const combined = `${result.stdout}\n${result.stderr}`.trim();
+  return combined.length > 4000 ? combined.slice(-4000) : combined;
+};
 
 async function sha256File(path) {
   const data = await readFile(path);
@@ -55,11 +60,21 @@ async function hashDirectory(directory) {
 const startedAt = new Date().toISOString();
 record('contract', 'pass', `schemaVersion=${contract.schemaVersion}`);
 
-const build = await run('pnpm', ['--filter', '@irp/resilience-runtime', 'build']);
-record('runtime-build', build.code === 0 ? 'pass' : 'fail', build.code === 0 ? 'canonical runtime package built successfully' : `build failed with exit ${build.code}`, { exitCode: build.code });
+const build = await run('pnpm', ['build']);
+record(
+  'runtime-build',
+  build.code === 0 ? 'pass' : 'fail',
+  build.code === 0 ? 'full workspace build completed successfully' : `full workspace build failed with exit ${build.code}`,
+  { exitCode: build.code, diagnostic: build.code === 0 ? undefined : diagnostic(build) },
+);
 
 const integration = await run('pnpm', ['runtime:integration:strict']);
-record('package-integration', integration.code === 0 ? 'pass' : 'fail', integration.code === 0 ? 'all discovered package integrations passed' : `package integration failed with exit ${integration.code}`, { exitCode: integration.code });
+record(
+  'package-integration',
+  integration.code === 0 ? 'pass' : 'fail',
+  integration.code === 0 ? 'all discovered package integrations passed' : `package integration failed with exit ${integration.code}`,
+  { exitCode: integration.code, diagnostic: integration.code === 0 ? undefined : diagnostic(integration) },
+);
 
 let validation = null;
 const runtimeModule = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
@@ -80,16 +95,16 @@ if (existsSync(runtimeModule) && build.code === 0) {
     record('canonical-runtime-validation', 'fail', error instanceof Error ? error.message : String(error));
   }
 } else {
-  record('canonical-runtime-validation', 'fail', 'canonical runtime validation module is unavailable after build');
+  record('canonical-runtime-validation', 'fail', 'canonical runtime validation module is unavailable after the full workspace build');
 }
 
 let artifact = null;
 const distDir = join(root, 'packages/resilience-runtime/dist');
-if (existsSync(distDir)) {
+if (existsSync(distDir) && build.code === 0) {
   artifact = await hashDirectory(distDir);
   record('runtime-artifact-integrity', 'pass', `hashed ${artifact.files} runtime artifact files`, artifact);
 } else {
-  record('runtime-artifact-integrity', 'fail', 'runtime dist directory is missing');
+  record('runtime-artifact-integrity', 'fail', 'runtime artifact directory is missing after a successful build');
 }
 
 const verdict = failures.length ? 'FAIL' : 'PASS';
