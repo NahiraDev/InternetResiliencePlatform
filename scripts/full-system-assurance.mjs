@@ -6,6 +6,7 @@ import process from 'node:process';
 
 const root = process.cwd();
 const contract = JSON.parse(await readFile(join(root, 'ops/release/full-system-assurance.json'), 'utf8'));
+const registry = JSON.parse(await readFile(join(root, contract.realEnvironmentAdapterRegistry), 'utf8'));
 const outputDir = join(root, process.env.IRP_FULL_SYSTEM_OUTPUT ?? 'artifacts/full-system-assurance');
 const rows = [];
 const hash = (value) => createHash('sha256').update(value).digest('hex');
@@ -24,14 +25,12 @@ async function walk(dir) {
 function capabilityFor(id) {
   const value = id.toLowerCase();
   const rules = [
-    ['resilience-runtime', 'resilience-runtime'], ['network-intelligence', 'network-intelligence'],
-    ['connectivity', 'connectivity'], ['dns', 'dns'], ['gateway-registry', 'gateway-registry'],
-    ['routing', 'routing'], ['failover', 'failover'], ['tunnel', 'tunnel'], ['database', 'database'],
-    ['api', 'api'], ['daemon', 'daemon'], ['security', 'security'], ['telemetry', 'telemetry'],
-    ['linux-client', 'linux-client'], ['macos-client', 'macos-client'], ['windows-client', 'windows-client'],
-    ['android', 'android-client'], ['ios-network-extension', 'ios-network-extension'], ['ios', 'ios-client'],
-    ['observability', 'observability'], ['docker', 'docker'], ['kubernetes', 'kubernetes'],
-    ['regional', 'regional-validation'], ['release', 'release-engineering'], ['backup', 'backup-restore'],
+    ['resilience-runtime', 'resilience-runtime'], ['network-intelligence', 'network-intelligence'], ['connectivity', 'connectivity'],
+    ['dns', 'dns'], ['gateway-registry', 'gateway-registry'], ['routing', 'routing'], ['failover', 'failover'], ['tunnel', 'tunnel'],
+    ['database', 'database'], ['api', 'api'], ['daemon', 'daemon'], ['security', 'security'], ['telemetry', 'telemetry'],
+    ['linux-client', 'linux-client'], ['macos-client', 'macos-client'], ['windows-client', 'windows-client'], ['android', 'android-client'],
+    ['ios-network-extension', 'ios-network-extension'], ['ios', 'ios-client'], ['observability', 'observability'], ['docker', 'docker'],
+    ['kubernetes', 'kubernetes'], ['regional', 'regional-validation'], ['release', 'release-engineering'], ['backup', 'backup-restore'],
     ['rollback', 'upgrade-rollback'], ['chaos', 'chaos-soak'], ['control', 'control-plane']
   ];
   if (value.includes('infra') || value.includes('docker')) return 'docker';
@@ -56,6 +55,17 @@ function executableEntrypoint(abs, manifest) {
   return null;
 }
 
+function realEnvironmentContract(capability) {
+  const entry = registry.capabilities?.[capability];
+  if (!entry) return { status: 'BLOCKED', assurancePath: null, evidenceIds: [], environment: null, failureInjection: null, recoveryVerification: null, telemetryEvidence: null, reason: 'No registered real-environment assurance contract' };
+  return {
+    status: 'PENDING', assurancePath: contract.realEnvironmentAdapterRegistry, evidenceIds: entry.evidenceIds ?? [], environment: entry.environment ?? null,
+    failureInjection: 'Required by evidence schema; adapter must record the injected degradation/failure.',
+    recoveryVerification: 'Required by evidence schema; adapter must verify recovery on the real path.',
+    telemetryEvidence: 'Required by evidence schema; adapter must provide traceId and observed telemetry.'
+  };
+}
+
 async function addSurface(path, type, packageJson = null) {
   const abs = join(root, path);
   const isDir = existsSync(abs) && statSync(abs).isDirectory();
@@ -64,16 +74,13 @@ async function addSurface(path, type, packageJson = null) {
   const scripts = packageJson?.scripts ?? {};
   const entrypoint = executableEntrypoint(abs, packageJson);
   const executable = Boolean(entrypoint) || ['app', 'android-client', 'ios-client', 'ios-network-extension', 'workflow', 'operations', 'infrastructure'].includes(type);
+  const capability = capabilityFor(path);
   rows.push({
-    componentId: path.replaceAll('/', '::'), path, type, capability: capabilityFor(path), executable, entrypoint,
+    componentId: path.replaceAll('/', '::'), path, type, capability, executable, entrypoint,
     buildCommand: scripts.build ?? null, testCommand: scripts.test ?? null, sourceFiles,
     upstreamDependencies: packageJson ? Object.keys({ ...(packageJson.dependencies ?? {}), ...(packageJson.optionalDependencies ?? {}) }) : [],
     downstreamDependencies: [], owningPhases: [],
-    realEnvironment: {
-      status: executable ? 'BLOCKED' : 'PENDING',
-      assurancePath: null, failureInjection: null, recoveryVerification: null, telemetryEvidence: null,
-      evidenceRequired: executable
-    },
+    realEnvironment: executable ? { ...realEnvironmentContract(capability), evidenceRequired: true } : { status: 'PENDING', evidenceRequired: false },
     evidenceId: null
   });
 }
@@ -87,59 +94,45 @@ for (const top of ['packages', 'apps']) {
     await addSurface(path, top === 'apps' ? 'app' : 'package', existsSync(manifest) ? await readJson(manifest) : null);
   }
 }
-
 for (const path of ['clients/android', 'clients/ios', 'clients/ios/PacketTunnel']) {
   if (existsSync(join(root, path))) await addSurface(path, path.includes('PacketTunnel') ? 'ios-network-extension' : path.includes('android') ? 'android-client' : 'ios-client');
 }
-
 for (const top of ['infra', 'ops']) {
   const base = join(root, top);
   if (!existsSync(base)) continue;
-  for (const entry of await readdir(base, { withFileTypes: true })) {
-    await addSurface(`${top}/${entry.name}`, entry.isDirectory() ? 'operations' : 'infrastructure');
-  }
+  for (const entry of await readdir(base, { withFileTypes: true })) await addSurface(`${top}/${entry.name}`, entry.isDirectory() ? 'operations' : 'infrastructure');
 }
-
 const workflowDir = join(root, '.github/workflows');
-if (existsSync(workflowDir)) {
-  for (const file of await readdir(workflowDir)) if (/\.(yml|yaml)$/.test(file)) await addSurface(`.github/workflows/${file}`, 'workflow');
-}
+if (existsSync(workflowDir)) for (const file of await readdir(workflowDir)) if (/\.(yml|yaml)$/.test(file)) await addSurface(`.github/workflows/${file}`, 'workflow');
 
 const packageRows = rows.filter((row) => row.type === 'package' || row.type === 'app');
 const reverse = new Map(packageRows.map((row) => [row.path.split('/').at(-1), new Set()]));
-for (const row of packageRows) {
-  for (const dependency of row.upstreamDependencies) {
-    const target = dependency.startsWith('@irp/') ? dependency.slice('@irp/'.length) : dependency;
-    if (reverse.has(target)) reverse.get(target).add(row.path);
-  }
+for (const row of packageRows) for (const dependency of row.upstreamDependencies) {
+  const target = dependency.startsWith('@irp/') ? dependency.slice('@irp/'.length) : dependency;
+  if (reverse.has(target)) reverse.get(target).add(row.path);
 }
 for (const row of packageRows) row.downstreamDependencies = [...(reverse.get(row.path.split('/').at(-1)) ?? [])].sort();
 
 const phaseDocs = [];
 const phaseDir = join(root, 'docs/phases');
-if (existsSync(phaseDir)) {
-  for (const file of await readdir(phaseDir)) {
-    const match = /^phase-(\d+)(?:-[^/]+)?\.md$/.exec(file);
-    if (match) phaseDocs.push(Number(match[1]));
-  }
+if (existsSync(phaseDir)) for (const file of await readdir(phaseDir)) {
+  const match = /^phase-(\d+)(?:-[^/]+)?\.md$/.exec(file);
+  if (match) phaseDocs.push(Number(match[1]));
 }
 const missingPhaseDocs = [];
 for (let n = 0; n <= contract.roadmap.maxPhase; n++) if (!phaseDocs.includes(n)) missingPhaseDocs.push(n);
-for (let n = 0; n <= contract.roadmap.maxPhase; n++) {
-  rows.push({
-    componentId: `roadmap::phase-${n}`, path: `docs/phases/phase-${String(n).padStart(2, '0')}.md`, type: 'roadmap-phase', capability: 'release-engineering',
-    executable: false, entrypoint: null, buildCommand: null, testCommand: null, sourceFiles: 0, upstreamDependencies: [], downstreamDependencies: [], owningPhases: [n],
-    realEnvironment: { status: missingPhaseDocs.includes(n) ? 'BLOCKED' : 'PENDING', assurancePath: null, failureInjection: null, recoveryVerification: null, telemetryEvidence: null, evidenceRequired: false },
-    evidenceId: null
-  });
-}
+for (let n = 0; n <= contract.roadmap.maxPhase; n++) rows.push({
+  componentId: `roadmap::phase-${n}`, path: `docs/phases/phase-${String(n).padStart(2, '0')}.md`, type: 'roadmap-phase', capability: 'release-engineering', executable: false,
+  entrypoint: null, buildCommand: null, testCommand: null, sourceFiles: 0, upstreamDependencies: [], downstreamDependencies: [], owningPhases: [n],
+  realEnvironment: { status: missingPhaseDocs.includes(n) ? 'BLOCKED' : 'PENDING', evidenceRequired: false }, evidenceId: null
+});
 
 const discoveredCapabilities = new Set(rows.map((row) => row.capability));
 const missingCapabilities = contract.requiredCapabilitySurfaces.filter((capability) => !discoveredCapabilities.has(capability));
-const noAssurance = rows.filter((row) => row.executable && !row.realEnvironment.assurancePath);
+const noAssurance = rows.filter((row) => row.executable && row.realEnvironment.status === 'BLOCKED');
 const report = {
-  schemaVersion: 2, generatedAt: new Date().toISOString(), commitSha: process.env.GITHUB_SHA ?? 'unknown',
-  repositoryScope: contract.sourceOfTruth, componentCount: rows.length, sourceFileCount: rows.reduce((n, r) => n + r.sourceFiles, 0), components: rows,
+  schemaVersion: 2, generatedAt: new Date().toISOString(), commitSha: process.env.GITHUB_SHA ?? 'unknown', repositoryScope: contract.sourceOfTruth,
+  componentCount: rows.length, sourceFileCount: rows.reduce((n, row) => n + row.sourceFiles, 0), components: rows,
   roadmap: { expectedThrough: contract.roadmap.maxPhase, discoveredPhaseDocs: [...new Set(phaseDocs)].sort((a, b) => a - b), missingPhaseDocs },
   requiredCapabilitySurfaces: contract.requiredCapabilitySurfaces, missingCapabilitySurfaces: missingCapabilities,
   closedLoopStages: contract.requiredClosedLoopStages,
@@ -147,10 +140,11 @@ const report = {
   failures: [],
   blocked: [
     ...missingPhaseDocs.map((n) => `phase-${n}: roadmap phase document is missing`),
-    ...noAssurance.map((row) => `${row.path}: no concrete real-environment assurance adapter is registered`),
+    ...noAssurance.map((row) => `${row.path}: no registered real-environment assurance contract for capability ${row.capability}`),
     ...missingCapabilities.map((capability) => `${capability}: capability surface has no discovered repository owner`)
   ],
   executableComponentsWithoutAssurance: noAssurance.length,
+  registeredRealEnvironmentContracts: Object.keys(registry.capabilities ?? {}).length,
   realEnvironmentEvidenceSchema: contract.realEnvironmentEvidence,
   reportSha256: null
 };
@@ -161,4 +155,4 @@ await writeFile(join(outputDir, 'system-matrix.sha256'), `${hash(JSON.stringify(
 console.log(`FULL SYSTEM ASSURANCE MATRIX: ${report.verdict}`);
 console.log(`Components/phases: ${report.componentCount}; source files represented: ${report.sourceFileCount}`);
 console.log(`Missing phase docs: ${missingPhaseDocs.length}; executable surfaces without assurance: ${noAssurance.length}`);
-// BLOCKED is an honest inventory state, not a CI failure. Production certification remains fail-closed.
+console.log(`Registered real-environment capability contracts: ${report.registeredRealEnvironmentContracts}`);
