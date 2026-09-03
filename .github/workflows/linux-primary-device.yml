@@ -33,7 +33,7 @@ jobs:
       - name: Install CI prerequisites
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv libatomic1
+          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv libatomic1 nodejs
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -56,6 +56,11 @@ jobs:
           node --version
           command -v node
           test "$(node -p 'process.versions.node.split(".")[0]')" = '24'
+          node_bin="$(command -v node)"
+          if [ "$node_bin" != "/usr/bin/node" ]; then
+            ln -sf "$node_bin" /usr/bin/node
+          fi
+          test "$(/usr/bin/node -p 'process.versions.node.split(".")[0]')" = '24'
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
