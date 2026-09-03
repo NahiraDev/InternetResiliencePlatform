@@ -7,11 +7,11 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 - Current implementation gate: **Phase 71 — Cross-Platform Distribution & GitHub Releases**.
 - Phase 71 status: implementation complete; external release evidence is still required before certification.
 - Main branch: `main`
-- Current main commit observed for this baseline: `a2bd55e2df35097531a64ce879772dd03290a99d`.
-- A completed Phase 69 hardening run for that commit succeeded; the latest root `CI` run for the same push was still in progress when this baseline was recorded. This file does not certify CI.
-- Current post-70 roadmap: [`docs/roadmap/MASTER_ROADMAP_V2.md`](../docs/roadmap/MASTER_ROADMAP_V2.md), covering Phases 72–150.
+- Current main commit observed for this baseline: `3d2b78e1c95eb1bdf48c70113a6331813c54a1a8` (`docs(state): make Phase 71 certification gate explicit`).
+- The Phase 71 release workflow has an Android artifact-upload path fix on `main` (`08bbea196b6d23fd7f661cae5315834b7ff22e9f`).
+- Repository release state: no published GitHub Releases are currently present, so Phase 71 certification remains open.
 - Phase 72 exists as an architecture-preparation baseline and is **blocked from completion** until the Phase 71 external release-certification requirement is satisfied.
-- Next execution priority: complete the real tagged-release certification for Phase 71; meanwhile architecture preparation may proceed without changing runtime behavior.
+- Next execution priority: execute and verify a real tagged Phase 71 release; meanwhile no downstream phase may be declared complete merely from architecture/source presence.
 
 ## Active agent slots
 
