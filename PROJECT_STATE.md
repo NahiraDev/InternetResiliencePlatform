@@ -2,105 +2,132 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
-## Current State
+## Current implementation gate
 
-- **Current phase:** Phase 70 — IRP v1.0 Production Certification (**implementation started; certification evidence required**).
-- **Phase 70:** versioned certification manifest, fail-closed evidence contract, certification verifier, evidence secret-scan and Phase 70 CI gates are implemented on the Phase 70 branch. Production certification is not claimed until runtime, device, regional, security, recovery and release evidence is independently verified.
-- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on `main`; full repository/runtime/security/device evidence remains required before closure.
-- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Final evidence remains governed by the phase verification rules.
-- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present.
-- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present.
-- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered.
-- **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
-- **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
-- **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
-- **Phase 61:** implementation remains subject to full repository/runtime verification under the phase verification rules.
-- **Phase 60:** implementation was merged to `main` by PR #170; its final verification status remains governed by the phase verification rules.
-- **Phase 59:** implementation is merged to `main`; final closure remains governed by repository/runtime evidence.
-- **Phase 58:** implementation is merged to `main`; final verification evidence remains required.
-- **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification remains required.
-- **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified fix is accepted on `main`.
-- **Phase 52:** implementation is complete, but final repository/runtime verification is still required.
-- **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
-- **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
-- **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
-- **Phase 48:** secure tunnel abstraction is complete and accepted after verification.
-- **Phase 47:** gateway discovery and health is verified green and accepted.
-- **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
-- **Core architecture:** headless Core + unified Control Plane + full-capability clients.
-- **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
-- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic. Desktop and mobile clients consume shared capability contracts and do not duplicate routing/policy intelligence.
-- **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
-- **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
-- **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **macOS client strategy:** Phase 62 owns macOS process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **Windows client strategy:** Phase 63 owns Windows process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
-- **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
-- **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
-- **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
-- **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
-- **Production hardening strategy:** Phase 69 owns cross-platform release readiness, compatibility evidence, accessibility/localization acceptance, upgrade/rollback safety, security audit controls, bounded chaos/soak verification, backup/restore verification and release engineering. It does not move product authority into clients.
-- **v1.0 certification strategy:** Phase 70 owns the final evidence contract and release gate. It aggregates verified repository, runtime, security, recovery, regional, platform, device and release-engineering evidence without treating source presence or a contract check as certification.
-- **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
-- **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+- **Current gate:** Phase 71 — Cross-Platform Distribution & GitHub Releases.
+- **Phase 71 status:** implementation is complete on `main`; external release evidence is still required before certification. The phase record requires a real tagged GitHub Release, published assets and checksum/release inspection. Do not represent Phase 71 as certified from source presence or CI alone.
+- **Current main baseline reviewed:** `a2bd55e2df35097531a64ce879772dd03290a99d`.
+- **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` is the current planning authority for Phases 72–150.
+- **Historical/v1 roadmap:** `ROADMAP.md` and `docs/architecture/product-roadmap-70-phases.md` preserve the 0–70 product baseline and should not be interpreted as the current post-v1 roadmap.
+- **Phase 72 status:** architecture-preparation baseline exists, but Phase 72 must not be treated as completed while the Phase 71 external certification gate remains open.
 
-## Phase 70 — IRP v1.0 Production Certification
+## Phase 71 certification prerequisites
 
-**Implementation in progress; certification evidence required.**
+The following evidence remains required before Phase 71 can be certified:
 
-### Implementation evidence
+- full repository validation, typecheck, lint, tests and build evidence;
+- security/dependency and artifact-integrity evidence;
+- control-plane/gateway runtime evidence;
+- regional public-IP/service evidence;
+- upgrade/rollback rehearsal;
+- backup/restore rehearsal;
+- isolated chaos/soak evidence;
+- accessibility/localization verification on applicable clients;
+- Linux, macOS, Windows, iOS and Android runtime evidence;
+- signed iOS device smoke and Android device smoke evidence;
+- release-engineering sign-off and final certification review.
 
-- `docs/phases/phase-70.md`
-- `ops/release/phase-70-certification.json`
-- `scripts/phase70-certification.mjs`
-- `.github/workflows/phase-70-certification.yml`
+## Current architecture authority
 
-### Current guarantees
-
-- v1.0 certification requirements are explicit and machine-readable.
-- Supported product surfaces are represented across Core, API, gateways, web, Linux, macOS, Windows, iOS and Android.
-- Missing runtime/device/regional/release evidence is fail-closed and cannot be represented as certification.
-- Certification evidence receives an explicit secret-material safety scan.
-- Phase 69 repository/readiness gates are treated as prerequisites rather than silently assumed.
-- Phase 70 CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
-- Required checks do not intentionally use false-green mechanisms such as `continue-on-error` or shell success overrides.
-
-### Remaining certification evidence
-
-- Full repository `validate`, typecheck, lint, tests and build.
-- Security analysis/dependency review and artifact integrity evidence.
-- Control-plane and gateway runtime evidence.
-- Regional public-IP/service evidence.
-- Real upgrade/rollback rehearsal against a representative deployment.
-- Real backup/restore rehearsal against representative control-plane state.
-- Runtime chaos/soak evidence in an isolated provisioned environment.
-- Accessibility/localization verification on each applicable user-facing client.
-- Linux, macOS, Windows, iOS and Android runtime evidence.
-- Signed iOS device smoke and Android device smoke evidence.
-- Release-engineering sign-off and final v1.0 certification review.
-
-## Verification Rules
-
-A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
-
-For every phase:
-
-1. inspect existing implementation before adding abstractions;
-2. preserve compatible contracts unless a breaking change is explicitly required;
-3. add normal, boundary, invalid and failure-path tests;
-4. run repository validation, typecheck, lint, relevant tests and build;
-5. apply security/abuse review to security-sensitive changes;
-6. verify runtime behavior for networking/process/container changes;
-7. update documentation and project state;
-8. require green CI before marking the phase complete.
-
-For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
-
-## Product Objective
+IRP is a headless Core + unified Control Plane with full-capability clients. The canonical network-control loop is:
 
 ```text
 Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 → Apply → Verify → Monitor → Failover/Recover → Learn → Explain
 ```
+
+The immediate architectural objective is not to create a second control plane. The repository already contains substantial control-plane/runtime primitives. Phase 72–78 must consolidate and formalize their ownership before adding broader autonomy.
+
+### Existing ownership boundaries
+
+- `@irp/resilience-runtime` is the primary transport-agnostic runtime/control-loop authority.
+- `@irp/network-intelligence` supplies measurements, models and decision intelligence; it must not become a second independent mutation authority.
+- `@irp/gateway-registry` owns gateway inventory/discovery/health/selection/failover/fleet behavior.
+- `@irp/tunnel` owns tunnel contracts, lifecycle and concrete tunnel providers.
+- DNS, connectivity, routing, security, telemetry and plugin packages retain their domain-specific contracts behind the shared control-plane boundary.
+- `apps/api`, SDKs and clients expose/consume capabilities; UI/client layers do not own safety-critical routing or policy decisions.
+
+These are architecture directions to be verified and refined by Phase 72; they are not a claim that every cross-package boundary is already fully normalized.
+
+## Phase 72–150 execution governance
+
+The current post-v1 roadmap is grouped as:
+
+- 72–78 — Unified Control Plane
+- 79–85 — Intent & Policy
+- 86–92 — Connectivity Fabric
+- 93–99 — Advanced Routing & Recovery
+- 100–106 — Telemetry & Network Intelligence
+- 107–113 — Security & Trust
+- 114–120 — Fleet & Distributed Control
+- 121–127 — Intelligence, Simulation & Production
+- 128–134 — Data Plane & Traffic Engineering
+- 135–140 — Platform APIs & Extensibility
+- 141–145 — Privacy, Governance & Compliance
+- 146–150 — Reliability, Scale & Disaster Recovery
+
+Dependency rules:
+
+1. Control-plane state/contracts precede broad autonomy.
+2. Intent/policy precede AI-assisted autonomous control.
+3. Safety, authorization, rollback and recovery precede broad execution authority.
+4. Telemetry and assurance are first-class autonomy dependencies.
+5. Fleet control reuses device/control contracts instead of forking them.
+6. Data-plane enforcement remains behind explicit policy and safety controls.
+7. Privacy, security and auditability are architectural requirements, not release-only cleanup.
+8. Distributed control must preserve deterministic local fallback when centralized control is unavailable.
+9. No phase may weaken least-privilege, privacy, fallback, recovery or auditability guarantees.
+
+## Parallel-agent rules
+
+- One owner per active phase.
+- One agent owns a file/package at a time.
+- Use a dedicated branch `phase/<number>-<short-name>` for phase implementation.
+- Shared contract changes require integration review before dependent implementations proceed.
+- Do not create duplicate decision engines, state registries, policy engines, event buses, provider registries or control-plane runtimes when an existing canonical component can be extended.
+- Every phase record must define scope, non-goals, dependencies, affected packages, contracts, tests, acceptance criteria and rollback considerations.
+- Phase completion requires implementation plus the verification/evidence defined by its phase contract. Documentation or source presence alone is never completion evidence.
+
+## Phase verification rules
+
+For every phase:
+
+1. inspect existing implementation before adding abstractions;
+2. preserve compatible contracts unless a breaking change is explicitly justified;
+3. test normal, boundary, invalid and failure paths as applicable;
+4. run the required repository gates: `pnpm validate`, `pnpm typecheck`, `pnpm lint`, relevant tests and builds;
+5. apply explicit security/abuse review to security-sensitive changes;
+6. verify runtime behavior for networking, process, container and platform changes;
+7. update canonical documentation and state;
+8. require green CI before declaring the phase complete.
+
+For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
+
+## Canonical evidence locations
+
+- Current state: this file.
+- Current post-70 roadmap: `docs/roadmap/MASTER_ROADMAP_V2.md`.
+- Historical 0–70 roadmap: `ROADMAP.md` and `docs/architecture/product-roadmap-70-phases.md`.
+- Current phase records: `docs/phases/`.
+- Historical numbering reconstruction: `docs/audits/phase-history-evidence-matrix.md`.
+- Control-plane execution baseline: `docs/audits/control-plane-execution-baseline-2026-09-03.md`.
+- API contract: `docs/api/control-plane-contract.md`.
+- Live runtime architecture: `docs/architecture/live-control-plane.md`.
+- Engineering governance: `docs/architecture/engineering-governance.md`.
+- Parallel-agent protocol: `.github/AGENT_PROTOCOL.md` and `.github/ACTIVE_WORK.md`.
+
+## Known architectural findings entering Phase 72
+
+The repository already contains observation, state, planning, policy, decision, execution, verification, telemetry and recovery primitives. The main risks entering the next roadmap segment are ownership fragmentation and contract duplication, especially around:
+
+- decision orchestration versus decision intelligence;
+- desired/observed/actual state semantics;
+- event taxonomy and event ownership;
+- cross-domain action/transaction semantics;
+- unified safety and rollback boundaries.
+
+The detailed evidence-backed analysis is in `docs/audits/control-plane-execution-baseline-2026-09-03.md`.
+
+## Product objective
+
+IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify outcomes, recover from failure and explain decisions across supported clients and network providers.

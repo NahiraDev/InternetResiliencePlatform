@@ -1,6 +1,6 @@
 # Architecture
 
-This directory contains canonical architecture and engineering-governance documentation for IRP. Historical implementation evidence belongs under `docs/phases/`.
+This directory contains canonical architecture and engineering-governance documentation for IRP. Historical implementation evidence belongs under `docs/phases/` and `docs/audits/`.
 
 ## Start here
 
@@ -17,10 +17,14 @@ This directory contains canonical architecture and engineering-governance docume
 
 ## Product planning
 
-- [70-phase product plan](product-roadmap-70-phases.md) — phase contracts and dependencies.
+- [Current post-70 roadmap](../roadmap/MASTER_ROADMAP_V2.md) — Phases 72–150 and dependency rules.
+- [Control-plane execution baseline](../audits/control-plane-execution-baseline-2026-09-03.md) — current ownership/gap audit.
+- [Historical 0–70 product plan](product-roadmap-70-phases.md) — retained as the v1/historical baseline.
 - [Release gates](release-gates.md) — completion and release evidence.
 - [Engineering governance](engineering-governance.md) — architecture and repository growth rules.
 
 ## Reading rule
 
 Architecture documents describe current structure and durable boundaries. Planned behavior must be explicitly identified as planned. `PROJECT_STATE.md`, tests, runtime evidence, and CI determine implementation status.
+
+When historical and current roadmap documents differ, use `PROJECT_STATE.md` for the current implementation gate and `docs/roadmap/MASTER_ROADMAP_V2.md` for current post-70 planning. Historical 0–70 documents do not override those sources.

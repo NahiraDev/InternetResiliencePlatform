@@ -22,13 +22,15 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 3. [Product architecture](architecture/product-architecture.md)
 4. [Data and control flow](architecture/data-flow.md)
 5. [Gateway and tunnel architecture](architecture/gateway-and-tunnel-architecture.md)
-6. [70-phase product plan](architecture/product-roadmap-70-phases.md)
-7. [Engineering governance](architecture/engineering-governance.md)
-8. [Release gates](architecture/release-gates.md)
-9. [Phase records](phases/README.md)
-10. [Historical phase evidence matrix](audits/phase-history-evidence-matrix.md)
-11. [Documentation audit](audits/documentation-audit-2026-08-23.md)
-12. [ADRs](adr/)
+6. [Current post-70 roadmap](roadmap/MASTER_ROADMAP_V2.md)
+7. [Historical 0–70 product plan](architecture/product-roadmap-70-phases.md)
+8. [Engineering governance](architecture/engineering-governance.md)
+9. [Release gates](architecture/release-gates.md)
+10. [Phase records](phases/README.md)
+11. [Control-plane execution baseline](audits/control-plane-execution-baseline-2026-09-03.md)
+12. [Historical phase evidence matrix](audits/phase-history-evidence-matrix.md)
+13. [Documentation audit](audits/documentation-audit-2026-08-23.md)
+14. [ADRs](adr/)
 
 ### Operator / troubleshooter
 
@@ -63,13 +65,14 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 | `concepts/` | Durable product concepts and terminology |
 | `api/` | API contracts and examples |
 | `architecture/` | Current architecture, product model, governance and release rules |
+| `roadmap/` | Current post-v1 roadmap and execution dependencies |
 | `network/` | Network-specific concepts and boundaries |
 | `guides/` | Task-oriented procedures and troubleshooting |
 | `operations/` | Deployment, recovery and operational procedures |
 | `reference/` | Stable package and implementation references |
 | `security/` | Security-specific documentation |
 | `adr/` | Durable architectural decisions |
-| `phases/` | Historical implementation and audit evidence |
+| `phases/` | Historical/current phase implementation and audit evidence |
 | `audits/` | Documentation/repository audit records and migration evidence |
 | `testing/` | Test policy and exception metadata |
 
@@ -81,6 +84,7 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 - Concepts belong in `concepts/`; operational procedures belong in `operations/`; troubleshooting belongs in `guides/`.
 - Security architecture belongs in `security/`.
 - Historical implementation mappings belong in `audits/phase-history-evidence-matrix.md`; they do not redefine the current roadmap.
+- Current post-70 roadmap planning belongs in `roadmap/MASTER_ROADMAP_V2.md`.
 - Do not create one-off phase reports in the user-facing navigation.
 - Phase records distinguish implemented, verified, pending-verification, and planned behavior.
 - Use relative links and keep them valid.
@@ -89,10 +93,11 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 ## Project authority
 
 - Project overview: [`../README.md`](../README.md)
-- Concise roadmap: [`../ROADMAP.md`](../ROADMAP.md)
-- Detailed 70-phase plan: [`architecture/product-roadmap-70-phases.md`](architecture/product-roadmap-70-phases.md)
+- Current post-70 roadmap: [`roadmap/MASTER_ROADMAP_V2.md`](roadmap/MASTER_ROADMAP_V2.md)
+- Historical 0–70 roadmap: [`../ROADMAP.md`](../ROADMAP.md) and [`architecture/product-roadmap-70-phases.md`](architecture/product-roadmap-70-phases.md)
 - Product architecture: [`architecture/product-architecture.md`](architecture/product-architecture.md)
 - Current implementation state: [`../PROJECT_STATE.md`](../PROJECT_STATE.md)
+- Control-plane execution baseline: [`audits/control-plane-execution-baseline-2026-09-03.md`](audits/control-plane-execution-baseline-2026-09-03.md)
 - Documentation standards: [`documentation-standards.md`](documentation-standards.md)
 - Documentation audit baseline: [`audits/documentation-audit-2026-08-23.md`](audits/documentation-audit-2026-08-23.md)
 - Historical phase evidence matrix: [`audits/phase-history-evidence-matrix.md`](audits/phase-history-evidence-matrix.md)

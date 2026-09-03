@@ -2,7 +2,9 @@
 
 **Date:** 2026-08-23  
 **Status:** reconstruction in progress  
-**Purpose:** preserve the real implementation history separately from the current 70-phase product contract.
+**Purpose:** preserve the real implementation history separately from the historical 70-phase product contract.
+
+> **Scope note:** this matrix is intentionally limited to the historical/v1 0–70 baseline. It does not define current post-v1 planning or Phase 72–150 status. Use [`../../PROJECT_STATE.md`](../../PROJECT_STATE.md) for the current implementation gate and [`../roadmap/MASTER_ROADMAP_V2.md`](../roadmap/MASTER_ROADMAP_V2.md) for current post-70 planning.
 
 ## Why this matrix exists
 
@@ -27,7 +29,7 @@ A current phase receives a historical mapping only when source, tests, ADRs, mer
 
 ## Historical numbering drift
 
-**historical numbering drift** is authoritative context for this matrix: historical implementation phase numbers drifted from the current 70-phase product numbering. These labels must not be interpreted as one-to-one mappings. A historical phase number may have been renamed, split, merged, superseded, or moved into a later product track. The current product roadmap remains authoritative.
+**historical numbering drift** is authoritative context for this matrix: historical implementation phase numbers drifted from the historical 70-phase product numbering. These labels must not be interpreted as one-to-one mappings. A historical phase number may have been renamed, split, merged, superseded, or moved into a later product track. The applicable roadmap is authoritative for its own scope.
 
 ## Prohibition on unverified historical completion claims
 
@@ -35,9 +37,9 @@ Historical evidence must never be represented as proof that a current product ph
 
 Until that mapping is complete, historical implementation labels remain historical evidence only and must not be promoted to verified current-phase completion.
 
-## Current product-phase status
+## Historical/v1 product-phase status
 
-The current 70-phase roadmap is authoritative for product planning. The following table intentionally avoids inventing historical mappings.
+The table below preserves the 70-phase historical/v1 product contract. Current post-v1 planning is maintained separately in `docs/roadmap/MASTER_ROADMAP_V2.md`.
 
 | Current phase | Product contract | Current evidence state | Canonical record |
 | ---: | --- | --- | --- |
@@ -86,7 +88,7 @@ The current 70-phase roadmap is authoritative for product planning. The followin
 | 42 | Remote client enrollment and authorization lifecycle | `recorded` / verification pending | `docs/phases/phase-42.md` |
 | 43 | Signed replay-resistant probe federation | `recorded` / verification pending | `docs/phases/phase-43.md` |
 | 44 | Analytics summaries, trends and anomalies | `recorded` / verification pending | `docs/phases/phase-44.md` |
-| 45–70 | Current roadmap contracts | `planned` unless a later phase explicitly starts | roadmap only |
+| 45–70 | Historical/v1 roadmap contracts | `planned` unless a later phase explicitly starts | roadmap only |
 
 ## Historical implementation clusters currently confirmed
 
@@ -183,6 +185,6 @@ For each candidate mapping we must establish:
 6. CI/runtime evidence;
 7. current canonical documentation location;
 8. whether the capability was superseded, merged, split or renamed;
-9. whether the capability is actually part of the current product contract.
+9. whether the capability is actually part of the applicable product contract.
 
 Until those checks are complete, historical labels remain historical evidence only.
