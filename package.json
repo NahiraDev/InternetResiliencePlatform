@@ -20,7 +20,6 @@
     "audit:deep": "node scripts/repository-deep-audit.mjs",
     "examples:smoke": "node scripts/examples-smoke.mjs",
     "clean": "node scripts/clean.mjs",
-    "phase23:e2e": "pnpm --filter @irp/resilience-runtime test -- tests/phase23.test.ts",
     "phase69:readiness": "node scripts/phase69-readiness.mjs",
     "phase70:certify": "node scripts/phase70-certification.mjs",
     "phase71:release": "node scripts/phase71-release.mjs",

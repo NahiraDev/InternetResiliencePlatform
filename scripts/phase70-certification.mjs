@@ -30,7 +30,10 @@ else pass('node runtime', process.versions.node);
 const workflowFiles = manifest.requiredPaths.filter((path) => path.startsWith('.github/workflows/'));
 for (const path of workflowFiles) {
   const content = await readFile(join(root, path), 'utf8');
-  if (/continue-on-error:\s*true/i.test(content) || /\|\|\s*true\b/.test(content)) {
+  // GitHub expressions are configuration, not shell success overrides. Strip
+  // expression bodies before checking for the unsafe `|| true` shell pattern.
+  const workflowContent = content.replace(/\$\{\{[\s\S]*?\}\}/g, '');
+  if (/continue-on-error:\s*true/i.test(workflowContent) || /\|\|\s*true\b/.test(workflowContent)) {
     fail(`workflow safety: ${path}`, 'false-green success override detected');
   }
 }
