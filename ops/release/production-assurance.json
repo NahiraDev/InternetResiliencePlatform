@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "name": "irp-system-assurance",
+  "purpose": "Permanent executable integration gate for the canonical resilience closed loop.",
+  "canonicalStages": [
+    "observe",
+    "measure",
+    "detect",
+    "diagnose",
+    "decide",
+    "policy",
+    "apply",
+    "verify",
+    "recover"
+  ],
+  "requiredScenarios": [
+    "healthy",
+    "dns-degradation",
+    "provider-recovery",
+    "destination-specific"
+  ],
+  "requiredAcceptance": [
+    "completeStageOrderCovered",
+    "healthyPathRecorded",
+    "degradedPathDetected",
+    "persistentDegradationDetected",
+    "applyFailureInjectionAvailable",
+    "verificationFailureTriggersRecovery",
+    "destinationIsolationRepresented",
+    "decisionsAreUnique"
+  ],
+  "requiredRuntimeEvidence": [
+    "runtime-build",
+    "package-integration",
+    "canonical-runtime-validation"
+  ],
+  "rules": {
+    "ciGreenIsNotProductionCertification": true,
+    "missingEvidenceIsPending": true,
+    "noSyntheticProductionEvidence": true,
+    "productionCertificationRequiresExternalEvidence": true
+  }
+}

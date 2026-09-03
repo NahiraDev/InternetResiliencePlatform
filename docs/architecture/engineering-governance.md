@@ -14,6 +14,8 @@ This document defines engineering rules that keep IRP coherent across the histor
 - `docs/architecture/product-roadmap-70-phases.md` — historical/v1 detailed 0–70 phase contract.
 - `docs/audits/phase-history-evidence-matrix.md` — historical implementation labels and evidence-backed mapping.
 - `docs/documentation-standards.md` — documentation rules.
+- `docs/release/production-assurance.md` — permanent executable system-integration gate.
+- `ops/release/production-assurance.json` — machine-readable assurance contract.
 - ADRs — durable architectural decisions.
 
 Do not create competing canonical documents for the same fact.
@@ -41,6 +43,10 @@ The repository already contains substantial observation, state, intelligence, pl
 ## Phase completion
 
 A phase is complete only when implementation, tests, documentation, runtime evidence where applicable, security review where applicable, and CI gates satisfy the phase contract.
+
+For changes that affect runtime/control-plane behavior, **System Assurance must also pass**. The gate is executable: it builds the canonical resilience runtime, runs strict package integration, executes the canonical closed-loop scenarios, checks required stages/acceptance criteria, and records artifact integrity evidence.
+
+System Assurance is not production certification. It proves repository/runtime integration only. Real regional, physical-device, production-infrastructure, recovery, security, release and soak evidence remains subject to the separate fail-closed production certification contract.
 
 Source presence, exported types, mocks, placeholders, or documentation alone are never completion evidence.
 
