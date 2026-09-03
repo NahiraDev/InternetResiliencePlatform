@@ -33,7 +33,7 @@ jobs:
       - name: Install CI prerequisites
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv
+          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv libatomic1
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -95,6 +95,12 @@ jobs:
 
       - name: Verify installed systemd unit contract
         run: |
+          node_bin="$(command -v node)"
+          test -n "$node_bin"
+          if [ "$node_bin" != "/usr/bin/node" ]; then
+            ln -sf "$node_bin" /usr/bin/node
+          fi
+          test -x /usr/bin/node
           systemd-analyze verify /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'User=irp' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'Group=irp' /usr/lib/systemd/system/irp-linux-client.service
