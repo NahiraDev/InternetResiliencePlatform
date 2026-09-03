@@ -68,6 +68,12 @@ jobs:
 
       - name: Verify systemd unit contract
         run: |
+          node_bin="$(command -v node)"
+          test -n "$node_bin"
+          if [ "$node_bin" != "/usr/bin/node" ]; then
+            ln -sf "$node_bin" /usr/bin/node
+          fi
+          test -x /usr/bin/node
           systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'User=irp' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
