@@ -21,6 +21,7 @@
     "@irp/internet-intelligence-agent": "workspace:*",
     "@irp/network-intelligence": "workspace:*",
     "@irp/routing": "workspace:*",
+    "@irp/shared": "workspace:*",
     "@irp/telemetry": "workspace:*"
   },
   "devDependencies": {
