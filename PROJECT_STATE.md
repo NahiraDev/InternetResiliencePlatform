@@ -6,26 +6,26 @@
 
 - **Current gate:** Phase 71 — Cross-Platform Distribution & GitHub Releases.
 - **Phase 71 status:** implementation is complete on `main`; external release evidence is still required before certification. The phase record requires a real tagged GitHub Release, published assets and checksum/release inspection. Do not represent Phase 71 as certified from source presence or CI alone.
-- **Current main baseline reviewed:** `a2bd55e2df35097531a64ce879772dd03290a99d`.
+- **Current main baseline reviewed:** `08bbea196b6d23fd7f661cae5315834b7ff22e9f` (`fix(release): correct Android artifact upload path for Phase 71`).
+- **Release state:** the repository currently has no published GitHub Releases, so the Phase 71 external certification gate remains open.
+- **Recent release-pipeline fix:** the Android artifact upload path was corrected to use the workspace-rooted artifact produced by the Android job's `working-directory` override.
 - **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` is the current planning authority for Phases 72–150.
 - **Historical/v1 roadmap:** `ROADMAP.md` and `docs/architecture/product-roadmap-70-phases.md` preserve the 0–70 product baseline and should not be interpreted as the current post-v1 roadmap.
 - **Phase 72 status:** architecture-preparation baseline exists, but Phase 72 must not be treated as completed while the Phase 71 external certification gate remains open.
 
 ## Phase 71 certification prerequisites
 
-The following evidence remains required before Phase 71 can be certified:
+The Phase 71 gate is limited to the release/distribution contract defined by `docs/phases/phase-71.md`. The remaining evidence is:
 
-- full repository validation, typecheck, lint, tests and build evidence;
-- security/dependency and artifact-integrity evidence;
-- control-plane/gateway runtime evidence;
-- regional public-IP/service evidence;
-- upgrade/rollback rehearsal;
-- backup/restore rehearsal;
-- isolated chaos/soak evidence;
-- accessibility/localization verification on applicable clients;
-- Linux, macOS, Windows, iOS and Android runtime evidence;
-- signed iOS device smoke and Android device smoke evidence;
-- release-engineering sign-off and final certification review.
+- repository release-gate validation (validate, typecheck, lint, tests and build evidence applicable to the release commit);
+- successful execution of the release workflow from a real semantic version tag;
+- exactly one Android debug APK, Linux bundle, macOS bundle, Windows bundle and iOS source/developer ZIP attached to the GitHub Release;
+- no unsigned iOS `.ipa` output;
+- generated `SHA256SUMS.txt` published with the release and verified before publication;
+- inspection of every published asset for naming, non-empty content, platform identity and checksum coverage;
+- verification that the human-facing download documentation matches the published artifact set.
+
+Device/runtime smoke tests or signed iOS distribution belong to the applicable downstream platform/runtime phases and are not silently substituted for Phase 71's release-contract evidence. In particular, Phase 71 intentionally publishes an iOS source/developer bundle rather than a signed installable `.ipa`.
 
 ## Current architecture authority
 
@@ -114,7 +114,7 @@ For networking automation, every mutation must be policy-checked, bounded, obser
 - API contract: `docs/api/control-plane-contract.md`.
 - Live runtime architecture: `docs/architecture/live-control-plane.md`.
 - Engineering governance: `docs/architecture/engineering-governance.md`.
-- Parallel-agent protocol: `.github/AGENT_PROTOCOL.md` and `.github/ACTIVE_WORK.md`.
+- Parallel-agent protocol: `docs/architecture/parallel-agent-protocol.md`, `.github/AGENT_PROTOCOL.md` and `.github/ACTIVE_WORK.md`.
 
 ## Known architectural findings entering Phase 72
 
