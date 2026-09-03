@@ -1,8 +1,12 @@
-# Post-v1 Client Distribution Roadmap
+# Archived Post-v1 Client Distribution Roadmap
 
-This document extends the Phase 70 baseline with the delivery phases required to turn platform client implementations into end-user install/update channels. These phases do not change Core authority or client networking architecture.
+> **Historical / superseded:** This document preserves an earlier post-v1 distribution sequencing proposal. It is not the current Phase 72–150 roadmap and must not be used to assign current phase ownership.
+>
+> The current roadmap authority is [`../roadmap/MASTER_ROADMAP_V2.md`](../roadmap/MASTER_ROADMAP_V2.md). Current implementation status is authoritative in [`../../PROJECT_STATE.md`](../../PROJECT_STATE.md).
 
-## Phase 71 — Cross-Platform Distribution & GitHub Releases
+The proposal below is retained for historical context. Its phase numbers conflict with the current roadmap and therefore must not be treated as current execution instructions.
+
+## Historical proposal: Phase 71 — Cross-Platform Distribution & GitHub Releases
 
 Publish versioned client artifacts through GitHub Releases with one platform-aware download surface.
 
@@ -14,11 +18,11 @@ Publish versioned client artifacts through GitHub Releases with one platform-awa
 - Fail-closed release workflow.
 - Human-facing download documentation.
 
-**Done when:** a real tagged release succeeds and all published assets are inspected.
+**Historical completion condition:** a real tagged release succeeds and all published assets are inspected.
 
-## Phase 72 — Signed Mobile Distribution
+## Historical proposal: Phase 72 — Signed Mobile Distribution
 
-Turn the iOS and Android release boundaries into platform-native distribution channels without moving product authority into the clients.
+The earlier proposal intended to turn the iOS and Android release boundaries into platform-native distribution channels without moving product authority into clients.
 
 - Android release signing and production APK/AAB policy.
 - iOS signing/provisioning and production `.ipa`/TestFlight distribution path.
@@ -26,50 +30,47 @@ Turn the iOS and Android release boundaries into platform-native distribution ch
 - Device installation smoke tests.
 - Platform version compatibility evidence.
 
-**Done when:** signed builds are installable on representative physical devices and the release evidence is retained.
+This proposal is superseded. Signed mobile distribution is not the current Phase 72 contract.
 
-## Phase 73 — Native Desktop Installers
+## Historical proposal: Phase 73 — Native Desktop Installers
 
-Move Linux, macOS and Windows from downloadable runtime bundles to native installation packages.
+The earlier proposal covered native Linux, macOS and Windows installation packages, uninstall/rollback behavior and upgrade compatibility.
 
-- Linux package/install contract.
-- macOS application/service installation contract.
-- Windows installer/service installation contract.
-- Uninstall and rollback behavior.
-- Upgrade compatibility tests.
-- Artifact checksums and provenance metadata.
+This proposal is superseded by the current Phase 73 — Unified Network State Model in `MASTER_ROADMAP_V2.md`.
 
-**Done when:** a clean machine can install, start, upgrade, rollback and uninstall each supported desktop client using the published release artifact.
+## Historical proposal: Phase 74 — Release Channels & Updates
 
-## Phase 74 — Release Channels & Updates
+The earlier proposal covered stable/pre-release channels, compatibility policy, update discovery and safe upgrade/rollback.
 
-Establish controlled update distribution after signed/native installers are proven.
+This proposal is superseded by the current Phase 74 — Control-Plane Contracts in `MASTER_ROADMAP_V2.md`.
 
-- Stable release channel.
-- Pre-release/testing channel.
-- Version compatibility and minimum-supported-version policy.
-- Update metadata and release discovery.
-- Safe upgrade/rollback enforcement.
-- Release evidence and audit trail.
+## Current relationship
 
-**Done when:** clients can discover an authorized compatible release and complete a verified upgrade/rollback rehearsal.
-
-## Dependency order
+The current architecture track is:
 
 ```text
-Phase 70 Certification
+Phase 71 — Cross-Platform Distribution & GitHub Releases
         |
         v
-Phase 71 GitHub Releases
+Phase 72 — Control-Plane Architecture Completion
         |
         v
-Phase 72 Signed Mobile Distribution
+Phase 73 — Unified Network State Model
         |
         v
-Phase 73 Native Desktop Installers
+Phase 74 — Control-Plane Contracts
         |
         v
-Phase 74 Release Channels & Updates
+Phase 75 — Decision Orchestration
+        |
+        v
+Phase 76 — Action Transaction Engine
+        |
+        v
+Phase 77 — Safety, Rollback & Recovery Kernel
+        |
+        v
+Phase 78 — Closed-Loop Control Foundation
 ```
 
-A later phase must not be marked complete by source presence alone. Each phase requires actual artifact, installation/runtime and CI evidence appropriate to the target platform.
+Do not revive the historical signed-mobile/native-installer numbering without an explicit roadmap change and architecture decision.
