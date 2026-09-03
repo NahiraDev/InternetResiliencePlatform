@@ -2,6 +2,14 @@
 
 > A production-grade, core-first Network Resilience Platform with one shared control plane and full-capability clients across Linux, macOS, Windows, iOS and Android.
 
+## Roadmap authority
+
+This file preserves the **historical/v1 product roadmap for Phases 0–70**. It remains useful for implementation history, release-gate context and compatibility references, but it is no longer the current post-v1 planning authority.
+
+The current roadmap for **Phases 72–150** is [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md). `PROJECT_STATE.md` defines the current implementation gate, while the Phase 71 record defines the outstanding external release-certification evidence.
+
+Phase 71 is the transition/release gate between the v1 baseline and the post-v1 roadmap. Phase 72 is architecture preparation and must not be treated as a replacement for unresolved Phase 71 certification evidence.
+
 ## Product direction
 
 IRP keeps the network intelligence and safety-critical decisioning in shared, headless Core services. Clients are presentation/platform adapters; they do not fork routing logic.
@@ -26,7 +34,7 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 - No raw payload collection for analytics.
 - Production completion requires repository verification and runtime evidence, not merely source files.
 
-## 70-phase product roadmap
+## 70-phase product roadmap — historical/v1 baseline
 
 ### Foundation & Engineering — 0–7
 
@@ -183,8 +191,8 @@ IRP treats gateways and tunnels as managed network providers. A provider is only
 7. Documentation and project state are updated.
 8. CI is green before the phase is marked complete.
 
-## Current implementation truth
+## Current implementation truth for the v1 baseline
 
-The canonical implementation boundary is now **Phase 65 — iOS Full Client**, implemented on the Phase 65 branch with native SwiftUI, control-plane session lifecycle and Keychain-backed credential storage. Phase 64 remains implemented but is still open for repository/runtime verification. Phase 61–63 retain their explicit platform verification gates. Phase 65 also remains open until iOS simulator/device UI verification, security review and repository CI are green.
+The v1 roadmap records the product contract through Phase 70. The current implementation gate is Phase 71, whose implementation is present on `main` but whose external release-certification evidence remains pending. For current post-v1 planning, use [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md) and [`PROJECT_STATE.md`](PROJECT_STATE.md).
 
 The previous roadmap's headless-only UI prohibition is superseded by this product roadmap: **UI and client work is now an explicit product track beginning at Phase 56, while Core remains headless and authoritative.**
