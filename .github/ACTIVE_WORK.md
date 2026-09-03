@@ -4,10 +4,12 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current phase: **Phase 54 — Gateway Fleet Operations**
-- Status: implementation started; verification required.
-- Next execution priority: finish and verify Phase 54, then close the explicit Phase 52/53 verification gates before advancing the roadmap state.
+- Current phase: **Phase 71 — Cross-Platform Distribution & GitHub Releases**
+- Status: implementation complete; external release evidence pending.
 - Main branch: `main`
+- Last verified main commit: `292468a1729fe025ea493956dd1c88bbc63db9ec` (merge of PR #203).
+- Latest verified acceptance evidence: Debian 13 primary-device workflow passed on the merged main commit.
+- Next execution priority: complete the real tagged-release certification for Phase 71, then begin Phase 72 — Signed Mobile Distribution.
 
 ## Active agent slots
 
