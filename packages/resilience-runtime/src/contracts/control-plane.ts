@@ -1,4 +1,4 @@
-import type { DomainEvent } from '@irp/shared';
+import type { DomainEvent } from '@irp/events';
 import type {
   ActionExecution,
   ActionPlan,
