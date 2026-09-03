@@ -1,0 +1,60 @@
+name: Full System Assurance Matrix
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Repository-wide assurance inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm full-system:matrix
+      - name: Upload assurance matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-system-assurance-matrix
+          path: artifacts/full-system-assurance/
+          if-no-files-found: error
+
+  deterministic-assurance:
+    name: Deterministic system assurance
+    needs: inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm production:assure
+
+  production-certification-boundary:
+    name: Production certification boundary
+    needs: [inventory, deterministic-assurance]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - run: |
+          echo 'Real-environment certification is intentionally not synthesized in CI.'
+          echo 'Supply independently observed evidence with pnpm production:certify --require-complete when the actual environment has been exercised.'
