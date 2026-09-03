@@ -1,0 +1,111 @@
+name: Linux Primary Device
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+  DEBIAN_FRONTEND: noninteractive
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  debian-primary-device:
+    name: Debian 13 primary device acceptance
+    runs-on: ubuntu-24.04
+    container:
+      image: debian:13
+    timeout-minutes: 30
+
+    steps:
+      - name: Install CI prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Node.js 24
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+          node --version
+          npm --version
+
+      - name: Install pnpm 11.21.0
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          pnpm --version
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Linux client
+        run: |
+          pnpm --filter @irp/linux-client typecheck
+          pnpm --filter @irp/linux-client lint
+          pnpm --filter @irp/linux-client test
+          pnpm --filter @irp/linux-client build
+
+      - name: Build Debian package
+        run: |
+          pnpm linux:package
+          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb
+          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+
+      - name: Verify Debian package metadata
+        run: |
+          dpkg-deb --info dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Package | grep -Fx 'irp-linux-client'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Architecture | grep -Fx 'amd64'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Depends | grep -F 'nodejs'
+
+      - name: Verify checksum
+        run: sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+
+      - name: Verify systemd unit
+        run: |
+          systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
+
+      - name: Install Debian package
+        run: |
+          dpkg -i dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg-query -W -f='${Status}\n' irp-linux-client | grep -Fx 'install ok installed'
+          test -x /usr/lib/irp/linux-client/dist/index.js
+          test -f /usr/lib/systemd/system/irp-linux-client.service
+
+      - name: Run installed Linux client smoke test
+        run: |
+          timeout 10s /usr/bin/node /usr/lib/irp/linux-client/dist/index.js
+          test $? -eq 124
+
+      - name: Verify service contract after installation
+        run: |
+          systemctl cat irp-linux-client.service
+          systemd-analyze verify /usr/lib/systemd/system/irp-linux-client.service
+          systemctl show irp-linux-client.service -p User -p Group -p NoNewPrivileges -p ProtectSystem -p ProtectHome
+
+      - name: Upload Debian package evidence
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: irp-linux-debian-primary-device-${{ github.sha }}
+          path: |
+            dist/linux/irp-linux-client_0.1.0_amd64.deb
+            dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+          if-no-files-found: error
+          retention-days: 14
