@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: IRP-Android-debug
-          path: IRP-Android-debug-${{ needs.prepare.outputs.release_tag }}.apk
+          path: ${{ github.workspace }}/IRP-Android-debug-${{ needs.prepare.outputs.release_tag }}.apk
           if-no-files-found: error
 
   linux:
