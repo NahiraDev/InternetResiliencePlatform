@@ -68,8 +68,21 @@ jobs:
 
       - name: Verify systemd unit contract
         run: |
+          node_bin="$(command -v node)"
+          test -n "$node_bin"
+          if [ "$node_bin" != "/usr/bin/node" ]; then
+            ln -sf "$node_bin" /usr/bin/node
+          fi
+          test -x /usr/bin/node
+          if ! getent group irp >/dev/null 2>&1; then
+            groupadd --system irp
+          fi
+          if ! getent passwd irp >/dev/null 2>&1; then
+            useradd --system --gid irp --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin irp
+          fi
           systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'User=irp' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'Group=irp' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service
 
