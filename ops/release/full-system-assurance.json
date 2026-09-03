@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scope": "full-system",
   "sourceOfTruth": ["packages", "apps", "clients", ".github/workflows", "scripts", "infra", "ops", "docs/phases", "docs/roadmap/MASTER_ROADMAP_V2.md"],
   "statuses": ["PASS", "FAIL", "PENDING", "BLOCKED"],
   "rules": {
     "inventory": "Every executable package, app, client, workflow and operational surface discovered from the repository must have a matrix row.",
-    "realEnvironment": "An executable component without a concrete real-environment assurance path is BLOCKED, never PASS.",
+    "realEnvironment": "An executable component without a registered real-environment assurance contract is BLOCKED, never PASS.",
+    "evidence": "A registered contract without independently observed evidence remains PENDING, never PASS.",
     "ciBoundary": "CI/system assurance may prove deterministic repository execution but cannot substitute for production evidence.",
     "productionEvidence": "Real production certification requires independently observed evidence tied to an immutable commit/artifact identity.",
     "noSyntheticEvidence": true,
@@ -20,6 +21,7 @@
     "phaseDocPattern": "docs/phases/phase-{n}.md",
     "canonicalRoadmap": "docs/roadmap/MASTER_ROADMAP_V2.md"
   },
+  "realEnvironmentAdapterRegistry": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
   "realEnvironmentEvidence": {
     "requiredFields": ["componentId", "commitSha", "artifactSha256", "environment", "observedAt", "entrypoint", "result", "traceId", "failureInjection", "recoveryVerification"],
     "allowedResult": ["pass", "fail"]
