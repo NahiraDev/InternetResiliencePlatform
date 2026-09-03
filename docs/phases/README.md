@@ -4,51 +4,58 @@ Phase records are implementation and audit evidence. They are **not** the produc
 
 ## Canonical planning
 
-- [`../../ROADMAP.md`](../../ROADMAP.md) — concise roadmap authority.
-- [`../architecture/product-roadmap-70-phases.md`](../architecture/product-roadmap-70-phases.md) — detailed 70-phase execution contract.
-- [`../../PROJECT_STATE.md`](../../PROJECT_STATE.md) — current implementation truth.
-- [`../audits/phase-history-evidence-matrix.md`](../audits/phase-history-evidence-matrix.md) — historical implementation evidence for Phase 00–44 and numbering reconciliation.
+- [`../roadmap/MASTER_ROADMAP_V2.md`](../roadmap/MASTER_ROADMAP_V2.md) — current post-70 roadmap and dependency contract.
+- [`../../PROJECT_STATE.md`](../../PROJECT_STATE.md) — current implementation gate and handoff truth.
+- [`../audits/control-plane-execution-baseline-2026-09-03.md`](../audits/control-plane-execution-baseline-2026-09-03.md) — current control-plane architecture/gap baseline.
+- [`../audits/phase-history-evidence-matrix.md`](../audits/phase-history-evidence-matrix.md) — historical implementation evidence and numbering reconciliation for the 0–70 baseline.
+- [`../architecture/product-roadmap-70-phases.md`](../architecture/product-roadmap-70-phases.md) — historical/v1 detailed 0–70 phase contract.
 
-## Current boundary
+## Current implementation gate
 
-- **Roadmap:** 70 phases (0–70).
-- **Current phase:** Phase 64 — Shared Mobile Client Core (**implementation started; repository/runtime verification required**).
-- **Phase 63:** Windows Full Client implementation is on `main`; native Windows verification is still required.
-- **Phase 62:** macOS Full Client implementation is on `main`; final repository/native runtime/security verification is governed by its phase record and CI evidence.
-- **Phase 61:** Linux Full Client remains governed by its explicit verification gate.
+- **Gate:** Phase 71 — Cross-Platform Distribution & GitHub Releases.
+- **Status:** implementation complete; external release-certification evidence remains pending.
+- **Next architecture track:** Phase 72 — Control-Plane Architecture Completion. It may be prepared while Phase 71 evidence is pending, but it must not be declared complete in a way that implies Phase 71 certification.
 
 ## Current records
 
 | Phase | Area | Status | Record |
 | ---: | --- | --- | --- |
-| 51 | Automatic Gateway Selection | **Complete / verified** | [`phase-51.md`](phase-51.md) |
-| 52 | Automated Tunnel Lifecycle | **Implementation complete / verification in progress** | [`phase-52.md`](phase-52.md) |
-| 53 | Multi-Gateway Failover | **Implementation started / verification required** | [`phase-53.md`](phase-53.md) |
-| 55 | Gateway Security & Supply-Chain Hardening | **Implementation complete / verification in progress** | [`phase-55.md`](phase-55.md) |
-| 56 | Unified Product API | **Implementation complete / verification in progress** | [`phase-56.md`](phase-56.md) |
-| 62 | macOS Full Client | **Implementation complete / verification required** | [`phase-62.md`](phase-62.md) |
-| 63 | Windows Full Client | **Implementation in progress / native verification required** | [`phase-63.md`](phase-63.md) |
-| 64 | Shared Mobile Client Core | **Implementation in progress / repository and runtime verification required** | [`phase-64.md`](phase-64.md) |
+| 39 | Device Identity & Remote Client Security | recorded / verification pending | [`phase-39.md`](phase-39.md) |
+| 40 | End-to-End Resilience Validation | recorded / verification pending | [`phase-40.md`](phase-40.md) |
+| 41 | External Regional Validation | recorded / external validation pending | [`phase-41.md`](phase-41.md) |
+| 42 | Remote Client API Integration | recorded / verification pending | [`phase-42.md`](phase-42.md) |
+| 43 | Distributed Probe Federation | recorded / verification pending | [`phase-43.md`](phase-43.md) |
+| 44 | Data Analytics & Decision Intelligence | recorded / verification pending | [`phase-44.md`](phase-44.md) |
+| 45–70 | Historical/v1 product phases | See state/evidence records | Historical baseline |
+| 71 | Cross-Platform Distribution & GitHub Releases | implementation complete / external release evidence pending | [`phase-71.md`](phase-71.md) |
+| 72 | Control-Plane Architecture Completion | architecture preparation / Phase 71 gate pending | [`phase-72.md`](phase-72.md) |
 
 ## Historical phases 01–38
 
-Canonical records for Phase 01–38 are intentionally **not** being generated mechanically. Git history proves that substantial implementation work occurred, but historical phase numbering drift means old phase numbers do not map one-to-one to the current 70-phase product contract.
+Canonical records for Phase 01–38 are intentionally **not** generated mechanically. Git history proves that substantial implementation work occurred, but historical phase numbering drift means old phase numbers do not map one-to-one to the current product contract.
 
 Use the [Historical Phase Evidence Matrix](../audits/phase-history-evidence-matrix.md) to see historical implementation evidence, numbering drift, commit anchors and remaining reconciliation work.
 
-A historical evidence entry is not a completion claim. A phase becomes a canonical completed record only after its capability cluster is mapped to the current contract and its acceptance evidence is sufficiently reconstructed.
+A historical evidence entry is not a completion claim. A phase becomes a canonical completed record only after its capability cluster is mapped to the applicable product contract and its acceptance evidence is sufficiently reconstructed.
 
 ## Future phase records
 
-Do not create speculative implementation reports for phases that have not started. Planned scope remains in the canonical 70-phase plan until implementation begins.
+Do not create speculative implementation reports for phases that have not started. Planned scope remains in the current roadmap until its phase is authorized for execution.
 
 | Range | Product track |
 | ---: | --- |
-| 46–55 | Gateway, tunnel and multi-path platform |
-| 56–60 | Unified control plane, Web Control Center and self-hosting |
-| 61–63 | Linux, macOS and Windows Full Clients |
-| 64–68 | Shared mobile core, iOS and Android Full Clients + native networking |
-| 69–70 | Cross-platform production hardening and v1.0 certification |
+| 72–78 | Unified Control Plane |
+| 79–85 | Intent & Policy |
+| 86–92 | Connectivity Fabric |
+| 93–99 | Advanced Routing & Recovery |
+| 100–106 | Telemetry & Network Intelligence |
+| 107–113 | Security & Trust |
+| 114–120 | Fleet & Distributed Control |
+| 121–127 | Intelligence, Simulation & Production |
+| 128–134 | Data Plane & Traffic Engineering |
+| 135–140 | Platform APIs & Extensibility |
+| 141–145 | Privacy, Governance & Compliance |
+| 146–150 | Reliability, Scale & Disaster Recovery |
 
 ## Phase-record rules
 
