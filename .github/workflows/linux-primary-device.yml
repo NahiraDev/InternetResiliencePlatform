@@ -43,7 +43,7 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
           apt-get install -y --no-install-recommends nodejs
           node --version
-          npm --version
+          command -v node
 
       - name: Install pnpm 11.21.0
         run: |
@@ -78,27 +78,45 @@ jobs:
       - name: Verify checksum
         run: sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
 
-      - name: Verify systemd unit
-        run: |
-          systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
-
       - name: Install Debian package
         run: |
           dpkg -i dist/linux/irp-linux-client_0.1.0_amd64.deb
           dpkg-query -W -f='${Status}\n' irp-linux-client | grep -Fx 'install ok installed'
           test -x /usr/lib/irp/linux-client/dist/index.js
           test -f /usr/lib/systemd/system/irp-linux-client.service
+          id irp
+          getent group irp
+
+      - name: Verify installed systemd unit contract
+        run: |
+          systemd-analyze verify /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fx 'User=irp' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fx 'Group=irp' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fx 'NoNewPrivileges=true' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fx 'ProtectSystem=strict' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fx 'ProtectHome=true' /usr/lib/systemd/system/irp-linux-client.service
 
       - name: Run installed Linux client smoke test
         run: |
-          timeout 10s /usr/bin/node /usr/lib/irp/linux-client/dist/index.js
-          test $? -eq 124
-
-      - name: Verify service contract after installation
-        run: |
-          systemctl cat irp-linux-client.service
-          systemd-analyze verify /usr/lib/systemd/system/irp-linux-client.service
-          systemctl show irp-linux-client.service -p User -p Group -p NoNewPrivileges -p ProtectSystem -p ProtectHome
+          /usr/bin/node /usr/lib/irp/linux-client/dist/index.js &
+          client_pid=$!
+          trap 'kill "$client_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error http://127.0.0.1:17861/ >/tmp/irp-linux-client.html; then
+              break
+            fi
+            if ! kill -0 "$client_pid" 2>/dev/null; then
+              echo 'IRP Linux client exited before becoming ready.' >&2
+              exit 1
+            fi
+            sleep 0.25
+          done
+          test -s /tmp/irp-linux-client.html
+          grep -Fq 'IRP Linux Client' /tmp/irp-linux-client.html
+          grep -Fq 'Linux Full Client' /tmp/irp-linux-client.html
+          kill "$client_pid"
+          wait "$client_pid" || test "$?" -eq 143
+          trap - EXIT
 
       - name: Upload Debian package evidence
         uses: actions/upload-artifact@v7.0.1
