@@ -1,6 +1,7 @@
 export * from './domain/types.js';
 export * from './context/context.js';
 export * from './state/state-machine.js';
+export * from './state/network-state.js';
 export * from './ports/ports.js';
 export * from './observations/observations.js';
 export * from './incidents/incidents.js';
