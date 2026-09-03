@@ -24,12 +24,11 @@ None. This is the project bootstrap phase.
 
 ## Implementation evidence
 
-The implementation is represented by the repository root, workspace/package configuration, bootstrap scripts, validation tooling, and CI configuration on `main`. See:
+The implementation is represented by the repository root, workspace/package configuration, package-manager tooling, validation tooling, and CI configuration on `main`. See:
 
 - [`../../README.md`](../../README.md)
 - [`../../package.json`](../../package.json)
 - [`../../pnpm-workspace.yaml`](../../pnpm-workspace.yaml)
-- [`../../scripts/bootstrap.sh`](../../scripts/bootstrap.sh)
 - [`../../scripts/validate-repository.mjs`](../../scripts/validate-repository.mjs)
 
 ## Acceptance criteria
