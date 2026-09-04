@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scope": "end-to-end-integration-baseline",
   "purpose": "Permanent gate proving repository component connectivity and deterministic closed-loop execution without treating mocks or CI-only results as production evidence.",
   "rules": {
@@ -8,14 +8,27 @@
     "noDuplicateMutationAuthority": true,
     "deterministicExecutionMustPass": true,
     "realEnvironmentEvidenceRemainsSeparate": true,
-    "missingRealEnvironmentEvidenceIsBlocked": true
+    "missingRealEnvironmentEvidenceIsBlocked": true,
+    "manifestDependencyAloneIsNotIntegrationEvidence": true
   },
   "requiredEdges": [
     ["@irp/resilience-runtime", "@irp/connectivity"],
-    ["@irp/resilience-runtime", "@irp/network-intelligence"],
+    ["@irp/resilience-runtime", "@irp/dns"],
     ["@irp/resilience-runtime", "@irp/failover"],
+    ["@irp/resilience-runtime", "@irp/internet-intelligence-agent"],
+    ["@irp/resilience-runtime", "@irp/network-intelligence"],
     ["@irp/resilience-runtime", "@irp/routing"],
-    ["@irp/resilience-runtime", "@irp/telemetry"]
+    ["@irp/resilience-runtime", "@irp/telemetry"],
+    ["@irp/daemon", "@irp/connectivity"],
+    ["@irp/daemon", "@irp/core"],
+    ["@irp/daemon", "@irp/dns"],
+    ["@irp/daemon", "@irp/gateway-registry"],
+    ["@irp/daemon", "@irp/network"],
+    ["@irp/daemon", "@irp/plugin-manager"],
+    ["@irp/daemon", "@irp/plugin-samples"],
+    ["@irp/daemon", "@irp/resilience-runtime"],
+    ["@irp/daemon", "@irp/routing"],
+    ["@irp/daemon", "@irp/tunnel"]
   ],
   "requiredClosedLoopStages": [
     "observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"
