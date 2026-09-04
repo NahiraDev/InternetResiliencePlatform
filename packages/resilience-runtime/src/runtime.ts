@@ -27,6 +27,7 @@ import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
 import type { DecisionProvider, ObservationProvider } from './ports/ports.js';
 import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
 import type { CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
+import { MetricsRegistry } from '@irp/telemetry';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
 
@@ -36,6 +37,7 @@ export interface ResilienceRuntimeOptions {
   adapters?: RuntimeAdapterRegistry;
   decisionProvider?: DecisionProvider;
   networkControlPlane?: CanonicalNetworkControlPlane;
+  telemetryRegistry?: MetricsRegistry;
 }
 
 export class ResilienceRuntime {
@@ -43,6 +45,7 @@ export class ResilienceRuntime {
   private counters: RuntimeCounters = { cyclesTotal: 0, cyclesFailedTotal: 0, decisionsTotal: 0, actionsTotal: 0, actionsFailedTotal: 0, verificationsFailedTotal: 0, recoveriesTotal: 0, rollbacksTotal: 0, blockedTotal: 0, degradedTotal: 0 };
   readonly events = new InMemoryEventSink();
   readonly telemetry = new InMemoryTelemetrySink();
+  readonly telemetryRegistry: MetricsRegistry;
   readonly decisions = new InMemoryDecisionStore();
   readonly incidents = new InMemoryIncidentStore();
   readonly state = new RuntimeStateMachine('idle', this.events);
@@ -62,6 +65,7 @@ export class ResilienceRuntime {
     this.runtimeId = options.runtimeId ?? 'runtime-default';
     this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
     this.networkControlPlane = options.networkControlPlane;
+    this.telemetryRegistry = options.telemetryRegistry ?? new MetricsRegistry();
     this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry(options.networkControlPlane);
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
@@ -81,6 +85,8 @@ export class ResilienceRuntime {
       return record;
     } catch (error) {
       this.counters = { ...this.counters, cyclesFailedTotal: this.counters.cyclesFailedTotal + 1 };
+      this.telemetry.increment('runtime_cycles_failed_total');
+      this.telemetryRegistry.record('runtime_cycles_failed_total', this.counters.cyclesFailedTotal);
       try {
         await this.state.fail(input.correlationId ?? 'runtime');
       } catch {
@@ -144,6 +150,16 @@ export class ResilienceRuntime {
       await this.decisions.put(record); this.last = record;
       this.counters = { ...this.counters, decisionsTotal: this.counters.decisionsTotal + 1, actionsTotal: this.counters.actionsTotal + (execution?.status === 'success' ? 1 : 0), actionsFailedTotal: this.counters.actionsFailedTotal + (execution?.status === 'failed' ? 1 : 0), verificationsFailedTotal: this.counters.verificationsFailedTotal + (verification?.status === 'failed' ? 1 : 0), recoveriesTotal: this.counters.recoveriesTotal + (recovery ? 1 : 0), degradedTotal: this.counters.degradedTotal + (outcome === 'degraded' ? 1 : 0) };
       this.telemetry.increment('runtime_cycles_total'); this.telemetry.increment('runtime_decisions_total'); this.telemetry.observe('runtime_cycle_duration', record.durationMs); this.telemetry.observe('runtime_decision_confidence', record.confidence);
+      this.telemetryRegistry.record('runtime_cycles_total', this.counters.cyclesTotal);
+      this.telemetryRegistry.record('runtime_decisions_total', this.counters.decisionsTotal);
+      this.telemetryRegistry.record('runtime_actions_total', this.counters.actionsTotal);
+      this.telemetryRegistry.record('runtime_actions_failed_total', this.counters.actionsFailedTotal);
+      this.telemetryRegistry.record('runtime_verifications_failed_total', this.counters.verificationsFailedTotal);
+      this.telemetryRegistry.record('runtime_recoveries_total', this.counters.recoveriesTotal);
+      this.telemetryRegistry.record('runtime_blocked_total', this.counters.blockedTotal);
+      this.telemetryRegistry.record('runtime_degraded_total', this.counters.degradedTotal);
+      this.telemetryRegistry.record('runtime_cycle_duration', record.durationMs);
+      this.telemetryRegistry.record('runtime_decision_confidence', record.confidence);
       await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
     } finally { this.validator.release(lockKey); }
   }
@@ -159,7 +175,7 @@ export class ResilienceRuntime {
   ) {
     await this.state.transition('blocked', context.correlationId); this.counters = { ...this.counters, blockedTotal: this.counters.blockedTotal + 1 };
     const record = createDecisionRecord({ context, before, after: this.state.current(), observations, incidents: found, policyEvaluation: plan.policyResult, candidates, selectedPlan: plan, validation, outcome: 'blocked', confidence: plan.confidence, durationMs: Date.now() - start });
-    await this.decisions.put(record); this.last = record; await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
+    await this.decisions.put(record); this.last = record; this.telemetry.increment('runtime_blocked_total'); this.telemetryRegistry.record('runtime_blocked_total', this.counters.blockedTotal); await this.events.emit('runtime.decision.recorded', { correlationId: context.correlationId, decisionId: record.decisionId }); return record;
   }
   async getRuntimeSnapshot(): Promise<RuntimeSnapshot> {
     const lastIncidents = await this.incidents.list(); const state = this.state.current();
