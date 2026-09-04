@@ -6,6 +6,7 @@ import { createBuiltinProviders, IntelligentDnsEngine } from '@irp/dns';
 import { InMemoryGatewayRegistry } from '@irp/gateway-registry';
 import { createLogger } from '@irp/logger';
 import { NetworkMonitoringService } from '@irp/network';
+import { builtinPlugins } from '@irp/plugin-samples';
 import { PluginManager } from '@irp/plugin-manager';
 import { RoutingEngine } from '@irp/routing';
 import {
@@ -100,6 +101,26 @@ export class LinuxObservationProvider implements ObservationProvider {
       status: quality >= 80 ? 'healthy' : quality >= 50 ? 'degraded' : 'failed',
     });
 
+    const internetReachable = snapshot.measurements.some(
+      (measurement) => (measurement.probeType === 'http' || measurement.probeType === 'tcp') && measurement.success,
+    );
+    observations.push({
+      id: `linux-internet-${context.correlationId}`,
+      schemaVersion: 1,
+      createdAt: new Date().toISOString(),
+      correlationId: context.correlationId,
+      source: 'irp-daemon-network-monitor',
+      metadata: {},
+      category: 'network',
+      metric: 'internet_reachable',
+      value: internetReachable,
+      timestamp: new Date().toISOString(),
+      freshnessMs: 0,
+      confidence: 0.95,
+      severity: internetReachable ? 'info' : 'critical',
+      status: internetReachable ? 'healthy' : 'failed',
+    });
+
     return {
       providerId: this.id,
       observations,
@@ -169,6 +190,7 @@ export class RuntimeDaemonHost {
     await this.connectivity.discoverResources();
     await this.dns.evaluate();
     await this.networkMonitor.runOnce();
+    await this.plugins.installAll(builtinPlugins());
     this.lifecycle = 'initialized';
     this.lifecycle = 'ready';
   }
