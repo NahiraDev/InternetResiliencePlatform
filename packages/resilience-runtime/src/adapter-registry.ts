@@ -6,7 +6,11 @@ import type {
   RuntimeContext,
 } from './domain/types.js';
 import { deepFreeze, nextId, nowIso } from './domain/ids.js';
-import { CanonicalNetworkRuntimeAdapter, type CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
+import {
+  CanonicalNetworkRuntimeAdapter,
+  CanonicalTunnelRuntimeAdapter,
+  type CanonicalNetworkControlPlane,
+} from './canonical-network-adapter.js';
 export type RuntimeSubsystem =
   | 'network-intelligence'
   | 'connectivity'
@@ -144,5 +148,6 @@ export const createDefaultRuntimeAdapterRegistry = (
   }));
   for (const d of defs) r.register(new DeterministicRuntimeAdapter(d));
   if (networkControlPlane) r.register(new CanonicalNetworkRuntimeAdapter(networkControlPlane));
+  if (networkControlPlane?.tunnel) r.register(new CanonicalTunnelRuntimeAdapter(networkControlPlane.tunnel));
   return r;
 };
