@@ -11,6 +11,9 @@ on:
       - 'clients/android/**'
       - '.github/workflows/android-client.yml'
 
+permissions:
+  contents: read
+
 jobs:
   android:
     runs-on: ubuntu-latest
