@@ -19,9 +19,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ios-network-integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
+  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 defaults:
   run:
@@ -29,13 +34,22 @@ defaults:
 
 jobs:
   ios-network-integration:
-    runs-on: macos-15
+    # Keep network-extension validation on the same Intel macOS lane used to
+    # isolate the previously observed xcodebuild SIGSEGV/exit 139 on macOS 15 ARM.
+    runs-on: macos-14
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Verify Xcode toolchain
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -50,10 +64,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Verify Xcode toolchain
-        run: |
-          xcodebuild -version
-          swift --version
+      - name: Verify workspace install
+        run: pnpm install --frozen-lockfile
 
       - name: Validate Swift package
         run: |
