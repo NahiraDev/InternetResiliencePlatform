@@ -32,8 +32,10 @@ env:
 
 jobs:
   ios-client:
-    runs-on: macos-15
-    timeout-minutes: 25
+    # macOS 15 ARM previously reproduced an xcodebuild SIGSEGV/exit 139.
+    # Use the known Intel macOS 14 lane to isolate runner/architecture failures.
+    runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -55,6 +57,7 @@ jobs:
 
       - name: Select and verify Xcode
         run: |
+          set -euo pipefail
           if ! test -d "$DEVELOPER_DIR"; then
             echo "Required Xcode toolchain not found: $DEVELOPER_DIR" >&2
             echo 'Installed Xcode bundles:' >&2
@@ -120,27 +123,27 @@ jobs:
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
           echo 'iOS client source inventory passed'
 
-      - name: Diagnose Xcode build configuration
+      - name: Diagnose Xcode target configuration
         run: |
           set +e
-          LOG_FILE="${RUNNER_TEMP}/xcodebuild-show-build-settings.log"
-          xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -scheme IRP \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -showBuildSettings >"$LOG_FILE" 2>&1
-          STATUS=$?
-          cat "$LOG_FILE"
-          if [ "$STATUS" -ne 0 ]; then
-            echo "Xcode build-settings diagnostic failed with exit code $STATUS; the mandatory build step will still execute." >&2
-          else
-            echo 'Xcode build-settings diagnostic passed'
-          fi
+          : > "${RUNNER_TEMP}/xcode-target-diagnostics.log"
+          for target in IRP IRPPacketTunnel; do
+            echo "===== target: $target =====" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
+            xcodebuild \
+              -project "$XCODE_PROJECT" \
+              -target "$target" \
+              -sdk iphonesimulator \
+              -configuration Debug \
+              -showBuildSettings >>"${RUNNER_TEMP}/xcode-target-diagnostics.log" 2>&1
+            status=$?
+            echo "target=$target exit=$status" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
+          done
+          cat "${RUNNER_TEMP}/xcode-target-diagnostics.log"
           exit 0
 
       - name: Build iOS app and packet tunnel
         run: |
+          set -euo pipefail
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
@@ -150,3 +153,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
+
+      - name: Collect Xcode crash diagnostics
+        if: ${{ failure() }}
+        run: |
+          set +e
+          echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
+          find "$RUNNER_TEMP" -maxdepth 2 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
+          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
+          xcrun simctl list devices || true
+          xcodebuild -version || true
