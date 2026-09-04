@@ -3,11 +3,6 @@ import {
   type ConnectivitySource,
 } from '@irp/connectivity';
 import {
-  IntelligentDnsEngine,
-  type DnsProvider,
-  type ProviderScore,
-} from '@irp/dns';
-import {
   RoutingEngine,
   parseDestination,
   type RoutingDestination,
@@ -25,9 +20,32 @@ import {
   type RuntimeAdapterDescriptor,
 } from './adapter-registry.js';
 
+export interface CanonicalDnsProvider {
+  readonly id: string;
+  readonly name?: string;
+  metadata(): { endpoints?: { ipv4?: string[]; ipv6?: string[] } };
+  health(): Promise<{ healthy: boolean; [key: string]: unknown }>;
+}
+
+export interface CanonicalDnsProviderScore {
+  readonly provider: CanonicalDnsProvider;
+  readonly score: number;
+  readonly rank: number;
+  readonly prediction: {
+    expectedLatencyMs?: number;
+    failureProbability?: number;
+  };
+}
+
 export interface CanonicalDnsControlPlane {
-  readonly engine: IntelligentDnsEngine;
-  readonly applyProvider: (provider: DnsProvider) => Promise<void>;
+  readonly engine: {
+    evaluate(): Promise<CanonicalDnsProviderScore[]>;
+    status(): {
+      activeProviderId?: string;
+      providers: CanonicalDnsProviderScore[];
+    };
+  };
+  readonly applyProvider: (provider: CanonicalDnsProvider) => Promise<void>;
   readonly getActiveProviderId?: () => string | undefined;
 }
 
@@ -71,7 +89,7 @@ const sourceMetadata = (source: ConnectivitySource | undefined) =>
       }
     : undefined;
 
-const dnsSelectionMetadata = (ranked: ProviderScore[], selected: DnsProvider | undefined) => ({
+const dnsSelectionMetadata = (ranked: CanonicalDnsProviderScore[], selected: CanonicalDnsProvider | undefined) => ({
   selectedProviderId: selected?.id,
   selectedProviderName: selected?.name,
   rankings: ranked.slice(0, 5).map((item) => ({
@@ -322,12 +340,12 @@ export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
     }
   }
 
-  async rollback(_plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(_plan, context, true);
+  async rollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
+    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
     try {
-      return createAdapterExecution(_plan, context, false, (await this.controlPlane.rollback()) ? 'success' : 'failed');
+      return createAdapterExecution(plan, context, false, (await this.controlPlane.rollback()) ? 'success' : 'failed');
     } catch {
-      return createAdapterExecution(_plan, context, false, 'failed');
+      return createAdapterExecution(plan, context, false, 'failed');
     }
   }
 }
