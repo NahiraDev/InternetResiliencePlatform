@@ -28,7 +28,10 @@ env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
   REGIONAL_RUNNER_LABEL: iran
-  IRP_REGIONAL_PROBE_URL: ${{ secrets.IRP_REGIONAL_PROBE_URL }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   regional-runner-preflight:
@@ -123,6 +126,8 @@ jobs:
     if: needs.regional-runner-preflight.outputs.available == 'true'
     runs-on: [self-hosted, linux, iran]
     timeout-minutes: 10
+    env:
+      IRP_REGIONAL_PROBE_URL: ${{ secrets.IRP_REGIONAL_PROBE_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
