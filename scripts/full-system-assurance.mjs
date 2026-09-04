@@ -156,3 +156,7 @@ console.log(`FULL SYSTEM ASSURANCE MATRIX: ${report.verdict}`);
 console.log(`Components/phases: ${report.componentCount}; source files represented: ${report.sourceFileCount}`);
 console.log(`Missing phase docs: ${missingPhaseDocs.length}; executable surfaces without assurance: ${noAssurance.length}`);
 console.log(`Registered real-environment capability contracts: ${report.registeredRealEnvironmentContracts}`);
+if (report.verdict === 'BLOCKED') {
+  console.error('Full-system assurance is BLOCKED; CI must not report success.');
+  process.exitCode = 1;
+}
