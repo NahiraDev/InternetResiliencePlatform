@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "scope": "end-to-end-integration-baseline",
+  "purpose": "Permanent gate proving repository component connectivity and deterministic closed-loop execution without treating mocks or CI-only results as production evidence.",
+  "rules": {
+    "noUnresolvedWorkspaceDependencies": true,
+    "canonicalRuntime": "@irp/resilience-runtime",
+    "noDuplicateMutationAuthority": true,
+    "deterministicExecutionMustPass": true,
+    "realEnvironmentEvidenceRemainsSeparate": true,
+    "missingRealEnvironmentEvidenceIsBlocked": true
+  },
+  "requiredEdges": [
+    ["@irp/resilience-runtime", "@irp/connectivity"],
+    ["@irp/resilience-runtime", "@irp/network-intelligence"],
+    ["@irp/resilience-runtime", "@irp/failover"],
+    ["@irp/resilience-runtime", "@irp/routing"],
+    ["@irp/resilience-runtime", "@irp/telemetry"]
+  ],
+  "requiredClosedLoopStages": [
+    "observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"
+  ],
+  "realEnvironmentGate": {
+    "source": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+    "rule": "A component is not integration-certified for production merely because its deterministic adapter passes. Real execution evidence must be independently observed and bound to commit and artifact."
+  }
+}

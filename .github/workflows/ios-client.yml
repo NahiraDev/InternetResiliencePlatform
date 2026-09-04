@@ -28,7 +28,7 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
-  DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 jobs:
   ios-client:
@@ -119,6 +119,25 @@ jobs:
           test -f clients/ios/PacketTunnel/PacketTunnel.entitlements
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
           echo 'iOS client source inventory passed'
+
+      - name: Diagnose Xcode build configuration
+        run: |
+          set +e
+          LOG_FILE="${RUNNER_TEMP}/xcodebuild-show-build-settings.log"
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme IRP \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -showBuildSettings >"$LOG_FILE" 2>&1
+          STATUS=$?
+          cat "$LOG_FILE"
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Xcode build-settings diagnostic failed with exit code $STATUS; the mandatory build step will still execute." >&2
+          else
+            echo 'Xcode build-settings diagnostic passed'
+          fi
+          exit 0
 
       - name: Build iOS app and packet tunnel
         run: |

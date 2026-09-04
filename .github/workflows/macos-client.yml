@@ -17,7 +17,7 @@ on:
       - 'pnpm-lock.yaml'
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   NODE_VERSION: '24'
@@ -50,20 +50,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Synchronize workspace lockfile
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          pnpm install --lockfile-only --ignore-scripts
-          if ! git diff --quiet -- pnpm-lock.yaml; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add pnpm-lock.yaml
-            git commit -m 'chore(lockfile): sync workspace importers'
-            git push origin HEAD:main
-          fi
-
       - name: Verify workspace lockfile
-        if: github.event_name == 'pull_request'
         run: |
           pnpm install --lockfile-only --ignore-scripts
           git diff --exit-code -- pnpm-lock.yaml
