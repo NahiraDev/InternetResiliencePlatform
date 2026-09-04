@@ -122,12 +122,22 @@ jobs:
 
       - name: Diagnose Xcode build configuration
         run: |
+          set +e
+          LOG_FILE="${RUNNER_TEMP}/xcodebuild-show-build-settings.log"
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
             -configuration Debug \
-            -showBuildSettings
+            -showBuildSettings >"$LOG_FILE" 2>&1
+          STATUS=$?
+          cat "$LOG_FILE"
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Xcode build-settings diagnostic failed with exit code $STATUS; the mandatory build step will still execute." >&2
+          else
+            echo 'Xcode build-settings diagnostic passed'
+          fi
+          exit 0
 
       - name: Build iOS app and packet tunnel
         run: |
