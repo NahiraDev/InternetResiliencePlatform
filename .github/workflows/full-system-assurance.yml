@@ -33,10 +33,10 @@ jobs:
           if-no-files-found: error
 
   deterministic-assurance:
-    name: Deterministic system assurance
+    name: Deterministic system and integration assurance
     needs: inventory
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -48,6 +48,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm production:assure
+      - name: Verify end-to-end integration baseline
+        env:
+          IRP_INTEGRATION_SKIP_BUILD: '1'
+        run: pnpm integration:baseline
 
   production-certification-boundary:
     name: Production certification boundary
