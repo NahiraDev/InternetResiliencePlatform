@@ -32,12 +32,11 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 jobs:
   ios-client:
-    # macOS 15 ARM previously reproduced an xcodebuild SIGSEGV/exit 139.
-    # Use the known Intel macOS 14 lane to isolate runner/architecture failures.
+    # Keep the macOS 14 lane for reproducibility, but discover the Xcode bundle
+    # installed on the runner instead of hard-coding a toolchain path.
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -62,23 +61,48 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          if ! test -d "$DEVELOPER_DIR"; then
-            echo "Required Xcode toolchain not found: $DEVELOPER_DIR" >&2
-            echo 'Installed Xcode bundles:' >&2
-            find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print
+
+          echo 'Installed Xcode bundles:'
+          find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
+
+          candidates=()
+          while IFS= read -r bundle; do
+            candidates+=("$bundle")
+          done < <(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V -r)
+
+          if (( ${#candidates[@]} == 0 )); then
+            echo 'No Xcode bundle found under /Applications.' >&2
             exit 1
           fi
+
+          selected=''
+          for bundle in "${candidates[@]}"; do
+            version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$bundle/Contents/Info.plist" 2>/dev/null || true)"
+            if [[ "$version" =~ ^16\. ]]; then
+              selected="$bundle"
+              break
+            fi
+          done
+
+          if [[ -z "$selected" ]]; then
+            selected="${candidates[0]}"
+          fi
+
+          export DEVELOPER_DIR="$selected/Contents/Developer"
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+          echo "Selected Xcode bundle: $selected"
           echo "DEVELOPER_DIR=$DEVELOPER_DIR"
-          XCODEBUILD_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find xcodebuild)"
-          SWIFT_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find swift)"
+
+          XCODEBUILD_PATH="$(xcrun --find xcodebuild)"
+          SWIFT_PATH="$(xcrun --find swift)"
           test -n "$XCODEBUILD_PATH"
           test -x "$XCODEBUILD_PATH"
           test -n "$SWIFT_PATH"
           test -x "$SWIFT_PATH"
           echo "xcodebuild=$XCODEBUILD_PATH"
           echo "swift=$SWIFT_PATH"
-          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
-          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
+          xcodebuild -version
+          swift --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
