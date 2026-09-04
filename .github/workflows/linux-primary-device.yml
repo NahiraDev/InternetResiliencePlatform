@@ -115,22 +115,37 @@ jobs:
 
       - name: Run installed Linux client smoke test
         run: |
-          /usr/bin/node /usr/lib/irp/linux-client/dist/index.js &
+          set -euo pipefail
+          client_log=/tmp/irp-linux-client.log
+          client_html=/tmp/irp-linux-client.html
+          ready=0
+          /usr/bin/node /usr/lib/irp/linux-client/dist/index.js >"$client_log" 2>&1 &
           client_pid=$!
-          trap 'kill "$client_pid" 2>/dev/null || true' EXIT
+          cleanup_client() { kill "$client_pid" 2>/dev/null || true; wait "$client_pid" 2>/dev/null || true; }
+          trap cleanup_client EXIT
+
           for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error http://127.0.0.1:17861/ >/tmp/irp-linux-client.html; then
+            if curl --fail --silent --show-error http://127.0.0.1:17861/ >"$client_html"; then
+              ready=1
               break
             fi
             if ! kill -0 "$client_pid" 2>/dev/null; then
               echo 'IRP Linux client exited before becoming ready.' >&2
+              cat "$client_log" >&2 || true
               exit 1
             fi
             sleep 0.25
           done
-          test -s /tmp/irp-linux-client.html
-          grep -Fq 'IRP Linux Client' /tmp/irp-linux-client.html
-          grep -Fq 'Linux Full Client' /tmp/irp-linux-client.html
+
+          if [ "$ready" -ne 1 ]; then
+            echo 'IRP Linux client did not become ready within the startup deadline.' >&2
+            cat "$client_log" >&2 || true
+            exit 1
+          fi
+
+          test -s "$client_html"
+          grep -Fq 'IRP Linux Client' "$client_html"
+          grep -Fq 'Linux Full Client' "$client_html"
 
       - name: Upload Debian package evidence
         uses: actions/upload-artifact@v7.0.1
