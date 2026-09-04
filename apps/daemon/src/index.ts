@@ -5,6 +5,7 @@ import { loadConfig } from '@irp/config';
 import { createBuiltinProviders, IntelligentDnsEngine } from '@irp/dns';
 import { InMemoryGatewayRegistry } from '@irp/gateway-registry';
 import { createLogger } from '@irp/logger';
+import { NetworkMonitoringService } from '@irp/network';
 import { PluginManager } from '@irp/plugin-manager';
 import { RoutingEngine } from '@irp/routing';
 import {
@@ -28,29 +29,10 @@ export type DaemonLifecycle =
   | 'stopping'
   | 'stopped';
 
-const makeObservation = (
-  context: RuntimeContext,
-  metric: string,
-  available: boolean,
-): Observation => ({
-  id: `linux-${metric}-${context.correlationId}`,
-  schemaVersion: 1,
-  createdAt: new Date().toISOString(),
-  correlationId: context.correlationId,
-  source: 'irp-daemon-linux-observer',
-  metadata: { platform: process.platform },
-  category: metric === 'dns' ? 'dns' : 'platform',
-  metric: `linux_${metric}_available`,
-  value: available,
-  timestamp: new Date().toISOString(),
-  freshnessMs: 0,
-  confidence: available ? 1 : 0.5,
-  severity: available ? 'info' : 'warning',
-  status: available ? 'healthy' : 'unknown',
-});
-
 export class LinuxObservationProvider implements ObservationProvider {
-  readonly id = 'linux-system-observer';
+  readonly id = 'linux-network-monitor';
+
+  constructor(private readonly monitor = new NetworkMonitoringService()) {}
 
   async collect(context: RuntimeContext): Promise<ObservationProviderResult> {
     if (process.platform !== 'linux') {
@@ -58,33 +40,71 @@ export class LinuxObservationProvider implements ObservationProvider {
         providerId: this.id,
         observations: [],
         collectedAt: new Date().toISOString(),
-        errors: ['linux system observation is unavailable on non-linux platforms'],
+        errors: ['linux network observation is unavailable on non-linux platforms'],
       };
     }
-    const commands = [
-      ['interfaces', 'ip', ['-brief', 'address']],
-      ['routes', 'ip', ['-brief', 'route']],
-      ['dns', 'resolvectl', ['status']],
-    ] as const;
-    const results = await Promise.all(
-      commands.map(async ([metric, file, args]) => {
-        try {
-          await execFileAsync(file, args, { timeout: 5_000, maxBuffer: 64 * 1024 });
-          return { metric, available: true };
-        } catch {
-          return { metric, available: false };
-        }
-      }),
-    );
+
+    const snapshot = await this.monitor.runOnce();
+    const observations: Observation[] = snapshot.measurements.map((measurement) => ({
+      id: `linux-${measurement.id}`,
+      schemaVersion: 1,
+      createdAt: measurement.timestamp,
+      correlationId: context.correlationId,
+      source: 'irp-daemon-network-monitor',
+      metadata: {
+        ...measurement.metadata,
+        probeName: measurement.probeType,
+        success: measurement.success,
+      },
+      category: measurement.probeType === 'dns' ? 'dns' : 'network',
+      metric:
+        measurement.probeType === 'dns'
+          ? 'dns_lookup_ms'
+          : measurement.probeType === 'tcp'
+            ? 'latency_ms'
+            : measurement.probeType === 'packet_loss'
+              ? 'packet_loss_ratio'
+              : measurement.probeType === 'ip'
+                ? 'ipv4_connectivity'
+                : measurement.probeType === 'http'
+                  ? 'http_response_ms'
+                  : `network_${measurement.probeType}_latency_ms`,
+      value:
+        measurement.probeType === 'packet_loss' && typeof measurement.metadata.lossRatio === 'number'
+          ? measurement.metadata.lossRatio
+          : measurement.probeType === 'ip' && typeof measurement.metadata.ipv4 === 'boolean'
+            ? measurement.metadata.ipv4
+            : measurement.latency,
+      timestamp: measurement.timestamp,
+      freshnessMs: 0,
+      confidence: measurement.success ? 0.95 : 0.25,
+      severity: measurement.success ? 'info' : 'warning',
+      status: measurement.success ? 'healthy' : 'degraded',
+    }));
+
+    const quality = snapshot.score.score;
+    observations.push({
+      id: `linux-quality-${context.correlationId}`,
+      schemaVersion: 1,
+      createdAt: new Date().toISOString(),
+      correlationId: context.correlationId,
+      source: 'irp-daemon-network-monitor',
+      metadata: { issueCount: snapshot.issues.length },
+      category: 'network',
+      metric: 'quality_score',
+      value: quality,
+      timestamp: new Date().toISOString(),
+      freshnessMs: 0,
+      confidence: 0.95,
+      severity: quality >= 80 ? 'info' : quality >= 50 ? 'warning' : 'critical',
+      status: quality >= 80 ? 'healthy' : quality >= 50 ? 'degraded' : 'failed',
+    });
+
     return {
       providerId: this.id,
-      observations: results.map(({ metric, available }) =>
-        makeObservation(context, metric, available),
-      ),
+      observations,
       collectedAt: new Date().toISOString(),
-      errors: results
-        .filter((r) => !r.available)
-        .map((r) => `${r.metric} probe unavailable`),
+      errors: snapshot.issues,
     };
   }
 }
@@ -94,14 +114,15 @@ export class RuntimeDaemonHost {
   readonly connectivity = new ConnectivityManager();
   readonly routing = new RoutingEngine();
   readonly dnsProviders = createBuiltinProviders();
-  readonly dns = new IntelligentDnsEngine(
-    this.dnsProviders,
-    { check: async (provider) => provider.health() },
-  );
+  readonly dns = new IntelligentDnsEngine(this.dnsProviders, {
+    check: async (provider) => provider.health(),
+  });
   readonly gateways = new InMemoryGatewayRegistry();
   readonly tunnels = new TunnelProviderRegistry();
   readonly plugins = new PluginManager();
-  readonly runtime = new ResilienceRuntime([new LinuxObservationProvider()], {
+  readonly networkMonitor = new NetworkMonitoringService();
+  readonly observer = new LinuxObservationProvider(this.networkMonitor);
+  readonly runtime = new ResilienceRuntime([this.observer], {
     runtimeId: 'daemon-runtime',
     networkControlPlane: {
       connectivity: this.connectivity,
@@ -147,6 +168,7 @@ export class RuntimeDaemonHost {
   async initialize() {
     await this.connectivity.discoverResources();
     await this.dns.evaluate();
+    await this.networkMonitor.runOnce();
     this.lifecycle = 'initialized';
     this.lifecycle = 'ready';
   }
@@ -160,10 +182,12 @@ export class RuntimeDaemonHost {
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
+    this.networkMonitor.stop();
     this.lifecycle = 'stopped';
   }
 
   health() {
+    const network = this.networkMonitor.runOnce();
     return {
       lifecycle: this.lifecycle,
       scheduler: this.scheduler.status(),
@@ -178,6 +202,12 @@ export class RuntimeDaemonHost {
       gatewayCount: this.gateways.list().length,
       tunnelProviderIds: this.tunnels.list().map((provider) => provider.id),
       pluginCount: this.plugins.graph().length,
+      networkMonitor: network.then((snapshot) => ({
+        status: snapshot.status,
+        qualityScore: snapshot.score.score,
+        measurements: snapshot.measurements.length,
+        issues: snapshot.issues,
+      })),
       capabilities: this.runtime.capabilities(),
     };
   }
