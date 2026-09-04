@@ -4,7 +4,6 @@ on:
   pull_request:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -88,16 +87,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  production-certification-boundary:
-    name: Production certification boundary
-    needs: [inventory, deterministic-assurance]
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    timeout-minutes: 5
-    steps:
-      - name: Refuse synthetic production certification
-        run: |
-          set -euo pipefail
-          echo 'Real-environment certification is intentionally not synthesized in CI.'
-          echo 'Supply independently observed evidence with pnpm production:certify --require-complete when the actual environment has been exercised.'
-          exit 0
+  # Production certification is intentionally not a CI pass/fail job. It is
+  # performed separately with independently observed, signed real-environment
+  # evidence via `pnpm production:certify --require-complete`.
