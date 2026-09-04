@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: irp-release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
@@ -22,6 +26,7 @@ jobs:
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       release_tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -51,6 +56,7 @@ jobs:
     name: Android APK
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: clients/android
@@ -94,6 +100,7 @@ jobs:
     name: Linux bundle
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -140,6 +147,7 @@ jobs:
     name: macOS bundle
     needs: prepare
     runs-on: macos-15
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -187,6 +195,7 @@ jobs:
     name: Windows bundle
     needs: prepare
     runs-on: windows-2025
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash
@@ -235,7 +244,8 @@ jobs:
   ios-source:
     name: iOS developer bundle
     needs: prepare
-    runs-on: macos-15
+    runs-on: macos-14
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -264,6 +274,7 @@ jobs:
     name: Create GitHub Release
     needs: [prepare, android, linux, macos, windows, ios-source]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
