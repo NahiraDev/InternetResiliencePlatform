@@ -14,28 +14,27 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   android:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: clients/android
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: '11.21.0'
-          run_install: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10'
+
       - run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
