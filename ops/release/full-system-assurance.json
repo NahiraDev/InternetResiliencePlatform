@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "scope": "full-system",
   "sourceOfTruth": ["packages", "apps", "clients", ".github/workflows", "scripts", "infra", "ops", "docs/phases", "docs/roadmap/MASTER_ROADMAP_V2.md"],
-  "statuses": ["PASS", "FAIL", "PENDING", "BLOCKED"],
+  "statuses": ["PASS", "FAIL", "PENDING", "BLOCKED", "NOT_APPLICABLE"],
   "rules": {
     "inventory": "Every executable package, app, client, workflow and operational surface discovered from the repository must have a matrix row.",
     "realEnvironment": "An executable component without a registered real-environment assurance contract is BLOCKED, never PASS.",
@@ -10,16 +10,19 @@
     "ciBoundary": "CI/system assurance may prove deterministic repository execution but cannot substitute for production evidence.",
     "productionEvidence": "Real production certification requires independently observed evidence tied to an immutable commit/artifact identity.",
     "noSyntheticEvidence": true,
-    "noMocksAsProductionEvidence": true
+    "noMocksAsProductionEvidence": true,
+    "phaseDocumentation": "Phase documentation requirements are derived from docs/phases/README.md canonical records; historical and future unstarted phases are not mechanically required."
   },
   "requiredClosedLoopStages": ["observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"],
   "requiredCapabilitySurfaces": [
     "control-plane", "resilience-runtime", "network-intelligence", "connectivity", "dns", "gateway-registry", "routing", "failover", "tunnel", "database", "api", "daemon", "security", "telemetry", "linux-client", "macos-client", "windows-client", "android-client", "ios-client", "ios-network-extension", "observability", "docker", "kubernetes", "release-engineering", "regional-validation", "backup-restore", "upgrade-rollback", "chaos-soak"
   ],
+  "assuranceOnlyCapabilitySurfaces": ["kubernetes", "backup-restore", "upgrade-rollback", "chaos-soak"],
   "roadmap": {
     "maxPhase": 150,
     "phaseDocPattern": "docs/phases/phase-{n}.md",
-    "canonicalRoadmap": "docs/roadmap/MASTER_ROADMAP_V2.md"
+    "canonicalRoadmap": "docs/roadmap/MASTER_ROADMAP_V2.md",
+    "canonicalPhasePolicy": "docs/phases/README.md"
   },
   "realEnvironmentAdapterRegistry": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
   "realEnvironmentEvidence": {
