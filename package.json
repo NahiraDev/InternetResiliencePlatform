@@ -22,6 +22,7 @@
     "production:certify": "node scripts/production-certification.mjs",
     "production:assure": "node scripts/production-assurance.mjs",
     "full-system:matrix": "node scripts/full-system-assurance.mjs",
+    "integration:graph": "node scripts/integration-graph.mjs",
     "integration:baseline": "node scripts/integration-baseline.mjs",
     "phase71:release": "node scripts/phase71-release.mjs",
     "linux:package": "bash scripts/build-linux-deb.sh",
