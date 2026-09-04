@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Application } from '@irp/core';
 import { loadConfig } from '@irp/config';
+import { ConnectivityManager } from '@irp/connectivity';
 import { createBuiltinProviders, IntelligentDnsEngine } from '@irp/dns';
 import { InMemoryGatewayRegistry } from '@irp/gateway-registry';
 import { createLogger } from '@irp/logger';
