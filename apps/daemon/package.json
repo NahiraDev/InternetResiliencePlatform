@@ -18,6 +18,7 @@
     "@irp/dns": "workspace:*",
     "@irp/gateway-registry": "workspace:*",
     "@irp/logger": "workspace:*",
+    "@irp/network": "workspace:*",
     "@irp/plugin-manager": "workspace:*",
     "@irp/resilience-runtime": "workspace:*",
     "@irp/routing": "workspace:*",
