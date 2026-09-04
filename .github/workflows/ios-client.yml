@@ -35,8 +35,8 @@ env:
 
 jobs:
   ios-client:
-    # Keep the macOS 14 lane for reproducibility, but discover the Xcode bundle
-    # installed on the runner instead of hard-coding a toolchain path.
+    # macOS 14 is used because this runner image provides the required stable
+    # Xcode 16.1/16.2 toolchains and iOS simulator runtimes.
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -65,27 +65,14 @@ jobs:
           echo 'Installed Xcode bundles:'
           find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
 
-          candidates=()
-          while IFS= read -r bundle; do
-            candidates+=("$bundle")
-          done < <(find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V -r)
-
-          if (( ${#candidates[@]} == 0 )); then
-            echo 'No Xcode bundle found under /Applications.' >&2
+          # Xcode 16.1 is the pinned CI toolchain for this macOS 14 lane.
+          # Do not silently upgrade to another Xcode because a newer runner
+          # image happens to contain it; that would make build failures harder
+          # to reproduce. Fail clearly if the pinned bundle is unavailable.
+          selected='/Applications/Xcode_16.1.app'
+          if [[ ! -d "$selected" ]]; then
+            echo "Required Xcode bundle not found: $selected" >&2
             exit 1
-          fi
-
-          selected=''
-          for bundle in "${candidates[@]}"; do
-            version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$bundle/Contents/Info.plist" 2>/dev/null || true)"
-            if [[ "$version" =~ ^16\. ]]; then
-              selected="$bundle"
-              break
-            fi
-          done
-
-          if [[ -z "$selected" ]]; then
-            selected="${candidates[0]}"
           fi
 
           export DEVELOPER_DIR="$selected/Contents/Developer"
@@ -172,12 +159,14 @@ jobs:
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
+          rm -rf "${RUNNER_TEMP}/IRP-DerivedData"
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
+            -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
@@ -187,7 +176,7 @@ jobs:
         run: |
           set +e
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 2 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
           find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
           xcrun simctl list devices || true
           xcodebuild -version || true
