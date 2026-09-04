@@ -112,6 +112,11 @@ jobs:
     needs: linux-primary
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      POSTGRES_PASSWORD: irp_smoke_postgres_password
+      JWT_SECRET: irp_smoke_jwt_secret_012345678901234567890123456789
+      REMOTE_CLIENT_CREDENTIAL_KEY: irp_smoke_credential_key_012345678901234567890123
+      REMOTE_CLIENT_REFRESH_KEY: irp_smoke_refresh_key_012345678901234567890123
 
     steps:
       - name: Checkout repository
