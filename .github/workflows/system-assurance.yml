@@ -11,8 +11,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: system-assurance-${{ github.ref }}
+  group: system-assurance-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   assurance:
@@ -21,19 +29,20 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
-          version: 11.21.0
+          version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -43,9 +52,9 @@ jobs:
 
       - name: Upload assurance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: system-assurance-${{ github.sha }}
           path: artifacts/production-assurance/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
