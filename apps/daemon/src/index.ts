@@ -19,7 +19,16 @@ import {
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
-import { TunnelProviderRegistry } from '@irp/tunnel';
+import {
+  TunnelProviderRegistry,
+  type Endpoint,
+  type Tunnel,
+  type TunnelConnection,
+  type TunnelConfiguration,
+  type TunnelProvider,
+  WireGuardProvider,
+} from '@irp/tunnel';
+import type { CanonicalTunnelControlPlane } from '@irp/resilience-runtime';
 
 const execFileAsync = promisify(execFile);
 
@@ -131,6 +140,101 @@ export class LinuxObservationProvider implements ObservationProvider {
   }
 }
 
+class ConfiguredWireGuardControlPlane implements CanonicalTunnelControlPlane {
+  readonly configured = true;
+  private activeTunnel: Tunnel | undefined;
+  private activeConnection: TunnelConnection | undefined;
+
+  constructor(private readonly provider: WireGuardProvider, private readonly configuration: TunnelConfiguration) {}
+
+  async connect(request?: { providerId?: string }) {
+    if (request?.providerId && request.providerId !== this.provider.id) {
+      throw new Error(`Requested tunnel provider ${request.providerId} is not configured`);
+    }
+    if (this.activeTunnel && this.activeConnection) await this.provider.disconnect(this.activeConnection, 10_000);
+    const tunnel = await this.provider.create(this.configuration);
+    const connection = await this.provider.connect(tunnel);
+    this.activeTunnel = tunnel;
+    this.activeConnection = connection;
+    return { tunnelId: tunnel.id, providerId: this.provider.id, connectionId: connection.id };
+  }
+
+  async verify(tunnelId: string): Promise<boolean> {
+    if (!this.activeTunnel || this.activeTunnel.id !== tunnelId) return false;
+    const health = await this.provider.healthCheck(this.activeTunnel);
+    return health.status === 'healthy' && health.connectivity && health.handshake;
+  }
+
+  async rollback(): Promise<boolean> {
+    if (!this.activeConnection) return true;
+    try {
+      await this.provider.disconnect(this.activeConnection, 10_000);
+      return true;
+    } finally {
+      this.activeConnection = undefined;
+      this.activeTunnel = undefined;
+    }
+  }
+}
+
+const parseEndpoint = (raw: string): Endpoint => {
+  const match = raw.match(/^\[([^\]]+)\]:(\d+)$/) ?? raw.match(/^(.+):(\d+)$/);
+  if (!match) throw new Error('IRP_WIREGUARD_ENDPOINT must be host:port or [ipv6]:port');
+  const host = match[1];
+  const port = Number(match[2]);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('IRP_WIREGUARD_ENDPOINT port is invalid');
+  return {
+    host,
+    port,
+    protocol: 'wireguard',
+    addressFamily: host.includes(':') ? 'ipv6' : 'ipv4',
+    metadata: {},
+  };
+};
+
+const createWireGuardControlPlane = (tunnels: TunnelProviderRegistry): CanonicalTunnelControlPlane | undefined => {
+  const endpointRaw = process.env.IRP_WIREGUARD_ENDPOINT;
+  const peerPublicKey = process.env.IRP_WIREGUARD_PEER_PUBLIC_KEY;
+  const privateKey = process.env.IRP_WIREGUARD_PRIVATE_KEY;
+  const credentialRef = process.env.IRP_WIREGUARD_CREDENTIAL_REF;
+  if (!endpointRaw || !peerPublicKey || !privateKey || !credentialRef) return undefined;
+
+  const provider: TunnelProvider = new WireGuardProvider({
+    credentialStore: {
+      getPrivateKey: async (ref) => {
+        if (ref !== credentialRef) throw new Error('WireGuard credential reference mismatch');
+        return privateKey;
+      },
+    },
+    interfaceName: process.env.IRP_WIREGUARD_INTERFACE ?? 'irpwg0',
+    addressCidr: process.env.IRP_WIREGUARD_ADDRESS_CIDR,
+    peer: {
+      publicKey: peerPublicKey,
+      allowedIPs: (process.env.IRP_WIREGUARD_ALLOWED_IPS ?? '0.0.0.0/0,::/0').split(',').map((value) => value.trim()).filter(Boolean),
+      endpoint: endpointRaw,
+      persistentKeepalive: Number(process.env.IRP_WIREGUARD_KEEPALIVE_SECONDS ?? 25),
+    },
+  });
+  tunnels.register(provider);
+
+  const configuration: TunnelConfiguration = {
+    endpoint: parseEndpoint(endpointRaw),
+    routingMode: 'fullTunnel',
+    scope: 'system',
+    dnsMode: 'resolverDecision',
+    authentication: { type: 'key', credentialRef },
+    credentialRef,
+    securityProfile: 'strict',
+    capabilities: ['ipv4', 'udp', 'fullTunnel', 'systemWide', 'authentication', 'keepalive', 'reconnect', 'healthCheck'],
+    keepalive: { enabled: true, intervalMs: Number(process.env.IRP_WIREGUARD_KEEPALIVE_SECONDS ?? 25) * 1000, timeoutMs: 5_000 },
+    mtu: { validationStatus: 'unknown' },
+    timeoutMs: 30_000,
+    retryLimit: 2,
+    metadata: { source: 'environment-configuration' },
+  };
+  return new ConfiguredWireGuardControlPlane(provider, configuration);
+};
+
 export class RuntimeDaemonHost {
   lifecycle: DaemonLifecycle = 'created';
   readonly connectivity = new ConnectivityManager();
@@ -144,6 +248,7 @@ export class RuntimeDaemonHost {
   readonly plugins = new PluginManager();
   readonly networkMonitor = new NetworkMonitoringService();
   readonly observer = new LinuxObservationProvider(this.networkMonitor);
+  readonly tunnelControlPlane = createWireGuardControlPlane(this.tunnels);
   readonly runtime = new ResilienceRuntime([this.observer], {
     runtimeId: 'daemon-runtime',
     networkControlPlane: {
@@ -154,6 +259,7 @@ export class RuntimeDaemonHost {
         getActiveProviderId: () => this.dns.status().activeProviderId,
         applyProvider: async (provider) => this.applyDnsProvider(provider.id),
       },
+      tunnel: this.tunnelControlPlane,
     },
   });
   readonly scheduler: RuntimeScheduler;
@@ -206,6 +312,7 @@ export class RuntimeDaemonHost {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
     this.networkMonitor.stop();
+    if (this.tunnelControlPlane) await this.tunnelControlPlane.rollback();
     this.lifecycle = 'stopped';
   }
 
@@ -224,6 +331,7 @@ export class RuntimeDaemonHost {
       },
       gatewayCount: this.gateways.list().length,
       tunnelProviderIds: this.tunnels.list().map((provider) => provider.id),
+      tunnelLiveConfigured: Boolean(this.tunnelControlPlane?.configured),
       pluginCount: this.plugins.graph().length,
       networkMonitor: network.then((snapshot) => ({
         status: snapshot.status,
