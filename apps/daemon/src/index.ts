@@ -2,8 +2,10 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Application } from '@irp/core';
 import { loadConfig } from '@irp/config';
-import { ConnectivityManager } from '@irp/connectivity';
+import { createBuiltinProviders, IntelligentDnsEngine } from '@irp/dns';
+import { InMemoryGatewayRegistry } from '@irp/gateway-registry';
 import { createLogger } from '@irp/logger';
+import { PluginManager } from '@irp/plugin-manager';
 import { RoutingEngine } from '@irp/routing';
 import {
   ResilienceRuntime,
@@ -14,6 +16,7 @@ import {
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
+import { TunnelProviderRegistry } from '@irp/tunnel';
 
 const execFileAsync = promisify(execFile);
 
@@ -90,11 +93,24 @@ export class RuntimeDaemonHost {
   lifecycle: DaemonLifecycle = 'created';
   readonly connectivity = new ConnectivityManager();
   readonly routing = new RoutingEngine();
+  readonly dnsProviders = createBuiltinProviders();
+  readonly dns = new IntelligentDnsEngine(
+    this.dnsProviders,
+    { check: async (provider) => provider.health() },
+  );
+  readonly gateways = new InMemoryGatewayRegistry();
+  readonly tunnels = new TunnelProviderRegistry();
+  readonly plugins = new PluginManager();
   readonly runtime = new ResilienceRuntime([new LinuxObservationProvider()], {
     runtimeId: 'daemon-runtime',
     networkControlPlane: {
       connectivity: this.connectivity,
       routing: this.routing,
+      dns: {
+        engine: this.dns,
+        getActiveProviderId: () => this.dns.status().activeProviderId,
+        applyProvider: async (provider) => this.applyDnsProvider(provider.id),
+      },
     },
   });
   readonly scheduler: RuntimeScheduler;
@@ -111,8 +127,26 @@ export class RuntimeDaemonHost {
     });
   }
 
+  private async applyDnsProvider(providerId: string): Promise<void> {
+    const provider = this.dnsProviders.find((candidate) => candidate.id === providerId);
+    if (!provider) throw new Error(`Unknown DNS provider: ${providerId}`);
+    const active = this.connectivity.getActiveSource();
+    const interfaceName = active?.interfaceName;
+    if (process.platform !== 'linux' || !interfaceName) {
+      throw new Error('live DNS switching requires a discovered Linux network interface');
+    }
+    const servers = provider.metadata().endpoints.ipv4;
+    if (servers.length === 0) throw new Error(`DNS provider ${providerId} has no IPv4 resolver endpoints`);
+    await execFileAsync('resolvectl', ['dns', interfaceName, ...servers], {
+      timeout: 5_000,
+      maxBuffer: 64 * 1024,
+    });
+    this.dns.selectProvider(providerId);
+  }
+
   async initialize() {
     await this.connectivity.discoverResources();
+    await this.dns.evaluate();
     this.lifecycle = 'initialized';
     this.lifecycle = 'ready';
   }
@@ -137,6 +171,13 @@ export class RuntimeDaemonHost {
       instanceId: this.runtime.instanceId,
       connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id),
       connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId),
+      dns: {
+        providers: this.dnsProviders.map((provider) => provider.id),
+        activeProviderId: this.dns.status().activeProviderId,
+      },
+      gatewayCount: this.gateways.list().length,
+      tunnelProviderIds: this.tunnels.list().map((provider) => provider.id),
+      pluginCount: this.plugins.graph().length,
       capabilities: this.runtime.capabilities(),
     };
   }
