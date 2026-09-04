@@ -71,7 +71,7 @@ function run(command, args) {
 }
 
 if (!failures.length) {
-  await run('pnpm', ['build']);
+  if (process.env.IRP_INTEGRATION_SKIP_BUILD !== '1') await run('pnpm', ['build']);
   if (!failures.length) await run('pnpm', ['runtime:integration:strict']);
   if (!failures.length) {
     const e2ePath = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
