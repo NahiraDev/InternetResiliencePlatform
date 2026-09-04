@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
@@ -70,4 +74,4 @@ jobs:
           if (-not (Get-Command ipconfig -ErrorAction SilentlyContinue)) { throw 'ipconfig missing' }
           if (-not (Get-Command route -ErrorAction SilentlyContinue)) { throw 'route missing' }
           if (-not (Get-Command netsh -ErrorAction SilentlyContinue)) { throw 'netsh missing' }
-          node --input-type=module -e "import('./packages/windows-client/dist/index.js').then(async ({WindowsSystem}) => { const s = await new WindowsSystem().snapshot(); if (s.platform !== 'win32') process.exit(2); for (const key of ['interfaces','routes','dns']) { if (!s[key] || s[key].startsWith('unavailable:')) process.exit(3); } console.log(JSON.stringify({platform:s.platform,capturedAt:s.capturedAt})); })"
+          node --input-type=module -e "import('./packages/windows-client/dist/index.js').then(async ({WindowsSystem}) => { const s = await new WindowsSystem().snapshot(); if (s.platform !== 'win32') process.exit(2); for (const key of ['interfaces','routes','dns']) { if (!s[key] || s[key].startsWith('unavailable:')) process.exit(3); } console.log(JSON.stringify({platform:s.platform,capturedAt:s.capturedAt})); }).catch((error) => { console.error(error); process.exit(1); })"
