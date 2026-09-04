@@ -1,40 +1,63 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "scope": "end-to-end-integration-baseline",
-  "purpose": "Permanent gate proving repository component connectivity and deterministic closed-loop execution without treating mocks or CI-only results as production evidence.",
+  "purpose": "Permanent gate proving repository component connectivity and closed-loop behavior without treating workspace imports, mocks, or CI package success as production evidence.",
   "rules": {
     "noUnresolvedWorkspaceDependencies": true,
     "canonicalRuntime": "@irp/resilience-runtime",
     "noDuplicateMutationAuthority": true,
     "deterministicExecutionMustPass": true,
-    "realEnvironmentEvidenceRemainsSeparate": true,
+    "manifestDependencyAloneIsNotIntegrationEvidence": true,
     "missingRealEnvironmentEvidenceIsBlocked": true,
-    "manifestDependencyAloneIsNotIntegrationEvidence": true
+    "closedLoopMustBeTraceable": true
   },
-  "requiredEdges": [
+  "requiredManifestEdges": [
     ["@irp/resilience-runtime", "@irp/connectivity"],
-    ["@irp/resilience-runtime", "@irp/dns"],
+    ["@irp/resilience-runtime", "@irp/events"],
     ["@irp/resilience-runtime", "@irp/failover"],
     ["@irp/resilience-runtime", "@irp/internet-intelligence-agent"],
     ["@irp/resilience-runtime", "@irp/network-intelligence"],
     ["@irp/resilience-runtime", "@irp/routing"],
     ["@irp/resilience-runtime", "@irp/telemetry"],
+    ["@irp/daemon", "@irp/config"],
     ["@irp/daemon", "@irp/connectivity"],
     ["@irp/daemon", "@irp/core"],
-    ["@irp/daemon", "@irp/dns"],
-    ["@irp/daemon", "@irp/gateway-registry"],
-    ["@irp/daemon", "@irp/network"],
-    ["@irp/daemon", "@irp/plugin-manager"],
-    ["@irp/daemon", "@irp/plugin-samples"],
+    ["@irp/daemon", "@irp/logger"],
     ["@irp/daemon", "@irp/resilience-runtime"],
-    ["@irp/daemon", "@irp/routing"],
-    ["@irp/daemon", "@irp/tunnel"]
+    ["@irp/daemon", "@irp/routing"]
   ],
+  "requiredBehavioralEdges": [
+    ["daemon-observation", "connectivity-health"],
+    ["connectivity-health", "internet-intelligence-agent"],
+    ["internet-intelligence-agent", "network-decision-engine"],
+    ["network-decision-engine", "resilience-runtime-policy"],
+    ["resilience-runtime-policy", "canonical-network-control-plane"],
+    ["canonical-network-control-plane", "connectivity"],
+    ["canonical-network-control-plane", "routing"],
+    ["canonical-network-control-plane", "dns"],
+    ["resilience-runtime", "failover-engine"],
+    ["resilience-runtime", "telemetry-registry"]
+  ],
+  "optionalControlPlanes": {
+    "tunnel": {
+      "adapter": "CanonicalTunnelRuntimeAdapter",
+      "activation": "runtime networkControlPlane.tunnel",
+      "certification": "blocked until a configured real provider produces commit-bound evidence"
+    },
+    "gateway": {
+      "owner": "@irp/gateway-registry",
+      "certification": "blocked until a real consumer path is bound to runtime selection/failover"
+    },
+    "plugins": {
+      "owner": "@irp/plugin-manager",
+      "certification": "blocked until plugin manager/runtime activation is bound to a production composition root"
+    }
+  },
   "requiredClosedLoopStages": [
     "observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"
   ],
   "realEnvironmentGate": {
     "source": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-    "rule": "A component is not integration-certified for production merely because its deterministic adapter passes. Real execution evidence must be independently observed and bound to commit and artifact."
+    "rule": "A deterministic adapter or workspace dependency cannot certify a production capability. Evidence must be observed in the real environment and bound to the tested commit and artifact."
   }
 }
