@@ -25,6 +25,17 @@ async function collectPackages(dir) {
   }
 }
 
+async function collectFiles(dir) {
+  if (!existsSync(dir)) return [];
+  const files = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...await collectFiles(path));
+    else if (entry.isFile() && path.endsWith('.js')) files.push(path);
+  }
+  return files;
+}
+
 await collectPackages(join(root, 'packages'));
 await collectPackages(join(root, 'apps'));
 
@@ -43,15 +54,20 @@ for (const [name, item] of workspacePackages) {
 
 for (const [source, target] of contract.requiredEdges) {
   const sourcePackage = workspacePackages.get(source);
+  const targetPackage = workspacePackages.get(target);
   if (!sourcePackage) {
     failures.push(`required source package missing: ${source}`);
+    continue;
+  }
+  if (!targetPackage) {
+    failures.push(`required target package missing: ${target}`);
     continue;
   }
   const deps = {
     ...(sourcePackage.manifest.dependencies ?? {}),
     ...(sourcePackage.manifest.optionalDependencies ?? {}),
   };
-  if (!Object.hasOwn(deps, target)) failures.push(`required integration edge missing: ${source} -> ${target}`);
+  if (!Object.hasOwn(deps, target)) failures.push(`required integration edge missing from manifest: ${source} -> ${target}`);
 }
 
 if (!workspacePackages.has(contract.rules.canonicalRuntime)) failures.push(`canonical runtime missing: ${contract.rules.canonicalRuntime}`);
@@ -70,9 +86,35 @@ function run(command, args) {
   });
 }
 
+async function verifyCompiledEdges() {
+  for (const [source, target] of contract.requiredEdges) {
+    const sourcePackage = workspacePackages.get(source);
+    const targetPackage = workspacePackages.get(target);
+    if (!sourcePackage || !targetPackage) continue;
+    const sourceDist = join(root, sourcePackage.path, 'dist');
+    const targetDist = join(root, targetPackage.path, 'dist');
+    if (!existsSync(sourceDist)) {
+      failures.push(`compiled source missing for required edge: ${source}`);
+      continue;
+    }
+    if (!existsSync(targetDist)) {
+      failures.push(`compiled target missing for required edge: ${target}`);
+      continue;
+    }
+    const files = await collectFiles(sourceDist);
+    let referenced = false;
+    for (const file of files) {
+      const content = await readFile(file, 'utf8');
+      if (content.includes(`from '${target}'`) || content.includes(`from \"${target}\"`) || content.includes(`'${target}/`) || content.includes(`\"${target}/`)) {
+        referenced = true;
+        break;
+      }
+    }
+    if (!referenced) failures.push(`required compiled integration edge is not referenced by emitted code: ${source} -> ${target}`);
+  }
+}
+
 if (!failures.length) {
-  // Build the repository-derived graph first. This is intentionally a generated
-  // engineering inventory: it never upgrades an edge or component to production PASS.
   await run('pnpm', ['integration:graph']);
 
   const graphPath = join(root, 'artifacts/integration-baseline/integration-graph.json');
@@ -91,6 +133,7 @@ if (!failures.length) {
 
   if (!failures.length && process.env.IRP_INTEGRATION_SKIP_BUILD !== '1') await run('pnpm', ['build']);
   if (!failures.length) await run('pnpm', ['runtime:integration:strict']);
+  if (!failures.length) await verifyCompiledEdges();
   if (!failures.length) {
     const e2ePath = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
     if (!existsSync(e2ePath)) failures.push('canonical runtime E2E validation artifact is missing after build');
@@ -109,6 +152,7 @@ if (!failures.length) {
 console.log(`INTEGRATION BASELINE: ${failures.length ? 'BLOCKED' : 'PASS'}`);
 console.log(`Workspace packages/apps: ${workspacePackages.size}`);
 console.log(`Required integration edges: ${contract.requiredEdges.length}`);
+console.log(`Compiled required edges checked: ${failures.length ? 'see failures' : contract.requiredEdges.length}`);
 console.log(`Closed-loop execution stages checked: ${contract.requiredClosedLoopStages.length - 1}`);
 console.log('Integration graph is repository-derived; real-environment and production evidence remain separate fail-closed gates.');
 
