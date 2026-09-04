@@ -51,6 +51,7 @@ export class ResilienceRuntime {
   readonly adapters: RuntimeAdapterRegistry;
   private readonly validator: RuntimeActionValidator;
   private readonly decisionProvider: DecisionProvider;
+  private readonly networkControlPlane?: CanonicalNetworkControlPlane;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
@@ -60,6 +61,7 @@ export class ResilienceRuntime {
   ) {
     this.runtimeId = options.runtimeId ?? 'runtime-default';
     this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
+    this.networkControlPlane = options.networkControlPlane;
     this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry(options.networkControlPlane);
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
@@ -120,7 +122,7 @@ export class ResilienceRuntime {
       let recovery;
       const executor = new CoordinatedActionExecutor(this.adapters);
       const verifier = new RuntimeActionVerifier(this.adapters);
-      const recoveryProvider = new FailoverRecoveryProvider(this.adapters);
+      const recoveryProvider = new FailoverRecoveryProvider(this.adapters, this.networkControlPlane);
 
       if (context.mode === 'simulation') {
         outcome = 'simulated';
