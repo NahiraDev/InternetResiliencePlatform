@@ -25,17 +25,6 @@ async function collectPackages(dir) {
   }
 }
 
-async function collectFiles(dir) {
-  if (!existsSync(dir)) return [];
-  const files = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...await collectFiles(path));
-    else if (entry.isFile() && path.endsWith('.js')) files.push(path);
-  }
-  return files;
-}
-
 await collectPackages(join(root, 'packages'));
 await collectPackages(join(root, 'apps'));
 
@@ -86,31 +75,32 @@ function run(command, args) {
   });
 }
 
-async function verifyCompiledEdges() {
+async function verifyRuntimeEdges() {
+  const reportPath = join(root, '.runtime-package-integration.json');
+  if (!existsSync(reportPath)) {
+    failures.push('runtime package integration report is missing');
+    return;
+  }
+
+  const report = await readJson(reportPath);
+  if (report.overall !== 'healthy') {
+    failures.push(`runtime package integration report is not healthy: ${report.overall}`);
+    return;
+  }
+
+  const packageResults = new Map((report.packages ?? []).map((item) => [item.package, item]));
   for (const [source, target] of contract.requiredEdges) {
-    const sourcePackage = workspacePackages.get(source);
-    const targetPackage = workspacePackages.get(target);
-    if (!sourcePackage || !targetPackage) continue;
-    const sourceDist = join(root, sourcePackage.path, 'dist');
-    const targetDist = join(root, targetPackage.path, 'dist');
-    if (!existsSync(sourceDist)) {
-      failures.push(`compiled source missing for required edge: ${source}`);
+    const sourceResult = packageResults.get(source);
+    if (!sourceResult) {
+      failures.push(`runtime integration result missing for source: ${source}`);
       continue;
     }
-    if (!existsSync(targetDist)) {
-      failures.push(`compiled target missing for required edge: ${target}`);
-      continue;
+    const integration = (sourceResult.integrations ?? []).find((item) => item.target === target);
+    if (!integration) {
+      failures.push(`runtime integration edge was not exercised: ${source} -> ${target}`);
+    } else if (integration.state !== 'integrated') {
+      failures.push(`runtime integration edge failed: ${source} -> ${target} (${integration.state})`);
     }
-    const files = await collectFiles(sourceDist);
-    let referenced = false;
-    for (const file of files) {
-      const content = await readFile(file, 'utf8');
-      if (content.includes(`from '${target}'`) || content.includes(`from \"${target}\"`) || content.includes(`'${target}/`) || content.includes(`\"${target}/`)) {
-        referenced = true;
-        break;
-      }
-    }
-    if (!referenced) failures.push(`required compiled integration edge is not referenced by emitted code: ${source} -> ${target}`);
   }
 }
 
@@ -133,7 +123,7 @@ if (!failures.length) {
 
   if (!failures.length && process.env.IRP_INTEGRATION_SKIP_BUILD !== '1') await run('pnpm', ['build']);
   if (!failures.length) await run('pnpm', ['runtime:integration:strict']);
-  if (!failures.length) await verifyCompiledEdges();
+  if (!failures.length) await verifyRuntimeEdges();
   if (!failures.length) {
     const e2ePath = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
     if (!existsSync(e2ePath)) failures.push('canonical runtime E2E validation artifact is missing after build');
@@ -152,7 +142,7 @@ if (!failures.length) {
 console.log(`INTEGRATION BASELINE: ${failures.length ? 'BLOCKED' : 'PASS'}`);
 console.log(`Workspace packages/apps: ${workspacePackages.size}`);
 console.log(`Required integration edges: ${contract.requiredEdges.length}`);
-console.log(`Compiled required edges checked: ${failures.length ? 'see failures' : contract.requiredEdges.length}`);
+console.log(`Runtime integration edges checked: ${failures.length ? 'see failures' : contract.requiredEdges.length}`);
 console.log(`Closed-loop execution stages checked: ${contract.requiredClosedLoopStages.length - 1}`);
 console.log('Integration graph is repository-derived; real-environment and production evidence remain separate fail-closed gates.');
 
