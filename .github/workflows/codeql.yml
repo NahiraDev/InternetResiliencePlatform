@@ -25,7 +25,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-      packages: read
       security-events: write
 
     strategy:
