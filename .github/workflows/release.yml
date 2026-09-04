@@ -12,7 +12,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   NODE_VERSION: '24'
@@ -36,6 +36,7 @@ jobs:
           INPUT_TAG: ${{ inputs.release_tag }}
           REF_NAME: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           else
@@ -77,6 +78,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           APK="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           cp "$APK" "${GITHUB_WORKSPACE}/IRP-Android-debug-${RELEASE_TAG}.apk"
@@ -121,6 +123,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-Linux
           cp -R packages/linux-client/dist release/IRP-Linux/dist
           cp packages/linux-client/package.json release/IRP-Linux/package.json
@@ -166,6 +169,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-macOS/launchd
           cp -R packages/macos-client/dist release/IRP-macOS/dist
           cp packages/macos-client/package.json release/IRP-macOS/package.json
@@ -215,6 +219,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
           cp packages/windows-client/package.json release/IRP-Windows/package.json
@@ -239,6 +244,7 @@ jobs:
 
       - name: Verify Swift package
         run: |
+          set -euo pipefail
           swift test --package-path clients/ios
           swift build --package-path clients/ios
 
@@ -258,6 +264,8 @@ jobs:
     name: Create GitHub Release
     needs: [prepare, android, linux, macos, windows, ios-source]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -278,6 +286,7 @@ jobs:
 
       - name: Validate Phase 71 release contract
         run: |
+          set -euo pipefail
           node scripts/phase71-release.mjs "${{ needs.prepare.outputs.release_tag }}" release-assets
 
       - name: Generate SHA-256 checksums
@@ -293,6 +302,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \
