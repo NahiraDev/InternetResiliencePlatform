@@ -31,10 +31,18 @@ export interface CanonicalDnsControlPlane {
   readonly getActiveProviderId?: () => string | undefined;
 }
 
+export interface CanonicalTunnelControlPlane {
+  readonly connect: (request?: { providerId?: string }) => Promise<{ tunnelId: string; providerId: string; connectionId: string }>;
+  readonly verify: (tunnelId: string) => Promise<boolean>;
+  readonly rollback: () => Promise<boolean>;
+  readonly configured: boolean;
+}
+
 export interface CanonicalNetworkControlPlane {
   readonly connectivity: ConnectivityManager;
   readonly routing: RoutingEngine;
   readonly dns?: CanonicalDnsControlPlane;
+  readonly tunnel?: CanonicalTunnelControlPlane;
   readonly destination?: RoutingDestination;
 }
 
@@ -76,10 +84,12 @@ const dnsSelectionMetadata = (ranked: ProviderScore[], selected: DnsProvider | u
 });
 
 export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
+  private readonly previousDnsProviders = new Map<string, string | undefined>();
+
   readonly descriptor: RuntimeAdapterDescriptor = {
     adapterId: 'canonical-network-control-plane',
     subsystem: 'connectivity',
-    version: '1.1.0',
+    version: '1.2.0',
     capabilities: ['connectivity.failover', 'route.write', 'network.observe', 'dns.write'],
     supportedActions: ['connectivity_failover', 'provider_switch', 'route_change', 'dns_switch'],
     supportsSimulation: true,
@@ -151,6 +161,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
             : ranked[0]?.provider;
           if (!selected) return createAdapterExecution(plan, context, false, 'failed');
           await dns.applyProvider(selected);
+          this.previousDnsProviders.set(plan.selectedAction.id, previousProviderId);
           const execution = createAdapterExecution(plan, context, false, 'success');
           return {
             ...execution,
@@ -174,7 +185,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     }
   }
 
-  async verify(plan: ActionPlan, _execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
+  async verify(plan: ActionPlan, execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
     if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
 
     try {
@@ -204,6 +215,13 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         return createAdapterVerification(plan, context, health.healthy ? 'success' : 'failed');
       }
 
+      if (plan.selectedAction.intent === 'tunnel_switch') {
+        if (!this.controlPlane.tunnel || !this.controlPlane.tunnel.configured) return createAdapterVerification(plan, context, 'failed');
+        const tunnelId = typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
+        if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
+        return createAdapterVerification(plan, context, await this.controlPlane.tunnel.verify(tunnelId) ? 'success' : 'failed');
+      }
+
       return createAdapterVerification(plan, context, 'failed');
     } catch {
       return createAdapterVerification(plan, context, 'failed');
@@ -228,8 +246,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     if (plan.selectedAction.intent === 'dns_switch') {
       const dns = this.controlPlane.dns;
       if (!dns) return createAdapterExecution(plan, context, false, 'failed');
-      const metadata = plan.selectedAction.metadata as Record<string, unknown>;
-      const previousProviderId = typeof metadata.previousProviderId === 'string' ? metadata.previousProviderId : undefined;
+      const previousProviderId = this.previousDnsProviders.get(plan.selectedAction.id);
       if (!previousProviderId) return createAdapterExecution(plan, context, false, 'failed');
       const provider = dns.engine.status().providers.find((item) => item.provider.id === previousProviderId)?.provider;
       if (!provider) return createAdapterExecution(plan, context, false, 'failed');
@@ -241,6 +258,76 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       }
     }
 
+    if (plan.selectedAction.intent === 'tunnel_switch' && this.controlPlane.tunnel) {
+      try {
+        return createAdapterExecution(plan, context, false, (await this.controlPlane.tunnel.rollback()) ? 'success' : 'failed');
+      } catch {
+        return createAdapterExecution(plan, context, false, 'failed');
+      }
+    }
+
     return createAdapterExecution(plan, context, false, 'failed');
+  }
+}
+
+export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
+  readonly descriptor: RuntimeAdapterDescriptor = {
+    adapterId: 'canonical-tunnel-control-plane',
+    subsystem: 'tunnel',
+    version: '1.0.0',
+    capabilities: ['tunnel.write'],
+    supportedActions: ['tunnel_switch'],
+    supportsSimulation: true,
+    supportsSafe: true,
+    supportsLive: true,
+    requiredPermissions: ['network-control'],
+    requiredKernelCapabilities: ['NET_ADMIN'],
+    verificationSupport: true,
+    recoverySupport: true,
+  };
+
+  constructor(private readonly controlPlane: CanonicalTunnelControlPlane) {}
+
+  async execute(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
+    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
+    if (!this.controlPlane.configured) return createAdapterExecution(plan, context, false, 'failed');
+    try {
+      const result = await this.controlPlane.connect({ providerId: providerIdFromPlan(plan) });
+      return {
+        ...createAdapterExecution(plan, context, false, 'success'),
+        metadata: {
+          controlPlane: 'tunnel',
+          tunnelId: result.tunnelId,
+          connectionId: result.connectionId,
+          providerId: result.providerId,
+        },
+      };
+    } catch (error) {
+      return {
+        ...createAdapterExecution(plan, context, false, 'failed'),
+        error: error instanceof Error ? error.message : 'tunnel operation failed',
+      };
+    }
+  }
+
+  async verify(plan: ActionPlan, execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
+    if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
+    if (!this.controlPlane.configured || execution.status !== 'success') return createAdapterVerification(plan, context, 'failed');
+    const tunnelId = typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
+    if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
+    try {
+      return createAdapterVerification(plan, context, await this.controlPlane.verify(tunnelId) ? 'success' : 'failed');
+    } catch {
+      return createAdapterVerification(plan, context, 'failed');
+    }
+  }
+
+  async rollback(_plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
+    if (context.mode !== 'live') return createAdapterExecution(_plan, context, true);
+    try {
+      return createAdapterExecution(_plan, context, false, (await this.controlPlane.rollback()) ? 'success' : 'failed');
+    } catch {
+      return createAdapterExecution(_plan, context, false, 'failed');
+    }
   }
 }
