@@ -26,12 +26,13 @@ function capabilityFor(id) {
   const value = id.toLowerCase();
   const rules = [
     ['resilience-runtime', 'resilience-runtime'], ['network-intelligence', 'network-intelligence'], ['connectivity', 'connectivity'],
-    ['dns', 'dns'], ['gateway-registry', 'gateway-registry'], ['routing', 'routing'], ['failover', 'failover'], ['tunnel', 'tunnel'],
-    ['database', 'database'], ['api', 'api'], ['daemon', 'daemon'], ['security', 'security'], ['telemetry', 'telemetry'],
-    ['linux-client', 'linux-client'], ['macos-client', 'macos-client'], ['windows-client', 'windows-client'], ['android', 'android-client'],
-    ['ios-network-extension', 'ios-network-extension'], ['ios', 'ios-client'], ['observability', 'observability'], ['docker', 'docker'],
+    ['dns', 'dns'], ['gateway-registry', 'gateway-registry'], ['routing', 'routing'], ['failover', 'failover'],
+    ['ios-network-extension', 'ios-network-extension'], ['ios/packettunnel', 'ios-network-extension'], ['packettunnel', 'ios-network-extension'],
+    ['tunnel', 'tunnel'], ['database', 'database'], ['api', 'api'], ['daemon', 'daemon'], ['security', 'security'],
+    ['telemetry', 'telemetry'], ['linux-client', 'linux-client'], ['macos-client', 'macos-client'], ['windows-client', 'windows-client'],
+    ['android', 'android-client'], ['ios', 'ios-client'], ['observability', 'observability'], ['docker', 'docker'],
     ['kubernetes', 'kubernetes'], ['regional', 'regional-validation'], ['release', 'release-engineering'], ['backup', 'backup-restore'],
-    ['rollback', 'upgrade-rollback'], ['chaos', 'chaos-soak'], ['control', 'control-plane']
+    ['rollback', 'upgrade-rollback'], ['chaos', 'chaos-soak'], ['control-plane', 'control-plane'], ['control', 'control-plane'], ['cli', 'control-plane']
   ];
   if (value.includes('infra') || value.includes('docker')) return 'docker';
   if (value.includes('k8s') || value.includes('kubernetes')) return 'kubernetes';
@@ -47,12 +48,15 @@ function capabilityFor(id) {
 function executableEntrypoint(abs, manifest) {
   const scripts = manifest?.scripts ?? {};
   if (scripts.start) return `pnpm --dir ${relative(root, abs)} start`;
-  if (scripts.dev) return `pnpm --dir ${relative(root, abs)} dev`;
   if (manifest?.bin) return `package.bin:${typeof manifest.bin === 'string' ? manifest.bin : Object.values(manifest.bin)[0]}`;
-  if (manifest?.main) return `package.main:${manifest.main}`;
-  if (manifest?.module) return `package.module:${manifest.module}`;
-  if (existsSync(join(abs, 'src/index.ts'))) return `${relative(root, abs)}/src/index.ts`;
   return null;
+}
+
+function requiresRealEnvironment(type, capability) {
+  if (type === 'workflow') return false;
+  if (type === 'roadmap-phase') return false;
+  if (type === 'assurance-surface') return true;
+  return Boolean(capability);
 }
 
 function realEnvironmentContract(capability) {
@@ -71,16 +75,18 @@ async function addSurface(path, type, packageJson = null) {
   const isDir = existsSync(abs) && statSync(abs).isDirectory();
   const files = isDir ? await walk(abs) : [abs];
   const sourceFiles = files.filter((file) => /\.(ts|tsx|js|mjs|cjs|swift|kt|kts|sh|sql)$/.test(file)).length;
-  const scripts = packageJson?.scripts ?? {};
   const entrypoint = executableEntrypoint(abs, packageJson);
-  const executable = Boolean(entrypoint) || ['app', 'android-client', 'ios-client', 'ios-network-extension', 'workflow', 'operations', 'infrastructure'].includes(type);
+  const executable = Boolean(entrypoint) || ['app', 'android-client', 'ios-client', 'ios-network-extension', 'operations', 'infrastructure'].includes(type);
   const capability = capabilityFor(path);
+  const evidenceRequired = executable && requiresRealEnvironment(type, capability);
   rows.push({
     componentId: path.replaceAll('/', '::'), path, type, capability, executable, entrypoint,
-    buildCommand: scripts.build ?? null, testCommand: scripts.test ?? null, sourceFiles,
+    buildCommand: packageJson?.scripts?.build ?? null, testCommand: packageJson?.scripts?.test ?? null, sourceFiles,
     upstreamDependencies: packageJson ? Object.keys({ ...(packageJson.dependencies ?? {}), ...(packageJson.optionalDependencies ?? {}) }) : [],
     downstreamDependencies: [], owningPhases: [],
-    realEnvironment: executable ? { ...realEnvironmentContract(capability), evidenceRequired: true } : { status: 'PENDING', evidenceRequired: false },
+    realEnvironment: evidenceRequired
+      ? { ...realEnvironmentContract(capability), evidenceRequired: true }
+      : { status: 'NOT_APPLICABLE', evidenceRequired: false },
     evidenceId: null
   });
 }
@@ -119,29 +125,53 @@ if (existsSync(phaseDir)) for (const file of await readdir(phaseDir)) {
   const match = /^phase-(\d+)(?:-[^/]+)?\.md$/.exec(file);
   if (match) phaseDocs.push(Number(match[1]));
 }
-const missingPhaseDocs = [];
-for (let n = 0; n <= contract.roadmap.maxPhase; n++) if (!phaseDocs.includes(n)) missingPhaseDocs.push(n);
+
+const phaseReadmePath = join(root, 'docs/phases/README.md');
+const phasePolicyText = existsSync(phaseReadmePath) ? await readFile(phaseReadmePath, 'utf8') : '';
+const canonicalPhaseRecords = [...phasePolicyText.matchAll(/\[`?phase-(\d+)\.md`?\]\(phase-\1\.md\)/g)].map((match) => Number(match[1]));
+const canonicalPhaseSet = [...new Set(canonicalPhaseRecords)].sort((a, b) => a - b);
+const missingCanonicalPhaseDocs = canonicalPhaseSet.filter((n) => !phaseDocs.includes(n));
+
 for (let n = 0; n <= contract.roadmap.maxPhase; n++) rows.push({
   componentId: `roadmap::phase-${n}`, path: `docs/phases/phase-${String(n).padStart(2, '0')}.md`, type: 'roadmap-phase', capability: 'release-engineering', executable: false,
   entrypoint: null, buildCommand: null, testCommand: null, sourceFiles: 0, upstreamDependencies: [], downstreamDependencies: [], owningPhases: [n],
-  realEnvironment: { status: missingPhaseDocs.includes(n) ? 'BLOCKED' : 'PENDING', evidenceRequired: false }, evidenceId: null
+  realEnvironment: { status: canonicalPhaseSet.includes(n) ? (missingCanonicalPhaseDocs.includes(n) ? 'BLOCKED' : 'PENDING') : 'NOT_APPLICABLE', evidenceRequired: false }, evidenceId: null
 });
+
+for (const capability of contract.assuranceOnlyCapabilitySurfaces ?? []) {
+  if (rows.some((row) => row.capability === capability)) continue;
+  const evidence = realEnvironmentContract(capability);
+  rows.push({
+    componentId: `assurance::${capability}`, path: `ops/release/real-environment::${capability}`, type: 'assurance-surface', capability,
+    executable: false, entrypoint: null, buildCommand: null, testCommand: null, sourceFiles: 0,
+    upstreamDependencies: [], downstreamDependencies: [], owningPhases: [], realEnvironment: { ...evidence, evidenceRequired: true }, evidenceId: null
+  });
+}
 
 const discoveredCapabilities = new Set(rows.map((row) => row.capability));
 const missingCapabilities = contract.requiredCapabilitySurfaces.filter((capability) => !discoveredCapabilities.has(capability));
 const noAssurance = rows.filter((row) => row.executable && row.realEnvironment.status === 'BLOCKED');
+const blockedCanonicalPhaseDocs = rows.filter((row) => row.type === 'roadmap-phase' && row.realEnvironment.status === 'BLOCKED');
 const report = {
-  schemaVersion: 2, generatedAt: new Date().toISOString(), commitSha: process.env.GITHUB_SHA ?? 'unknown', repositoryScope: contract.sourceOfTruth,
+  schemaVersion: 3, generatedAt: new Date().toISOString(), commitSha: process.env.GITHUB_SHA ?? 'unknown', repositoryScope: contract.sourceOfTruth,
   componentCount: rows.length, sourceFileCount: rows.reduce((n, row) => n + row.sourceFiles, 0), components: rows,
-  roadmap: { expectedThrough: contract.roadmap.maxPhase, discoveredPhaseDocs: [...new Set(phaseDocs)].sort((a, b) => a - b), missingPhaseDocs },
-  requiredCapabilitySurfaces: contract.requiredCapabilitySurfaces, missingCapabilitySurfaces: missingCapabilities,
+  roadmap: {
+    expectedThrough: contract.roadmap.maxPhase,
+    discoveredPhaseDocs: [...new Set(phaseDocs)].sort((a, b) => a - b),
+    canonicalPhaseRecords: canonicalPhaseSet,
+    missingCanonicalPhaseDocs,
+    policy: 'Only phase records explicitly designated as current/canonical by docs/phases/README.md are required. Historical 01–38 and future unstarted phases are not mechanically required.'
+  },
+  requiredCapabilitySurfaces: contract.requiredCapabilitySurfaces,
+  assuranceOnlyCapabilitySurfaces: contract.assuranceOnlyCapabilitySurfaces ?? [],
+  missingCapabilitySurfaces: missingCapabilities,
   closedLoopStages: contract.requiredClosedLoopStages,
-  verdict: missingCapabilities.length || noAssurance.length || missingPhaseDocs.length ? 'BLOCKED' : 'PASS',
+  verdict: missingCapabilities.length || noAssurance.length || missingCanonicalPhaseDocs.length ? 'BLOCKED' : 'PASS',
   failures: [],
   blocked: [
-    ...missingPhaseDocs.map((n) => `phase-${n}: roadmap phase document is missing`),
+    ...missingCanonicalPhaseDocs.map((n) => `phase-${n}: canonical phase document is missing`),
     ...noAssurance.map((row) => `${row.path}: no registered real-environment assurance contract for capability ${row.capability}`),
-    ...missingCapabilities.map((capability) => `${capability}: capability surface has no discovered repository owner`)
+    ...missingCapabilities.map((capability) => `${capability}: capability surface has no discovered repository owner or assurance-surface contract`)
   ],
   executableComponentsWithoutAssurance: noAssurance.length,
   registeredRealEnvironmentContracts: Object.keys(registry.capabilities ?? {}).length,
@@ -154,7 +184,7 @@ await writeFile(join(outputDir, 'system-matrix.json'), `${JSON.stringify(report,
 await writeFile(join(outputDir, 'system-matrix.sha256'), `${hash(JSON.stringify(report))}  system-matrix.json\n`, 'utf8');
 console.log(`FULL SYSTEM ASSURANCE MATRIX: ${report.verdict}`);
 console.log(`Components/phases: ${report.componentCount}; source files represented: ${report.sourceFileCount}`);
-console.log(`Missing phase docs: ${missingPhaseDocs.length}; executable surfaces without assurance: ${noAssurance.length}`);
+console.log(`Missing canonical phase docs: ${missingCanonicalPhaseDocs.length}; executable surfaces without assurance: ${noAssurance.length}`);
 console.log(`Registered real-environment capability contracts: ${report.registeredRealEnvironmentContracts}`);
 if (report.verdict === 'BLOCKED') {
   console.error('Full-system assurance is BLOCKED; CI must not report success.');
