@@ -71,7 +71,25 @@ function run(command, args) {
 }
 
 if (!failures.length) {
-  if (process.env.IRP_INTEGRATION_SKIP_BUILD !== '1') await run('pnpm', ['build']);
+  // Build the repository-derived graph first. This is intentionally a generated
+  // engineering inventory: it never upgrades an edge or component to production PASS.
+  await run('pnpm', ['integration:graph']);
+
+  const graphPath = join(root, 'artifacts/integration-baseline/integration-graph.json');
+  if (!existsSync(graphPath)) {
+    failures.push('integration graph artifact was not generated');
+  } else {
+    const graph = await readJson(graphPath);
+    const edgeKeys = new Set(graph.edges.map((edge) => `${edge.source}->${edge.target}`));
+    for (const [source, target] of contract.requiredEdges) {
+      if (!edgeKeys.has(`${source}->${target}`)) failures.push(`required edge absent from generated graph: ${source} -> ${target}`);
+    }
+    if (graph.nodes.length !== workspacePackages.size) {
+      failures.push(`integration graph inventory mismatch: graph=${graph.nodes.length}, workspace=${workspacePackages.size}`);
+    }
+  }
+
+  if (!failures.length && process.env.IRP_INTEGRATION_SKIP_BUILD !== '1') await run('pnpm', ['build']);
   if (!failures.length) await run('pnpm', ['runtime:integration:strict']);
   if (!failures.length) {
     const e2ePath = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
@@ -92,7 +110,7 @@ console.log(`INTEGRATION BASELINE: ${failures.length ? 'BLOCKED' : 'PASS'}`);
 console.log(`Workspace packages/apps: ${workspacePackages.size}`);
 console.log(`Required integration edges: ${contract.requiredEdges.length}`);
 console.log(`Closed-loop execution stages checked: ${contract.requiredClosedLoopStages.length - 1}`);
-console.log('Telemetry and real-environment evidence remain separate fail-closed gates.');
+console.log('Integration graph is repository-derived; real-environment and production evidence remain separate fail-closed gates.');
 
 if (failures.length) {
   console.error('\nFailures:');
