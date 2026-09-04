@@ -15,15 +15,9 @@
     "@irp/config": "workspace:*",
     "@irp/connectivity": "workspace:*",
     "@irp/core": "workspace:*",
-    "@irp/dns": "workspace:*",
-    "@irp/gateway-registry": "workspace:*",
     "@irp/logger": "workspace:*",
-    "@irp/network": "workspace:*",
-    "@irp/plugin-manager": "workspace:*",
-    "@irp/plugin-samples": "workspace:*",
     "@irp/resilience-runtime": "workspace:*",
-    "@irp/routing": "workspace:*",
-    "@irp/tunnel": "workspace:*"
+    "@irp/routing": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",
