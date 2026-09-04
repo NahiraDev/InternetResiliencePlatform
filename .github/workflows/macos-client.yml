@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: macos-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
@@ -35,7 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -72,12 +76,13 @@ jobs:
 
       - name: Verify native command surface
         run: |
+          set -euo pipefail
           test "$(uname -s)" = "Darwin"
           command -v ifconfig
           command -v route
           command -v scutil
           command -v networksetup
-          node -e "import('./packages/macos-client/dist/index.js').then(async ({MacOSSystem}) => { const s = await new MacOSSystem().snapshot(); if (s.platform !== 'darwin') process.exit(2); for (const key of ['interfaces','routes','dns','networkServices','vpnServices']) if (s[key].startsWith('unavailable:')) process.exit(3); console.log(JSON.stringify({platform:s.platform, capturedAt:s.capturedAt, networkServices:s.networkServices.split('\n').length, vpnServices:s.vpnServices.split('\n').length})); }).catch((e)=>{console.error(e);process.exit(1);})"
+          node -e "import('./packages/macos-client/dist/index.js').then(async ({MacOSSystem}) => { const s = await new MacOSSystem().snapshot(); if (s.platform !== 'darwin') process.exit(2); for (const key of ['interfaces','routes','dns','networkServices','vpnServices']) { if (!s[key] || s[key].startsWith('unavailable:')) process.exit(3); } console.log(JSON.stringify({platform:s.platform, capturedAt:s.capturedAt, networkServices:s.networkServices.split('\\n').length, vpnServices:s.vpnServices.split('\\n').length})); }).catch((error)=>{console.error(error);process.exit(1);})"
 
       - name: Verify launchd contract
         run: |
