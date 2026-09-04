@@ -1,14 +1,9 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { Application } from '@irp/core';
+import { Application, createAllBuiltinProviders, IntelligentDnsEngine } from '@irp/core';
 import { loadConfig } from '@irp/config';
-import { ConnectivityManager } from '@irp/connectivity';
-import { createBuiltinProviders, IntelligentDnsEngine } from '@irp/dns';
-import { InMemoryGatewayRegistry } from '@irp/gateway-registry';
+import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
 import { createLogger } from '@irp/logger';
-import { NetworkMonitoringService } from '@irp/network';
-import { builtinPlugins } from '@irp/plugin-samples';
-import { PluginManager } from '@irp/plugin-manager';
 import { RoutingEngine } from '@irp/routing';
 import {
   ResilienceRuntime,
@@ -19,355 +14,104 @@ import {
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
-import {
-  TunnelProviderRegistry,
-  type Endpoint,
-  type Tunnel,
-  type TunnelConnection,
-  type TunnelConfiguration,
-  type TunnelProvider,
-  WireGuardProvider,
-} from '@irp/tunnel';
-import type { CanonicalTunnelControlPlane } from '@irp/resilience-runtime';
 
 const execFileAsync = promisify(execFile);
 
-export type DaemonLifecycle =
-  | 'created'
-  | 'initialized'
-  | 'ready'
-  | 'running'
-  | 'stopping'
-  | 'stopped';
+type Health = {
+  score?: number;
+  status?: string;
+  latencyMs?: number;
+  packetLoss?: number;
+  jitterMs?: number;
+  internetReachable?: boolean;
+  dnsReachable?: boolean;
+  gatewayReachable?: boolean;
+  ipv4?: boolean;
+  ipv6?: boolean;
+};
+
+const observationsForSource = (context: RuntimeContext, source: ConnectivitySource, health: Health): Observation[] => {
+  const now = new Date().toISOString();
+  const result: Observation[] = [];
+  const quality = Number.isFinite(health.score) ? health.score! : 0;
+  result.push({
+    id: `connectivity-${source.sourceId}-quality-${context.correlationId}`,
+    schemaVersion: 1,
+    createdAt: now,
+    correlationId: context.correlationId,
+    source: 'irp-daemon-connectivity',
+    metadata: { sourceId: source.sourceId, providerId: source.providerId, resourceId: source.id, interfaceName: source.interfaceName, gateway: source.gateway },
+    category: 'network',
+    metric: 'quality_score',
+    value: quality,
+    timestamp: now,
+    freshnessMs: 0,
+    confidence: health.status ? 0.9 : 0.5,
+    severity: health.status === 'healthy' ? 'info' : health.status === 'unhealthy' ? 'critical' : 'warning',
+    status: health.status === 'healthy' ? 'healthy' : health.status === 'unhealthy' ? 'failed' : 'degraded',
+  });
+  if (typeof health.latencyMs === 'number') result.push({ id: `connectivity-${source.sourceId}-latency-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { sourceId: source.sourceId }, category: 'network', metric: 'latency_ms', value: health.latencyMs, timestamp: now, freshnessMs: 0, confidence: 0.9, severity: 'info', status: 'healthy' });
+  if (typeof health.packetLoss === 'number') result.push({ id: `connectivity-${source.sourceId}-loss-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { sourceId: source.sourceId }, category: 'network', metric: 'packet_loss_ratio', value: health.packetLoss, timestamp: now, freshnessMs: 0, confidence: 0.9, severity: 'info', status: 'healthy' });
+  if (typeof health.dnsReachable === 'boolean') result.push({ id: `connectivity-${source.sourceId}-dns-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { sourceId: source.sourceId }, category: 'dns', metric: 'dns_reachable', value: health.dnsReachable, timestamp: now, freshnessMs: 0, confidence: 0.9, severity: health.dnsReachable ? 'info' : 'warning', status: health.dnsReachable ? 'healthy' : 'degraded' });
+  if (typeof health.ipv4 === 'boolean') result.push({ id: `connectivity-${source.sourceId}-ipv4-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { sourceId: source.sourceId }, category: 'network', metric: 'ipv4_connectivity', value: health.ipv4, timestamp: now, freshnessMs: 0, confidence: 0.9, severity: health.ipv4 ? 'info' : 'warning', status: health.ipv4 ? 'healthy' : 'degraded' });
+  if (typeof health.ipv6 === 'boolean') result.push({ id: `connectivity-${source.sourceId}-ipv6-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { sourceId: source.sourceId }, category: 'network', metric: 'ipv6_connectivity', value: health.ipv6, timestamp: now, freshnessMs: 0, confidence: 0.9, severity: health.ipv6 ? 'info' : 'warning', status: health.ipv6 ? 'healthy' : 'degraded' });
+  return result;
+};
 
 export class LinuxObservationProvider implements ObservationProvider {
-  readonly id = 'linux-network-monitor';
-
-  constructor(private readonly monitor = new NetworkMonitoringService()) {}
-
+  readonly id = 'linux-connectivity-observer';
+  constructor(private readonly connectivity: ConnectivityManager) {}
   async collect(context: RuntimeContext): Promise<ObservationProviderResult> {
-    if (process.platform !== 'linux') {
-      return {
-        providerId: this.id,
-        observations: [],
-        collectedAt: new Date().toISOString(),
-        errors: ['linux network observation is unavailable on non-linux platforms'],
-      };
-    }
-
-    const snapshot = await this.monitor.runOnce();
-    const observations: Observation[] = snapshot.measurements.map((measurement) => ({
-      id: `linux-${measurement.id}`,
-      schemaVersion: 1,
-      createdAt: measurement.timestamp,
-      correlationId: context.correlationId,
-      source: 'irp-daemon-network-monitor',
-      metadata: {
-        ...measurement.metadata,
-        probeName: measurement.probeType,
-        success: measurement.success,
-      },
-      category: measurement.probeType === 'dns' ? 'dns' : 'network',
-      metric:
-        measurement.probeType === 'dns'
-          ? 'dns_lookup_ms'
-          : measurement.probeType === 'tcp'
-            ? 'latency_ms'
-            : measurement.probeType === 'packet_loss'
-              ? 'packet_loss_ratio'
-              : measurement.probeType === 'ip'
-                ? 'ipv4_connectivity'
-                : measurement.probeType === 'http'
-                  ? 'http_response_ms'
-                  : `network_${measurement.probeType}_latency_ms`,
-      value:
-        measurement.probeType === 'packet_loss' && typeof measurement.metadata.lossRatio === 'number'
-          ? measurement.metadata.lossRatio
-          : measurement.probeType === 'ip' && typeof measurement.metadata.ipv4 === 'boolean'
-            ? measurement.metadata.ipv4
-            : measurement.latency,
-      timestamp: measurement.timestamp,
-      freshnessMs: 0,
-      confidence: measurement.success ? 0.95 : 0.25,
-      severity: measurement.success ? 'info' : 'warning',
-      status: measurement.success ? 'healthy' : 'degraded',
+    if (process.platform !== 'linux') return { providerId: this.id, observations: [], collectedAt: new Date().toISOString(), errors: ['linux connectivity observation is unavailable on non-linux platforms'] };
+    await this.connectivity.discoverResources();
+    const sources = this.connectivity.getAvailableSources();
+    const observations: Observation[] = [];
+    const errors: string[] = [];
+    await Promise.all(sources.map(async (source) => {
+      try { observations.push(...observationsForSource(context, source, await this.connectivity.registry.get(source.providerId).getHealth(source.id))); }
+      catch (error) { errors.push(`${source.sourceId}: ${error instanceof Error ? error.message : 'health probe failed'}`); }
     }));
-
-    const quality = snapshot.score.score;
-    observations.push({
-      id: `linux-quality-${context.correlationId}`,
-      schemaVersion: 1,
-      createdAt: new Date().toISOString(),
-      correlationId: context.correlationId,
-      source: 'irp-daemon-network-monitor',
-      metadata: { issueCount: snapshot.issues.length },
-      category: 'network',
-      metric: 'quality_score',
-      value: quality,
-      timestamp: new Date().toISOString(),
-      freshnessMs: 0,
-      confidence: 0.95,
-      severity: quality >= 80 ? 'info' : quality >= 50 ? 'warning' : 'critical',
-      status: quality >= 80 ? 'healthy' : quality >= 50 ? 'degraded' : 'failed',
-    });
-
-    const internetReachable = snapshot.measurements.some(
-      (measurement) => (measurement.probeType === 'http' || measurement.probeType === 'tcp') && measurement.success,
-    );
-    observations.push({
-      id: `linux-internet-${context.correlationId}`,
-      schemaVersion: 1,
-      createdAt: new Date().toISOString(),
-      correlationId: context.correlationId,
-      source: 'irp-daemon-network-monitor',
-      metadata: {},
-      category: 'network',
-      metric: 'internet_reachable',
-      value: internetReachable,
-      timestamp: new Date().toISOString(),
-      freshnessMs: 0,
-      confidence: 0.95,
-      severity: internetReachable ? 'info' : 'critical',
-      status: internetReachable ? 'healthy' : 'failed',
-    });
-
-    return {
-      providerId: this.id,
-      observations,
-      collectedAt: new Date().toISOString(),
-      errors: snapshot.issues,
-    };
+    const active = this.connectivity.getActiveSource();
+    const now = new Date().toISOString();
+    observations.push({ id: `connectivity-internet-${context.correlationId}`, schemaVersion: 1, createdAt: now, correlationId: context.correlationId, source: 'irp-daemon-connectivity', metadata: { activeSourceId: active?.sourceId }, category: 'network', metric: 'internet_reachable', value: Boolean(active && sources.some((source) => source.sourceId === active.sourceId)), timestamp: now, freshnessMs: 0, confidence: active ? 0.95 : 0.5, severity: active ? 'info' : 'critical', status: active ? 'healthy' : 'failed' });
+    return { providerId: this.id, observations, collectedAt: now, errors };
   }
 }
-
-class ConfiguredWireGuardControlPlane implements CanonicalTunnelControlPlane {
-  readonly configured = true;
-  private activeTunnel: Tunnel | undefined;
-  private activeConnection: TunnelConnection | undefined;
-
-  constructor(private readonly provider: WireGuardProvider, private readonly configuration: TunnelConfiguration) {}
-
-  async connect(request?: { providerId?: string }) {
-    if (request?.providerId && request.providerId !== this.provider.id) {
-      throw new Error(`Requested tunnel provider ${request.providerId} is not configured`);
-    }
-    if (this.activeTunnel && this.activeConnection) await this.provider.disconnect(this.activeConnection, 10_000);
-    const tunnel = await this.provider.create(this.configuration);
-    const connection = await this.provider.connect(tunnel);
-    this.activeTunnel = tunnel;
-    this.activeConnection = connection;
-    return { tunnelId: tunnel.id, providerId: this.provider.id, connectionId: connection.id };
-  }
-
-  async verify(tunnelId: string): Promise<boolean> {
-    if (!this.activeTunnel || this.activeTunnel.id !== tunnelId) return false;
-    const health = await this.provider.healthCheck(this.activeTunnel);
-    return health.status === 'healthy' && health.connectivity && health.handshake;
-  }
-
-  async rollback(): Promise<boolean> {
-    if (!this.activeConnection) return true;
-    try {
-      await this.provider.disconnect(this.activeConnection, 10_000);
-      return true;
-    } finally {
-      this.activeConnection = undefined;
-      this.activeTunnel = undefined;
-    }
-  }
-}
-
-const parseEndpoint = (raw: string): Endpoint => {
-  const match = raw.match(/^\[([^\]]+)\]:(\d+)$/) ?? raw.match(/^(.+):(\d+)$/);
-  if (!match) throw new Error('IRP_WIREGUARD_ENDPOINT must be host:port or [ipv6]:port');
-  const host = match[1];
-  const port = Number(match[2]);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('IRP_WIREGUARD_ENDPOINT port is invalid');
-  return {
-    host,
-    port,
-    protocol: 'wireguard',
-    addressFamily: host.includes(':') ? 'ipv6' : 'ipv4',
-    metadata: {},
-  };
-};
-
-const createWireGuardControlPlane = (tunnels: TunnelProviderRegistry): CanonicalTunnelControlPlane | undefined => {
-  const endpointRaw = process.env.IRP_WIREGUARD_ENDPOINT;
-  const peerPublicKey = process.env.IRP_WIREGUARD_PEER_PUBLIC_KEY;
-  const privateKey = process.env.IRP_WIREGUARD_PRIVATE_KEY;
-  const credentialRef = process.env.IRP_WIREGUARD_CREDENTIAL_REF;
-  if (!endpointRaw || !peerPublicKey || !privateKey || !credentialRef) return undefined;
-
-  const provider: TunnelProvider = new WireGuardProvider({
-    credentialStore: {
-      getPrivateKey: async (ref) => {
-        if (ref !== credentialRef) throw new Error('WireGuard credential reference mismatch');
-        return privateKey;
-      },
-    },
-    interfaceName: process.env.IRP_WIREGUARD_INTERFACE ?? 'irpwg0',
-    addressCidr: process.env.IRP_WIREGUARD_ADDRESS_CIDR,
-    peer: {
-      publicKey: peerPublicKey,
-      allowedIPs: (process.env.IRP_WIREGUARD_ALLOWED_IPS ?? '0.0.0.0/0,::/0').split(',').map((value) => value.trim()).filter(Boolean),
-      endpoint: endpointRaw,
-      persistentKeepalive: Number(process.env.IRP_WIREGUARD_KEEPALIVE_SECONDS ?? 25),
-    },
-  });
-  tunnels.register(provider);
-
-  const configuration: TunnelConfiguration = {
-    endpoint: parseEndpoint(endpointRaw),
-    routingMode: 'fullTunnel',
-    scope: 'system',
-    dnsMode: 'resolverDecision',
-    authentication: { type: 'key', credentialRef },
-    credentialRef,
-    securityProfile: 'strict',
-    capabilities: ['ipv4', 'udp', 'fullTunnel', 'systemWide', 'authentication', 'keepalive', 'reconnect', 'healthCheck'],
-    keepalive: { enabled: true, intervalMs: Number(process.env.IRP_WIREGUARD_KEEPALIVE_SECONDS ?? 25) * 1000, timeoutMs: 5_000 },
-    mtu: { validationStatus: 'unknown' },
-    timeoutMs: 30_000,
-    retryLimit: 2,
-    metadata: { source: 'environment-configuration' },
-  };
-  return new ConfiguredWireGuardControlPlane(provider, configuration);
-};
 
 export class RuntimeDaemonHost {
-  lifecycle: DaemonLifecycle = 'created';
+  lifecycle: 'created' | 'initialized' | 'ready' | 'running' | 'stopping' | 'stopped' = 'created';
   readonly connectivity = new ConnectivityManager();
   readonly routing = new RoutingEngine();
-  readonly dnsProviders = createBuiltinProviders();
-  readonly dns = new IntelligentDnsEngine(this.dnsProviders, {
-    check: async (provider) => provider.health(),
-  });
-  readonly gateways = new InMemoryGatewayRegistry();
-  readonly tunnels = new TunnelProviderRegistry();
-  readonly plugins = new PluginManager();
-  readonly networkMonitor = new NetworkMonitoringService();
-  readonly observer = new LinuxObservationProvider(this.networkMonitor);
-  readonly tunnelControlPlane = createWireGuardControlPlane(this.tunnels);
-  readonly runtime = new ResilienceRuntime([this.observer], {
-    runtimeId: 'daemon-runtime',
-    networkControlPlane: {
-      connectivity: this.connectivity,
-      routing: this.routing,
-      dns: {
-        engine: this.dns,
-        getActiveProviderId: () => this.dns.status().activeProviderId,
-        applyProvider: async (provider) => this.applyDnsProvider(provider.id),
-      },
-      tunnel: this.tunnelControlPlane,
-    },
-  });
+  readonly dnsProviders = createAllBuiltinProviders();
+  readonly dns = new IntelligentDnsEngine(this.dnsProviders, { check: async (provider) => provider.health() });
+  readonly observer = new LinuxObservationProvider(this.connectivity);
+  readonly runtime = new ResilienceRuntime([this.observer], { runtimeId: 'daemon-runtime', networkControlPlane: { connectivity: this.connectivity, routing: this.routing, dns: { engine: this.dns, getActiveProviderId: () => this.dns.status().activeProviderId, applyProvider: async (provider) => this.applyDnsProvider(provider.id) } } });
   readonly scheduler: RuntimeScheduler;
-
-  constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
-    this.scheduler = new RuntimeScheduler(this.runtime, {
-      enabled: false,
-      mode: 'safe',
-      cycleIntervalMs: 30_000,
-      maxConcurrentCycles: 1,
-      cooldownMs: 5_000,
-      executionBudgetMs: 10_000,
-      ...config,
-    });
-  }
-
+  constructor(config: Partial<RuntimeSchedulerConfig> = {}) { this.scheduler = new RuntimeScheduler(this.runtime, { enabled: false, mode: 'safe', cycleIntervalMs: 30_000, maxConcurrentCycles: 1, cooldownMs: 5_000, executionBudgetMs: 10_000, ...config }); }
   private async applyDnsProvider(providerId: string): Promise<void> {
     const provider = this.dnsProviders.find((candidate) => candidate.id === providerId);
     if (!provider) throw new Error(`Unknown DNS provider: ${providerId}`);
     const active = this.connectivity.getActiveSource();
     const interfaceName = active?.interfaceName;
-    if (process.platform !== 'linux' || !interfaceName) {
-      throw new Error('live DNS switching requires a discovered Linux network interface');
-    }
+    if (process.platform !== 'linux' || !interfaceName) throw new Error('live DNS switching requires a discovered Linux network interface');
     const servers = provider.metadata().endpoints.ipv4;
     if (servers.length === 0) throw new Error(`DNS provider ${providerId} has no IPv4 resolver endpoints`);
-    await execFileAsync('resolvectl', ['dns', interfaceName, ...servers], {
-      timeout: 5_000,
-      maxBuffer: 64 * 1024,
-    });
+    await execFileAsync('resolvectl', ['dns', interfaceName, ...servers], { timeout: 5_000, maxBuffer: 64 * 1024 });
     this.dns.selectProvider(providerId);
   }
-
-  async initialize() {
-    await this.connectivity.discoverResources();
-    await this.dns.evaluate();
-    await this.networkMonitor.runOnce();
-    await this.plugins.installAll(builtinPlugins());
-    this.lifecycle = 'initialized';
-    this.lifecycle = 'ready';
-  }
-
-  async start() {
-    if (this.lifecycle === 'created') await this.initialize();
-    this.lifecycle = 'running';
-    this.scheduler.start();
-  }
-
-  async stop() {
-    this.lifecycle = 'stopping';
-    this.scheduler.stop();
-    this.networkMonitor.stop();
-    if (this.tunnelControlPlane) await this.tunnelControlPlane.rollback();
-    this.lifecycle = 'stopped';
-  }
-
-  health() {
-    const network = this.networkMonitor.runOnce();
-    return {
-      lifecycle: this.lifecycle,
-      scheduler: this.scheduler.status(),
-      runtimeId: this.runtime.runtimeId,
-      instanceId: this.runtime.instanceId,
-      connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id),
-      connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId),
-      dns: {
-        providers: this.dnsProviders.map((provider) => provider.id),
-        activeProviderId: this.dns.status().activeProviderId,
-      },
-      gatewayCount: this.gateways.list().length,
-      tunnelProviderIds: this.tunnels.list().map((provider) => provider.id),
-      tunnelLiveConfigured: Boolean(this.tunnelControlPlane?.configured),
-      pluginCount: this.plugins.graph().length,
-      networkMonitor: network.then((snapshot) => ({
-        status: snapshot.status,
-        qualityScore: snapshot.score.score,
-        measurements: snapshot.measurements.length,
-        issues: snapshot.issues,
-      })),
-      capabilities: this.runtime.capabilities(),
-    };
-  }
+  async initialize() { await this.connectivity.discoverResources(); await this.dns.evaluate(); this.lifecycle = 'ready'; }
+  async start() { if (this.lifecycle === 'created') await this.initialize(); this.lifecycle = 'running'; this.scheduler.start(); }
+  async stop() { this.lifecycle = 'stopping'; this.scheduler.stop(); this.lifecycle = 'stopped'; }
+  health() { return { lifecycle: this.lifecycle, scheduler: this.scheduler.status(), runtimeId: this.runtime.runtimeId, instanceId: this.runtime.instanceId, connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id), connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId), dns: { providers: this.dnsProviders.map((provider) => provider.id), activeProviderId: this.dns.status().activeProviderId }, capabilities: this.runtime.capabilities() }; }
 }
 
-export const createDaemon = (): Application => {
-  const config = loadConfig();
-  const logger = createLogger(config.logger.level);
-  return new Application(config, logger);
-};
-
-export const createRuntimeDaemonHost = (
-  config?: Partial<RuntimeSchedulerConfig>,
-) => new RuntimeDaemonHost(config);
+export const createDaemon = (): Application => { const config = loadConfig(); const logger = createLogger(config.logger.level); return new Application(config, logger); };
+export const createRuntimeDaemonHost = (config?: Partial<RuntimeSchedulerConfig>) => new RuntimeDaemonHost(config);
 
 if (process.argv[1]?.endsWith('index.js')) {
   const daemon = createDaemon();
-  const host = createRuntimeDaemonHost({
-    enabled: process.env.IRP_RUNTIME_ENABLED === '1',
-  });
-  await host.start();
-  await daemon.start();
-  const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
-    daemon.logger.info('shutdown signal received', { signal });
-    await host.stop();
-    await daemon.stop();
-    process.exit(0);
-  };
-  process.on('SIGTERM', (signal) => void shutdown(signal));
-  process.on('SIGINT', (signal) => void shutdown(signal));
-  process.on('SIGHUP', () => void daemon.reload(loadConfig()));
+  const host = createRuntimeDaemonHost({ enabled: process.env.IRP_RUNTIME_ENABLED === '1' });
+  await host.start(); await daemon.start();
+  const shutdown = async (signal: NodeJS.Signals): Promise<void> => { daemon.logger.info('shutdown signal received', { signal }); await host.stop(); await daemon.stop(); process.exit(0); };
+  process.on('SIGTERM', (signal) => void shutdown(signal)); process.on('SIGINT', (signal) => void shutdown(signal)); process.on('SIGHUP', () => void daemon.reload(loadConfig()));
 }
