@@ -22,7 +22,10 @@ on:
 
 permissions:
   contents: read
-  actions: read
+
+concurrency:
+  group: regional-validation-${{ github.workflow }}
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '24'
@@ -38,6 +41,9 @@ jobs:
     name: Regional runner preflight
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
     outputs:
       available: ${{ steps.check.outputs.available }}
       reason: ${{ steps.check.outputs.reason }}
@@ -126,6 +132,8 @@ jobs:
     if: needs.regional-runner-preflight.outputs.available == 'true'
     runs-on: [self-hosted, linux, iran]
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
