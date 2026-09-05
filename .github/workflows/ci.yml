@@ -94,9 +94,14 @@ jobs:
 
       - name: Verify Debian package metadata and contents
         run: |
-          dpkg-deb --info dist/linux/irp-linux-client_0.1.0_amd64.deb
-          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb | grep -Fq './usr/lib/irp/linux-client/dist/index.js'
-          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb | grep -Fq './usr/lib/systemd/system/irp-linux-client.service'
+          set -euo pipefail
+          package="dist/linux/irp-linux-client_0.1.0_amd64.deb"
+          contents="$(mktemp)"
+          trap 'rm -f "$contents"' EXIT
+          dpkg-deb --info "$package"
+          dpkg-deb --contents "$package" > "$contents"
+          grep -Fq './usr/lib/irp/linux-client/dist/index.js' "$contents"
+          grep -Fq './usr/lib/systemd/system/irp-linux-client.service' "$contents"
           sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
 
       - name: Smoke test packaged Linux client
