@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '@irp/config';
 import type { Logger } from '@irp/logger';
 import { createAllBuiltinProviders } from '@irp/dns/provider-registry';
-import { IntelligentDnsEngine, type BenchmarkSample, type DnsProvider, type DnsQuestion } from '@irp/dns';
+import type { BenchmarkSample, DnsProvider, DnsQuestion } from '@irp/dns';
 export { createAllBuiltinProviders } from '@irp/dns/provider-registry';
 export { IntelligentDnsEngine } from '@irp/dns';
 export { createMobileClientState, MobileClientCore } from './mobile-client.js';
