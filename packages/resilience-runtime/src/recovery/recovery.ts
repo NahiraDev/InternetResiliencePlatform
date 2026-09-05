@@ -5,6 +5,8 @@ import type { ActionIntent, ActionPlan, RecoveryPlan, RuntimeContext } from '../
 import type { CanonicalNetworkControlPlane } from '../canonical-network-adapter.js';
 import { RuntimeAdapterRegistry, createDefaultRuntimeAdapterRegistry } from '../adapter-registry.js';
 
+type ConnectivityTransitionTrigger = 'policy' | 'health' | 'manual' | 'provider' | 'recovery' | 'simulation';
+
 const TRANSITION_REASONS = new Set<TransitionReason>([
   'active-source-failed',
   'health-degraded',
@@ -19,7 +21,7 @@ const TRANSITION_REASONS = new Set<TransitionReason>([
   'candidate-verification-failed',
 ]);
 
-const TRANSITION_TRIGGERS = new Set<NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>>([
+const TRANSITION_TRIGGERS = new Set<ConnectivityTransitionTrigger>([
   'policy',
   'health',
   'manual',
@@ -33,11 +35,9 @@ const canonicalTransitionReason = (reason?: string): TransitionReason =>
     ? (reason as TransitionReason)
     : 'critical-connectivity-loss';
 
-const canonicalTransitionTrigger = (
-  trigger?: string,
-): NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]> =>
-  trigger && TRANSITION_TRIGGERS.has(trigger as NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>>)
-    ? (trigger as NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>)
+const canonicalTransitionTrigger = (trigger?: string): ConnectivityTransitionTrigger =>
+  trigger && TRANSITION_TRIGGERS.has(trigger as ConnectivityTransitionTrigger)
+    ? (trigger as ConnectivityTransitionTrigger)
     : 'recovery';
 
 export class FailoverRecoveryProvider {
