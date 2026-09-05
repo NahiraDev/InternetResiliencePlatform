@@ -40,7 +40,7 @@ export interface CanonicalDnsControlPlane {
   readonly engine: {
     evaluate(): Promise<CanonicalDnsProviderScore[]>;
     status(): {
-      activeProviderId?: string;
+      activeProviderId: string | undefined;
       providers: CanonicalDnsProviderScore[];
     };
   };
