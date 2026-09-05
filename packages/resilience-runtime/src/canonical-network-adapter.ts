@@ -310,7 +310,8 @@ export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
     if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
     if (!this.controlPlane.configured) return createAdapterExecution(plan, context, false, 'failed');
     try {
-      const result = await this.controlPlane.connect({ providerId: providerIdFromPlan(plan) });
+      const providerId = providerIdFromPlan(plan);
+      const result = await this.controlPlane.connect(providerId ? { providerId } : undefined);
       return {
         ...createAdapterExecution(plan, context, false, 'success'),
         metadata: {
