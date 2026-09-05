@@ -48,6 +48,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run system assurance
+        env:
+          IRP_PACKAGE_INTEGRATION_TIMEOUT_MS: 30000
         run: pnpm production:assure
 
       - name: Upload assurance evidence
