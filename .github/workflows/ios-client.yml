@@ -140,25 +140,30 @@ jobs:
 
       - name: Diagnose Xcode target configuration
         run: |
-          set +e
+          set -euo pipefail
           : > "${RUNNER_TEMP}/xcode-target-diagnostics.log"
           overall_status=0
           for target in IRP IRPPacketTunnel; do
             echo "===== target: $target =====" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-            xcodebuild \
+            if xcodebuild \
               -project "$XCODE_PROJECT" \
               -target "$target" \
               -sdk iphonesimulator \
               -configuration Debug \
-              -showBuildSettings >>"${RUNNER_TEMP}/xcode-target-diagnostics.log" 2>&1
-            status=$?
+              -showBuildSettings >>"${RUNNER_TEMP}/xcode-target-diagnostics.log" 2>&1; then
+              status=0
+            else
+              status=$?
+            fi
             echo "target=$target exit=$status" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
             if [[ "$status" -ne 0 ]]; then
               overall_status="$status"
             fi
           done
           cat "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-          exit "$overall_status"
+          if [[ "$overall_status" -ne 0 ]]; then
+            exit "$overall_status"
+          fi
 
       - name: Build iOS app and packet tunnel
         run: |
@@ -178,9 +183,9 @@ jobs:
       - name: Collect Xcode crash diagnostics
         if: ${{ failure() }}
         run: |
-          set +e
+          set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
-          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \; || true
+          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \; || true
           xcrun simctl list devices || true
           xcodebuild -version || true
