@@ -13,6 +13,7 @@
   },
   "requiredManifestEdges": [
     ["@irp/resilience-runtime", "@irp/connectivity"],
+    ["@irp/resilience-runtime", "@irp/dns"],
     ["@irp/resilience-runtime", "@irp/events"],
     ["@irp/resilience-runtime", "@irp/failover"],
     ["@irp/resilience-runtime", "@irp/internet-intelligence-agent"],
