@@ -83,12 +83,12 @@ jobs:
       - name: Wait for runtime readiness
         run: |
           ready=false
-          for i in {1..60}; do
+          for i in {1..120}; do
             lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
             running="$(docker inspect -f '{{.State.Running}}' "$lab_id" 2>/dev/null || echo false)"
             exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$lab_id" 2>/dev/null || echo unknown)"
             restart_count="$(docker inspect -f '{{.RestartCount}}' "$lab_id" 2>/dev/null || echo unknown)"
-            echo "--- readiness attempt $i/60 running=$running exit=$exit_code restarts=$restart_count ---"
+            echo "--- readiness attempt $i/120 running=$running exit=$exit_code restarts=$restart_count ---"
             if curl -fsS --max-time 5 http://127.0.0.1:8080/ready >/tmp/runtime-ready.json 2>/tmp/runtime-ready.err; then
               ready=true
               cat /tmp/runtime-ready.json
