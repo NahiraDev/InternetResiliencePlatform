@@ -75,11 +75,20 @@ jobs:
       - name: Run deterministic production assurance
         run: pnpm production:assure
       - name: Verify end-to-end integration baseline
+        if: ${{ always() }}
         env:
           IRP_INTEGRATION_SKIP_BUILD: '1'
         run: pnpm integration:baseline
+      - name: Upload production assurance evidence
+        if: ${{ always() && hashFiles('artifacts/production-assurance/**') != '' }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: production-assurance
+          path: artifacts/production-assurance/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload integration baseline evidence
-        if: ${{ always() }}
+        if: ${{ always() && hashFiles('artifacts/integration-baseline/**') != '' }}
         uses: actions/upload-artifact@v7.0.1
         with:
           name: integration-baseline
