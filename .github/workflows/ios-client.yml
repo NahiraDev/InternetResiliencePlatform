@@ -185,7 +185,7 @@ jobs:
         run: |
           set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \; || true
-          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \; || true
-          xcrun simctl list devices || true
-          xcodebuild -version || true
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
+          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
+          xcrun simctl list devices
+          xcodebuild -version
