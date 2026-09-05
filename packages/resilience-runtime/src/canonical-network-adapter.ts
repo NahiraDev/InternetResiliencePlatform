@@ -7,7 +7,6 @@ import {
   parseDestination,
   type RoutingDestination,
 } from '@irp/routing';
-import type { DnsProvider, ProviderHealth } from '@irp/dns';
 import type {
   ActionExecution,
   ActionPlan,
@@ -21,7 +20,12 @@ import {
   type RuntimeAdapterDescriptor,
 } from './adapter-registry.js';
 
-export type CanonicalDnsProvider = Pick<DnsProvider, 'id' | 'name' | 'metadata' | 'health'>;
+export interface CanonicalDnsProvider {
+  readonly id: string;
+  readonly name: string;
+  readonly metadata: Record<string, unknown>;
+  readonly health: () => Promise<unknown>;
+}
 
 export interface CanonicalDnsProviderScore {
   readonly provider: CanonicalDnsProvider;
@@ -182,6 +186,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
             metadata: {
               ...execution.metadata,
               controlPlane: 'dns',
+              transition: 'provider-selection-and-apply',
               previousProviderId,
               ...dnsSelectionMetadata(ranked, selected),
             },
@@ -191,158 +196,76 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           return createAdapterExecution(plan, context, false, 'failed');
       }
     } catch (error) {
-      const execution = createAdapterExecution(plan, context, false, 'failed');
-      return {
-        ...execution,
-        error: error instanceof Error ? error.message : 'canonical network operation failed',
-      };
+      return createAdapterExecution(plan, context, false, 'failed', error instanceof Error ? error.message : String(error));
     }
   }
 
-  async verify(plan: ActionPlan, execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
-    if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
+  async verify(plan: ActionPlan, context: RuntimeContext, execution: ActionExecution): Promise<ActionVerification> {
+    if (context.mode !== 'live') return createAdapterVerification(plan, context, execution, true);
 
     try {
-      if (plan.selectedAction.intent === 'connectivity_failover' || plan.selectedAction.intent === 'provider_switch') {
-        const active = this.controlPlane.connectivity.getActiveSource();
-        if (!active) return createAdapterVerification(plan, context, 'failed');
-        const health = await this.controlPlane.connectivity.registry.get(active.providerId).getHealth(active.id);
-        const healthy = health.status !== 'unhealthy' && health.internetReachable !== false;
-        return createAdapterVerification(plan, context, healthy ? 'success' : 'failed');
+      switch (plan.selectedAction.intent) {
+        case 'connectivity_failover':
+        case 'provider_switch': {
+          await this.controlPlane.connectivity.discoverResources();
+          const evaluation = await this.controlPlane.connectivity.selectSource();
+          const expected = (execution.metadata?.selectedSource as { sourceId?: string } | undefined)?.sourceId;
+          const verified = Boolean(evaluation.selected?.source.sourceId && (!expected || evaluation.selected.source.sourceId === expected));
+          return createAdapterVerification(plan, context, execution, verified, verified ? undefined : 'connectivity source verification failed');
+        }
+        case 'route_change': {
+          const destination = destinationFromPlan(plan, this.controlPlane.destination);
+          const sources = this.controlPlane.connectivity.getAvailableSources();
+          const decision = await this.controlPlane.routing.decide({ destination, connectivitySources: sources });
+          const expected = execution.metadata?.selectedRouteId;
+          const verified = Boolean(decision.selected?.route.id && (!expected || decision.selected.route.id === expected));
+          return createAdapterVerification(plan, context, execution, verified, verified ? undefined : 'route verification failed');
+        }
+        case 'dns_switch': {
+          const dns = this.controlPlane.dns;
+          const selectedProviderId = execution.metadata?.selectedProviderId;
+          const activeProviderId = dns?.getActiveProviderId?.() ?? dns?.engine.status().activeProviderId;
+          const verified = Boolean(dns && selectedProviderId && activeProviderId === selectedProviderId);
+          return createAdapterVerification(plan, context, execution, verified, verified ? undefined : 'DNS provider verification failed');
+        }
+        default:
+          return createAdapterVerification(plan, context, execution, false, 'unsupported canonical action');
       }
-
-      if (plan.selectedAction.intent === 'route_change') {
-        const destination = destinationFromPlan(plan, this.controlPlane.destination);
-        const sources = this.controlPlane.connectivity.getAvailableSources();
-        const decision = await this.controlPlane.routing.decide({ destination, connectivitySources: sources });
-        return createAdapterVerification(plan, context, decision.selected && decision.plan.selectedPath ? 'success' : 'failed');
-      }
-
-      if (plan.selectedAction.intent === 'dns_switch') {
-        const dns = this.controlPlane.dns;
-        if (!dns) return createAdapterVerification(plan, context, 'failed');
-        const activeId = dns.getActiveProviderId?.() ?? dns.engine.status().activeProviderId;
-        if (!activeId) return createAdapterVerification(plan, context, 'failed');
-        const active = dns.engine.status().providers.find((item) => item.provider.id === activeId)?.provider;
-        if (!active) return createAdapterVerification(plan, context, 'failed');
-        const health: ProviderHealth = await active.health();
-        return createAdapterVerification(plan, context, health.healthy ? 'success' : 'failed');
-      }
-
-      if (plan.selectedAction.intent === 'tunnel_switch') {
-        if (!this.controlPlane.tunnel || !this.controlPlane.tunnel.configured) return createAdapterVerification(plan, context, 'failed');
-        const tunnelId = typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
-        if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
-        return createAdapterVerification(plan, context, await this.controlPlane.tunnel.verify(tunnelId) ? 'success' : 'failed');
-      }
-
-      return createAdapterVerification(plan, context, 'failed');
-    } catch {
-      return createAdapterVerification(plan, context, 'failed');
-    }
-  }
-
-  async rollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
-
-    if (plan.selectedAction.intent === 'connectivity_failover' || plan.selectedAction.intent === 'provider_switch') {
-      try {
-        await this.controlPlane.connectivity.discoverResources();
-        const preferred = this.controlPlane.connectivity.getHealthySources()[0];
-        if (!preferred) return createAdapterExecution(plan, context, false, 'failed');
-        await this.controlPlane.connectivity.switchSource(preferred.sourceId);
-        return createAdapterExecution(plan, context, false, 'success');
-      } catch {
-        return createAdapterExecution(plan, context, false, 'failed');
-      }
-    }
-
-    if (plan.selectedAction.intent === 'dns_switch') {
-      const dns = this.controlPlane.dns;
-      if (!dns) return createAdapterExecution(plan, context, false, 'failed');
-      const previousProviderId = this.previousDnsProviders.get(plan.selectedAction.id);
-      if (!previousProviderId) return createAdapterExecution(plan, context, false, 'failed');
-      const provider = dns.engine.status().providers.find((item) => item.provider.id === previousProviderId)?.provider;
-      if (!provider) return createAdapterExecution(plan, context, false, 'failed');
-      try {
-        await dns.applyProvider(provider);
-        return createAdapterExecution(plan, context, false, 'success');
-      } catch {
-        return createAdapterExecution(plan, context, false, 'failed');
-      }
-    }
-
-    if (plan.selectedAction.intent === 'tunnel_switch' && this.controlPlane.tunnel) {
-      try {
-        return createAdapterExecution(plan, context, false, (await this.controlPlane.tunnel.rollback()) ? 'success' : 'failed');
-      } catch {
-        return createAdapterExecution(plan, context, false, 'failed');
-      }
-    }
-
-    return createAdapterExecution(plan, context, false, 'failed');
-  }
-}
-
-export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
-  readonly descriptor: RuntimeAdapterDescriptor = {
-    adapterId: 'canonical-tunnel-control-plane',
-    subsystem: 'tunnel',
-    version: '1.0.0',
-    capabilities: ['tunnel.write'],
-    supportedActions: ['tunnel_switch'],
-    supportsSimulation: true,
-    supportsSafe: true,
-    supportsLive: true,
-    requiredPermissions: ['network-control'],
-    requiredKernelCapabilities: ['NET_ADMIN'],
-    verificationSupport: true,
-    recoverySupport: true,
-  };
-
-  constructor(private readonly controlPlane: CanonicalTunnelControlPlane) {}
-
-  async execute(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
-    if (!this.controlPlane.configured) return createAdapterExecution(plan, context, false, 'failed');
-    try {
-      const providerId = providerIdFromPlan(plan);
-      const result = await this.controlPlane.connect(providerId ? { providerId } : undefined);
-      return {
-        ...createAdapterExecution(plan, context, false, 'success'),
-        metadata: {
-          controlPlane: 'tunnel',
-          tunnelId: result.tunnelId,
-          connectionId: result.connectionId,
-          providerId: result.providerId,
-        },
-      };
     } catch (error) {
-      return {
-        ...createAdapterExecution(plan, context, false, 'failed'),
-        error: error instanceof Error ? error.message : 'tunnel operation failed',
-      };
+      return createAdapterVerification(plan, context, execution, false, error instanceof Error ? error.message : String(error));
     }
   }
 
-  async verify(plan: ActionPlan, execution: ActionExecution, context: RuntimeContext): Promise<ActionVerification> {
-    if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
-    if (!this.controlPlane.configured || execution.status !== 'success') return createAdapterVerification(plan, context, 'failed');
-    const tunnelId = typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
-    if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
-    try {
-      return createAdapterVerification(plan, context, await this.controlPlane.verify(tunnelId) ? 'success' : 'failed');
-    } catch {
-      return createAdapterVerification(plan, context, 'failed');
-    }
-  }
+  async rollback(plan: ActionPlan, context: RuntimeContext, execution: ActionExecution): Promise<ActionVerification> {
+    if (context.mode !== 'live') return createAdapterVerification(plan, context, execution, true);
 
-  async rollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
     try {
-      return createAdapterExecution(plan, context, false, (await this.controlPlane.rollback()) ? 'success' : 'failed');
-    } catch {
-      return createAdapterExecution(plan, context, false, 'failed');
+      switch (plan.selectedAction.intent) {
+        case 'connectivity_failover':
+        case 'provider_switch': {
+          const previousSourceId = (execution.metadata?.previousSourceId as string | undefined) ?? undefined;
+          if (previousSourceId) await this.controlPlane.connectivity.switchSource(previousSourceId);
+          return createAdapterVerification(plan, context, execution, true);
+        }
+        case 'route_change':
+          await this.controlPlane.routing.rollback();
+          return createAdapterVerification(plan, context, execution, true);
+        case 'dns_switch': {
+          const dns = this.controlPlane.dns;
+          const previousProviderId = this.previousDnsProviders.get(plan.selectedAction.id);
+          if (!dns || !previousProviderId) return createAdapterVerification(plan, context, execution, false, 'previous DNS provider is unavailable for rollback');
+          const ranked = await dns.engine.evaluate();
+          const previous = ranked.find((item) => item.provider.id === previousProviderId)?.provider;
+          if (!previous) return createAdapterVerification(plan, context, execution, false, 'previous DNS provider is unavailable');
+          await dns.applyProvider(previous);
+          this.previousDnsProviders.delete(plan.selectedAction.id);
+          return createAdapterVerification(plan, context, execution, true);
+        }
+        default:
+          return createAdapterVerification(plan, context, execution, false, 'unsupported canonical rollback');
+      }
+    } catch (error) {
+      return createAdapterVerification(plan, context, execution, false, error instanceof Error ? error.message : String(error));
     }
   }
 }
