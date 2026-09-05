@@ -7,6 +7,7 @@ import {
   parseDestination,
   type RoutingDestination,
 } from '@irp/routing';
+import type { DnsProvider, ProviderHealth } from '@irp/dns';
 import type {
   ActionExecution,
   ActionPlan,
@@ -20,12 +21,7 @@ import {
   type RuntimeAdapterDescriptor,
 } from './adapter-registry.js';
 
-export interface CanonicalDnsProvider {
-  readonly id: string;
-  readonly name?: string;
-  metadata(): { endpoints?: { ipv4?: string[]; ipv6?: string[] } };
-  health(): Promise<{ healthy: boolean; [key: string]: unknown }>;
-}
+export type CanonicalDnsProvider = Pick<DnsProvider, 'id' | 'name' | 'metadata' | 'health'>;
 
 export interface CanonicalDnsProviderScore {
   readonly provider: CanonicalDnsProvider;
@@ -229,7 +225,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         if (!activeId) return createAdapterVerification(plan, context, 'failed');
         const active = dns.engine.status().providers.find((item) => item.provider.id === activeId)?.provider;
         if (!active) return createAdapterVerification(plan, context, 'failed');
-        const health = await active.health();
+        const health: ProviderHealth = await active.health();
         return createAdapterVerification(plan, context, health.healthy ? 'success' : 'failed');
       }
 
