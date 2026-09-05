@@ -23,7 +23,6 @@ import {
 export interface CanonicalDnsProvider {
   readonly id: string;
   readonly name: string;
-  readonly metadata: () => Record<string, unknown>;
   readonly health: () => Promise<unknown>;
 }
 
