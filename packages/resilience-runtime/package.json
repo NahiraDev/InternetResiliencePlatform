@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@irp/connectivity": "workspace:*",
-    "@irp/dns": "workspace:*",
     "@irp/events": "workspace:*",
     "@irp/failover": "workspace:*",
     "@irp/internet-intelligence-agent": "workspace:*",
