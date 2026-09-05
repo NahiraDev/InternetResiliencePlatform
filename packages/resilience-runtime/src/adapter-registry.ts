@@ -6,11 +6,9 @@ import type {
   RuntimeContext,
 } from './domain/types.js';
 import { deepFreeze, nextId, nowIso } from './domain/ids.js';
-import {
-  CanonicalNetworkRuntimeAdapter,
-  CanonicalTunnelRuntimeAdapter,
-  type CanonicalNetworkControlPlane,
-} from './canonical-network-adapter.js';
+import { CanonicalNetworkRuntimeAdapter, type CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
+import { CanonicalTunnelRuntimeAdapter } from './canonical-tunnel-adapter.js';
+
 export type RuntimeSubsystem =
   | 'network-intelligence'
   | 'connectivity'
