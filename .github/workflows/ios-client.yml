@@ -142,6 +142,7 @@ jobs:
         run: |
           set +e
           : > "${RUNNER_TEMP}/xcode-target-diagnostics.log"
+          overall_status=0
           for target in IRP IRPPacketTunnel; do
             echo "===== target: $target =====" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
             xcodebuild \
@@ -152,9 +153,12 @@ jobs:
               -showBuildSettings >>"${RUNNER_TEMP}/xcode-target-diagnostics.log" 2>&1
             status=$?
             echo "target=$target exit=$status" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
+            if [[ "$status" -ne 0 ]]; then
+              overall_status="$status"
+            fi
           done
           cat "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-          exit 0
+          exit "$overall_status"
 
       - name: Build iOS app and packet tunnel
         run: |
