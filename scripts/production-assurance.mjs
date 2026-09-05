@@ -16,6 +16,7 @@ const record = (id, status, detail, evidence = {}) => {
   checks.push({ id, status, detail, ...evidence });
   if (status === 'fail') failures.push(`${id}: ${detail}`);
   console.log(`${status.toUpperCase()} ${id} — ${detail}`);
+  if (status === 'fail' && evidence.diagnostic) console.error(evidence.diagnostic);
 };
 
 const run = (command, args) => new Promise((resolve) => {
@@ -30,7 +31,7 @@ const run = (command, args) => new Promise((resolve) => {
 
 const diagnostic = (result) => {
   const combined = `${result.stdout}\n${result.stderr}`.trim();
-  return combined.length > 4000 ? combined.slice(-4000) : combined;
+  return combined.length > 12000 ? combined.slice(-12000) : combined;
 };
 
 async function sha256File(path) {
