@@ -35,11 +35,11 @@ function sha256(value) {
 
 function hasSecretMaterial(value) {
   const text = JSON.stringify(value);
-  return /BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY/i.test(text) || /(?:password|secret|token|api[_-]?key)\\s*[:=]\\s*['\"]?[A-Za-z0-9_\\-]{16,}/i.test(text);
+  return /BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY/i.test(text) || /(?:password|secret|token|api[_-]?key)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}/i.test(text);
 }
 
 async function probeRuntime(baseUrl) {
-  const base = baseUrl.replace(/\\/$/, '');
+  const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const fetchJson = async (path) => {
     const response = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(10_000), headers: { accept: 'application/json' } });
     const body = await response.text();
@@ -139,10 +139,10 @@ const evidenceSnapshot = {
 };
 
 await mkdir(outputDir, { recursive: true });
-await writeFile(join(outputDir, 'certification-report.json'), `${JSON.stringify(evidenceSnapshot, null, 2)}\\n`, 'utf8');
-await writeFile(join(outputDir, 'certification-report.sha256'), `${sha256(JSON.stringify(evidenceSnapshot))}  certification-report.json\\n`, 'utf8');
+await writeFile(join(outputDir, 'certification-report.json'), `${JSON.stringify(evidenceSnapshot, null, 2)}\n`, 'utf8');
+await writeFile(join(outputDir, 'certification-report.sha256'), `${sha256(JSON.stringify(evidenceSnapshot))}  certification-report.json\n`, 'utf8');
 
-console.log(`\\nPRODUCTION CERTIFICATION: ${verdict}`);
+console.log(`\nPRODUCTION CERTIFICATION: ${verdict}`);
 console.log(`Evidence report: ${join(outputDir, 'certification-report.json')}`);
 
 if (requireComplete && verdict !== 'PASS') {
