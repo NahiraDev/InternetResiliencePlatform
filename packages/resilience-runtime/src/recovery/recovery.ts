@@ -1,8 +1,44 @@
 import { FailoverRecoveryEngine, type FailureDomain, type FailureSeverity, type RecoveryAdapters } from '@irp/failover';
+import type { TransitionReason } from '@irp/connectivity';
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
 import type { ActionIntent, ActionPlan, RecoveryPlan, RuntimeContext } from '../domain/types.js';
 import type { CanonicalNetworkControlPlane } from '../canonical-network-adapter.js';
 import { RuntimeAdapterRegistry, createDefaultRuntimeAdapterRegistry } from '../adapter-registry.js';
+
+const TRANSITION_REASONS = new Set<TransitionReason>([
+  'active-source-failed',
+  'health-degraded',
+  'policy-requested',
+  'manual-request',
+  'preferred-source-recovered',
+  'better-source-available',
+  'critical-connectivity-loss',
+  'provider-disabled',
+  'provider-recovered',
+  'candidate-activation-failed',
+  'candidate-verification-failed',
+]);
+
+const TRANSITION_TRIGGERS = new Set<NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>>([
+  'policy',
+  'health',
+  'manual',
+  'provider',
+  'recovery',
+  'simulation',
+]);
+
+const canonicalTransitionReason = (reason?: string): TransitionReason =>
+  reason && TRANSITION_REASONS.has(reason as TransitionReason)
+    ? (reason as TransitionReason)
+    : 'critical-connectivity-loss';
+
+const canonicalTransitionTrigger = (
+  trigger?: string,
+): NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]> =>
+  trigger && TRANSITION_TRIGGERS.has(trigger as NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>>)
+    ? (trigger as NonNullable<Parameters<CanonicalNetworkControlPlane['connectivity']['switchSource']>[2]>)
+    : 'recovery';
 
 export class FailoverRecoveryProvider {
   constructor(
@@ -82,7 +118,12 @@ export class FailoverRecoveryProvider {
     return {
       connectivity: {
         getAvailableSources: () => controlPlane.connectivity.getAvailableSources(),
-        switchSource: (resourceId, recoveryReason, trigger) => controlPlane.connectivity.switchSource(resourceId, recoveryReason, trigger),
+        switchSource: (resourceId, recoveryReason, trigger) =>
+          controlPlane.connectivity.switchSource(
+            resourceId,
+            canonicalTransitionReason(recoveryReason),
+            canonicalTransitionTrigger(trigger),
+          ),
       },
       routing: {
         simulateRouting: (routingContext) => controlPlane.routing.simulateRouting(routingContext as Parameters<CanonicalNetworkControlPlane['routing']['simulateRouting']>[0]),
