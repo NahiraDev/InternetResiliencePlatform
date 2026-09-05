@@ -6,6 +6,7 @@ import process from 'node:process';
 
 const root = process.cwd();
 const contract = JSON.parse(await readFile(join(root, 'ops/release/integration-baseline.json'), 'utf8'));
+const requiredEdges = contract.requiredManifestEdges ?? contract.requiredEdges ?? [];
 const failures = [];
 const workspacePackages = new Map();
 
@@ -41,7 +42,7 @@ for (const [name, item] of workspacePackages) {
   }
 }
 
-for (const [source, target] of contract.requiredEdges) {
+for (const [source, target] of requiredEdges) {
   const sourcePackage = workspacePackages.get(source);
   const targetPackage = workspacePackages.get(target);
   if (!sourcePackage) {
@@ -89,7 +90,7 @@ async function verifyRuntimeEdges() {
   }
 
   const packageResults = new Map((report.packages ?? []).map((item) => [item.package, item]));
-  for (const [source, target] of contract.requiredEdges) {
+  for (const [source, target] of requiredEdges) {
     const sourceResult = packageResults.get(source);
     if (!sourceResult) {
       failures.push(`runtime integration result missing for source: ${source}`);
@@ -113,7 +114,7 @@ if (!failures.length) {
   } else {
     const graph = await readJson(graphPath);
     const edgeKeys = new Set(graph.edges.map((edge) => `${edge.source}->${edge.target}`));
-    for (const [source, target] of contract.requiredEdges) {
+    for (const [source, target] of requiredEdges) {
       if (!edgeKeys.has(`${source}->${target}`)) failures.push(`required edge absent from generated graph: ${source} -> ${target}`);
     }
     if (graph.nodes.length !== workspacePackages.size) {
@@ -141,8 +142,8 @@ if (!failures.length) {
 
 console.log(`INTEGRATION BASELINE: ${failures.length ? 'BLOCKED' : 'PASS'}`);
 console.log(`Workspace packages/apps: ${workspacePackages.size}`);
-console.log(`Required integration edges: ${contract.requiredEdges.length}`);
-console.log(`Runtime integration edges checked: ${failures.length ? 'see failures' : contract.requiredEdges.length}`);
+console.log(`Required integration edges: ${requiredEdges.length}`);
+console.log(`Runtime integration edges checked: ${failures.length ? 'see failures' : requiredEdges.length}`);
 console.log(`Closed-loop execution stages checked: ${contract.requiredClosedLoopStages.length - 1}`);
 console.log('Integration graph is repository-derived; real-environment and production evidence remain separate fail-closed gates.');
 
