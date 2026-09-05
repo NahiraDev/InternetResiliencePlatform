@@ -23,7 +23,7 @@ import {
 export interface CanonicalDnsProvider {
   readonly id: string;
   readonly name: string;
-  readonly metadata: Record<string, unknown>;
+  readonly metadata: () => Record<string, unknown>;
   readonly health: () => Promise<unknown>;
 }
 
@@ -334,102 +334,17 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       }
     }
 
-    if (plan.selectedAction.intent === 'tunnel_switch' && this.controlPlane.tunnel) {
+    if (plan.selectedAction.intent === 'tunnel_switch') {
+      if (!this.controlPlane.tunnel?.configured)
+        return createAdapterExecution(plan, context, false, 'failed');
       try {
-        return createAdapterExecution(
-          plan,
-          context,
-          false,
-          (await this.controlPlane.tunnel.rollback()) ? 'success' : 'failed',
-        );
+        const rolledBack = await this.controlPlane.tunnel.rollback();
+        return createAdapterExecution(plan, context, rolledBack, rolledBack ? 'success' : 'failed');
       } catch {
         return createAdapterExecution(plan, context, false, 'failed');
       }
     }
 
     return createAdapterExecution(plan, context, false, 'failed');
-  }
-}
-
-export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
-  readonly descriptor: RuntimeAdapterDescriptor = {
-    adapterId: 'canonical-tunnel-control-plane',
-    subsystem: 'tunnel',
-    version: '1.0.0',
-    capabilities: ['tunnel.write'],
-    supportedActions: ['tunnel_switch'],
-    supportsSimulation: true,
-    supportsSafe: true,
-    supportsLive: true,
-    requiredPermissions: ['network-control'],
-    requiredKernelCapabilities: ['NET_ADMIN'],
-    verificationSupport: true,
-    recoverySupport: true,
-  };
-
-  constructor(private readonly controlPlane: CanonicalTunnelControlPlane) {}
-
-  async execute(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
-    if (!this.controlPlane.configured)
-      return createAdapterExecution(plan, context, false, 'failed');
-    try {
-      const providerId = providerIdFromPlan(plan);
-      const result = await this.controlPlane.connect(
-        providerId ? { providerId } : undefined,
-      );
-      return {
-        ...createAdapterExecution(plan, context, false, 'success'),
-        metadata: {
-          controlPlane: 'tunnel',
-          tunnelId: result.tunnelId,
-          connectionId: result.connectionId,
-          providerId: result.providerId,
-        },
-      };
-    } catch (error) {
-      return {
-        ...createAdapterExecution(plan, context, false, 'failed'),
-        error: error instanceof Error ? error.message : 'tunnel operation failed',
-      };
-    }
-  }
-
-  async verify(
-    plan: ActionPlan,
-    execution: ActionExecution,
-    context: RuntimeContext,
-  ): Promise<ActionVerification> {
-    if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
-    if (!this.controlPlane.configured || execution.status !== 'success')
-      return createAdapterVerification(plan, context, 'failed');
-    const tunnelId =
-      typeof execution.metadata.tunnelId === 'string'
-        ? execution.metadata.tunnelId
-        : undefined;
-    if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
-    try {
-      return createAdapterVerification(
-        plan,
-        context,
-        (await this.controlPlane.verify(tunnelId)) ? 'success' : 'failed',
-      );
-    } catch {
-      return createAdapterVerification(plan, context, 'failed');
-    }
-  }
-
-  async rollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
-    if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
-    try {
-      return createAdapterExecution(
-        plan,
-        context,
-        false,
-        (await this.controlPlane.rollback()) ? 'success' : 'failed',
-      );
-    } catch {
-      return createAdapterExecution(plan, context, false, 'failed');
-    }
   }
 }
