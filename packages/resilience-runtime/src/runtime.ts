@@ -54,7 +54,7 @@ export class ResilienceRuntime {
   readonly adapters: RuntimeAdapterRegistry;
   private readonly validator: RuntimeActionValidator;
   private readonly decisionProvider: DecisionProvider;
-  private readonly networkControlPlane?: CanonicalNetworkControlPlane;
+  private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
