@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 
 const root = resolve(new URL('../..', import.meta.url).pathname);
-const packagesDir = join(root, 'packages');
+const workspaceRoots = [join(root, 'packages'), join(root, 'apps')];
 const timeoutMs = Number(process.env.IRP_PACKAGE_INTEGRATION_TIMEOUT_MS ?? 15000);
 const outputFile = process.env.IRP_PACKAGE_INTEGRATION_OUTPUT ?? join(root, '.runtime-package-integration.json');
 
@@ -23,17 +23,32 @@ function entryFromManifest(manifest) {
 }
 
 function packageCatalog() {
-  return readdirSync(packagesDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => {
-      const dir = join(packagesDir, entry.name);
+  return workspaceRoots
+    .flatMap((workspaceRoot) => {
+      if (!existsSync(workspaceRoot)) return [];
+      return readdirSync(workspaceRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => ({ workspaceRoot, entry }));
+    })
+    .map(({ workspaceRoot, entry }) => {
+      const dir = join(workspaceRoot, entry.name);
       const manifest = readJson(join(dir, 'package.json'));
       const rawEntry = entryFromManifest(manifest);
       const entryPath = rawEntry ? resolve(dir, rawEntry.replace(/^\.\//, '')) : null;
-      const workspaceDeps = Object.entries({ ...(manifest.dependencies ?? {}), ...(manifest.optionalDependencies ?? {}), ...(manifest.peerDependencies ?? {}) })
+      const workspaceDeps = Object.entries({
+        ...(manifest.dependencies ?? {}),
+        ...(manifest.optionalDependencies ?? {}),
+        ...(manifest.peerDependencies ?? {}),
+      })
         .filter(([, version]) => String(version).startsWith('workspace:'))
         .map(([name]) => name);
-      return { name: manifest.name ?? entry.name, directory: `packages/${entry.name}`, manifest, entryPath, workspaceDeps };
+      return {
+        name: manifest.name ?? entry.name,
+        directory: relative(root, dir),
+        manifest,
+        entryPath,
+        workspaceDeps,
+      };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -58,7 +73,7 @@ const results = [];
 for (const pkg of catalog) {
   const started = performance.now();
   if (!pkg.entryPath || !existsSync(pkg.entryPath)) {
-    results.push({ package: pkg.name, directory: pkg.directory, state: 'unavailable', mode: 'manifest-only', latencyMs: Math.round(performance.now() - started), reason: pkg.entryPath ? `entry not built: ${pkg.entryPath}` : 'no runtime entry' });
+    results.push({ package: pkg.name, directory: pkg.directory, state: 'unavailable', mode: 'manifest-only', latencyMs: Math.round(performance.now() - started), reason: pkg.entryPath ? `entry not found at ${pkg.entryPath}` : 'no entry point defined' });
     continue;
   }
   const load = await runNode('await import(process.argv[1])', [new URL(`file://${pkg.entryPath}`).href]);
@@ -81,9 +96,40 @@ const report = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   overall: runtime.some((item) => item.state === 'failed') ? 'unhealthy' : runtime.some((item) => item.state === 'degraded') ? 'degraded' : 'healthy',
-  totals: { packages: results.length, runtime: runtime.length, executed: results.filter((item) => item.state === 'executed').length, failed: results.filter((item) => item.state === 'failed').length, unavailable: results.filter((item) => item.state === 'unavailable').length, integrations: results.reduce((n, item) => n + (item.integrations?.length ?? 0), 0), integrated: results.reduce((n, item) => n + (item.integrations?.filter((i) => i.state === 'integrated').length ?? 0), 0) },
+  totals: { packages: results.length, runtime: runtime.length, executed: results.filter((item) => item.state === 'executed').length, failed: results.filter((item) => item.state === 'failed').length, degraded: results.filter((item) => item.state === 'degraded').length },
   packages: results,
 };
 writeFileSync(outputFile, `${JSON.stringify(report, null, 2)}\n`);
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-if (process.argv.includes('--strict') && report.overall !== 'healthy') process.exitCode = 2;
+
+if (process.argv.includes('--strict')) {
+  if (report.overall !== 'healthy') {
+    console.error('\n=== PACKAGE INTEGRATION DIAGNOSTICS ===');
+    console.error(`Overall Status: ${report.overall.toUpperCase()}`);
+    console.error(`Totals: ${report.totals.packages} packages, ${report.totals.runtime} runtime, ${report.totals.executed} executed, ${report.totals.failed} failed, ${report.totals.degraded} degraded\n`);
+    
+    for (const pkg of report.packages) {
+      if (pkg.state !== 'executed') {
+        console.error(`\n❌ Package: ${pkg.package}`);
+        console.error(`   Directory: ${pkg.directory}`);
+        console.error(`   State: ${pkg.state}`);
+        console.error(`   Mode: ${pkg.mode}`);
+        if (pkg.reason) console.error(`   Reason: ${pkg.reason}`);
+        if (pkg.error) console.error(`   Error: ${pkg.error}`);
+        if (pkg.integrations && pkg.integrations.length > 0) {
+          const failedIntegrations = pkg.integrations.filter((i) => i.state !== 'integrated');
+          if (failedIntegrations.length > 0) {
+            console.error(`   Failed Integrations:`);
+            for (const integration of failedIntegrations) {
+              console.error(`     - ${integration.target}: ${integration.state}`);
+              if (integration.reason) console.error(`       Reason: ${integration.reason}`);
+              if (integration.error) console.error(`       Error: ${integration.error}`);
+            }
+          }
+        }
+      }
+    }
+    console.error('\n=== END DIAGNOSTICS ===\n');
+  }
+  process.exitCode = report.overall !== 'healthy' ? 2 : 0;
+}
