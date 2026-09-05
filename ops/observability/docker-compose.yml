@@ -3,7 +3,7 @@ services:
     image: node:24-bookworm-slim
     working_dir: /workspace
     command: >-
-      sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm build && node tools/runtime-lab/server.mjs"
+      sh -lc "apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/* && corepack enable && pnpm install --frozen-lockfile && pnpm build && node tools/runtime-lab/server.mjs"
     environment:
       CI: "true"
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
