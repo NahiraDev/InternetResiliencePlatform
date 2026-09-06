@@ -54,6 +54,50 @@ describe('InMemoryNetworkStateStore', () => {
     expect(snapshot.reconciliation).toBe('pending');
   });
 
+  it('reports drifted when desired and actual match but observation differs', () => {
+    const store = new InMemoryNetworkStateStore();
+    const desired = resource({ route: 'primary' });
+    const observed = resource({ route: 'secondary' });
+
+    store.apply({ layer: 'desired', resources: [desired] });
+    store.apply({ layer: 'observed', resources: [observed] });
+    const snapshot = store.apply({ layer: 'actual', resources: [desired] });
+
+    expect(snapshot.reconciliation).toBe('drifted');
+  });
+
+  it('reports conflicted when all three layers disagree', () => {
+    const store = new InMemoryNetworkStateStore();
+    const desired = resource({ route: 'primary' });
+    const observed = resource({ route: 'secondary' });
+    const actual = resource({ route: 'tertiary' });
+
+    store.apply({ layer: 'desired', resources: [desired] });
+    store.apply({ layer: 'observed', resources: [observed] });
+    const snapshot = store.apply({ layer: 'actual', resources: [actual] });
+
+    expect(snapshot.reconciliation).toBe('conflicted');
+  });
+
+  it('replaces only the selected layer while preserving the other layers', () => {
+    const store = new InMemoryNetworkStateStore();
+    const desired = resource({ route: 'primary' });
+    const observed = resource({ route: 'primary' });
+    const actual = resource({ route: 'primary' });
+
+    store.apply({ layer: 'desired', resources: [desired] });
+    store.apply({ layer: 'observed', resources: [observed] });
+    store.apply({ layer: 'actual', resources: [actual] });
+
+    const nextDesired = resource({ route: 'secondary' });
+    const snapshot = store.apply({ layer: 'desired', resources: [nextDesired] });
+
+    expect(snapshot.desired).toEqual([nextDesired]);
+    expect(snapshot.observed).toEqual([observed]);
+    expect(snapshot.actual).toEqual([actual]);
+    expect(snapshot.reconciliation).toBe('pending');
+  });
+
   it('rejects stale writers with optimistic version checking', () => {
     const store = new InMemoryNetworkStateStore();
     store.apply({ layer: 'desired', resources: [resource({ route: 'primary' })] });
