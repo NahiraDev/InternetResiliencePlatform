@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation in progress on `phase/73-unified-network-state`. This phase does not certify Phase 71 or Phase 72 completion.
+Implementation in progress on `phase/73-unified-network-state-model`. Phase 71 certification is intentionally deferred; this phase must not claim Phase 71 or Phase 72 certification.
 
 ## Objective
 
@@ -77,6 +77,9 @@ The resource envelope uses the existing `AuditFields` contract for provenance, c
 - separation of desired/observed/actual layers;
 - aligned reconciliation;
 - pending reconciliation;
+- drifted reconciliation;
+- conflicted reconciliation;
+- selected-layer replacement while preserving the other layers;
 - stale-writer rejection.
 
 ## Verification
@@ -92,6 +95,14 @@ Before completion:
 7. GitHub CI must be green.
 
 The implementation must not change network behavior. Phase completion requires verification evidence in the PR; source presence alone is insufficient.
+
+## Current implementation evidence
+
+- The canonical desired/observed/actual state contract already exists in `@irp/resilience-runtime`.
+- The package root exports the network-state contract.
+- The in-memory store provides deterministic reconciliation and optimistic version checking.
+- Phase 73 tests now cover all reconciliation outcomes and layer-preservation behavior.
+- Full repository verification has not yet been executed from this branch; completion must not be claimed until the required commands and GitHub CI are green.
 
 ## Rollback
 
