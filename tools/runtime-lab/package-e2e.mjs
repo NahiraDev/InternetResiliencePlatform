@@ -107,7 +107,8 @@ async function runApiE2E(pkg) {
     API_PORT: String(apiPort),
     JWT_SECRET: 'irp-e2e-test-secret-01234567890123456789',
     LOG_LEVEL: 'error',
-    TELEMETRY_ENABLED: 'false',
+    // Ensure telemetry is enabled so the Prometheus bridge registers expected metrics
+    TELEMETRY_ENABLED: 'true',
   });
   try {
     const base = `http://127.0.0.1:${apiPort}`;
@@ -121,7 +122,17 @@ async function runApiE2E(pkg) {
     if (!metrics.ok) throw new Error(`metrics probe failed: ${metrics.error}`);
     const parsedVersion = JSON.parse(version.body);
     if (parsedVersion?.success !== true || !parsedVersion?.data?.version) throw new Error('version response contract failed');
-    if (!metrics.body.includes('http_request_total')) throw new Error('metrics response contract failed');
+
+    // The authoritative Prometheus metric in this repo uses the 'irp_' prefix
+    // (e.g. 'irp_http_requests_total'). Be tolerant of small naming variants
+    // and include a snippet of the metrics body in the error to aid debugging.
+    const metricsText = metrics.body ?? '';
+    const metricsOk = /irp_http_requests_total|http_requests_total|http_request_total/.test(metricsText);
+    if (!metricsOk) {
+      const snippet = metricsText.slice(0, 2000);
+      throw new Error(`metrics response contract failed; metrics did not include expected metric. metrics_snippet=${JSON.stringify(snippet)}`);
+    }
+
     return {
       package: pkg.name,
       directory: pkg.directory,
