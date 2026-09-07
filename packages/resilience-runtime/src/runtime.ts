@@ -17,6 +17,7 @@ import { IncidentCorrelator } from './incidents/incidents.js';
 import { DeterministicPlanner } from './planning/planner.js';
 import { RuntimeActionValidator } from './validation/validation.js';
 import { CoordinatedActionExecutor } from './execution/execution.js';
+import { ActionTransactionEngine } from './transactions/action-transaction.js';
 import { RuntimeActionVerifier } from './verification/verification.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
@@ -131,6 +132,7 @@ export class ResilienceRuntime {
       let verification;
       let recovery;
       const executor = new CoordinatedActionExecutor(this.adapters);
+      const transactionEngine = new ActionTransactionEngine(executor, this.events);
       const verifier = new RuntimeActionVerifier(this.adapters);
       const recoveryProvider = new FailoverRecoveryProvider(this.adapters, this.networkControlPlane);
 
@@ -138,7 +140,7 @@ export class ResilienceRuntime {
         outcome = 'simulated';
       } else {
         await this.state.transition('executing', context.correlationId);
-        execution = await executor.execute(plan, context);
+        execution = await transactionEngine.execute(plan, context, input.idempotencyKey);
         await this.events.emit('runtime.execution.completed', { correlationId: context.correlationId, status: execution.status });
         await this.state.transition('verifying', context.correlationId);
         verification = await verifier.verify(plan, execution, context);
