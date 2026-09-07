@@ -57,6 +57,7 @@ export class ResilienceRuntime {
   private readonly validator: RuntimeActionValidator;
   private readonly decisionProvider: DecisionProvider;
   private readonly decisionOrchestrator: DecisionOrchestrator;
+  private readonly transactionEngine: ActionTransactionEngine;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
@@ -73,6 +74,10 @@ export class ResilienceRuntime {
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
     this.decisionOrchestrator = new DecisionOrchestrator(this.decisionProvider);
+    this.transactionEngine = new ActionTransactionEngine(
+      new CoordinatedActionExecutor(this.adapters),
+      this.events,
+    );
   }
   capabilities() { return this.adapters.list(); }
   async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) { return this.cycle(input); }
@@ -140,7 +145,7 @@ export class ResilienceRuntime {
         outcome = 'simulated';
       } else {
         await this.state.transition('executing', context.correlationId);
-        execution = await transactionEngine.execute(plan, context, input.idempotencyKey);
+        execution = await this.transactionEngine.execute(plan, context, input.idempotencyKey);
         await this.events.emit('runtime.execution.completed', { correlationId: context.correlationId, status: execution.status });
         await this.state.transition('verifying', context.correlationId);
         verification = await verifier.verify(plan, execution, context);
