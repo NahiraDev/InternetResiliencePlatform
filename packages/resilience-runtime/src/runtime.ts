@@ -26,6 +26,7 @@ import { createDefaultRuntimeAdapterRegistry, type RuntimeAdapterRegistry } from
 import { InMemoryTelemetrySink } from './telemetry/telemetry.js';
 import type { DecisionProvider, ObservationProvider } from './ports/ports.js';
 import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
+import { DecisionOrchestrator } from './decision-orchestration.js';
 import type { CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
 import { MetricsRegistry } from '@irp/telemetry';
 
@@ -54,6 +55,7 @@ export class ResilienceRuntime {
   readonly adapters: RuntimeAdapterRegistry;
   private readonly validator: RuntimeActionValidator;
   private readonly decisionProvider: DecisionProvider;
+  private readonly decisionOrchestrator: DecisionOrchestrator;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
@@ -69,6 +71,7 @@ export class ResilienceRuntime {
     this.adapters = options.adapters ?? createDefaultRuntimeAdapterRegistry(options.networkControlPlane);
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
+    this.decisionOrchestrator = new DecisionOrchestrator(this.decisionProvider);
   }
   capabilities() { return this.adapters.list(); }
   async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) { return this.cycle(input); }
@@ -111,9 +114,10 @@ export class ResilienceRuntime {
     const found = await new IncidentCorrelator().correlate(observations, context);
     for (const i of found) { await this.incidents.put(i); await this.events.emit('runtime.incident.detected', { correlationId: context.correlationId, incidentId: i.id }); }
     await this.state.transition('planning', context.correlationId);
-    const candidates = await this.decisionProvider.decide(found, context);
+    const orchestration = await this.decisionOrchestrator.orchestrate(found, context);
+    const candidates = orchestration.candidates;
     const plan = await new DeterministicPlanner().plan(candidates, context);
-    await this.events.emit('runtime.plan.created', { correlationId: context.correlationId, planId: plan.id });
+    await this.events.emit('runtime.plan.created', { correlationId: context.correlationId, planId: plan.id, decisionReason: orchestration.reason });
     if (!plan.policyResult.allowed) return this.recordBlocked(context, before, observations, found, candidates, plan, start);
     await this.state.transition('validating', context.correlationId);
     const lockKey = plan.dependencies.join('|') || plan.selectedAction.intent;
