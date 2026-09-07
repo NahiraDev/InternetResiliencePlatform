@@ -108,7 +108,7 @@ export class ResilienceRuntime {
       throw error;
     } finally { this.inFlight = undefined; }
   }
-  private async executeCycle(input: Partial<RuntimeContext> = {}): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
+  private async executeCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
     const start = Date.now(); let context = createRuntimeContext(input); const before = this.state.current();
     this.counters = { ...this.counters, cyclesTotal: this.counters.cyclesTotal + 1 };
     await this.events.emit('runtime.cycle.started', { correlationId: context.correlationId });
@@ -136,8 +136,6 @@ export class ResilienceRuntime {
       let execution;
       let verification;
       let recovery;
-      const executor = new CoordinatedActionExecutor(this.adapters);
-      const transactionEngine = new ActionTransactionEngine(executor, this.events);
       const verifier = new RuntimeActionVerifier(this.adapters);
       const recoveryProvider = new FailoverRecoveryProvider(this.adapters, this.networkControlPlane);
 
