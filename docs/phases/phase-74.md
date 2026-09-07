@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation in progress on `phase/74-control-plane-contracts`.
+Implementation in progress on `phase/74-control-plane-contracts`. Phase 71 certification remains intentionally deferred.
 
 ## Objective
 
@@ -40,7 +40,7 @@ Every event carries:
 - `correlationId`
 - optional `causationId`
 - `producer`
-- the existing `DomainEvent` identity/timestamp fields
+- existing `DomainEvent` identity/timestamp fields
 - a domain-specific typed payload
 
 ## Ownership
@@ -69,9 +69,10 @@ This phase defines contracts; it does not wire new autonomous behavior into the 
 `packages/resilience-runtime/tests/control-plane-contracts.test.ts` verifies:
 
 - all four control-plane domains use the canonical contract version;
-- intelligence events expose the typed event identity and correlation/causation fields.
-
-Repository-wide typecheck and CI are required to validate the remaining event variants and package exports.
+- all four typed event variants are representable through `ControlPlaneEventUnion`;
+- each event preserves correlation and causation context;
+- producer identity matches the corresponding control-plane domain;
+- the complete four-event contract family is covered.
 
 ## Verification
 
@@ -84,6 +85,13 @@ Before completion:
 5. `pnpm --filter @irp/resilience-runtime test`
 6. `pnpm build`
 7. GitHub CI must be green.
+
+## Current implementation evidence
+
+- Phase 73 is merged into `main` as `04266a639c800fba020eb7a2b38aa2426e7dd446`.
+- Phase 74 contract implementation already exists in `@irp/resilience-runtime` and is now covered by all four typed event variants.
+- The dedicated Phase 74 branch is based on the current `main` baseline.
+- Full repository verification is still required; completion must not be claimed until the required commands and CI are green.
 
 ## Acceptance criteria
 
