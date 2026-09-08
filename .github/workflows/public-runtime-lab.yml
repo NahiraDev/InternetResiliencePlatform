@@ -117,7 +117,7 @@ jobs:
             tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8081
           URL=''
           for i in {1..60}; do
-            URL=$(docker logs irp-cloudflared 2>&1 | grep -oE 'https://[-a-z0-9]+\\.trycloudflare\\.com' | head -n1 || true)
+            URL=$(docker logs irp-cloudflared 2>&1 | grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' | head -n1 || true)
             if [ -n "$URL" ]; then break; fi
             if ! docker inspect -f '{{.State.Running}}' irp-cloudflared 2>/dev/null | grep -q true; then docker logs irp-cloudflared; exit 1; fi
             sleep 2
