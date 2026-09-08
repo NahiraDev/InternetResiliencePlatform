@@ -25,9 +25,9 @@ env:
 
 jobs:
   ios-client:
-    # macOS 14 is used because this runner image provides the required stable
-    # Xcode 16.1/16.2 toolchains and iOS simulator runtimes.
-    runs-on: macos-14
+    # Use the Intel macOS 14 larger runner. The standard macos-14 label is
+    # arm64 and previously reproduced an xcodebuild SIGSEGV during project build.
+    runs-on: macos-14-large
     timeout-minutes: 30
     steps:
       - name: Checkout
