@@ -36,16 +36,22 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout certified source
+      - name: Checkout current main
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
           fetch-depth: 1
 
-      - name: Verify checked-out commit
+      - name: Verify certified commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CERTIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}"
+          checked_out_sha="$(git rev-parse HEAD)"
+          current_main_sha="$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          test "$checked_out_sha" = "$current_main_sha"
+          test "$checked_out_sha" = "$CERTIFIED_SHA"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
