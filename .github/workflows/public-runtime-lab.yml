@@ -184,7 +184,15 @@ jobs:
               docker logs irp-cloudflared 2>&1 || true
               exit 1
             fi
-            ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready" || true)
+            if ! ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready"); then
+              echo 'FAILED: public /ready request could not be completed.'
+              cat /tmp/ready.json 2>/dev/null || true
+              curl -sS --max-time 10 "$PUBLIC_LAB_URL/report" || true
+              docker compose -f "$COMPOSE_FILE" ps -a || true
+              docker compose -f "$COMPOSE_FILE" logs --no-color --tail 1000 lab public-gateway || true
+              docker logs irp-cloudflared 2>&1 || true
+              exit 1
+            fi
             echo "ready_status=$ready_status"
             if [ "$ready_status" != "200" ]; then
               cat /tmp/ready.json || true
