@@ -11,6 +11,7 @@ export * from './validation/validation.js';
 export * from './execution/execution.js';
 export * from './verification/verification.js';
 export * from './recovery/recovery.js';
+export * from './safety/safety-kernel.js';
 export * from './decisions/records.js';
 export * from './replay/replay.js';
 export * from './stores/memory.js';
