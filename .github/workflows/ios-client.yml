@@ -25,9 +25,9 @@ env:
 
 jobs:
   ios-client:
-    # Use the Intel macOS 14 larger runner. The standard macos-14 label is
-    # arm64 and previously reproduced an xcodebuild SIGSEGV during project build.
-    runs-on: macos-14-large
+    # Use the supported Intel macOS 15 larger runner. macOS 14 is being
+    # deprecated and no longer provides the pinned Xcode 16.1 toolchain.
+    runs-on: macos-15-large
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -55,10 +55,6 @@ jobs:
           echo 'Installed Xcode bundles:'
           find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
 
-          # Xcode 16.1 is the pinned CI toolchain for this macOS 14 lane.
-          # Do not silently upgrade to another Xcode because a newer runner
-          # image happens to contain it; that would make build failures harder
-          # to reproduce. Fail clearly if the pinned bundle is unavailable.
           selected='/Applications/Xcode_16.1.app'
           if [[ ! -d "$selected" ]]; then
             echo "Required Xcode bundle not found: $selected" >&2

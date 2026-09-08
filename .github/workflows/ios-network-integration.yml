@@ -24,9 +24,9 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # Use the Intel macOS 14 larger runner so this integration lane matches
-    # the architecture used by the full iOS build and avoids the prior arm64 crash lane.
-    runs-on: macos-14-large
+    # Use the supported Intel macOS 15 larger runner. macOS 14 is being
+    # deprecated and no longer provides the pinned Xcode 16.1 toolchain.
+    runs-on: macos-15-large
     timeout-minutes: 30
     steps:
       - name: Checkout
