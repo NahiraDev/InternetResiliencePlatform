@@ -105,13 +105,11 @@ jobs:
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
-          rm -rf "${RUNNER_TEMP}/IRP-DerivedData"
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -target IRP \
             -sdk iphonesimulator \
             -configuration Debug \
-            -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
