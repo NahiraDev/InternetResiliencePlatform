@@ -16,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_16.1.app/Contents/Developer
 
 defaults:
   run:
@@ -24,8 +24,8 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # Keep network-extension validation on the same Intel macOS lane used to
-    # isolate the previously observed xcodebuild SIGSEGV/exit 139 on macOS 15 ARM.
+    # macOS 14 currently exposes Xcode 16.1 and 16.2; pin the same stable
+    # toolchain used by the full iOS client lane for reproducible integration checks.
     runs-on: macos-14
     timeout-minutes: 30
     steps:
