@@ -25,9 +25,8 @@ env:
 
 jobs:
   ios-client:
-    # Use the standard Intel macOS 15 runner. Xcode 16.4 is selected below.
-    # The build is kept serial to avoid the xcodebuild SIGSEGV observed when
-    # the project graph is scheduled in parallel on the hosted runner.
+    # Standard Intel macOS 15 runner. Xcode 26.3 avoids the xcodebuild
+    # SIGSEGV reproduced with Xcode 16.1 and 16.4 on this project.
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
@@ -56,7 +55,7 @@ jobs:
           echo 'Installed Xcode bundles:'
           find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
 
-          selected='/Applications/Xcode_16.4.app'
+          selected='/Applications/Xcode_26.3.app'
           if [[ ! -d "$selected" ]]; then
             echo "Required Xcode bundle not found: $selected" >&2
             exit 1
@@ -133,10 +132,9 @@ jobs:
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
             -configuration Debug \
             -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
-            -parallelizeTargets NO \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
