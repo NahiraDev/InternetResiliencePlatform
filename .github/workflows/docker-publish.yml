@@ -3,7 +3,7 @@ name: Docker Publish
 on:
   workflow_run:
     workflows:
-      - CI
+      - Release Gate
     types:
       - completed
 
@@ -12,20 +12,20 @@ permissions:
   contents: read
 
 concurrency:
-  group: docker-publish-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: true
+  group: docker-publish-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  NODE_VERSION: "24"
-  PNPM_VERSION: "11.21.0"
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
 
 jobs:
   publish:
     name: Build and publish image
     if: >-
-      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.event == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
@@ -37,21 +37,16 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download trusted source artifact
-        uses: actions/download-artifact@v8
+      - name: Checkout certified source
+        uses: actions/checkout@v7
         with:
-          name: irp-source-${{ github.event.workflow_run.head_sha }}
-          path: ${{ runner.temp }}/source-artifact
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
 
-      - name: Extract trusted source artifact
-        shell: bash
+      - name: Verify checked-out commit
         run: |
           set -euo pipefail
-          mkdir -p "${GITHUB_WORKSPACE}"
-          tar -xzf "${RUNNER_TEMP}/source-artifact/irp-source.tar.gz" -C "${GITHUB_WORKSPACE}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -69,7 +64,7 @@ jobs:
       - name: Install dependencies with frozen lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Validate repository
+      - name: Validate certified source
         run: pnpm validate
 
       - name: Set up Docker Buildx
