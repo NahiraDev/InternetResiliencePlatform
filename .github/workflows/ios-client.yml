@@ -49,8 +49,6 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          echo 'Installed Xcode bundles:'
-          find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
           selected='/Applications/Xcode_26.3.app'
           test -d "$selected"
           export DEVELOPER_DIR="$selected/Contents/Developer"
@@ -112,7 +110,6 @@ jobs:
             -project "$XCODE_PROJECT" \
             -target IRP \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
             -configuration Debug \
             -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
             -jobs 1 \
@@ -125,7 +122,6 @@ jobs:
         run: |
           set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
-          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100
           xcrun simctl list devices
           xcodebuild -version
