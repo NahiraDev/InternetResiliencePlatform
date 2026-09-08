@@ -3,18 +3,8 @@ name: iOS Network Integration
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
 
 permissions:
   contents: read
