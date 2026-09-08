@@ -3,18 +3,8 @@ name: macOS Full Client
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'packages/macos-client/**'
-      - '.github/workflows/macos-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   push:
     branches: [main]
-    paths:
-      - 'packages/macos-client/**'
-      - '.github/workflows/macos-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
