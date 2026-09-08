@@ -32,6 +32,7 @@
   "requiredRuntimeEvidence": [
     "runtime-build",
     "package-integration",
+    "phase76-transaction-integration",
     "canonical-runtime-validation"
   ],
   "rules": {

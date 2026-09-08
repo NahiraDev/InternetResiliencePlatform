@@ -4,26 +4,16 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - 'ops/observability/**'
-      - 'tools/runtime-lab/**'
-      - 'packages/gateway-registry/**'
-      - 'packages/resilience-runtime/**'
-      - 'packages/tunnel/**'
-      - '.github/workflows/runtime-lab.yml'
-      - '.github/workflows/public-runtime-lab.yml'
-      - 'scripts/docker-smoke.sh'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
 
-# Only one public soak may own the public lab at a time. A newer main commit
-# supersedes the previous soak so stale public tunnels/runners do not pile up.
+# Public main-branch evidence is authoritative. Do not cancel an older
+# evidence run merely because a newer main commit arrived. The explicit
+# concurrency group serializes access to the single public lab environment.
 concurrency:
   group: public-runtime-lab-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '24'
@@ -63,6 +53,7 @@ jobs:
 
       - name: Verify local runtime before exposing it
         run: |
+          set -euo pipefail
           lab_id="$(docker compose -f "$COMPOSE_FILE" ps -q lab)"
           gateway_id="$(docker compose -f "$COMPOSE_FILE" ps -q public-gateway)"
           test -n "$lab_id"
@@ -73,6 +64,7 @@ jobs:
 
       - name: Wait for local public gateway and runtime readiness
         run: |
+          set -euo pipefail
           gateway_ready=false
           runtime_ready=false
           for i in {1..90}; do
@@ -119,6 +111,7 @@ jobs:
 
       - name: Start temporary public tunnel
         run: |
+          set -euo pipefail
           docker run -d --name irp-cloudflared --network host \
             cloudflare/cloudflared:2026.8.2 \
             tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8081
@@ -126,10 +119,10 @@ jobs:
           for i in {1..60}; do
             URL=$(docker logs irp-cloudflared 2>&1 | grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' | head -n1 || true)
             if [ -n "$URL" ]; then break; fi
-            if ! docker inspect -f '{{.State.Running}}' irp-cloudflared 2>/dev/null | grep -q true; then docker logs irp-cloudflared || true; exit 1; fi
+            if ! docker inspect -f '{{.State.Running}}' irp-cloudflared 2>/dev/null | grep -q true; then docker logs irp-cloudflared; exit 1; fi
             sleep 2
           done
-          if [ -z "$URL" ]; then echo 'cloudflared did not publish a Quick Tunnel URL.'; docker logs irp-cloudflared || true; exit 1; fi
+          if [ -z "$URL" ]; then echo 'cloudflared did not publish a Quick Tunnel URL.'; docker logs irp-cloudflared; exit 1; fi
           echo "PUBLIC_LAB_URL=$URL" >> "$GITHUB_ENV"
           echo "## IRP Public Runtime Lab" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -149,8 +142,8 @@ jobs:
           if [ "$reachable" != true ]; then
             echo '::error::Quick Tunnel was created but the public route did not become reachable.'
             curl -sS --max-time 5 http://127.0.0.1:8081/health || true
-            curl -sS --max-time 5 http://127.0.0.1:8081/ready || true
-            curl -sS --max-time 5 http://127.0.0.1:8081/report || true
+            curl -sS --max-time 5 http://127.0.0.1:8080/ready || true
+            curl -sS --max-time 5 http://127.0.0.1:8080/report || true
             cat /tmp/public-health.json 2>/dev/null || true
             docker logs irp-cloudflared 2>&1 || true
             exit 1
@@ -165,8 +158,12 @@ jobs:
             local label="$1"; local url="$2"; local output="$3"
             echo "--- $label ---"
             if ! curl -fsS --max-time 15 --retry 5 --retry-delay 2 --retry-all-errors "$url" >"$output"; then
-              echo "FAILED: $url"; failures=$((failures + 1)); cat "$output" 2>/dev/null || true
-            else cat "$output"; fi
+              echo "FAILED: $url"
+              failures=$((failures + 1))
+              cat "$output" 2>/dev/null || true
+            else
+              cat "$output"
+            fi
             echo
           }
           check_endpoint 'public /health' "$PUBLIC_LAB_URL/health" /tmp/public-health.json
@@ -187,7 +184,15 @@ jobs:
               docker logs irp-cloudflared 2>&1 || true
               exit 1
             fi
-            ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready" || true)
+            if ! ready_status=$(curl -sS --max-time 10 -o /tmp/ready.json -w '%{http_code}' "$PUBLIC_LAB_URL/ready"); then
+              echo 'FAILED: public /ready request could not be completed.'
+              cat /tmp/ready.json 2>/dev/null || true
+              curl -sS --max-time 10 "$PUBLIC_LAB_URL/report" || true
+              docker compose -f "$COMPOSE_FILE" ps -a || true
+              docker compose -f "$COMPOSE_FILE" logs --no-color --tail 1000 lab public-gateway || true
+              docker logs irp-cloudflared 2>&1 || true
+              exit 1
+            fi
             echo "ready_status=$ready_status"
             if [ "$ready_status" != "200" ]; then
               cat /tmp/ready.json || true

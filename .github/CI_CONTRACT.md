@@ -14,6 +14,7 @@ CI is an executable architectural contract, not a cosmetic status indicator.
 8. No required check may be made green with `continue-on-error`, `|| true`, unconditional success output, or test skipping.
 9. Workflow triggers must include all source paths that can materially affect the job.
 10. A workflow that produces authoritative evidence must expose a deterministic final result.
+11. Release publication must consume the single fail-closed Release Gate and must not publish directly from an individual validation workflow.
 
 ## Dependency model
 
@@ -46,6 +47,12 @@ PR checks may cancel obsolete runs. Authoritative `main` runtime evidence must n
 
 GitHub Actions supports workflow/job concurrency and environment protection; use those primitives deliberately rather than accidental queueing.
 
+## Release Gate
+
+The Release Gate validates the exact main commit and waits for all release-blocking workflow runs for that same SHA to complete successfully. A successful gate is the only prerequisite consumed by publication workflows.
+
+The Public Runtime Lab remains authoritative runtime/soak evidence, but it is intentionally not a release publication prerequisite because it depends on an ephemeral public Quick Tunnel and external network availability.
+
 ## Review checklist
 
 - trigger paths complete?
@@ -59,3 +66,4 @@ GitHub Actions supports workflow/job concurrency and environment protection; use
 - artifacts useful for diagnosis?
 - no false-green paths?
 - required status checks deterministic?
+- release publication behind Release Gate?

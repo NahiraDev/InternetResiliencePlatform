@@ -27,6 +27,10 @@ concurrency:
   group: release-gate-${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
   cancel-in-progress: false
 
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+
 jobs:
   verify:
     name: Verify release-blocking evidence
@@ -36,16 +40,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 100
     steps:
-      - name: Verify required workflow results for exact commit
+      - name: Checkout current main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Verify release commit and required workflow results
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
         run: |
           set -euo pipefail
 
-          test "$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "$HEAD_SHA" || {
+          test "$(git rev-parse HEAD)" = "$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" || {
+            echo 'Release Gate checkout is not current main.' >&2
+            exit 1
+          }
+
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || {
             echo "Release Gate must certify the current main commit. Expected: $HEAD_SHA" >&2
-            echo "Current main: $(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" >&2
+            echo "Checked out: $(git rev-parse HEAD)" >&2
             exit 1
           }
 

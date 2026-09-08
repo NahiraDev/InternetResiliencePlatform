@@ -2,14 +2,9 @@ name: Android Client
 
 on:
   pull_request:
-    paths:
-      - 'clients/android/**'
-      - '.github/workflows/android-client.yml'
   push:
     branches: [main]
-    paths:
-      - 'clients/android/**'
-      - '.github/workflows/android-client.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

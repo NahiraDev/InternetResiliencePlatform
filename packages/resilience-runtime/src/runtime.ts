@@ -17,6 +17,7 @@ import { IncidentCorrelator } from './incidents/incidents.js';
 import { DeterministicPlanner } from './planning/planner.js';
 import { RuntimeActionValidator } from './validation/validation.js';
 import { CoordinatedActionExecutor } from './execution/execution.js';
+import { ActionTransactionEngine } from './transactions/action-transaction.js';
 import { RuntimeActionVerifier } from './verification/verification.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
@@ -56,6 +57,7 @@ export class ResilienceRuntime {
   private readonly validator: RuntimeActionValidator;
   private readonly decisionProvider: DecisionProvider;
   private readonly decisionOrchestrator: DecisionOrchestrator;
+  private readonly transactionEngine: ActionTransactionEngine;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
@@ -72,6 +74,10 @@ export class ResilienceRuntime {
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
     this.decisionOrchestrator = new DecisionOrchestrator(this.decisionProvider);
+    this.transactionEngine = new ActionTransactionEngine(
+      new CoordinatedActionExecutor(this.adapters),
+      this.events,
+    );
   }
   capabilities() { return this.adapters.list(); }
   async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) { return this.cycle(input); }
@@ -102,7 +108,7 @@ export class ResilienceRuntime {
       throw error;
     } finally { this.inFlight = undefined; }
   }
-  private async executeCycle(input: Partial<RuntimeContext> = {}): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
+  private async executeCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
     const start = Date.now(); let context = createRuntimeContext(input); const before = this.state.current();
     this.counters = { ...this.counters, cyclesTotal: this.counters.cyclesTotal + 1 };
     await this.events.emit('runtime.cycle.started', { correlationId: context.correlationId });
@@ -130,7 +136,6 @@ export class ResilienceRuntime {
       let execution;
       let verification;
       let recovery;
-      const executor = new CoordinatedActionExecutor(this.adapters);
       const verifier = new RuntimeActionVerifier(this.adapters);
       const recoveryProvider = new FailoverRecoveryProvider(this.adapters, this.networkControlPlane);
 
@@ -138,7 +143,7 @@ export class ResilienceRuntime {
         outcome = 'simulated';
       } else {
         await this.state.transition('executing', context.correlationId);
-        execution = await executor.execute(plan, context);
+        execution = await this.transactionEngine.execute(plan, context, input.idempotencyKey);
         await this.events.emit('runtime.execution.completed', { correlationId: context.correlationId, status: execution.status });
         await this.state.transition('verifying', context.correlationId);
         verification = await verifier.verify(plan, execution, context);

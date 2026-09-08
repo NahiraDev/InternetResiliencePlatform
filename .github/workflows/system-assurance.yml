@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: system-assurance-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Main-branch assurance is authoritative evidence and must not be cancelled
+  # merely because a newer commit arrives.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_VERSION: '24'

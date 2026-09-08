@@ -3,18 +3,8 @@ name: iOS Network Integration
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
 
 permissions:
   contents: read
@@ -26,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_16.1.app/Contents/Developer
 
 defaults:
   run:
@@ -34,9 +24,9 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # Keep network-extension validation on the same Intel macOS lane used to
-    # isolate the previously observed xcodebuild SIGSEGV/exit 139 on macOS 15 ARM.
-    runs-on: macos-14
+    # Use the Intel macOS 14 larger runner so this integration lane matches
+    # the architecture used by the full iOS build and avoids the prior arm64 crash lane.
+    runs-on: macos-14-large
     timeout-minutes: 30
     steps:
       - name: Checkout
