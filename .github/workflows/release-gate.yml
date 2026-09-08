@@ -1,0 +1,123 @@
+name: Release Gate
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - System Assurance
+      - Linux Primary Device
+      - Runtime Lab
+      - CodeQL Advanced
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Main commit SHA to verify'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  # A release gate is authoritative evidence. Never cancel an older main
+  # commit merely because a newer commit arrived.
+  group: release-gate-${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
+
+jobs:
+  verify:
+    name: Verify release-blocking evidence
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Checkout certified commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify certified checkout
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          node --version
+          pnpm --version
+          gh --version | head -n 1
+
+      - name: Verify required workflow results for exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" = "$HEAD_SHA" || {
+            echo "Release Gate must certify the current main commit. Expected: $HEAD_SHA" >&2
+            echo "Current main: $(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')" >&2
+            exit 1
+          }
+
+          workflows=(
+            "ci.yml"
+            "system-assurance.yml"
+            "linux-primary-device.yml"
+            "runtime-lab.yml"
+            "codeql.yml"
+          )
+
+          deadline=$((SECONDS + 5400))
+          for workflow in "${workflows[@]}"; do
+            echo "=== verifying $workflow for $HEAD_SHA ==="
+            while true; do
+              runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
+              completed_count="$(jq '[.workflow_runs[] | select(.status == "completed")] | length' <<<"$runs")"
+              success_count="$(jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")"
+              failed_runs="$(jq -r '[.workflow_runs[] | select(.status == "completed" and .conclusion != "success")] | map(.conclusion) | join(",")' <<<"$runs")"
+
+              echo "workflow=$workflow completed=$completed_count successful=$success_count failed=$failed_runs"
+
+              if [ "$success_count" -ge 1 ]; then
+                echo "PASS $workflow"
+                break
+              fi
+
+              if [ -n "$failed_runs" ]; then
+                echo "FAIL $workflow: completed run is not successful ($failed_runs)" >&2
+                exit 1
+              fi
+
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "FAIL $workflow: no successful completed run for $HEAD_SHA before timeout" >&2
+                exit 1
+              fi
+
+              sleep 30
+            done
+          done
+
+          echo
+          echo "Release Gate: PASS"
+          echo "Certified commit: $HEAD_SHA"
