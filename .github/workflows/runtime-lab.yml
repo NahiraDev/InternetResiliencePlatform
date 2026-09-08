@@ -3,38 +3,14 @@ name: Runtime Lab
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'ops/observability/**'
-      - 'tools/runtime-lab/**'
-      - 'packages/gateway-registry/**'
-      - 'packages/resilience-runtime/**'
-      - 'packages/tunnel/**'
-      - 'packages/macos-client/**'
-      - '.github/workflows/runtime-lab.yml'
-      - '.github/workflows/public-runtime-lab.yml'
-      - 'scripts/docker-smoke.sh'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   push:
     branches: [main]
-    paths:
-      - 'ops/observability/**'
-      - 'tools/runtime-lab/**'
-      - 'packages/gateway-registry/**'
-      - 'packages/resilience-runtime/**'
-      - 'packages/tunnel/**'
-      - 'packages/macos-client/**'
-      - '.github/workflows/runtime-lab.yml'
-      - '.github/workflows/public-runtime-lab.yml'
-      - 'scripts/docker-smoke.sh'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: runtime-lab-${{ github.event.pull_request.number || github.run_id }}
+  group: runtime-lab-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
