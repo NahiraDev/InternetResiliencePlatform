@@ -49,9 +49,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify Phase 76 transaction integration
-        run: pnpm --filter @irp/resilience-runtime exec vitest run tests/action-transaction.integration.test.ts
-
       - name: Run system assurance
         env:
           IRP_PACKAGE_INTEGRATION_TIMEOUT_MS: 30000
