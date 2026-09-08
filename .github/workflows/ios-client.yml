@@ -3,18 +3,8 @@ name: iOS Full Client
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - '.github/workflows/ios-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - '.github/workflows/ios-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
