@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ios-network-integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: ios-network-integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -24,9 +24,9 @@ defaults:
 
 jobs:
   ios-network-integration:
-    # Use the supported Intel macOS 15 larger runner. macOS 14 is being
-    # deprecated and no longer provides the pinned Xcode 16.1 toolchain.
-    runs-on: macos-15-large
+    # Use the standard Intel macOS 15 runner. The larger-runner label is not
+    # required by this validation lane and can fail before a job gets a runner.
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - name: Checkout
