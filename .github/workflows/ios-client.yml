@@ -128,33 +128,6 @@ jobs:
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
           echo 'iOS client source inventory passed'
 
-      - name: Diagnose Xcode target configuration
-        run: |
-          set -euo pipefail
-          : > "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-          overall_status=0
-          for target in IRP IRPPacketTunnel; do
-            echo "===== target: $target =====" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-            if xcodebuild \
-              -project "$XCODE_PROJECT" \
-              -target "$target" \
-              -sdk iphonesimulator \
-              -configuration Debug \
-              -showBuildSettings >>"${RUNNER_TEMP}/xcode-target-diagnostics.log" 2>&1; then
-              status=0
-            else
-              status=$?
-            fi
-            echo "target=$target exit=$status" | tee -a "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-            if [[ "$status" -ne 0 ]]; then
-              overall_status="$status"
-            fi
-          done
-          cat "${RUNNER_TEMP}/xcode-target-diagnostics.log"
-          if [[ "$overall_status" -ne 0 ]]; then
-            exit "$overall_status"
-          fi
-
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
