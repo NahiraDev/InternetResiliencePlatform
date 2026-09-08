@@ -15,7 +15,9 @@ permissions:
 
 concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Security evidence for main is authoritative; only disposable PR runs may
+  # be cancelled by a newer revision.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:
