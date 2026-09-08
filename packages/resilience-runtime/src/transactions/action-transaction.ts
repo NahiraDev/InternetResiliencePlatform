@@ -111,13 +111,6 @@ export class ActionTransactionEngine {
       status: 'created',
     });
 
-    await this.events.emit('runtime.transaction.created', {
-      correlationId: context.correlationId,
-      transactionId,
-      idempotencyKey,
-      actionId: plan.selectedAction.id,
-    });
-
     const transactionalPlan: ActionPlan = deepFreeze({
       ...plan,
       metadata: {
@@ -127,6 +120,8 @@ export class ActionTransactionEngine {
       },
     });
 
+    // Register before awaiting the event sink. This closes the concurrency
+    // window between the initial lookup and the in-flight registration.
     const run = this.runTransaction(created, transactionalPlan, context);
     this.inFlight.set(idempotencyKey, run);
 
@@ -134,9 +129,10 @@ export class ActionTransactionEngine {
       const execution = await run;
       const record: ActionTransaction = deepFreeze({
         ...created,
-        status: execution.status === 'success' || execution.status === 'skipped'
-          ? 'committed'
-          : 'failed',
+        status:
+          execution.status === 'success' || execution.status === 'skipped'
+            ? 'committed'
+            : 'failed',
         execution,
       });
       this.completed.set(idempotencyKey, record);
@@ -158,6 +154,13 @@ export class ActionTransactionEngine {
     plan: ActionPlan,
     context: RuntimeContext,
   ): Promise<ActionExecution> {
+    await this.events.emit('runtime.transaction.created', {
+      correlationId: context.correlationId,
+      transactionId: transaction.id,
+      idempotencyKey: transaction.idempotencyKey,
+      actionId: transaction.actionId,
+    });
+
     await this.events.emit('runtime.transaction.executing', {
       correlationId: context.correlationId,
       transactionId: transaction.id,
@@ -167,9 +170,10 @@ export class ActionTransactionEngine {
 
     try {
       const execution = await this.executor.execute(plan, context);
-      const event = execution.status === 'success' || execution.status === 'skipped'
-        ? 'runtime.transaction.committed'
-        : 'runtime.transaction.failed';
+      const event =
+        execution.status === 'success' || execution.status === 'skipped'
+          ? 'runtime.transaction.committed'
+          : 'runtime.transaction.failed';
 
       await this.events.emit(event, {
         correlationId: context.correlationId,
