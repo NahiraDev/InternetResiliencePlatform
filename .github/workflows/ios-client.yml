@@ -25,9 +25,9 @@ env:
 
 jobs:
   ios-client:
-    # Use the standard Intel macOS 15 runner. Xcode 16.4 is selected below
-    # because the pinned Xcode 16.1 toolchain crashes during xcodebuild on
-    # this project even though Swift package validation succeeds.
+    # Use the standard Intel macOS 15 runner. Xcode 16.4 is selected below.
+    # The build is kept serial to avoid the xcodebuild SIGSEGV observed when
+    # the project graph is scheduled in parallel on the hosted runner.
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
@@ -136,6 +136,8 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
+            -parallelizeTargets NO \
+            -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
