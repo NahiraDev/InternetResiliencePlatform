@@ -77,6 +77,26 @@ record(
   { exitCode: integration.code, diagnostic: integration.code === 0 ? undefined : diagnostic(integration) },
 );
 
+const transactionIntegration = await run('pnpm', [
+  '--filter',
+  '@irp/resilience-runtime',
+  'exec',
+  'vitest',
+  'run',
+  'tests/action-transaction.integration.test.ts',
+]);
+record(
+  'phase76-transaction-integration',
+  transactionIntegration.code === 0 ? 'pass' : 'fail',
+  transactionIntegration.code === 0
+    ? 'Phase 76 transaction engine passed against the real coordinated executor path'
+    : `Phase 76 transaction integration failed with exit ${transactionIntegration.code}`,
+  {
+    exitCode: transactionIntegration.code,
+    diagnostic: transactionIntegration.code === 0 ? undefined : diagnostic(transactionIntegration),
+  },
+);
+
 let validation = null;
 const runtimeModule = join(root, 'packages/resilience-runtime/dist/e2e-validation.js');
 if (existsSync(runtimeModule) && build.code === 0) {
