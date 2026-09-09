@@ -4,14 +4,28 @@
 
 ## Current implementation gate
 
-- **Current gate:** Phase 71 — Cross-Platform Distribution & GitHub Releases.
-- **Phase 71 status:** implementation is complete on `main`; external release evidence is still required before certification. The phase record requires a real tagged GitHub Release, published assets and checksum/release inspection. Do not represent Phase 71 as certified from source presence or CI alone.
-- **Current main baseline reviewed:** `08bbea196b6d23fd7f661cae5315834b7ff22e9f` (`fix(release): correct Android artifact upload path for Phase 71`).
-- **Release state:** the repository currently has no published GitHub Releases, so the Phase 71 external certification gate remains open.
-- **Recent release-pipeline fix:** the Android artifact upload path was corrected to use the workspace-rooted artifact produced by the Android job's `working-directory` override.
+- **Current gate:** Phase 78 — Closed-Loop Control Foundation.
+- **Phase 77 status:** implementation is complete and merged on `main` in PR #237; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
+- **Phase 78 status:** implementation has started on `phase/78-closed-loop-control` from main commit `164c9793ac8819492939d9d59b6c3b529cc506cd`.
+- **Current main baseline reviewed:** `164c9793ac8819492939d9d59b6c3b529cc506cd` (`Merge pull request #239 from NahiraDev/fix/phase-77-ios-actions-main`).
+- **Release state:** Phase 71 external release certification remains open because the required real tagged GitHub Release, published platform artifact inspection and checksum evidence are not yet satisfied.
+- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
 - **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` is the current planning authority for Phases 72–150.
-- **Historical/v1 roadmap:** `ROADMAP.md` and `docs/architecture/product-roadmap-70-phases.md` preserve the 0–70 product baseline and should not be interpreted as the current post-v1 roadmap.
-- **Phase 72 status:** architecture-preparation baseline exists, but Phase 72 must not be treated as completed while the Phase 71 external certification gate remains open.
+
+## Phase 78 objective
+
+Phase 78 formalizes a bounded observe → decide → apply → verify/recover control loop around the existing `@irp/resilience-runtime` cycle. The loop controller owns only bounded repetition, cancellation and deterministic stop conditions. It must not create a second decision engine, policy engine, execution engine or global control plane.
+
+## Current Phase 78 implementation
+
+- `packages/resilience-runtime/src/closed-loop.ts` provides `BoundedClosedLoopController`.
+- The controller is safe-by-default with a one-cycle default and a hard maximum of 10 cycles.
+- Each cycle receives deterministic correlation and idempotency suffixes.
+- Blocked and failed decisions terminate the loop immediately.
+- Healthy terminal outcomes stop the loop by default.
+- Cooperative cancellation prevents the next runtime cycle from starting.
+- Dedicated tests are in `packages/resilience-runtime/tests/closed-loop.test.ts`.
+- The public runtime barrel exports the controller.
 
 ## Phase 71 certification prerequisites
 
@@ -116,18 +130,19 @@ For networking automation, every mutation must be policy-checked, bounded, obser
 - Engineering governance: `docs/architecture/engineering-governance.md`.
 - Parallel-agent protocol: `docs/architecture/parallel-agent-protocol.md`, `.github/AGENT_PROTOCOL.md` and `.github/ACTIVE_WORK.md`.
 
-## Known architectural findings entering Phase 72
+## Known architectural findings entering Phase 78
 
-The repository already contains observation, state, planning, policy, decision, execution, verification, telemetry and recovery primitives. The main risks entering the next roadmap segment are ownership fragmentation and contract duplication, especially around:
+The repository already contains observation, state, planning, policy, decision, execution, verification, telemetry and recovery primitives. Phase 78 must formalize bounded end-to-end control around these existing components rather than duplicating them.
+
+The remaining architectural risks are ownership fragmentation and contract duplication, especially around:
 
 - decision orchestration versus decision intelligence;
 - desired/observed/actual state semantics;
 - event taxonomy and event ownership;
 - cross-domain action/transaction semantics;
-- unified safety and rollback boundaries.
-
-The detailed evidence-backed analysis is in `docs/audits/control-plane-execution-baseline-2026-09-03.md`.
+- unified safety and rollback boundaries;
+- bounded repeated-cycle orchestration and explicit terminal conditions.
 
 ## Product objective
 
-IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify outcomes, recover from failure and explain decisions across supported clients and network providers.
+IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
