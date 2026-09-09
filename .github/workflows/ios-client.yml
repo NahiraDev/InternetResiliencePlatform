@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ios-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: ios-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -25,9 +25,7 @@ env:
 
 jobs:
   ios-client:
-    # Use the supported Intel macOS 15 larger runner. macOS 14 is being
-    # deprecated and no longer provides the pinned Xcode 16.1 toolchain.
-    runs-on: macos-15-large
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -51,29 +49,10 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-
-          echo 'Installed Xcode bundles:'
-          find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print | sort -V
-
-          selected='/Applications/Xcode_16.1.app'
-          if [[ ! -d "$selected" ]]; then
-            echo "Required Xcode bundle not found: $selected" >&2
-            exit 1
-          fi
-
+          selected='/Applications/Xcode_26.3.app'
+          test -d "$selected"
           export DEVELOPER_DIR="$selected/Contents/Developer"
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
-          echo "Selected Xcode bundle: $selected"
-          echo "DEVELOPER_DIR=$DEVELOPER_DIR"
-
-          XCODEBUILD_PATH="$(xcrun --find xcodebuild)"
-          SWIFT_PATH="$(xcrun --find swift)"
-          test -n "$XCODEBUILD_PATH"
-          test -x "$XCODEBUILD_PATH"
-          test -n "$SWIFT_PATH"
-          test -x "$SWIFT_PATH"
-          echo "xcodebuild=$XCODEBUILD_PATH"
-          echo "swift=$SWIFT_PATH"
           xcodebuild -version
           swift --version
 
@@ -122,19 +101,16 @@ jobs:
           test -f clients/ios/PacketTunnel/Info.plist
           test -f clients/ios/PacketTunnel/PacketTunnel.entitlements
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
-          echo 'iOS client source inventory passed'
 
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
-          rm -rf "${RUNNER_TEMP}/IRP-DerivedData"
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
-            -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
-            -derivedDataPath "${RUNNER_TEMP}/IRP-DerivedData" \
+            -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
@@ -144,7 +120,6 @@ jobs:
         run: |
           set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print -exec sh -c 'echo "===== $1 ====="; tail -n 500 "$1"' _ {} \;
-          find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 -type f -newermt '30 minutes ago' -print -exec sh -c 'echo "===== $1 ====="; tail -n 300 "$1"' _ {} \;
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100
           xcrun simctl list devices
           xcodebuild -version
