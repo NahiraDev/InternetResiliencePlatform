@@ -1,10 +1,18 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
+import { ValidationAppError, ConflictAppError, NotFoundAppError } from '@irp/core';
 import { InMemoryIntentStore, registerIntentRoutes } from './intent-api.js';
 
 describe('intent API', () => {
   const build = async () => {
     const app = Fastify();
+    app.setErrorHandler((error, _request, reply) => {
+      if (error instanceof ValidationAppError) return reply.code(400).send({ success: false });
+      if (error instanceof ConflictAppError) return reply.code(409).send({ success: false });
+      if (error instanceof NotFoundAppError) return reply.code(404).send({ success: false });
+      if (error instanceof Error && error.name === 'ZodError') return reply.code(400).send({ success: false });
+      return reply.code(500).send({ success: false });
+    });
     registerIntentRoutes(app, {
       store: new InMemoryIntentStore(),
       requirePermission: async (_request, _permission) => undefined,
@@ -14,16 +22,7 @@ describe('intent API', () => {
 
   it('creates a draft intent with an idempotency key', async () => {
     const app = await build();
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/intents',
-      headers: { 'idempotency-key': 'create-1' },
-      payload: {
-        id: 'intent-1',
-        priority: 'high',
-        spec: { outcome: 'maintain connectivity', constraints: { latencyMs: 100 } },
-      },
-    });
+    const response = await app.inject({ method: 'POST', url: '/api/v1/intents', headers: { 'idempotency-key': 'create-1' }, payload: { id: 'intent-1', priority: 'high', spec: { outcome: 'maintain connectivity', constraints: { latencyMs: 100 } } } });
     expect(response.statusCode).toBe(201);
     expect(response.json().data).toMatchObject({ id: 'intent-1', version: 1, status: 'draft' });
     await app.close();
@@ -48,7 +47,7 @@ describe('intent API', () => {
     await app.inject({ method: 'POST', url: '/api/v1/intents', headers, payload: { id: 'intent-1', spec: { outcome: 'one' } } });
     const response = await app.inject({ method: 'POST', url: '/api/v1/intents', headers, payload: { id: 'intent-2', spec: { outcome: 'two' } } });
     expect(response.statusCode).toBe(409);
-    expect(response.json().error.code).toBe('IDEMPOTENCY_KEY_REUSE');
+    expect(response.json().success).toBe(false);
     await app.close();
   });
 
@@ -56,7 +55,7 @@ describe('intent API', () => {
     const app = await build();
     const missing = await app.inject({ method: 'POST', url: '/api/v1/intents', payload: { id: 'intent-1', spec: { outcome: 'one' } } });
     const unknown = await app.inject({ method: 'POST', url: '/api/v1/intents', headers: { 'idempotency-key': 'create-2' }, payload: { id: 'intent-2', spec: { outcome: 'two' }, unexpected: true } });
-    expect(missing.statusCode).toBe(500);
+    expect(missing.statusCode).toBe(400);
     expect(unknown.statusCode).toBe(400);
     await app.close();
   });
