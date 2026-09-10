@@ -101,7 +101,21 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       }
       return reply.code(200).send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
     }
-    const intent = createNetworkIntent(input);
+
+    const intentInput = {
+      id: input.id,
+      priority: input.priority,
+      spec: {
+        outcome: input.spec.outcome,
+        ...(input.spec.constraints !== undefined ? { constraints: input.spec.constraints } : {}),
+        ...(input.spec.target !== undefined ? { target: input.spec.target } : {}),
+      },
+      ...(input.effectiveFrom !== undefined ? { effectiveFrom: input.effectiveFrom } : {}),
+      ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt } : {}),
+      ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
+    } satisfies Parameters<typeof createNetworkIntent>[0];
+
+    const intent = createNetworkIntent(intentInput);
     store.put(intent);
     requests.set(key, { fingerprint, intent });
     return reply.code(201).send({ success: true, data: intent });
