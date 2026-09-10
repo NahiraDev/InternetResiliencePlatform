@@ -63,20 +63,10 @@ export interface IntentApiOptions {
   requirePermission?: (request: FastifyRequest, permission: 'runtime.inspect' | 'runtime.execute') => Promise<unknown>;
 }
 
-declare module 'fastify' {
-  interface FastifyRequest {
-    jwtAuth?: { authenticate: (input: { headers: FastifyRequest['headers'] }) => Promise<unknown> };
-    rbac?: { authorize: (input: unknown) => Promise<boolean> };
-  }
-}
-
 const defaultAuthorization = async (request: FastifyRequest, permission: 'runtime.inspect' | 'runtime.execute') => {
-  const auth = request.jwtAuth;
-  const rbac = request.rbac;
-  if (!auth || !rbac) throw new UnauthorizedAppError();
-  const principal = await auth.authenticate({ headers: request.headers });
+  const principal = await request.jwtAuth.authenticate({ headers: request.headers });
   if (!principal) throw new UnauthorizedAppError();
-  const allowed = await rbac.authorize({
+  const allowed = await request.rbac.authorize({
     principal,
     resource: request.url,
     action: request.method,
