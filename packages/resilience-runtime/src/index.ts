@@ -31,5 +31,6 @@ export * from './decision-orchestration.js';
 export * from './transactions/action-transaction.js';
 export * from './canonical-network-adapter.js';
 export * from './core-integration.js';
+export * from './closed-loop.js';
 
 export * from './autopilot/autopilot.js';

@@ -2,9 +2,7 @@
 
 ## Status
 
-Implementation started on `phase/77-safety-rollback-recovery`.
-
-Phase 76 — Action Transaction Engine is merged on `main`. Phase 71 external release certification remains deferred and is not a dependency for this architecture phase.
+**Implemented and merged on `main` in PR #237.** The implementation landed before the current Phase 78 branch was created. External Phase 71 release certification remains deferred and is not a dependency for this architecture phase.
 
 ## Objective
 
@@ -77,6 +75,10 @@ Rollback failure is surfaced as a degraded recovery result rather than being hid
 - lifecycle events include correlation and action identity;
 - dedicated unit tests cover boundary and failure paths;
 - `pnpm validate`, `pnpm typecheck`, `pnpm lint`, runtime tests and build are green before completion.
+
+## Verification
+
+The implementation and dedicated unit tests were merged in PR #237. Repository-level verification remains governed by the CI gates and later Phase 78 integration evidence.
 
 ## Rollback
 
