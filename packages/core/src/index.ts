@@ -17,6 +17,19 @@ export type {
   MobileNetworkSnapshot,
   MobilePlatform,
 } from './mobile-client.js';
+export {
+  createNetworkIntent,
+  isIntentEffective,
+  isIntentTerminal,
+  transitionIntent,
+} from './intent.js';
+export type {
+  IntentCommand,
+  IntentPriority,
+  IntentStatus,
+  NetworkIntent,
+  NetworkIntentSpec,
+} from './intent.js';
 
 export interface Lifecycle { start(): Promise<void>; stop(): Promise<void>; }
 export interface Plugin extends Lifecycle { id: string; install?(container: Container): Promise<void> | void; initialize?(context: RuntimeContext): Promise<void> | void; unload?(): Promise<void> | void; }
