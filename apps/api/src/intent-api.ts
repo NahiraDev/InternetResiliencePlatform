@@ -1,14 +1,18 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
+  ConflictAppError,
+  ForbiddenAppError,
+  NotFoundAppError,
+  UnauthorizedAppError,
+  ValidationAppError,
   createNetworkIntent,
   transitionIntent,
   type IntentCommand,
   type NetworkIntent,
-  type NetworkIntentSpec,
 } from '@irp/core';
-import { ForbiddenAppError, NotFoundAppError, UnauthorizedAppError } from '@irp/core';
 
+const timestamp = z.string().datetime({ offset: true });
 const primitive = z.union([z.string(), z.number().finite(), z.boolean()]);
 const specSchema = z.object({
   outcome: z.string().trim().min(1).max(2000),
@@ -20,17 +24,17 @@ const createSchema = z.object({
   id: z.string().trim().min(1).max(128),
   priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
   spec: specSchema,
-  effectiveFrom: z.string().optional(),
-  expiresAt: z.string().optional(),
+  effectiveFrom: timestamp.optional(),
+  expiresAt: timestamp.optional(),
   metadata: z.record(z.string(), z.string().max(512)).optional(),
 }).strict();
 
 const commandSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('activate'), at: z.string().optional() }).strict(),
-  z.object({ type: z.literal('complete'), at: z.string().optional() }).strict(),
-  z.object({ type: z.literal('supersede'), at: z.string().optional(), replacementId: z.string().trim().min(1).max(128) }).strict(),
-  z.object({ type: z.literal('cancel'), at: z.string().optional() }).strict(),
-  z.object({ type: z.literal('expire'), at: z.string().optional() }).strict(),
+  z.object({ type: z.literal('activate'), at: timestamp.optional() }).strict(),
+  z.object({ type: z.literal('complete'), at: timestamp.optional() }).strict(),
+  z.object({ type: z.literal('supersede'), at: timestamp.optional(), replacementId: z.string().trim().min(1).max(128) }).strict(),
+  z.object({ type: z.literal('cancel'), at: timestamp.optional() }).strict(),
+  z.object({ type: z.literal('expire'), at: timestamp.optional() }).strict(),
 ]);
 
 const idParams = z.object({ id: z.string().trim().min(1).max(128) }).strict();
@@ -85,8 +89,8 @@ const defaultAuthorization = async (request: FastifyRequest, permission: 'runtim
 const idempotencyKey = (request: FastifyRequest): string => {
   const raw = request.headers['idempotency-key'];
   const value = Array.isArray(raw) ? raw[0] : raw;
-  if (!value?.trim()) throw new Error('Idempotency-Key header is required');
-  if (value.length > 128) throw new Error('Idempotency-Key must be at most 128 characters');
+  if (!value?.trim()) throw new ValidationAppError('Idempotency-Key header is required');
+  if (value.length > 128) throw new ValidationAppError('Idempotency-Key must be at most 128 characters');
   return value.trim();
 };
 
@@ -107,10 +111,7 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       }
       return reply.code(200).send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
     }
-    const intent = createNetworkIntent({
-      ...input,
-      spec: input.spec as NetworkIntentSpec,
-    });
+    const intent = createNetworkIntent(input);
     store.put(intent);
     requests.set(key, { fingerprint, intent });
     return reply.code(201).send({ success: true, data: intent });
@@ -137,9 +138,13 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const intent = store.get(id);
     if (!intent) throw new NotFoundAppError('intent');
     const command = commandSchema.parse(request.body ?? {}) as IntentCommand;
-    const updated = transitionIntent(intent, command);
-    store.put(updated);
-    return { success: true, data: updated };
+    try {
+      const updated = transitionIntent(intent, command);
+      store.put(updated);
+      return { success: true, data: updated };
+    } catch (error) {
+      throw new ConflictAppError(error instanceof Error ? error.message : 'Invalid intent transition');
+    }
   });
 
   return { store };
