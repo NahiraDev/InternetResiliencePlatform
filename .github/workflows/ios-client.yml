@@ -22,6 +22,7 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
+  DEVELOPER_DIR: /Applications/Xcode_16.1.app/Contents/Developer
 
 jobs:
   ios-client:
@@ -32,6 +33,13 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Select and verify Xcode
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          swift --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -45,16 +53,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Select and verify Xcode
-        run: |
-          set -euo pipefail
-          selected='/Applications/Xcode_26.3.app'
-          test -d "$selected"
-          export DEVELOPER_DIR="$selected/Contents/Developer"
-          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
-          xcodebuild -version
-          swift --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
