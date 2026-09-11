@@ -46,7 +46,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
     const [interfaces, routes, dns] = await Promise.all([
       command('ipconfig', ['/all']),
       command('route', ['print']),
-      command('netsh', ['interface', 'ip', 'show', 'dns']),
+      command('netsh', ['interface', 'ipv4', 'show', 'dnsservers']),
     ]);
     return { interfaces, routes, dns, capturedAt: new Date().toISOString(), platform: 'win32' };
   }
