@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const root = process.cwd();
@@ -91,8 +91,10 @@ if (!phaseMatrix.includes('Until that mapping is complete')) {
 
 const phasePlan = readFileSync(join(docsRoot, 'architecture/product-roadmap-70-phases.md'), 'utf8');
 for (let phase = 0; phase <= 70; phase += 1) {
-  const marker = `| ${phase} |`;
-  if (!phasePlan.includes(marker)) errors.push(`70-phase plan is missing Phase ${phase}`);
+  // The canonical table uses padded Markdown cells (for example `|     0 |`).
+  // Match the phase as a complete table cell instead of assuming a single spacing layout.
+  const marker = new RegExp(`\\|\\s*${phase}\\s*\\|`);
+  if (!marker.test(phasePlan)) errors.push(`70-phase plan is missing Phase ${phase}`);
 }
 
 const suspiciousPhaseFiles = markdownFiles.filter((file) =>
