@@ -14,14 +14,16 @@ class FakeRunner implements StarlinkCommandRunner {
 describe('Starlink integration', () => {
   it('parses dish telemetry through the local gRPC API', async () => {
     const client = new StarlinkDishClient({ target: '192.168.100.1:9200' });
-    const status = await client.getStatus(new FakeRunner({
-      state: 'CONNECTED',
-      pop_ping_latency_ms: 42,
-      pop_ping_drop_rate: 0.01,
-      downlink_throughput_bps: 120_000_000,
-      uplink_throughput_bps: 20_000_000,
-      obstruction_stats: { fraction_obstructed: 0.005 },
-    }));
+    const status = await client.getStatus(
+      new FakeRunner({
+        state: 'CONNECTED',
+        pop_ping_latency_ms: 42,
+        pop_ping_drop_rate: 0.01,
+        downlink_throughput_bps: 120_000_000,
+        uplink_throughput_bps: 20_000_000,
+        obstruction_stats: { fraction_obstructed: 0.005 },
+      }),
+    );
 
     expect(status?.state).toBe('CONNECTED');
     expect(status?.latencyMs).toBe(42);
@@ -37,6 +39,8 @@ describe('Starlink integration', () => {
   });
 
   it('rejects invalid local API targets', () => {
-    expect(() => new StarlinkDishClient({ target: 'not-a-target' })).toThrow('Invalid Starlink gRPC target');
+    expect(() => new StarlinkDishClient({ target: 'not-a-target' })).toThrow(
+      'Invalid Starlink gRPC target',
+    );
   });
 });

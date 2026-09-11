@@ -47,8 +47,7 @@ export interface EndpointRegistryOptions {
   now?: () => Date;
 }
 
-const clamp = (value: number, min = 0, max = 100): number =>
-  Math.min(max, Math.max(min, value));
+const clamp = (value: number, min = 0, max = 100): number => Math.min(max, Math.max(min, value));
 
 const observationScore = (observation: EndpointObservation): number => {
   const availability = observation.available ? 100 : 0;
@@ -193,11 +192,13 @@ export class EndpointRegistry {
       .map((endpoint) => this.clone(endpoint));
   }
 
-  rank(options: {
-    region?: string;
-    protocol?: EndpointProtocol;
-    limit?: number;
-  } = {}): EndpointRecord[] {
+  rank(
+    options: {
+      region?: string;
+      protocol?: EndpointProtocol;
+      limit?: number;
+    } = {},
+  ): EndpointRecord[] {
     const limit = Math.max(1, Math.floor(options.limit ?? 20));
     return this.list(options)
       .filter((endpoint) => endpoint.status !== 'retired')
@@ -230,8 +231,6 @@ export class EndpointRegistry {
 export const scoreEndpoint = (health: EndpointHealth): number =>
   Number(
     clamp(
-      health.reliabilityScore * 0.5 +
-        health.availabilityScore * 0.35 +
-        health.confidence * 0.15,
+      health.reliabilityScore * 0.5 + health.availabilityScore * 0.35 + health.confidence * 0.15,
     ).toFixed(2),
   );

@@ -1,7 +1,17 @@
 {
   "schemaVersion": 3,
   "scope": "full-system",
-  "sourceOfTruth": ["packages", "apps", "clients", ".github/workflows", "scripts", "infra", "ops", "docs/phases", "docs/roadmap/MASTER_ROADMAP_V2.md"],
+  "sourceOfTruth": [
+    "packages",
+    "apps",
+    "clients",
+    ".github/workflows",
+    "scripts",
+    "infra",
+    "ops",
+    "docs/phases",
+    "docs/roadmap/MASTER_ROADMAP_V2.md"
+  ],
   "statuses": ["PASS", "FAIL", "PENDING", "BLOCKED", "NOT_APPLICABLE"],
   "rules": {
     "inventory": "Every executable package, app, client, workflow and operational surface discovered from the repository must have a matrix row.",
@@ -13,11 +23,54 @@
     "noMocksAsProductionEvidence": true,
     "phaseDocumentation": "Phase documentation requirements are derived from docs/phases/README.md canonical records; historical and future unstarted phases are not mechanically required."
   },
-  "requiredClosedLoopStages": ["observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"],
-  "requiredCapabilitySurfaces": [
-    "control-plane", "resilience-runtime", "network-intelligence", "connectivity", "dns", "gateway-registry", "routing", "failover", "tunnel", "database", "api", "daemon", "security", "telemetry", "linux-client", "macos-client", "windows-client", "android-client", "ios-client", "ios-network-extension", "observability", "docker", "kubernetes", "release-engineering", "regional-validation", "backup-restore", "upgrade-rollback", "chaos-soak"
+  "requiredClosedLoopStages": [
+    "observe",
+    "measure",
+    "detect",
+    "diagnose",
+    "decide",
+    "policy",
+    "apply",
+    "verify",
+    "recover",
+    "telemetry"
   ],
-  "assuranceOnlyCapabilitySurfaces": ["kubernetes", "backup-restore", "upgrade-rollback", "chaos-soak"],
+  "requiredCapabilitySurfaces": [
+    "control-plane",
+    "resilience-runtime",
+    "network-intelligence",
+    "connectivity",
+    "dns",
+    "gateway-registry",
+    "routing",
+    "failover",
+    "tunnel",
+    "database",
+    "api",
+    "daemon",
+    "security",
+    "telemetry",
+    "linux-client",
+    "macos-client",
+    "windows-client",
+    "android-client",
+    "ios-client",
+    "ios-network-extension",
+    "observability",
+    "docker",
+    "kubernetes",
+    "release-engineering",
+    "regional-validation",
+    "backup-restore",
+    "upgrade-rollback",
+    "chaos-soak"
+  ],
+  "assuranceOnlyCapabilitySurfaces": [
+    "kubernetes",
+    "backup-restore",
+    "upgrade-rollback",
+    "chaos-soak"
+  ],
   "roadmap": {
     "maxPhase": 150,
     "phaseDocPattern": "docs/phases/phase-{n}.md",
@@ -26,7 +79,18 @@
   },
   "realEnvironmentAdapterRegistry": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
   "realEnvironmentEvidence": {
-    "requiredFields": ["componentId", "commitSha", "artifactSha256", "environment", "observedAt", "entrypoint", "result", "traceId", "failureInjection", "recoveryVerification"],
+    "requiredFields": [
+      "componentId",
+      "commitSha",
+      "artifactSha256",
+      "environment",
+      "observedAt",
+      "entrypoint",
+      "result",
+      "traceId",
+      "failureInjection",
+      "recoveryVerification"
+    ],
     "allowedResult": ["pass", "fail"]
   }
 }

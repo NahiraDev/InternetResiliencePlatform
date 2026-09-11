@@ -40,7 +40,9 @@ export const registerHistoryRoutes = (
     await authz(request, 'runtime.inspect');
     const query = querySchema.parse(request.query);
     const probeTypes = query.probeTypes
-      ? (Array.isArray(query.probeTypes) ? query.probeTypes : [query.probeTypes])
+      ? Array.isArray(query.probeTypes)
+        ? query.probeTypes
+        : [query.probeTypes]
       : undefined;
     const report = await createHistoricalReport(store, {
       from: query.from,
@@ -49,9 +51,7 @@ export const registerHistoryRoutes = (
       ...(query.limit === undefined ? {} : { limit: query.limit }),
     });
     if (query.format === 'csv') {
-      return reply
-        .header('content-type', 'text/csv')
-        .send(exportHistoricalReportCsv(report));
+      return reply.header('content-type', 'text/csv').send(exportHistoricalReportCsv(report));
     }
     return { success: true, data: report };
   });

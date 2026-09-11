@@ -9,9 +9,17 @@ const provider = (statusCode: number): HTTPProvider => ({
 });
 describe('CaptivePortalMetric', () => {
   it('flags redirects as captive-portal signals', async () => {
-    await expect(new CaptivePortalMetric(provider(302), 'http://probe.local').measure(new AbortController().signal)).resolves.toEqual({ captive: true, redirected: true, statusCode: 302 });
+    await expect(
+      new CaptivePortalMetric(provider(302), 'http://probe.local').measure(
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual({ captive: true, redirected: true, statusCode: 302 });
   });
   it('does not flag a normal response', async () => {
-    await expect(new CaptivePortalMetric(provider(204), 'http://probe.local').measure(new AbortController().signal)).resolves.toEqual({ captive: false, redirected: false, statusCode: 204 });
+    await expect(
+      new CaptivePortalMetric(provider(204), 'http://probe.local').measure(
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual({ captive: false, redirected: false, statusCode: 204 });
   });
 });

@@ -40,7 +40,9 @@ export class PluginHost {
     const registrations = this.manager.runtime.registry.list();
     return {
       loaded: registrations.map((entry) => entry.manifest.id),
-      active: registrations.filter((entry) => entry.status === 'active').map((entry) => entry.manifest.id),
+      active: registrations
+        .filter((entry) => entry.status === 'active')
+        .map((entry) => entry.manifest.id),
     };
   }
 }

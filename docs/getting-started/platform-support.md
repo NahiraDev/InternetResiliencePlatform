@@ -4,15 +4,15 @@ IRP is designed as a cross-platform product, but capability availability depends
 
 ## Support model
 
-| Surface | Role | Source of truth |
-| --- | --- | --- |
-| Linux | Full client / runtime | Linux adapter + Core |
-| macOS | Full client / runtime | macOS adapter + Core |
-| Windows | Full client / runtime | Windows adapter + Core |
-| iOS | Full client | iOS adapter + shared API |
-| Android | Full client | Android adapter + shared API |
-| Web | Control center | Versioned product API |
-| Server | Control plane / gateway / probe | Server runtime |
+| Surface | Role                            | Source of truth              |
+| ------- | ------------------------------- | ---------------------------- |
+| Linux   | Full client / runtime           | Linux adapter + Core         |
+| macOS   | Full client / runtime           | macOS adapter + Core         |
+| Windows | Full client / runtime           | Windows adapter + Core       |
+| iOS     | Full client                     | iOS adapter + shared API     |
+| Android | Full client                     | Android adapter + shared API |
+| Web     | Control center                  | Versioned product API        |
+| Server  | Control plane / gateway / probe | Server runtime               |
 
 ## Capability states
 

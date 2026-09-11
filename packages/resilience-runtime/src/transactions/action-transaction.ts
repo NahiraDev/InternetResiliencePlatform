@@ -48,8 +48,7 @@ export class ActionTransactionEngine {
     requestedIdempotencyKey?: string,
   ): Promise<ActionExecution> {
     const idempotencyKey =
-      requestedIdempotencyKey ??
-      String(plan.metadata['idempotencyKey'] ?? plan.selectedAction.id);
+      requestedIdempotencyKey ?? String(plan.metadata['idempotencyKey'] ?? plan.selectedAction.id);
 
     const existing = this.completed.get(idempotencyKey);
     if (existing) {
@@ -130,9 +129,7 @@ export class ActionTransactionEngine {
       const record: ActionTransaction = deepFreeze({
         ...created,
         status:
-          execution.status === 'success' || execution.status === 'skipped'
-            ? 'committed'
-            : 'failed',
+          execution.status === 'success' || execution.status === 'skipped' ? 'committed' : 'failed',
         execution,
       });
       this.completed.set(idempotencyKey, record);

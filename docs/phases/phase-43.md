@@ -19,15 +19,15 @@ Federate independent regional probes so the control plane can compare service ob
 
 ## API
 
-| Method | Route | Purpose | Authorization |
-| --- | --- | --- | --- |
-| POST | `/api/v1/federation/probes` | Register a probe public key | `runtime.admin` |
-| GET | `/api/v1/federation/probes` | List probe health metadata | `runtime.inspect` |
-| POST | `/api/v1/federation/probes/:probeId/revoke` | Revoke a probe identity | `runtime.admin` |
-| POST | `/api/v1/federation/evidence` | Submit signed evidence | Probe signature |
-| GET | `/api/v1/federation/evidence` | Query accepted evidence | `runtime.inspect` |
-| GET | `/api/v1/federation/compare/:destination` | Compare regional observations | `runtime.inspect` |
-| GET | `/api/v1/federation/stats` | Federation counters | `runtime.inspect` |
+| Method | Route                                       | Purpose                       | Authorization     |
+| ------ | ------------------------------------------- | ----------------------------- | ----------------- |
+| POST   | `/api/v1/federation/probes`                 | Register a probe public key   | `runtime.admin`   |
+| GET    | `/api/v1/federation/probes`                 | List probe health metadata    | `runtime.inspect` |
+| POST   | `/api/v1/federation/probes/:probeId/revoke` | Revoke a probe identity       | `runtime.admin`   |
+| POST   | `/api/v1/federation/evidence`               | Submit signed evidence        | Probe signature   |
+| GET    | `/api/v1/federation/evidence`               | Query accepted evidence       | `runtime.inspect` |
+| GET    | `/api/v1/federation/compare/:destination`   | Compare regional observations | `runtime.inspect` |
+| GET    | `/api/v1/federation/stats`                  | Federation counters           | `runtime.inspect` |
 
 ## Probe trust model
 

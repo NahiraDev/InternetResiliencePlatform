@@ -5,8 +5,8 @@ services:
     command: >-
       sh -lc "apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/* && corepack enable && pnpm install --frozen-lockfile && pnpm build && node tools/runtime-lab/server.mjs"
     environment:
-      CI: "true"
-      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      CI: 'true'
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
       PORT: 8080
       METRICS_PORT: 9464
       TEMPO_URL: http://tempo:4318/v1/traces
@@ -14,12 +14,12 @@ services:
     volumes:
       - ../..:/workspace
     ports:
-      - "8080:8080"
-      - "9464:9464"
+      - '8080:8080'
+      - '9464:9464'
     depends_on:
       tempo:
         condition: service_started
-    restart: "no"
+    restart: 'no'
 
   prometheus:
     image: prom/prometheus:v3.5.0
@@ -30,40 +30,40 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
+      - '9090:9090'
     depends_on:
       - lab
-    restart: "no"
+    restart: 'no'
 
   tempo:
     image: grafana/tempo:2.8.2
-    command: ["-config.file=/etc/tempo/tempo.yml"]
+    command: ['-config.file=/etc/tempo/tempo.yml']
     volumes:
       - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo-data:/var/tempo
     ports:
-      - "3200:3200"
-      - "4318:4318"
-    restart: "no"
+      - '3200:3200'
+      - '4318:4318'
+    restart: 'no'
 
   grafana:
     image: grafana/grafana:12.1.1
     environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
-      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_SERVER_ROOT_URL: '%(protocol)s://%(domain)s/grafana/'
+      GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3001:3000"
+      - '3001:3000'
     depends_on:
       - prometheus
       - tempo
-    restart: "no"
+    restart: 'no'
 
   public-gateway:
     image: caddy:2.10-alpine
@@ -71,12 +71,12 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ../..:/workspace:ro
     ports:
-      - "8081:8081"
+      - '8081:8081'
     depends_on:
       - lab
       - grafana
       - prometheus
-    restart: "no"
+    restart: 'no'
 
 volumes:
   grafana-data:

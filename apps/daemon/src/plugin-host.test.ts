@@ -18,9 +18,7 @@ describe('PluginHost', () => {
         'builtin.notification.provider',
       ]),
     );
-    expect(status.active).toEqual(
-      expect.arrayContaining(['builtin.dns.provider']),
-    );
+    expect(status.active).toEqual(expect.arrayContaining(['builtin.dns.provider']));
 
     await host.stop();
     expect(host.isRunning).toBe(false);

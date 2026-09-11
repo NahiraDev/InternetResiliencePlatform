@@ -19,7 +19,10 @@ export const createPrismaClient = (databaseUrl = process.env.DATABASE_URL): Data
   const pool = new Pool({ connectionString: databaseUrl, max: 5 });
   return {
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {
-      const text = strings.reduce((sql, part, index) => `${sql}${part}${index < values.length ? `$${index + 1}` : ''}`, '');
+      const text = strings.reduce(
+        (sql, part, index) => `${sql}${part}${index < values.length ? `$${index + 1}` : ''}`,
+        '',
+      );
       const result = await pool.query(text, values);
       return result.rows;
     },

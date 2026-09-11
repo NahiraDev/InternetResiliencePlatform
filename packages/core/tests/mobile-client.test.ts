@@ -12,7 +12,9 @@ describe('MobileClientCore', () => {
   });
 
   it('rejects unsupported platforms', () => {
-    expect(() => createMobileClientState('windows')).toThrow('Unsupported mobile platform: windows');
+    expect(() => createMobileClientState('windows')).toThrow(
+      'Unsupported mobile platform: windows',
+    );
   });
 
   it('isolates policy state from returned objects', () => {
@@ -62,9 +64,9 @@ describe('MobileClientCore', () => {
   it('preserves state when diagnostics fail', async () => {
     const core = new MobileClientCore('android');
     const before = core.getState();
-    await expect(core.refresh({ snapshot: vi.fn().mockRejectedValue(new Error('adapter unavailable')) })).rejects.toThrow(
-      'adapter unavailable',
-    );
+    await expect(
+      core.refresh({ snapshot: vi.fn().mockRejectedValue(new Error('adapter unavailable')) }),
+    ).rejects.toThrow('adapter unavailable');
     expect(core.getState()).toEqual(before);
   });
 });

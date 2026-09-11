@@ -65,7 +65,10 @@ describe('routing runtime integration guards', () => {
   });
 
   it('fails closed when live routing has no verification provider', async () => {
-    const engine = new RoutingEngine({ kernel: runtimeKernel(), principal: { id: 'operator', capabilities: ['network.route'] } });
+    const engine = new RoutingEngine({
+      kernel: runtimeKernel(),
+      principal: { id: 'operator', capabilities: ['network.route'] },
+    });
     const decision = await engine.decide({
       destination: parseDestination('1.1.1.1'),
       routes: [route('direct', 'direct')],
@@ -77,10 +80,23 @@ describe('routing runtime integration guards', () => {
   it('reports recovery failure when verification prevents route activation', async () => {
     const events = new InMemoryEventBus();
     let failed = false;
-    events.subscribe('routing.recovery.failed', () => { failed = true; });
-    const engine = new RoutingEngine({ kernel: runtimeKernel(), principal: { id: 'operator', capabilities: ['network.route'] }, events });
-    engine.registerProvider({ id: 'rejecting-verifier', discoverRoutes: async () => [], verify: async () => false });
-    const plan = await engine.recover({ destination: parseDestination('9.9.9.9'), routes: [route('direct', 'direct')] });
+    events.subscribe('routing.recovery.failed', () => {
+      failed = true;
+    });
+    const engine = new RoutingEngine({
+      kernel: runtimeKernel(),
+      principal: { id: 'operator', capabilities: ['network.route'] },
+      events,
+    });
+    engine.registerProvider({
+      id: 'rejecting-verifier',
+      discoverRoutes: async () => [],
+      verify: async () => false,
+    });
+    const plan = await engine.recover({
+      destination: parseDestination('9.9.9.9'),
+      routes: [route('direct', 'direct')],
+    });
     expect(plan.verification.status).toBe('failed');
     expect(failed).toBe(true);
   });

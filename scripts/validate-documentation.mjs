@@ -22,7 +22,8 @@ const requiredFiles = [
 ];
 
 for (const file of requiredFiles) {
-  if (!existsSync(join(docsRoot, file))) errors.push(`missing canonical documentation file: docs/${file}`);
+  if (!existsSync(join(docsRoot, file)))
+    errors.push(`missing canonical documentation file: docs/${file}`);
 }
 
 const walkMarkdown = (dir) => {
@@ -62,7 +63,8 @@ for (const file of markdownFiles) {
     if (!cleanTarget || cleanTarget.startsWith('mailto:')) continue;
     const base = join(file, '..');
     const resolved = join(base, cleanTarget);
-    if (!existsSync(resolved)) errors.push(`${relative(root, file)} has broken relative link: ${target}`);
+    if (!existsSync(resolved))
+      errors.push(`${relative(root, file)} has broken relative link: ${target}`);
   }
 }
 
@@ -73,7 +75,8 @@ const requiredIndexLinks = [
   'phases/README.md',
 ];
 for (const link of requiredIndexLinks) {
-  if (!docsIndex.includes(`(${link})`)) warnings.push(`docs/README.md should expose canonical link: ${link}`);
+  if (!docsIndex.includes(`(${link})`))
+    warnings.push(`docs/README.md should expose canonical link: ${link}`);
 }
 
 const phaseMatrix = readFileSync(join(docsRoot, 'audits/phase-history-evidence-matrix.md'), 'utf8');
@@ -81,7 +84,9 @@ if (!phaseMatrix.includes('historical numbering drift')) {
   errors.push('phase-history-evidence-matrix.md must document historical numbering drift');
 }
 if (!phaseMatrix.includes('Until that mapping is complete')) {
-  errors.push('phase-history-evidence-matrix.md must prohibit unverified historical completion claims');
+  errors.push(
+    'phase-history-evidence-matrix.md must prohibit unverified historical completion claims',
+  );
 }
 
 const phasePlan = readFileSync(join(docsRoot, 'architecture/product-roadmap-70-phases.md'), 'utf8');
@@ -90,10 +95,13 @@ for (let phase = 0; phase <= 70; phase += 1) {
   if (!phasePlan.includes(marker)) errors.push(`70-phase plan is missing Phase ${phase}`);
 }
 
-const suspiciousPhaseFiles = markdownFiles.filter((file) => /phases[\\/]phase-\d+\.md$/i.test(file));
+const suspiciousPhaseFiles = markdownFiles.filter((file) =>
+  /phases[\\/]phase-\d+\.md$/i.test(file),
+);
 for (const file of suspiciousPhaseFiles) {
   const content = readFileSync(file, 'utf8');
-  if (!/## (Status|Verification)/.test(content)) warnings.push(`${relative(root, file)} is missing a clear status/verification section`);
+  if (!/## (Status|Verification)/.test(content))
+    warnings.push(`${relative(root, file)} is missing a clear status/verification section`);
 }
 
 if (warnings.length) {
@@ -103,4 +111,6 @@ if (errors.length) {
   for (const error of errors) console.error(`DOC-ERROR: ${error}`);
   process.exit(1);
 }
-console.log(`Documentation validation passed: ${markdownFiles.length} Markdown/MDX files inspected.`);
+console.log(
+  `Documentation validation passed: ${markdownFiles.length} Markdown/MDX files inspected.`,
+);

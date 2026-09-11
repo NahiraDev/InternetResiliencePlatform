@@ -699,8 +699,7 @@ export class RoutingEngine {
     const intent = context.destination.metadata?.routeIntent as DestinationRouteIntent | undefined;
     if (intent === 'vpn-required' && path.type !== 'vpn')
       reject('destination-requires-vpn', `destination requires VPN but path type is ${path.type}`);
-    else if (intent === 'vpn-preferred' && path.type !== 'vpn')
-      c.policyScore -= 20;
+    else if (intent === 'vpn-preferred' && path.type !== 'vpn') c.policyScore -= 20;
     if (!this.config.allowedPathTypes.includes(path.type))
       reject('unknown-path-type', `path type ${path.type} is not enabled`);
     else if (path.route.state === 'disabled') reject('provider-disabled', 'route is disabled');
@@ -750,7 +749,8 @@ export class RoutingEngine {
       if (decision.scoreAdjustment) c.policyScore += decision.scoreAdjustment;
     }
     const o = context.manualOverride;
-    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime()) return { candidate: c, policies };
+    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime())
+      return { candidate: c, policies };
     if (o?.mode === 'deny-path' && o.target === path.id) reject('manual-override', o.reason);
     if (o?.mode === 'require-path' && o.target !== path.id) reject('manual-override', o.reason);
     if (o?.mode === 'prefer-path' && o.target === path.id) c.policyScore += 25;
@@ -814,8 +814,11 @@ export class RoutingEngine {
         priority: 'high',
         persist: true,
       });
-      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((plan: RoutePlan) => Promise<boolean>)[];
-      if (!verifiers.length) throw new Error('Live route application requires at least one verification provider');
+      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((
+        plan: RoutePlan,
+      ) => Promise<boolean>)[];
+      if (!verifiers.length)
+        throw new Error('Live route application requires at least one verification provider');
       let verified = true;
       for (const verify of verifiers) verified = (await verify(plan)) && verified;
       if (!verified) {
@@ -857,7 +860,9 @@ export class RoutingEngine {
   }
   private isFlapping(now: number): boolean {
     const recent = this.history.filter((h) => now - h.at <= this.config.flappingWindowMs);
-    return recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2;
+    return (
+      recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2
+    );
   }
   private async emit(type: string, payload: unknown): Promise<void> {
     const event: DomainEvent = {
@@ -880,7 +885,9 @@ function inferFamily(ip: string): Exclude<AddressFamily, 'dual'> {
   return ip.includes(':') ? 'ipv6' : 'ipv4';
 }
 function isIp(value: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'));
+  return (
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'))
+  );
 }
 function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint {
   if (family === 'ipv4') return ip.split('.').reduce((a, p) => (a << 8n) + BigInt(Number(p)), 0n);
@@ -889,7 +896,12 @@ function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint 
     .split(':')
     .reduce((a, p) => (a << 16n) + BigInt(Number.parseInt(p || '0', 16)), 0n);
 }
-function cidrContains(cidrIp: string, prefix: number, ip: string, family: Exclude<AddressFamily, 'dual'>): boolean {
+function cidrContains(
+  cidrIp: string,
+  prefix: number,
+  ip: string,
+  family: Exclude<AddressFamily, 'dual'>,
+): boolean {
   if (prefix === 0) return true;
   const bits = BigInt(family === 'ipv4' ? 32 : 128);
   const shift = bits - BigInt(prefix);

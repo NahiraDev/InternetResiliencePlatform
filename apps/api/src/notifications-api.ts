@@ -1,5 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { NotFoundAppError, ForbiddenAppError, UnauthorizedAppError, ValidationAppError } from '@irp/core';
+import {
+  NotFoundAppError,
+  ForbiddenAppError,
+  UnauthorizedAppError,
+  ValidationAppError,
+} from '@irp/core';
 import { createPrismaClient } from '@irp/database';
 import {
   NotificationIncidentCenter,
@@ -86,7 +91,9 @@ export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
     await requirePermission(request, 'runtime.admin');
     const parsed = runtimeIncidentInputSchema.safeParse(request.body);
     if (!parsed.success) {
-      throw new ValidationAppError('Invalid incident event payload.', { issues: parsed.error.issues });
+      throw new ValidationAppError('Invalid incident event payload.', {
+        issues: parsed.error.issues,
+      });
     }
     const incident = await center.open(parsed.data);
     return { success: true, data: incident };

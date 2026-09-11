@@ -1,12 +1,5 @@
-import {
-  ConnectivityManager,
-  type ConnectivitySource,
-} from '@irp/connectivity';
-import {
-  RoutingEngine,
-  parseDestination,
-  type RoutingDestination,
-} from '@irp/routing';
+import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
+import { RoutingEngine, parseDestination, type RoutingDestination } from '@irp/routing';
 import type {
   ActionExecution,
   ActionPlan,
@@ -323,9 +316,9 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         if (!dns) return createAdapterVerification(plan, context, 'failed');
         const activeId = dns.getActiveProviderId?.() ?? dns.engine.status().activeProviderId;
         if (!activeId) return createAdapterVerification(plan, context, 'failed');
-        const active = dns.engine.status().providers.find(
-          (item) => item.provider.id === activeId,
-        )?.provider;
+        const active = dns.engine
+          .status()
+          .providers.find((item) => item.provider.id === activeId)?.provider;
         if (!active) return createAdapterVerification(plan, context, 'failed');
         const health = await active.health();
         const healthy =
@@ -340,9 +333,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         if (!this.controlPlane.tunnel?.configured)
           return createAdapterVerification(plan, context, 'failed');
         const tunnelId =
-          typeof execution.metadata.tunnelId === 'string'
-            ? execution.metadata.tunnelId
-            : undefined;
+          typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
         if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
         return createAdapterVerification(
           plan,
@@ -380,9 +371,9 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       if (!dns) return createAdapterExecution(plan, context, false, 'failed');
       const previousProviderId = this.previousDnsProviders.get(plan.selectedAction.id);
       if (!previousProviderId) return createAdapterExecution(plan, context, false, 'failed');
-      const provider = dns.engine.status().providers.find(
-        (item) => item.provider.id === previousProviderId,
-      )?.provider;
+      const provider = dns.engine
+        .status()
+        .providers.find((item) => item.provider.id === previousProviderId)?.provider;
       if (!provider) return createAdapterExecution(plan, context, false, 'failed');
       try {
         await dns.applyProvider(provider);

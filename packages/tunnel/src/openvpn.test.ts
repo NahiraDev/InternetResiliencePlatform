@@ -1,31 +1,62 @@
 import { writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
-import { OpenVPNProvider, type OpenVPNCommandRunner, type OpenVPNCredentialStore } from './openvpn.js';
+import {
+  OpenVPNProvider,
+  type OpenVPNCommandRunner,
+  type OpenVPNCredentialStore,
+} from './openvpn.js';
 import type { TunnelConfiguration } from './index.js';
 
 const CLIENT_CONFIG = `client\ndev tun\nproto udp\nremote vpn.example.test 1194\nverb 3\n`;
 
 function config(): TunnelConfiguration {
   return {
-    endpoint: { host: '198.51.100.20', port: 1194, protocol: 'openvpn', addressFamily: 'ipv4', metadata: {} },
-    routingMode: 'fullTunnel', scope: 'system', dnsMode: 'insideTunnel',
-    authentication: { type: 'certificate', credentialRef: 'cred:openvpn' }, credentialRef: 'cred:openvpn',
-    securityProfile: 'strict', capabilities: ['ipv4', 'udp', 'tcp', 'fullTunnel', 'systemWide', 'authentication', 'keepalive', 'reconnect', 'healthCheck'],
-    keepalive: { enabled: true, intervalMs: 25_000, timeoutMs: 5_000 }, mtu: { validationStatus: 'valid' }, timeoutMs: 30_000, retryLimit: 2,
+    endpoint: {
+      host: '198.51.100.20',
+      port: 1194,
+      protocol: 'openvpn',
+      addressFamily: 'ipv4',
+      metadata: {},
+    },
+    routingMode: 'fullTunnel',
+    scope: 'system',
+    dnsMode: 'insideTunnel',
+    authentication: { type: 'certificate', credentialRef: 'cred:openvpn' },
+    credentialRef: 'cred:openvpn',
+    securityProfile: 'strict',
+    capabilities: [
+      'ipv4',
+      'udp',
+      'tcp',
+      'fullTunnel',
+      'systemWide',
+      'authentication',
+      'keepalive',
+      'reconnect',
+      'healthCheck',
+    ],
+    keepalive: { enabled: true, intervalMs: 25_000, timeoutMs: 5_000 },
+    mtu: { validationStatus: 'valid' },
+    timeoutMs: 30_000,
+    retryLimit: 2,
   };
 }
 
 class FakeRunner implements OpenVPNCommandRunner {
   readonly calls: Array<{ command: string; args: string[] }> = [];
   private readonly responses: Array<{ stdout: string; stderr: string; exitCode: number }> = [];
-  queue(response: { stdout: string; stderr: string; exitCode: number }): void { this.responses.push(response); }
+  queue(response: { stdout: string; stderr: string; exitCode: number }): void {
+    this.responses.push(response);
+  }
   async run(command: string, args: string[]) {
     this.calls.push({ command, args: [...args] });
     return this.responses.shift() ?? { stdout: '', stderr: '', exitCode: 0 };
   }
 }
 
-const credentialStore: OpenVPNCredentialStore = { getClientConfig: vi.fn(async () => CLIENT_CONFIG) };
+const credentialStore: OpenVPNCredentialStore = {
+  getClientConfig: vi.fn(async () => CLIENT_CONFIG),
+};
 
 describe('OpenVPNProvider', () => {
   it('creates a configured tunnel without persisting the client profile', async () => {
@@ -38,7 +69,9 @@ describe('OpenVPNProvider', () => {
 
   it('rejects unauthenticated OpenVPN configuration', async () => {
     const provider = new OpenVPNProvider({ credentialStore });
-    const error = await provider.create({ ...config(), authentication: { type: 'none' } }).catch((value: unknown) => value);
+    const error = await provider
+      .create({ ...config(), authentication: { type: 'none' } })
+      .catch((value: unknown) => value);
 
     expect(error).toMatchObject({
       code: 'TunnelAuthenticationFailed',
@@ -54,7 +87,11 @@ describe('OpenVPNProvider', () => {
   });
 
   it('rejects executable script hooks in credential-managed profiles', async () => {
-    const provider = new OpenVPNProvider({ credentialStore: { getClientConfig: vi.fn(async () => `${CLIENT_CONFIG}\nup /tmp/unsafe-hook`) } });
+    const provider = new OpenVPNProvider({
+      credentialStore: {
+        getClientConfig: vi.fn(async () => `${CLIENT_CONFIG}\nup /tmp/unsafe-hook`),
+      },
+    });
     const tunnel = await provider.create(config());
     await expect(provider.connect(tunnel)).rejects.toThrow(/script hooks/);
   });
@@ -71,7 +108,8 @@ describe('OpenVPNProvider', () => {
   });
 
   it('sanitizes certificate material from dependency failures', async () => {
-    const certificate = '-----BEGIN CERTIFICATE-----\nSECRET-CERTIFICATE\n-----END CERTIFICATE-----';
+    const certificate =
+      '-----BEGIN CERTIFICATE-----\nSECRET-CERTIFICATE\n-----END CERTIFICATE-----';
     const runner = new FakeRunner();
     runner.queue({ stdout: '', stderr: certificate, exitCode: 1 });
     const provider = new OpenVPNProvider({ commandRunner: runner, credentialStore });
@@ -112,7 +150,11 @@ describe('OpenVPNProvider', () => {
   });
 
   it('exposes bounded provider capabilities', () => {
-    const provider = new OpenVPNProvider({ credentialStore, commandTimeoutMs: 30_000, startupTimeoutMs: 15_000 });
+    const provider = new OpenVPNProvider({
+      credentialStore,
+      commandTimeoutMs: 30_000,
+      startupTimeoutMs: 15_000,
+    });
     expect(provider.protocol).toBe('openvpn');
     expect(provider.supportedScopes).toEqual(['system']);
     expect(provider.supportedRoutingModes).toEqual(['fullTunnel', 'splitTunnel']);

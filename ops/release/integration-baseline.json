@@ -54,7 +54,16 @@
     }
   },
   "requiredClosedLoopStages": [
-    "observe", "measure", "detect", "diagnose", "decide", "policy", "apply", "verify", "recover", "telemetry"
+    "observe",
+    "measure",
+    "detect",
+    "diagnose",
+    "decide",
+    "policy",
+    "apply",
+    "verify",
+    "recover",
+    "telemetry"
   ],
   "realEnvironmentGate": {
     "source": "ops/release/real-environment/ASSURANCE_REGISTRY.json",

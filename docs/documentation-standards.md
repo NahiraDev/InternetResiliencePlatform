@@ -6,17 +6,17 @@ IRP documentation is product infrastructure. It must be accurate, discoverable, 
 
 Use the smallest useful document type:
 
-| Type | Purpose |
-| --- | --- |
-| Quickstart | Get a new user from zero to first successful run |
-| Concept | Explain what something is and why it exists |
-| Architecture | Explain structure, boundaries, data/control flow, and failure behavior |
-| How-to | Complete a specific task |
-| Reference | Look up exact contracts, configuration, commands, or schemas |
-| Troubleshooting | Diagnose and resolve a known class of failure |
-| Operations | Deploy, monitor, recover, and maintain the system |
-| ADR | Record a durable architectural decision |
-| History | Preserve implementation history without defining current behavior |
+| Type            | Purpose                                                                |
+| --------------- | ---------------------------------------------------------------------- |
+| Quickstart      | Get a new user from zero to first successful run                       |
+| Concept         | Explain what something is and why it exists                            |
+| Architecture    | Explain structure, boundaries, data/control flow, and failure behavior |
+| How-to          | Complete a specific task                                               |
+| Reference       | Look up exact contracts, configuration, commands, or schemas           |
+| Troubleshooting | Diagnose and resolve a known class of failure                          |
+| Operations      | Deploy, monitor, recover, and maintain the system                      |
+| ADR             | Record a durable architectural decision                                |
+| History         | Preserve implementation history without defining current behavior      |
 
 ## Canonical-source rule
 

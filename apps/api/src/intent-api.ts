@@ -14,34 +14,48 @@ import {
 
 const timestamp = z.string().datetime({ offset: true });
 const primitive = z.union([z.string(), z.number().finite(), z.boolean()]);
-const specSchema = z.object({
-  outcome: z.string().trim().min(1).max(2000),
-  constraints: z.record(z.string(), primitive).optional(),
-  target: z.record(z.string(), z.string().max(512)).optional(),
-}).strict();
+const specSchema = z
+  .object({
+    outcome: z.string().trim().min(1).max(2000),
+    constraints: z.record(z.string(), primitive).optional(),
+    target: z.record(z.string(), z.string().max(512)).optional(),
+  })
+  .strict();
 
-const createSchema = z.object({
-  id: z.string().trim().min(1).max(128),
-  priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
-  spec: specSchema,
-  effectiveFrom: timestamp.optional(),
-  expiresAt: timestamp.optional(),
-  metadata: z.record(z.string(), z.string().max(512)).optional(),
-}).strict();
+const createSchema = z
+  .object({
+    id: z.string().trim().min(1).max(128),
+    priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
+    spec: specSchema,
+    effectiveFrom: timestamp.optional(),
+    expiresAt: timestamp.optional(),
+    metadata: z.record(z.string(), z.string().max(512)).optional(),
+  })
+  .strict();
 
 const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('activate'), at: timestamp.optional() }).strict(),
   z.object({ type: z.literal('complete'), at: timestamp.optional() }).strict(),
-  z.object({ type: z.literal('supersede'), at: timestamp.optional(), replacementId: z.string().trim().min(1).max(128) }).strict(),
+  z
+    .object({
+      type: z.literal('supersede'),
+      at: timestamp.optional(),
+      replacementId: z.string().trim().min(1).max(128),
+    })
+    .strict(),
   z.object({ type: z.literal('cancel'), at: timestamp.optional() }).strict(),
   z.object({ type: z.literal('expire'), at: timestamp.optional() }).strict(),
 ]);
 
 const idParams = z.object({ id: z.string().trim().min(1).max(128) }).strict();
-const listQuery = z.object({
-  status: z.enum(['draft', 'active', 'completed', 'superseded', 'cancelled', 'expired']).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
-}).strict();
+const listQuery = z
+  .object({
+    status: z
+      .enum(['draft', 'active', 'completed', 'superseded', 'cancelled', 'expired'])
+      .optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict();
 
 export interface IntentApiStore {
   get(id: string): NetworkIntent | undefined;
@@ -51,19 +65,31 @@ export interface IntentApiStore {
 
 export class InMemoryIntentStore implements IntentApiStore {
   private readonly intents = new Map<string, NetworkIntent>();
-  get(id: string): NetworkIntent | undefined { return this.intents.get(id); }
-  list(status?: NetworkIntent['status']): readonly NetworkIntent[] {
-    return [...this.intents.values()].filter((intent) => status === undefined || intent.status === status);
+  get(id: string): NetworkIntent | undefined {
+    return this.intents.get(id);
   }
-  put(intent: NetworkIntent): void { this.intents.set(intent.id, intent); }
+  list(status?: NetworkIntent['status']): readonly NetworkIntent[] {
+    return [...this.intents.values()].filter(
+      (intent) => status === undefined || intent.status === status,
+    );
+  }
+  put(intent: NetworkIntent): void {
+    this.intents.set(intent.id, intent);
+  }
 }
 
 export interface IntentApiOptions {
   store?: IntentApiStore;
-  requirePermission?: (request: FastifyRequest, permission: 'runtime.inspect' | 'runtime.execute') => Promise<unknown>;
+  requirePermission?: (
+    request: FastifyRequest,
+    permission: 'runtime.inspect' | 'runtime.execute',
+  ) => Promise<unknown>;
 }
 
-const defaultAuthorization = async (request: FastifyRequest, permission: 'runtime.inspect' | 'runtime.execute') => {
+const defaultAuthorization = async (
+  request: FastifyRequest,
+  permission: 'runtime.inspect' | 'runtime.execute',
+) => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
   if (!principal) throw new UnauthorizedAppError();
   const allowed = await request.rbac.authorize({
@@ -80,7 +106,8 @@ const idempotencyKey = (request: FastifyRequest): string => {
   const raw = request.headers['idempotency-key'];
   const value = Array.isArray(raw) ? raw[0] : raw;
   if (!value?.trim()) throw new ValidationAppError('Idempotency-Key header is required');
-  if (value.length > 128) throw new ValidationAppError('Idempotency-Key must be at most 128 characters');
+  if (value.length > 128)
+    throw new ValidationAppError('Idempotency-Key must be at most 128 characters');
   return value.trim();
 };
 
@@ -97,9 +124,19 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const previous = requests.get(key);
     if (previous) {
       if (previous.fingerprint !== fingerprint) {
-        return reply.code(409).send({ success: false, error: { code: 'IDEMPOTENCY_KEY_REUSE', message: 'Idempotency-Key was already used with a different request.' } });
+        return reply
+          .code(409)
+          .send({
+            success: false,
+            error: {
+              code: 'IDEMPOTENCY_KEY_REUSE',
+              message: 'Idempotency-Key was already used with a different request.',
+            },
+          });
       }
-      return reply.code(200).send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
+      return reply
+        .code(200)
+        .send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
     }
 
     const intentInput = {
@@ -147,7 +184,9 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       store.put(updated);
       return { success: true, data: updated };
     } catch (error) {
-      throw new ConflictAppError(error instanceof Error ? error.message : 'Invalid intent transition');
+      throw new ConflictAppError(
+        error instanceof Error ? error.message : 'Invalid intent transition',
+      );
     }
   });
 

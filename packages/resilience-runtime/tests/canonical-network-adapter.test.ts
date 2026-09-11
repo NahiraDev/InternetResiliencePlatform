@@ -53,7 +53,8 @@ class FakeConnectivityProvider implements ConnectivityProvider {
     return resourceId === this.active ? ('active' as const) : ('available' as const);
   }
   async getHealth(resourceId?: string): Promise<ConnectivityHealth> {
-    const item = this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
+    const item =
+      this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
     return item.health!;
   }
   async connect(resourceId: string) {
@@ -164,10 +165,17 @@ describe('CanonicalNetworkRuntimeAdapter', () => {
     const connectivity = new ConnectivityManager();
     const provider = new FakeConnectivityProvider();
     await connectivity.registerProvider(provider);
-    const adapter = new CanonicalNetworkRuntimeAdapter({ connectivity, routing: new RoutingEngine() });
+    const adapter = new CanonicalNetworkRuntimeAdapter({
+      connectivity,
+      routing: new RoutingEngine(),
+    });
 
     const execution = await adapter.execute(actionPlan('connectivity_failover'), context('live'));
-    const verification = await adapter.verify(actionPlan('connectivity_failover'), execution, context('live'));
+    const verification = await adapter.verify(
+      actionPlan('connectivity_failover'),
+      execution,
+      context('live'),
+    );
 
     expect(execution.status).toBe('success');
     expect(verification.status).toBe('success');
@@ -180,7 +188,10 @@ describe('CanonicalNetworkRuntimeAdapter', () => {
     await connectivity.registerProvider(provider);
     await connectivity.discoverResources();
     await connectivity.activateSource('fake:eth0');
-    const adapter = new CanonicalNetworkRuntimeAdapter({ connectivity, routing: new RoutingEngine() });
+    const adapter = new CanonicalNetworkRuntimeAdapter({
+      connectivity,
+      routing: new RoutingEngine(),
+    });
 
     const execution = await adapter.execute(actionPlan('connectivity_failover'), context('safe'));
 

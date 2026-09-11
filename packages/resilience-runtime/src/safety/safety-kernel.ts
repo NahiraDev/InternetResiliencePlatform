@@ -48,7 +48,9 @@ export class SafetyRollbackRecoveryKernel {
 
   constructor(
     private readonly transactions: ActionTransactionEngine,
-    private readonly events: { emit(event: string, payload: Readonly<Record<string, unknown>>): Promise<void> },
+    private readonly events: {
+      emit(event: string, payload: Readonly<Record<string, unknown>>): Promise<void>;
+    },
     private readonly recovery: RecoveryProvider,
     options: SafetyKernelOptions = {},
   ) {
@@ -95,7 +97,12 @@ export class SafetyRollbackRecoveryKernel {
       reasons.push(`blast radius ${blastRadius} exceeds limit ${this.maxBlastRadius}`);
     }
 
-    if (mutating && action.requiredCapabilities.some((cap) => !context.capabilitySnapshot.capabilities.includes(cap))) {
+    if (
+      mutating &&
+      action.requiredCapabilities.some(
+        (cap) => !context.capabilitySnapshot.capabilities.includes(cap),
+      )
+    ) {
       reasons.push('required capability is not present in the trusted capability snapshot');
     }
 
@@ -114,7 +121,11 @@ export class SafetyRollbackRecoveryKernel {
       blastRadius: assessment.blastRadius,
     };
 
-    await this.events.emit('runtime.safety.assessed', { ...base, allowed: assessment.allowed, reasons: assessment.reasons });
+    await this.events.emit('runtime.safety.assessed', {
+      ...base,
+      allowed: assessment.allowed,
+      reasons: assessment.reasons,
+    });
     if (!assessment.allowed) {
       await this.events.emit('runtime.safety.blocked', { ...base, reasons: assessment.reasons });
       throw new SafetyViolationError(assessment);
@@ -130,7 +141,8 @@ export class SafetyRollbackRecoveryKernel {
     }
 
     const execution = await this.transactions.execute(plan, context, requestedIdempotencyKey);
-    const rollbackEligible = execution.status === 'failed' && checkpoint !== undefined && this.rollback !== undefined;
+    const rollbackEligible =
+      execution.status === 'failed' && checkpoint !== undefined && this.rollback !== undefined;
 
     if (!rollbackEligible) {
       await this.events.emit('runtime.safety.completed', {
@@ -138,17 +150,25 @@ export class SafetyRollbackRecoveryKernel {
         executionStatus: execution.status,
         rollbackAttempted: false,
       });
-      return deepFreeze({ execution, checkpointCreated: checkpoint !== undefined, rollbackAttempted: false });
+      return deepFreeze({
+        execution,
+        checkpointCreated: checkpoint !== undefined,
+        rollbackAttempted: false,
+      });
     }
 
     await this.events.emit('runtime.safety.rollback.started', { ...base });
     try {
       const rollbackExecution = await this.rollback!(plan, context, checkpoint);
-      const success = rollbackExecution.status === 'success' || rollbackExecution.status === 'skipped';
-      await this.events.emit(success ? 'runtime.safety.rollback.completed' : 'runtime.safety.rollback.failed', {
-        ...base,
-        rollbackStatus: rollbackExecution.status,
-      });
+      const success =
+        rollbackExecution.status === 'success' || rollbackExecution.status === 'skipped';
+      await this.events.emit(
+        success ? 'runtime.safety.rollback.completed' : 'runtime.safety.rollback.failed',
+        {
+          ...base,
+          rollbackStatus: rollbackExecution.status,
+        },
+      );
       return deepFreeze({
         execution,
         checkpointCreated: true,
@@ -164,11 +184,7 @@ export class SafetyRollbackRecoveryKernel {
     }
   }
 
-  async recover(
-    plan: ActionPlan,
-    reason: string,
-    context: RuntimeContext,
-  ): Promise<RecoveryPlan> {
+  async recover(plan: ActionPlan, reason: string, context: RuntimeContext): Promise<RecoveryPlan> {
     await this.events.emit('runtime.safety.recovery.started', {
       correlationId: context.correlationId,
       actionId: plan.selectedAction.id,

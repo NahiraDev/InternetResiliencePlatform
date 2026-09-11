@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { InMemoryHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { registerHistoryRoutes } from './history-api.js';
 
-const createTestApp = (options: {
-  principal?: { id: string; roles: string[]; scopes: string[] } | null;
-  authorize?: (permission: string) => Promise<boolean>;
-  store?: InMemoryHistoricalMeasurementStore;
-} = {}): FastifyInstance => {
+const createTestApp = (
+  options: {
+    principal?: { id: string; roles: string[]; scopes: string[] } | null;
+    authorize?: (permission: string) => Promise<boolean>;
+    store?: InMemoryHistoricalMeasurementStore;
+  } = {},
+): FastifyInstance => {
   const app = Fastify({ logger: false });
   app.decorateRequest('jwtAuth', undefined as never);
   app.decorateRequest('rbac', undefined as never);
@@ -67,7 +69,10 @@ describe('History API', () => {
       success: false,
       packetLossPercent: 12,
     });
-    const app = createTestApp({ principal: { id: 'user-1', roles: ['operator'], scopes: [] }, store });
+    const app = createTestApp({
+      principal: { id: 'user-1', roles: ['operator'], scopes: [] },
+      store,
+    });
 
     const response = await app.inject({
       method: 'GET',
@@ -90,7 +95,10 @@ describe('History API', () => {
       success: true,
       latencyMs: 42,
     });
-    const app = createTestApp({ principal: { id: 'user-1', roles: ['operator'], scopes: [] }, store });
+    const app = createTestApp({
+      principal: { id: 'user-1', roles: ['operator'], scopes: [] },
+      store,
+    });
 
     const response = await app.inject({
       method: 'GET',

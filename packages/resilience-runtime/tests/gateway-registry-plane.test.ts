@@ -7,7 +7,12 @@ import {
 } from '@irp/connectivity';
 import { GatewayRegistrySelectionPlane } from '../src/gateway/gateway-registry-plane.js';
 
-const resource = (id: string, providerId: string, score: number, status: ConnectivityHealth['status']): ConnectivityResource => ({
+const resource = (
+  id: string,
+  providerId: string,
+  score: number,
+  status: ConnectivityHealth['status'],
+): ConnectivityResource => ({
   providerId,
   id,
   type: id.startsWith('wifi') ? 'wifi' : 'ethernet',
@@ -55,7 +60,8 @@ class FakeConnectivityProvider implements ConnectivityProvider {
     return resourceId === this.active ? ('active' as const) : ('available' as const);
   }
   async getHealth(resourceId?: string): Promise<ConnectivityHealth> {
-    const item = this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
+    const item =
+      this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
     return item.health!;
   }
   async connect(resourceId: string) {

@@ -12,9 +12,14 @@ function startProcess(cmd, args = [], env = {}) {
     env: { ...process.env, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  let stdout = '', stderr = '';
-  child.stdout.on('data', (d) => { stdout += d; });
-  child.stderr.on('data', (d) => { stderr += d; });
+  let stdout = '',
+    stderr = '';
+  child.stdout.on('data', (d) => {
+    stdout += d;
+  });
+  child.stderr.on('data', (d) => {
+    stderr += d;
+  });
   return { child, getOutput: () => ({ stdout: stdout.trim(), stderr: stderr.trim() }) };
 }
 
@@ -61,32 +66,46 @@ async function run() {
       console.error('API ready check failed:', ready.error);
       console.error('API stdout:', api.getOutput().stdout);
       console.error('API stderr:', api.getOutput().stderr);
-      process.exitCode = 2; return;
+      process.exitCode = 2;
+      return;
     }
 
     console.log('/ready OK, validating /api/v1/platform/status');
     const ps = await waitForHttp(`${base}/api/v1/platform/status`);
     if (!ps.ok) throw new Error(`platform/status failed: ${ps.error}`);
     let statusBody;
-    try { statusBody = JSON.parse(ps.body); } catch (e) { throw new Error('platform/status returned non-JSON'); }
+    try {
+      statusBody = JSON.parse(ps.body);
+    } catch (e) {
+      throw new Error('platform/status returned non-JSON');
+    }
     if (statusBody?.success !== true || statusBody?.data?.dependencies?.database !== 'healthy') {
-      throw new Error(`database dependency not healthy: ${JSON.stringify(statusBody?.data?.dependencies)}`);
+      throw new Error(
+        `database dependency not healthy: ${JSON.stringify(statusBody?.data?.dependencies)}`,
+      );
     }
 
     console.log('Checking /api/v1/version');
     const v = await waitForHttp(`${base}/api/v1/version`);
     if (!v.ok) throw new Error(`version probe failed: ${v.error}`);
     const parsed = JSON.parse(v.body);
-    if (parsed?.success !== true || !parsed?.data?.version) throw new Error('version response contract failed');
+    if (parsed?.success !== true || !parsed?.data?.version)
+      throw new Error('version response contract failed');
 
     console.log('Checking /api/v1/metrics (Prometheus)');
     const m = await waitForHttp(`${base}/api/v1/metrics`);
     if (!m.ok) throw new Error(`metrics probe failed: ${m.error}`);
     const metricsText = m.body ?? '';
-    const expected = ['irp_http_requests_total', 'irp_http_request_duration_seconds', 'irp_http_active_requests'];
+    const expected = [
+      'irp_http_requests_total',
+      'irp_http_request_duration_seconds',
+      'irp_http_active_requests',
+    ];
     if (!metricsHasAny(metricsText, expected)) {
       const snippet = metricsText.slice(0, 4000);
-      throw new Error(`metrics contract failed: expected one of ${expected.join(', ')}; got snippet: ${JSON.stringify(snippet)}`);
+      throw new Error(
+        `metrics contract failed: expected one of ${expected.join(', ')}; got snippet: ${JSON.stringify(snippet)}`,
+      );
     }
 
     console.log('End-to-end smoke: SUCCESS', `took ${Date.now() - started}ms`);
@@ -97,7 +116,9 @@ async function run() {
     console.error('API stderr:', api.getOutput().stderr);
     process.exitCode = 1;
   } finally {
-    try { api.child.kill('SIGTERM'); } catch {}
+    try {
+      api.child.kill('SIGTERM');
+    } catch {}
     await new Promise((r) => api.child.once('close', r));
   }
 }

@@ -69,18 +69,33 @@ for (const item of workspace.values()) {
       transport: 'node module import/link',
       status: 'CONNECTED_BUT_UNVERIFIED',
       failureBehavior: 'dependency/build/runtime failure must fail the invoking surface',
-      verification: 'deterministic build plus runtime integration; real runtime evidence required for VERIFIED',
+      verification:
+        'deterministic build plus runtime integration; real runtime evidence required for VERIFIED',
     });
   }
 }
 
-const stages = ['observe', 'measure', 'detect', 'diagnose', 'decide', 'policy', 'apply', 'verify', 'recover', 'telemetry'];
+const stages = [
+  'observe',
+  'measure',
+  'detect',
+  'diagnose',
+  'decide',
+  'policy',
+  'apply',
+  'verify',
+  'recover',
+  'telemetry',
+];
 const failureMatrix = [
   ['dependency unavailable', 'consumer fails closed; no mutation without a valid dependency'],
   ['measurement degraded', 'decision remains policy-constrained and must not claim healthy state'],
   ['apply failure', 'verification must fail and recovery/failover must be attempted'],
   ['verification failure', 'rollback/recovery path must execute and emit evidence'],
-  ['telemetry unavailable', 'operation may continue only according to explicit local safety policy; certification remains blocked'],
+  [
+    'telemetry unavailable',
+    'operation may continue only according to explicit local safety policy; certification remains blocked',
+  ],
 ];
 
 const report = {
@@ -123,13 +138,17 @@ const markdown = [
   '',
   '| Component | Executable | Deterministic status | Real environment |',
   '|---|---:|---|---|',
-  ...nodes.map((n) => `| ${n.id} | ${n.executable ? 'yes' : 'no'} | ${n.status} | ${n.realEnvironment} |`),
+  ...nodes.map(
+    (n) => `| ${n.id} | ${n.executable ? 'yes' : 'no'} | ${n.status} | ${n.realEnvironment} |`,
+  ),
   '',
   '## Integration edges',
   '',
   '| Source | Target | Contract | Transport | Status |',
   '|---|---|---|---|---|',
-  ...edges.map((e) => `| ${e.source} | ${e.target} | ${e.contract} | ${e.transport} | ${e.status} |`),
+  ...edges.map(
+    (e) => `| ${e.source} | ${e.target} | ${e.contract} | ${e.transport} | ${e.status} |`,
+  ),
   '',
   '## Closed loop',
   '',
@@ -152,5 +171,7 @@ await writeFile(join(outDir, 'integration-matrix.md'), markdown);
 
 console.log(`Integration graph: ${nodes.length} components, ${edges.length} workspace edges`);
 console.log(`Closed-loop stages: ${stages.length}`);
-console.log(`Real-environment capabilities: ${report.realEnvironment.length} (all fail-closed until evidence)`);
+console.log(
+  `Real-environment capabilities: ${report.realEnvironment.length} (all fail-closed until evidence)`,
+);
 console.log(`Wrote ${relative(root, outDir)}/integration-graph.json and integration-matrix.md`);

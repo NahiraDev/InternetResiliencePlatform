@@ -40,7 +40,10 @@ const health = (
 
 describe('MultiGatewayFailover', () => {
   it('fails over to the highest-ranked healthy candidate and verifies the switch', async () => {
-    const switchGateway = vi.fn(async (_candidate: GatewaySelectionCandidate, _reason: string) => ({ healthy: true, reason: 'post-switch probe passed' }));
+    const switchGateway = vi.fn(async (_candidate: GatewaySelectionCandidate, _reason: string) => ({
+      healthy: true,
+      reason: 'post-switch probe passed',
+    }));
     const failover = new MultiGatewayFailover({ switchGateway });
 
     const result = await failover.failover({
@@ -66,10 +69,14 @@ describe('MultiGatewayFailover', () => {
   });
 
   it('skips failed candidates, quarantines them, and succeeds on the next verified gateway', async () => {
-    const switchGateway = vi.fn()
+    const switchGateway = vi
+      .fn()
       .mockResolvedValueOnce({ healthy: false, reason: 'verification timeout' })
       .mockResolvedValueOnce({ healthy: true, reason: 'post-switch probe passed' });
-    const failover = new MultiGatewayFailover({ switchGateway }, undefined, { quarantineMs: 60_000, maxFailovers: 3 });
+    const failover = new MultiGatewayFailover({ switchGateway }, undefined, {
+      quarantineMs: 60_000,
+      maxFailovers: 3,
+    });
 
     const result = await failover.failover({
       currentGatewayId: 'gw-a',
@@ -110,7 +117,9 @@ describe('MultiGatewayFailover', () => {
   });
 
   it('exhausts deterministically when every eligible candidate fails', async () => {
-    const switchGateway = vi.fn(async () => { throw new Error('switch failed'); });
+    const switchGateway = vi.fn(async () => {
+      throw new Error('switch failed');
+    });
     const failover = new MultiGatewayFailover({ switchGateway }, undefined, { maxFailovers: 2 });
 
     const result = await failover.failover({
@@ -132,9 +141,12 @@ describe('MultiGatewayFailover', () => {
 
   it('rejects concurrent operations on the same failover engine', async () => {
     let release!: () => void;
-    const switchGateway = vi.fn((_candidate: GatewaySelectionCandidate, _reason: string) => new Promise<{ healthy: boolean }>((resolve) => {
-      release = () => resolve({ healthy: true });
-    }));
+    const switchGateway = vi.fn(
+      (_candidate: GatewaySelectionCandidate, _reason: string) =>
+        new Promise<{ healthy: boolean }>((resolve) => {
+          release = () => resolve({ healthy: true });
+        }),
+    );
     const failover = new MultiGatewayFailover({ switchGateway });
     const request = {
       currentGatewayId: 'gw-a',
@@ -147,7 +159,9 @@ describe('MultiGatewayFailover', () => {
     };
 
     const first = failover.failover(request);
-    await expect(failover.failover(request)).rejects.toThrow('Concurrent multi-gateway failover operation rejected');
+    await expect(failover.failover(request)).rejects.toThrow(
+      'Concurrent multi-gateway failover operation rejected',
+    );
     release();
     await expect(first).resolves.toMatchObject({ state: 'succeeded', currentGatewayId: 'gw-b' });
   });

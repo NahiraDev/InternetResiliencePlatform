@@ -1,8 +1,4 @@
-import type {
-  TunnelConfiguration,
-  TunnelProvider,
-  TunnelProviderRegistry,
-} from '@irp/tunnel';
+import type { TunnelConfiguration, TunnelProvider, TunnelProviderRegistry } from '@irp/tunnel';
 import { TunnelManager } from '@irp/tunnel';
 import type { CanonicalTunnelControlPlane } from '../canonical-network-adapter.js';
 

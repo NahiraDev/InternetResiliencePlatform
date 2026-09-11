@@ -4,14 +4,14 @@ This document records the integration boundary established by Phase 72 for Phase
 
 ## Integration matrix
 
-| Phase | Depends on Phase 72 for | Owns | Must not own |
-|---|---|---|---|
-| 73 — Unified Network State Model | desired/observed/actual semantic ownership and runtime lifecycle separation | canonical state envelope and reconciliation semantics | a second runtime lifecycle/state authority |
-| 74 — Control-Plane Contracts | cross-package event ownership and versioning boundary | typed cross-layer contracts/events | an independent event bus/taxonomy competing with shared contracts |
-| 75 — Decision Orchestration | decision authority and intelligence-provider boundary | deterministic decision composition | direct autonomous mutation or a second control loop |
-| 76 — Action Transaction Engine | planning/execution authority and adapter boundary | action/transaction lifecycle, idempotency and ordering | a replacement execution adapter framework |
-| 77 — Safety, Rollback & Recovery Kernel | policy, authorization, verification and recovery ownership | unified safety/checkpoint/rollback contract | a second policy engine or recovery control loop |
-| 78 — Closed-Loop Control Foundation | all preceding authority boundaries | bounded observe → decide → apply → verify/recover orchestration | a second global runtime/control plane |
+| Phase                                   | Depends on Phase 72 for                                                     | Owns                                                            | Must not own                                                      |
+| --------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 73 — Unified Network State Model        | desired/observed/actual semantic ownership and runtime lifecycle separation | canonical state envelope and reconciliation semantics           | a second runtime lifecycle/state authority                        |
+| 74 — Control-Plane Contracts            | cross-package event ownership and versioning boundary                       | typed cross-layer contracts/events                              | an independent event bus/taxonomy competing with shared contracts |
+| 75 — Decision Orchestration             | decision authority and intelligence-provider boundary                       | deterministic decision composition                              | direct autonomous mutation or a second control loop               |
+| 76 — Action Transaction Engine          | planning/execution authority and adapter boundary                           | action/transaction lifecycle, idempotency and ordering          | a replacement execution adapter framework                         |
+| 77 — Safety, Rollback & Recovery Kernel | policy, authorization, verification and recovery ownership                  | unified safety/checkpoint/rollback contract                     | a second policy engine or recovery control loop                   |
+| 78 — Closed-Loop Control Foundation     | all preceding authority boundaries                                          | bounded observe → decide → apply → verify/recover orchestration | a second global runtime/control plane                             |
 
 ## Required cross-phase invariants
 

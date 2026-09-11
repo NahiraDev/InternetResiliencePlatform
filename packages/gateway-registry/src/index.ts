@@ -87,11 +87,19 @@ function assertGateway(gateway: GatewayMetadata): void {
   if (!gateway.id.trim()) throw new Error('gateway id is required');
   if (!gateway.name.trim()) throw new Error('gateway name is required');
   if (!gateway.ownership.ownerId.trim()) throw new Error('gateway ownership ownerId is required');
-  if (!Number.isInteger(gateway.endpoint.port) || gateway.endpoint.port < 1 || gateway.endpoint.port > 65535) throw new Error('gateway endpoint port must be an integer between 1 and 65535');
-  if (gateway.endpoint.host.trim().length === 0) throw new Error('gateway endpoint host is required');
+  if (
+    !Number.isInteger(gateway.endpoint.port) ||
+    gateway.endpoint.port < 1 ||
+    gateway.endpoint.port > 65535
+  )
+    throw new Error('gateway endpoint port must be an integer between 1 and 65535');
+  if (gateway.endpoint.host.trim().length === 0)
+    throw new Error('gateway endpoint host is required');
   if (gateway.tags.some((tag) => !tag.trim())) throw new Error('gateway tags must not be empty');
-  if (new Set(gateway.tags).size !== gateway.tags.length) throw new Error('gateway tags must be unique');
-  if (gateway.capabilities.addressFamilies.length === 0) throw new Error('gateway must declare address families');
+  if (new Set(gateway.tags).size !== gateway.tags.length)
+    throw new Error('gateway tags must be unique');
+  if (gateway.capabilities.addressFamilies.length === 0)
+    throw new Error('gateway must declare address families');
 }
 
 export class InMemoryGatewayRegistry implements GatewayRegistry {
@@ -111,14 +119,22 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
   }
 
   list(filter: GatewayFilter = {}): GatewayMetadata[] {
-    const matches = (value: GatewayLifecycle | GatewayTrust, expected?: string | string[]) => expected === undefined || (Array.isArray(expected) ? expected.includes(value) : value === expected);
+    const matches = (value: GatewayLifecycle | GatewayTrust, expected?: string | string[]) =>
+      expected === undefined ||
+      (Array.isArray(expected) ? expected.includes(value) : value === expected);
     return [...this.gateways.values()]
       .filter((gateway) => matches(gateway.lifecycle, filter.lifecycle))
       .filter((gateway) => matches(gateway.trust, filter.trust))
       .filter((gateway) => filter.region === undefined || gateway.region === filter.region)
-      .filter((gateway) => filter.countryCode === undefined || gateway.countryCode === filter.countryCode)
-      .filter((gateway) => filter.providerId === undefined || gateway.providerId === filter.providerId)
-      .filter((gateway) => filter.ownerId === undefined || gateway.ownership.ownerId === filter.ownerId)
+      .filter(
+        (gateway) => filter.countryCode === undefined || gateway.countryCode === filter.countryCode,
+      )
+      .filter(
+        (gateway) => filter.providerId === undefined || gateway.providerId === filter.providerId,
+      )
+      .filter(
+        (gateway) => filter.ownerId === undefined || gateway.ownership.ownerId === filter.ownerId,
+      )
       .filter((gateway) => filter.tag === undefined || gateway.tags.includes(filter.tag))
       .map(clone);
   }
@@ -142,21 +158,24 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
   transition(id: GatewayId, lifecycle: GatewayLifecycle): GatewayMetadata {
     const current = this.require(id);
     if (current.lifecycle === lifecycle) return clone(current);
-    if (!lifecycleTransitions[current.lifecycle].includes(lifecycle)) throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
+    if (!lifecycleTransitions[current.lifecycle].includes(lifecycle))
+      throw new Error(`invalid gateway lifecycle transition: ${current.lifecycle} -> ${lifecycle}`);
     const now = new Date().toISOString();
-    const updated: GatewayMetadata = lifecycle === 'retired'
-      ? { ...current, lifecycle, updatedAt: now, retiredAt: now }
-      : (() => {
-          const { retiredAt: _retiredAt, ...activeMetadata } = current;
-          return { ...activeMetadata, lifecycle, updatedAt: now };
-        })();
+    const updated: GatewayMetadata =
+      lifecycle === 'retired'
+        ? { ...current, lifecycle, updatedAt: now, retiredAt: now }
+        : (() => {
+            const { retiredAt: _retiredAt, ...activeMetadata } = current;
+            return { ...activeMetadata, lifecycle, updatedAt: now };
+          })();
     this.gateways.set(id, updated);
     return clone(updated);
   }
 
   setTrust(id: GatewayId, trust: GatewayTrust): GatewayMetadata {
     const current = this.require(id);
-    if (current.trust === 'revoked' && trust !== 'revoked') throw new Error('revoked gateways require explicit re-registration');
+    if (current.trust === 'revoked' && trust !== 'revoked')
+      throw new Error('revoked gateways require explicit re-registration');
     const updated = { ...current, trust, updatedAt: new Date().toISOString() };
     this.gateways.set(id, updated);
     return clone(updated);

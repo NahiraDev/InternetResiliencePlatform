@@ -22,7 +22,11 @@ export interface WindowsSystemAdapter {
 
 async function command(file: string, args: string[], timeout = 5_000): Promise<string> {
   try {
-    const result = await execFileAsync(file, args, { timeout, maxBuffer: 512 * 1024, windowsHide: true });
+    const result = await execFileAsync(file, args, {
+      timeout,
+      maxBuffer: 512 * 1024,
+      windowsHide: true,
+    });
     return result.stdout.trim();
   } catch (error) {
     return `unavailable: ${error instanceof Error ? error.message : String(error)}`;

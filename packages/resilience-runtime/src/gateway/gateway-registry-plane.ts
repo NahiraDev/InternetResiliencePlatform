@@ -32,9 +32,7 @@ const deriveGatewayHealth = (gatewayId: string, health: ConnectivityHealth): Gat
   score: Number.isFinite(health.score) ? health.score : 0,
   checkedAt: health.checkedAt,
   ...(health.latencyMs === undefined ? {} : { latencyMs: health.latencyMs }),
-  ...(health.packetLoss === undefined
-    ? {}
-    : { packetLossPercent: health.packetLoss }),
+  ...(health.packetLoss === undefined ? {} : { packetLossPercent: health.packetLoss }),
   reason: 'derived from connectivity source health evidence',
 });
 
@@ -113,23 +111,19 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
         .filter((gateway) => isDefined(health.get(gateway.id))),
       health: Object.fromEntries(health),
       capacity: Object.fromEntries(capacity),
-      ...(this.currentGatewayId === undefined
-        ? {}
-        : { currentGatewayId: this.currentGatewayId }),
+      ...(this.currentGatewayId === undefined ? {} : { currentGatewayId: this.currentGatewayId }),
       policy: this.policy,
     });
 
-    const candidates: CanonicalGatewaySelectionCandidate[] = result.candidates.map(
-      (candidate) => ({
-        gatewayId: candidate.gateway.id,
-        eligible: candidate.eligible,
-        score: candidate.score,
-        explanation: candidate.explanation,
-        ...(candidate.rejectionReason === undefined
-          ? {}
-          : { rejectionReason: candidate.rejectionReason }),
-      }),
-    );
+    const candidates: CanonicalGatewaySelectionCandidate[] = result.candidates.map((candidate) => ({
+      gatewayId: candidate.gateway.id,
+      eligible: candidate.eligible,
+      score: candidate.score,
+      explanation: candidate.explanation,
+      ...(candidate.rejectionReason === undefined
+        ? {}
+        : { rejectionReason: candidate.rejectionReason }),
+    }));
 
     return {
       selectedGatewayId: result.selected?.gateway.id,

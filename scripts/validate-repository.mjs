@@ -27,8 +27,7 @@ const readJson = (file) => {
 };
 
 const isGitHubTokenRelevantPath = (rel) =>
-  rel.startsWith('.github/') ||
-  /\.(?:cjs|js|mjs|ts|tsx|json|ya?ml|sql|prisma|sh)$/.test(rel);
+  rel.startsWith('.github/') || /\.(?:cjs|js|mjs|ts|tsx|json|ya?ml|sql|prisma|sh)$/.test(rel);
 
 const githubTokenLegacyAssumptions = [
   /(?:GITHUB_TOKEN|GH_TOKEN|github.{0,40}token|installation.{0,40}token)[^\n]{0,160}\.length\s*(?:===|!==|==|!=)\s*40\b/i,
@@ -89,7 +88,9 @@ for (const file of files) {
   if (isGitHubTokenRelevantPath(rel)) {
     for (const pattern of githubTokenLegacyAssumptions) {
       if (pattern.test(text)) {
-        errors.push(`${rel} contains a legacy GitHub token length/truncation assumption; treat GitHub tokens as opaque values`);
+        errors.push(
+          `${rel} contains a legacy GitHub token length/truncation assumption; treat GitHub tokens as opaque values`,
+        );
         break;
       }
     }
@@ -197,8 +198,9 @@ if (existsSync(examplesRoot)) {
       errors.push(`examples/${name} is missing README.md`);
     }
 
-    const executableFiles = readdirSync(exampleRoot, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && /\.(?:mjs|cjs|js|sh)$/.test(entry.name));
+    const executableFiles = readdirSync(exampleRoot, { withFileTypes: true }).filter(
+      (entry) => entry.isFile() && /\.(?:mjs|cjs|js|sh)$/.test(entry.name),
+    );
     if (executableFiles.length === 0) {
       errors.push(`examples/${name} has no executable entry point`);
     }
@@ -236,7 +238,9 @@ for (const file of workflows) {
     /irp-source-\$\{\{\s*github\.event\.workflow_run\.head_sha\s*\}\}/m.test(text);
 
   if (!hasCheckout && !hasTrustedArtifactHandoff) {
-    errors.push(`${rel} missing supported actions/checkout action or approved trusted artifact handoff`);
+    errors.push(
+      `${rel} missing supported actions/checkout action or approved trusted artifact handoff`,
+    );
   }
 
   if (!/uses:\s*actions\/setup-node@v(?:4|5|6|7)(?:\b|$)/m.test(text)) {

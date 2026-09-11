@@ -27,7 +27,10 @@ for (const path of manifest.requiredPaths) {
 
 const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 if (packageJson.packageManager !== manifest.runtime.packageManager) {
-  fail('package manager', `${packageJson.packageManager ?? 'unset'} != ${manifest.runtime.packageManager}`);
+  fail(
+    'package manager',
+    `${packageJson.packageManager ?? 'unset'} != ${manifest.runtime.packageManager}`,
+  );
 } else {
   pass('package manager', packageJson.packageManager);
 }
@@ -37,11 +40,16 @@ if (nodeMajor < 24) fail('node runtime', `Node ${process.versions.node} is below
 else pass('node runtime', process.versions.node);
 
 const forbiddenWorkflowPatterns = [
-  { pattern: /continue-on-error:\s*true/i, reason: 'continue-on-error can create false-green required checks' },
+  {
+    pattern: /continue-on-error:\s*true/i,
+    reason: 'continue-on-error can create false-green required checks',
+  },
   { pattern: /\|\|\s*true\b/, reason: 'shell success override can create false-green checks' },
 ];
 
-const workflowPaths = manifest.requiredPaths.filter((path) => path.startsWith('.github/workflows/'));
+const workflowPaths = manifest.requiredPaths.filter((path) =>
+  path.startsWith('.github/workflows/'),
+);
 for (const path of workflowPaths) {
   const content = await readFile(join(root, path), 'utf8');
   // GitHub expression operators are not shell success overrides. Remove
@@ -55,14 +63,21 @@ for (const path of workflowPaths) {
 pass('workflow false-green policy');
 
 const requiredControls = new Set(manifest.requiredControls);
-const actualControls = new Set(Object.keys(manifest.releaseRules).map((key) => ({
-  noFalseGreen: 'release-engineering',
-  noUnboundedSleepAsReadiness: 'release-engineering',
-  noDestructiveDowngrade: 'upgrade-rollback',
-  noSecretsInTelemetry: 'security-audit',
-  hostNetworkMutationForbidden: 'chaos-soak',
-  backupRestoreMustRoundTrip: 'backup-restore',
-}[key])).filter(Boolean));
+const actualControls = new Set(
+  Object.keys(manifest.releaseRules)
+    .map(
+      (key) =>
+        ({
+          noFalseGreen: 'release-engineering',
+          noUnboundedSleepAsReadiness: 'release-engineering',
+          noDestructiveDowngrade: 'upgrade-rollback',
+          noSecretsInTelemetry: 'security-audit',
+          hostNetworkMutationForbidden: 'chaos-soak',
+          backupRestoreMustRoundTrip: 'backup-restore',
+        })[key],
+    )
+    .filter(Boolean),
+);
 
 const phaseRecord = await readFile(join(root, 'docs/phases/phase-69.md'), 'utf8');
 for (const control of ['compatibility-matrix', 'accessibility', 'localization']) {
@@ -75,7 +90,8 @@ for (const control of ['compatibility-matrix', 'accessibility', 'localization'])
 }
 for (const control of requiredControls) {
   if (actualControls.has(control)) pass(`control contract: ${control}`);
-  else if (['accessibility', 'localization', 'compatibility-matrix'].includes(control)) pass(`control contract: ${control}`, 'documented acceptance gate');
+  else if (['accessibility', 'localization', 'compatibility-matrix'].includes(control))
+    pass(`control contract: ${control}`, 'documented acceptance gate');
   else fail(`control contract: ${control}`, 'missing machine-readable rule');
 }
 
@@ -100,8 +116,13 @@ function simulateSoak(iterations) {
 try {
   const result = simulateSoak(manifest.performanceBudgets.soakIterations);
   if (result.recoveries < 1) fail('chaos/soak', 'failure injection did not execute');
-  else if (result.transitions > manifest.performanceBudgets.soakIterations * 2) fail('chaos/soak', 'transition budget exceeded');
-  else pass('chaos/soak', `${result.recoveries} bounded recoveries / ${manifest.performanceBudgets.soakIterations} iterations`);
+  else if (result.transitions > manifest.performanceBudgets.soakIterations * 2)
+    fail('chaos/soak', 'transition budget exceeded');
+  else
+    pass(
+      'chaos/soak',
+      `${result.recoveries} bounded recoveries / ${manifest.performanceBudgets.soakIterations} iterations`,
+    );
 } catch (error) {
   fail('chaos/soak', error.message);
 }
@@ -120,7 +141,8 @@ try {
   if (loaded.formatVersion !== 1) throw new Error('unsupported backup format');
   await writeFile(restorePath, JSON.stringify(loaded, null, 2));
   const restored = JSON.parse(await readFile(restorePath, 'utf8'));
-  if (JSON.stringify(restored) !== JSON.stringify(backup)) throw new Error('backup round trip mismatch');
+  if (JSON.stringify(restored) !== JSON.stringify(backup))
+    throw new Error('backup round trip mismatch');
   pass('backup/restore', 'versioned JSON fixture round trip verified');
 } catch (error) {
   fail('backup/restore', error.message);
@@ -128,25 +150,35 @@ try {
   await rm(temp, { recursive: true, force: true });
 }
 
-const compatibility = await readFile(join(root, 'docs/release/phase-69-compatibility-matrix.md'), 'utf8');
+const compatibility = await readFile(
+  join(root, 'docs/release/phase-69-compatibility-matrix.md'),
+  'utf8',
+);
 const compatibilityRows = compatibility
   .split('\n')
   .filter((line) => /^\|\s*[^|]+\s*\|/.test(line))
   .map((line) => line.split('|')[1].trim().toLocaleLowerCase());
 for (const platform of manifest.platforms) {
   const normalizedPlatform = platform.toLocaleLowerCase();
-  if (!compatibilityRows.includes(normalizedPlatform)) fail(`compatibility: ${platform}`, 'platform row missing');
+  if (!compatibilityRows.includes(normalizedPlatform))
+    fail(`compatibility: ${platform}`, 'platform row missing');
   else pass(`compatibility: ${platform}`);
 }
 
-if (manifest.releaseRules.noFalseGreen !== true) fail('release rules', 'noFalseGreen must remain enabled');
-if (manifest.releaseRules.hostNetworkMutationForbidden !== true) fail('release rules', 'host network mutation must remain forbidden');
-if (manifest.releaseRules.noDestructiveDowngrade !== true) fail('release rules', 'destructive downgrade must remain forbidden');
-if (manifest.releaseRules.backupRestoreMustRoundTrip !== true) fail('release rules', 'backup restore round trip must remain required');
+if (manifest.releaseRules.noFalseGreen !== true)
+  fail('release rules', 'noFalseGreen must remain enabled');
+if (manifest.releaseRules.hostNetworkMutationForbidden !== true)
+  fail('release rules', 'host network mutation must remain forbidden');
+if (manifest.releaseRules.noDestructiveDowngrade !== true)
+  fail('release rules', 'destructive downgrade must remain forbidden');
+if (manifest.releaseRules.backupRestoreMustRoundTrip !== true)
+  fail('release rules', 'backup restore round trip must remain required');
 
 if (failures.length) {
   console.error(`\nPhase 69 readiness failed with ${failures.length} issue(s).`);
   process.exitCode = 1;
 } else {
-  console.log('\nPhase 69 readiness gate passed. Runtime/device certification remains evidence-driven.');
+  console.log(
+    '\nPhase 69 readiness gate passed. Runtime/device certification remains evidence-driven.',
+  );
 }

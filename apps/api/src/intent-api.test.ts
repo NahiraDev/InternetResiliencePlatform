@@ -10,7 +10,8 @@ describe('intent API', () => {
       if (error instanceof ValidationAppError) return reply.code(400).send({ success: false });
       if (error instanceof ConflictAppError) return reply.code(409).send({ success: false });
       if (error instanceof NotFoundAppError) return reply.code(404).send({ success: false });
-      if (error instanceof Error && error.name === 'ZodError') return reply.code(400).send({ success: false });
+      if (error instanceof Error && error.name === 'ZodError')
+        return reply.code(400).send({ success: false });
       return reply.code(500).send({ success: false });
     });
     registerIntentRoutes(app, {
@@ -22,7 +23,16 @@ describe('intent API', () => {
 
   it('creates a draft intent with an idempotency key', async () => {
     const app = await build();
-    const response = await app.inject({ method: 'POST', url: '/api/v1/intents', headers: { 'idempotency-key': 'create-1' }, payload: { id: 'intent-1', priority: 'high', spec: { outcome: 'maintain connectivity', constraints: { latencyMs: 100 } } } });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers: { 'idempotency-key': 'create-1' },
+      payload: {
+        id: 'intent-1',
+        priority: 'high',
+        spec: { outcome: 'maintain connectivity', constraints: { latencyMs: 100 } },
+      },
+    });
     expect(response.statusCode).toBe(201);
     expect(response.json().data).toMatchObject({ id: 'intent-1', version: 1, status: 'draft' });
     await app.close();
@@ -44,8 +54,18 @@ describe('intent API', () => {
   it('rejects idempotency-key reuse with a different request', async () => {
     const app = await build();
     const headers = { 'idempotency-key': 'create-1' };
-    await app.inject({ method: 'POST', url: '/api/v1/intents', headers, payload: { id: 'intent-1', spec: { outcome: 'one' } } });
-    const response = await app.inject({ method: 'POST', url: '/api/v1/intents', headers, payload: { id: 'intent-2', spec: { outcome: 'two' } } });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers,
+      payload: { id: 'intent-1', spec: { outcome: 'one' } },
+    });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers,
+      payload: { id: 'intent-2', spec: { outcome: 'two' } },
+    });
     expect(response.statusCode).toBe(409);
     expect(response.json().success).toBe(false);
     await app.close();
@@ -53,8 +73,17 @@ describe('intent API', () => {
 
   it('requires an idempotency key and rejects unknown fields', async () => {
     const app = await build();
-    const missing = await app.inject({ method: 'POST', url: '/api/v1/intents', payload: { id: 'intent-1', spec: { outcome: 'one' } } });
-    const unknown = await app.inject({ method: 'POST', url: '/api/v1/intents', headers: { 'idempotency-key': 'create-2' }, payload: { id: 'intent-2', spec: { outcome: 'two' }, unexpected: true } });
+    const missing = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      payload: { id: 'intent-1', spec: { outcome: 'one' } },
+    });
+    const unknown = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers: { 'idempotency-key': 'create-2' },
+      payload: { id: 'intent-2', spec: { outcome: 'two' }, unexpected: true },
+    });
     expect(missing.statusCode).toBe(400);
     expect(unknown.statusCode).toBe(400);
     await app.close();
@@ -62,8 +91,17 @@ describe('intent API', () => {
 
   it('reads, lists, and transitions intents through the lifecycle boundary', async () => {
     const app = await build();
-    await app.inject({ method: 'POST', url: '/api/v1/intents', headers: { 'idempotency-key': 'create-1' }, payload: { id: 'intent-1', spec: { outcome: 'maintain connectivity' } } });
-    const activate = await app.inject({ method: 'POST', url: '/api/v1/intents/intent-1/commands', payload: { type: 'activate' } });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers: { 'idempotency-key': 'create-1' },
+      payload: { id: 'intent-1', spec: { outcome: 'maintain connectivity' } },
+    });
+    const activate = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents/intent-1/commands',
+      payload: { type: 'activate' },
+    });
     expect(activate.statusCode).toBe(200);
     expect(activate.json().data).toMatchObject({ id: 'intent-1', version: 2, status: 'active' });
     const list = await app.inject({ method: 'GET', url: '/api/v1/intents?status=active&limit=10' });

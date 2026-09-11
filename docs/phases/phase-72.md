@@ -20,19 +20,19 @@ The canonical authority remains `@irp/resilience-runtime`. Existing intelligence
 
 ## Existing canonical components
 
-| Layer | Existing evidence | Phase 72 treatment |
-| --- | --- | --- |
-| Observation | `packages/resilience-runtime/src/observation-providers.ts`, `src/observations/`; `packages/network-intelligence/src/core/` and providers | Reuse and define boundary. |
-| State | `packages/resilience-runtime/src/domain/`, `src/state/`, `src/stores/`; network-intelligence models | Phase 73 owns the desired/observed/actual semantic envelope; runtime lifecycle and domain stores remain distinct. |
-| Intelligence | `packages/network-intelligence/src/decision/`, `packages/internet-intelligence-agent` | Decision intelligence remains an input/provider layer, not a second mutation authority. |
-| Decision orchestration | `packages/resilience-runtime/src/canonical-decision-provider.ts`, `src/decisions/`, `src/autopilot/` | Runtime remains the authoritative orchestration boundary. |
-| Policy / safety | `packages/resilience-runtime/src/policy/`, `packages/security`, API capability/authorization | Compose existing policy and security controls; do not create another policy engine. |
-| Planning | `packages/resilience-runtime/src/planning/planner.ts` | Reuse as the planning primitive. |
-| Execution | `packages/resilience-runtime/src/execution/`, `canonical-network-adapter.ts`, adapter registry | Formalize transaction/action semantics around the existing execution boundary. |
-| Verification / assurance | `src/verification/`, `src/validation/`, `src/telemetry/`, federation and `packages/telemetry` | Normalize assurance correlation without duplicating telemetry pipelines. |
-| Recovery | `src/recovery/`, `packages/failover`, gateway-registry failover | Canonical recovery/rollback remains within the runtime orchestration boundary. |
-| API | `apps/api/src/unified-product-api.ts`, `packages/sdk`, `docs/api/control-plane-contract.md` | Preserve the existing versioned capability API as the external contract. |
-| Clients | Linux/macOS/Windows/mobile clients and native adapters | Keep clients as consumers/adapters; no routing/policy decision authority. |
+| Layer                    | Existing evidence                                                                                                                        | Phase 72 treatment                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Observation              | `packages/resilience-runtime/src/observation-providers.ts`, `src/observations/`; `packages/network-intelligence/src/core/` and providers | Reuse and define boundary.                                                                                        |
+| State                    | `packages/resilience-runtime/src/domain/`, `src/state/`, `src/stores/`; network-intelligence models                                      | Phase 73 owns the desired/observed/actual semantic envelope; runtime lifecycle and domain stores remain distinct. |
+| Intelligence             | `packages/network-intelligence/src/decision/`, `packages/internet-intelligence-agent`                                                    | Decision intelligence remains an input/provider layer, not a second mutation authority.                           |
+| Decision orchestration   | `packages/resilience-runtime/src/canonical-decision-provider.ts`, `src/decisions/`, `src/autopilot/`                                     | Runtime remains the authoritative orchestration boundary.                                                         |
+| Policy / safety          | `packages/resilience-runtime/src/policy/`, `packages/security`, API capability/authorization                                             | Compose existing policy and security controls; do not create another policy engine.                               |
+| Planning                 | `packages/resilience-runtime/src/planning/planner.ts`                                                                                    | Reuse as the planning primitive.                                                                                  |
+| Execution                | `packages/resilience-runtime/src/execution/`, `canonical-network-adapter.ts`, adapter registry                                           | Formalize transaction/action semantics around the existing execution boundary.                                    |
+| Verification / assurance | `src/verification/`, `src/validation/`, `src/telemetry/`, federation and `packages/telemetry`                                            | Normalize assurance correlation without duplicating telemetry pipelines.                                          |
+| Recovery                 | `src/recovery/`, `packages/failover`, gateway-registry failover                                                                          | Canonical recovery/rollback remains within the runtime orchestration boundary.                                    |
+| API                      | `apps/api/src/unified-product-api.ts`, `packages/sdk`, `docs/api/control-plane-contract.md`                                              | Preserve the existing versioned capability API as the external contract.                                          |
+| Clients                  | Linux/macOS/Windows/mobile clients and native adapters                                                                                   | Keep clients as consumers/adapters; no routing/policy decision authority.                                         |
 
 ## Scope
 

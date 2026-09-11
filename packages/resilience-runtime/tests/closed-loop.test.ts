@@ -13,7 +13,8 @@ const record = (outcome: Outcome, index: number): DecisionRecord => ({
   correlationId: `test/cycle-${index}`,
   decisionId: `decision-${index}`,
   runtimeStateBefore: 'planning',
-  runtimeStateAfter: outcome === 'blocked' ? 'blocked' : outcome === 'failed' ? 'failed' : 'degraded',
+  runtimeStateAfter:
+    outcome === 'blocked' ? 'blocked' : outcome === 'failed' ? 'failed' : 'degraded',
   runtimeContext: {
     runtimeId: 'test-runtime',
     correlationId: `test/cycle-${index}`,
@@ -76,7 +77,11 @@ describe('BoundedClosedLoopController', () => {
     const fake = runtime('degraded');
     const controller = new BoundedClosedLoopController(fake);
 
-    const result = await controller.run({ maxCycles: 3, stopWhenHealthy: false, correlationId: 'loop' });
+    const result = await controller.run({
+      maxCycles: 3,
+      stopWhenHealthy: false,
+      correlationId: 'loop',
+    });
 
     expect(result.status).toBe('bounded');
     expect(result.stopReason).toBe('max_cycles');

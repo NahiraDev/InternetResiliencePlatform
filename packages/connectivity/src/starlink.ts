@@ -138,20 +138,10 @@ export class StarlinkDishClient {
     });
   }
 
-  async getStatus(
-    runner: StarlinkCommandRunner,
-  ): Promise<StarlinkStatusSnapshot | undefined> {
+  async getStatus(runner: StarlinkCommandRunner): Promise<StarlinkStatusSnapshot | undefined> {
     const result = await runner.run(
       this.grpcurlCommand,
-      [
-        '-plaintext',
-        '-format',
-        'json',
-        '-d',
-        '{"get_status":{}}',
-        this.target,
-        GRPC_METHOD,
-      ],
+      ['-plaintext', '-format', 'json', '-d', '{"get_status":{}}', this.target, GRPC_METHOD],
       { timeoutMs: this.timeoutMs },
     );
 
@@ -204,11 +194,7 @@ export class StarlinkProvider implements ConnectivityProvider {
       providerId: this.id,
       id: this.resourceId,
       type: this.type,
-      state: !reachable
-        ? 'unavailable'
-        : health?.status === 'healthy'
-          ? 'active'
-          : 'degraded',
+      state: !reachable ? 'unavailable' : health?.status === 'healthy' ? 'active' : 'degraded',
       addresses: [],
       dnsServers: [],
       capabilities: this.capabilities(),
@@ -354,29 +340,19 @@ export class StarlinkProvider implements ConnectivityProvider {
 }
 
 function parseStatus(root: Record<string, unknown>): StarlinkStatusSnapshot {
-  const status =
-    asRecord(root.dish_get_status) ?? asRecord(root.get_status) ?? root;
+  const status = asRecord(root.dish_get_status) ?? asRecord(root.get_status) ?? root;
   const obstructionStats = asRecord(status.obstruction_stats);
-  const obstructionFraction = firstNumber(
-    obstructionStats?.fraction_obstructed,
-  );
+  const obstructionFraction = firstNumber(obstructionStats?.fraction_obstructed);
 
   const snapshot: StarlinkStatusSnapshot = { raw: root };
 
   const state = asString(status.state);
   if (state !== undefined) snapshot.state = state;
 
-  const latency = firstNumber(
-    status.pop_ping_latency_ms,
-    status.pop_ping_latency,
-  );
+  const latency = firstNumber(status.pop_ping_latency_ms, status.pop_ping_latency);
   if (latency !== undefined) snapshot.latencyMs = latency;
 
-  const loss = firstNumber(
-    status.pop_ping_drop_rate,
-    status.packet_loss,
-    status.packetLoss,
-  );
+  const loss = firstNumber(status.pop_ping_drop_rate, status.packet_loss, status.packetLoss);
   if (loss !== undefined) snapshot.packetLoss = loss;
 
   const download = bitsToMbps(
@@ -384,9 +360,7 @@ function parseStatus(root: Record<string, unknown>): StarlinkStatusSnapshot {
   );
   if (download !== undefined) snapshot.downloadMbps = download;
 
-  const upload = bitsToMbps(
-    firstNumber(status.uplink_throughput_bps, status.uplink_throughput),
-  );
+  const upload = bitsToMbps(firstNumber(status.uplink_throughput_bps, status.uplink_throughput));
   if (upload !== undefined) snapshot.uploadMbps = upload;
 
   const obstruction =
@@ -411,10 +385,7 @@ function calculateScore(status: StarlinkStatusSnapshot): number {
     score -= Math.min(30, Math.max(0, status.latencyMs - 40) * 0.15);
   }
   if (status.obstructionPercent !== undefined) {
-    score -= Math.min(
-      35,
-      Math.max(0, status.obstructionPercent) * 1.5,
-    );
+    score -= Math.min(35, Math.max(0, status.obstructionPercent) * 1.5);
   }
   if (!isOnlineState(status.state)) {
     score -= 50;

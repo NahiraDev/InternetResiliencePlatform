@@ -37,7 +37,11 @@ function runNode(script, args, name) {
         return;
       }
 
-      reject(new Error(`Example ${name} failed with ${signal ? `signal ${signal}` : `exit code ${code}`}`));
+      reject(
+        new Error(
+          `Example ${name} failed with ${signal ? `signal ${signal}` : `exit code ${code}`}`,
+        ),
+      );
     });
   });
 }

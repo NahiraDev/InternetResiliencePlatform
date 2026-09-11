@@ -1,12 +1,7 @@
 import type { DecisionOutcome, DecisionRecord, RuntimeContext } from './domain/types.js';
 import type { ResilienceRuntime } from './runtime.js';
 
-export type ClosedLoopStopReason =
-  | 'healthy'
-  | 'max_cycles'
-  | 'blocked'
-  | 'failed'
-  | 'aborted';
+export type ClosedLoopStopReason = 'healthy' | 'max_cycles' | 'blocked' | 'failed' | 'aborted';
 
 export interface ClosedLoopOptions {
   /** Maximum number of runtime cycles to execute. Defaults to one for safe-by-default behavior. */
@@ -94,7 +89,8 @@ export class BoundedClosedLoopController {
     assertNonNegativeInteger(intervalMs, 'intervalMs');
 
     const records: DecisionRecord[] = [];
-    const baseCorrelationId = options.correlationId ?? options.context?.correlationId ?? 'closed-loop';
+    const baseCorrelationId =
+      options.correlationId ?? options.context?.correlationId ?? 'closed-loop';
     const baseIdempotencyKey = options.idempotencyKey ?? baseCorrelationId;
 
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {

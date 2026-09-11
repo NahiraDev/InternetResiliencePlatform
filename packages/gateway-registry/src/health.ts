@@ -47,13 +47,22 @@ export const DEFAULT_GATEWAY_HEALTH_POLICY: GatewayHealthPolicy = {
 };
 
 function assertPolicy(policy: GatewayHealthPolicy): void {
-  if (!Number.isFinite(policy.maxStalenessMs) || policy.maxStalenessMs <= 0) throw new Error('maxStalenessMs must be positive');
-  if (!Number.isFinite(policy.healthyLatencyMs) || policy.healthyLatencyMs <= 0) throw new Error('healthyLatencyMs must be positive');
-  if (!Number.isFinite(policy.degradedLatencyMs) || policy.degradedLatencyMs < policy.healthyLatencyMs) {
+  if (!Number.isFinite(policy.maxStalenessMs) || policy.maxStalenessMs <= 0)
+    throw new Error('maxStalenessMs must be positive');
+  if (!Number.isFinite(policy.healthyLatencyMs) || policy.healthyLatencyMs <= 0)
+    throw new Error('healthyLatencyMs must be positive');
+  if (
+    !Number.isFinite(policy.degradedLatencyMs) ||
+    policy.degradedLatencyMs < policy.healthyLatencyMs
+  ) {
     throw new Error('degradedLatencyMs must be greater than or equal to healthyLatencyMs');
   }
-  if (policy.healthyPacketLossPercent < 0 || policy.healthyPacketLossPercent > 100) throw new Error('healthyPacketLossPercent must be between 0 and 100');
-  if (policy.degradedPacketLossPercent < policy.healthyPacketLossPercent || policy.degradedPacketLossPercent > 100) {
+  if (policy.healthyPacketLossPercent < 0 || policy.healthyPacketLossPercent > 100)
+    throw new Error('healthyPacketLossPercent must be between 0 and 100');
+  if (
+    policy.degradedPacketLossPercent < policy.healthyPacketLossPercent ||
+    policy.degradedPacketLossPercent > 100
+  ) {
     throw new Error('degradedPacketLossPercent must be between healthyPacketLossPercent and 100');
   }
 }
@@ -71,8 +80,17 @@ export function evaluateGatewayHealth(
   const checkedAtMs = Date.parse(sample.checkedAt);
   if (!Number.isFinite(checkedAtMs)) throw new Error('checkedAt must be a valid ISO timestamp');
   if (checkedAtMs > nowMs + 5_000) throw new Error('checkedAt cannot be materially in the future');
-  if (sample.latencyMs !== undefined && (!Number.isFinite(sample.latencyMs) || sample.latencyMs < 0)) throw new Error('latencyMs must be non-negative');
-  if (sample.packetLossPercent !== undefined && (!Number.isFinite(sample.packetLossPercent) || sample.packetLossPercent < 0 || sample.packetLossPercent > 100)) {
+  if (
+    sample.latencyMs !== undefined &&
+    (!Number.isFinite(sample.latencyMs) || sample.latencyMs < 0)
+  )
+    throw new Error('latencyMs must be non-negative');
+  if (
+    sample.packetLossPercent !== undefined &&
+    (!Number.isFinite(sample.packetLossPercent) ||
+      sample.packetLossPercent < 0 ||
+      sample.packetLossPercent > 100)
+  ) {
     throw new Error('packetLossPercent must be between 0 and 100');
   }
 
@@ -80,7 +98,9 @@ export function evaluateGatewayHealth(
     gatewayId: sample.gatewayId,
     checkedAt: sample.checkedAt,
     ...(sample.latencyMs === undefined ? {} : { latencyMs: sample.latencyMs }),
-    ...(sample.packetLossPercent === undefined ? {} : { packetLossPercent: sample.packetLossPercent }),
+    ...(sample.packetLossPercent === undefined
+      ? {}
+      : { packetLossPercent: sample.packetLossPercent }),
   };
 
   if (nowMs - checkedAtMs > policy.maxStalenessMs) {
@@ -92,27 +112,47 @@ export function evaluateGatewayHealth(
   }
 
   if (sample.latencyMs === undefined && sample.packetLossPercent === undefined) {
-    return { ...base, status: 'unknown', score: 50, reason: 'reachable without quality measurements' };
+    return {
+      ...base,
+      status: 'unknown',
+      score: 50,
+      reason: 'reachable without quality measurements',
+    };
   }
 
-  const latencyScore = sample.latencyMs === undefined
-    ? 100
-    : sample.latencyMs <= policy.healthyLatencyMs
+  const latencyScore =
+    sample.latencyMs === undefined
       ? 100
-      : sample.latencyMs >= policy.degradedLatencyMs
-        ? 0
-        : 100 * (policy.degradedLatencyMs - sample.latencyMs) / (policy.degradedLatencyMs - policy.healthyLatencyMs);
-  const lossScore = sample.packetLossPercent === undefined
-    ? 100
-    : sample.packetLossPercent <= policy.healthyPacketLossPercent
+      : sample.latencyMs <= policy.healthyLatencyMs
+        ? 100
+        : sample.latencyMs >= policy.degradedLatencyMs
+          ? 0
+          : (100 * (policy.degradedLatencyMs - sample.latencyMs)) /
+            (policy.degradedLatencyMs - policy.healthyLatencyMs);
+  const lossScore =
+    sample.packetLossPercent === undefined
       ? 100
-      : sample.packetLossPercent >= policy.degradedPacketLossPercent
-        ? 0
-        : 100 * (policy.degradedPacketLossPercent - sample.packetLossPercent) / (policy.degradedPacketLossPercent - policy.healthyPacketLossPercent);
+      : sample.packetLossPercent <= policy.healthyPacketLossPercent
+        ? 100
+        : sample.packetLossPercent >= policy.degradedPacketLossPercent
+          ? 0
+          : (100 * (policy.degradedPacketLossPercent - sample.packetLossPercent)) /
+            (policy.degradedPacketLossPercent - policy.healthyPacketLossPercent);
   const score = clampScore((latencyScore + lossScore) / 2);
 
-  if (score >= 80) return { ...base, status: 'healthy', score, reason: 'gateway is reachable with healthy quality' };
-  return { ...base, status: 'degraded', score, reason: 'gateway is reachable but quality is degraded' };
+  if (score >= 80)
+    return {
+      ...base,
+      status: 'healthy',
+      score,
+      reason: 'gateway is reachable with healthy quality',
+    };
+  return {
+    ...base,
+    status: 'degraded',
+    score,
+    reason: 'gateway is reachable but quality is degraded',
+  };
 }
 
 export async function probeGatewayHealth(
@@ -121,7 +161,8 @@ export async function probeGatewayHealth(
   probe: GatewayHealthProbe,
   timeoutMs: number,
 ): Promise<GatewayHealthSample> {
-  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) throw new Error('timeoutMs must be a positive integer');
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0)
+    throw new Error('timeoutMs must be a positive integer');
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -137,7 +178,9 @@ export async function probeGatewayHealth(
       checkedAt: new Date().toISOString(),
       reachable: result.reachable,
       ...(result.latencyMs === undefined ? {} : { latencyMs: result.latencyMs }),
-      ...(result.packetLossPercent === undefined ? {} : { packetLossPercent: result.packetLossPercent }),
+      ...(result.packetLossPercent === undefined
+        ? {}
+        : { packetLossPercent: result.packetLossPercent }),
     };
   } finally {
     if (timer !== undefined) clearTimeout(timer);

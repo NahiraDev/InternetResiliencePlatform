@@ -90,7 +90,11 @@ class HealthyProvider implements TunnelProvider {
   async destroy(): Promise<void> {}
 }
 
-const buildPlane = (options?: { enabled?: boolean; providerId?: string; configuration?: TunnelConfiguration }) => {
+const buildPlane = (options?: {
+  enabled?: boolean;
+  providerId?: string;
+  configuration?: TunnelConfiguration;
+}) => {
   const registry = new TunnelProviderRegistry();
   registry.register(new HealthyProvider());
   const plane = new TunnelRegistryControlPlane(registry, {
@@ -104,7 +108,9 @@ const buildPlane = (options?: { enabled?: boolean; providerId?: string; configur
 
 describe('TunnelRegistryControlPlane', () => {
   it('is configured only when enabled with a provider and configuration', () => {
-    expect(new TunnelRegistryControlPlane(new TunnelProviderRegistry(), { enabled: false }).configured).toBe(false);
+    expect(
+      new TunnelRegistryControlPlane(new TunnelProviderRegistry(), { enabled: false }).configured,
+    ).toBe(false);
     expect(
       new TunnelRegistryControlPlane(new TunnelProviderRegistry(), {
         enabled: true,
@@ -118,7 +124,11 @@ describe('TunnelRegistryControlPlane', () => {
   it('connects through the registry-managed provider and verifies health', async () => {
     const plane = buildPlane();
     const connection = await plane.connect();
-    expect(connection).toMatchObject({ tunnelId: 'tun-a', providerId: 'provider-a', connectionId: 'conn-a' });
+    expect(connection).toMatchObject({
+      tunnelId: 'tun-a',
+      providerId: 'provider-a',
+      connectionId: 'conn-a',
+    });
     expect(plane.activeTunnel).toBe('tun-a');
     await expect(plane.verify('tun-a')).resolves.toBe(true);
   });

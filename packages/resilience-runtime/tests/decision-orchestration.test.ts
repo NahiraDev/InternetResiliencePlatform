@@ -3,10 +3,7 @@ import type { CandidateAction, RuntimeContext } from '../src/domain/types.js';
 import { DecisionOrchestrator } from '../src/decision-orchestration.js';
 import type { DecisionProvider } from '../src/ports/ports.js';
 
-const candidate = (
-  id: string,
-  overrides: Partial<CandidateAction> = {},
-): CandidateAction => ({
+const candidate = (id: string, overrides: Partial<CandidateAction> = {}): CandidateAction => ({
   id,
   schemaVersion: 1,
   createdAt: '2026-09-07T00:00:00.000Z',
@@ -25,7 +22,9 @@ const candidate = (
   ...overrides,
 });
 
-const context = (overrides: Partial<RuntimeContext['policySnapshot']['policy']> = {}): RuntimeContext => ({
+const context = (
+  overrides: Partial<RuntimeContext['policySnapshot']['policy']> = {},
+): RuntimeContext => ({
   runtimeId: 'runtime',
   correlationId: 'corr',
   mode: 'simulation',
@@ -104,7 +103,10 @@ describe('DecisionOrchestrator', () => {
     const first = candidate('z', { confidence: 0.9, expectedBenefit: 0.8, risk: 0.2 });
     const second = candidate('a', { confidence: 0.9, expectedBenefit: 0.8, risk: 0.2 });
 
-    const result = await new DecisionOrchestrator(provider([first, second])).orchestrate([], context());
+    const result = await new DecisionOrchestrator(provider([first, second])).orchestrate(
+      [],
+      context(),
+    );
 
     expect(result.candidates.map((item) => item.id)).toEqual(['a', 'z']);
     expect(result.selectedCandidate?.id).toBe('a');
@@ -118,7 +120,10 @@ describe('DecisionOrchestrator', () => {
       capabilitySnapshot: { ...runtimeContext.capabilitySnapshot, trusted: false },
     };
 
-    const result = await new DecisionOrchestrator(provider([trustedCandidate])).orchestrate([], untrusted);
+    const result = await new DecisionOrchestrator(provider([trustedCandidate])).orchestrate(
+      [],
+      untrusted,
+    );
 
     expect(result.selectedCandidate).toBeNull();
     expect(result.candidates).toHaveLength(0);
