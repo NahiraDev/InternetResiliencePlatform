@@ -1,5 +1,5 @@
 {
-  "name": "@platform/sdk",
+  "name": "@irp/sdk",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",

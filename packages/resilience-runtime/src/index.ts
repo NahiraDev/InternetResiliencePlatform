@@ -32,5 +32,7 @@ export * from './transactions/action-transaction.js';
 export * from './canonical-network-adapter.js';
 export * from './core-integration.js';
 export * from './closed-loop.js';
+export * from './gateway/gateway-registry-plane.js';
+export * from './tunnel/tunnel-control-plane.js';
 
 export * from './autopilot/autopilot.js';

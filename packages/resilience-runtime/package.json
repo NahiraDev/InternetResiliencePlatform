@@ -18,10 +18,13 @@
     "@irp/connectivity": "workspace:*",
     "@irp/events": "workspace:*",
     "@irp/failover": "workspace:*",
+    "@irp/gateway-registry": "workspace:*",
     "@irp/internet-intelligence-agent": "workspace:*",
     "@irp/network-intelligence": "workspace:*",
     "@irp/routing": "workspace:*",
-    "@irp/telemetry": "workspace:*"
+    "@irp/telemetry": "workspace:*",
+    "@irp/tunnel": "workspace:*",
+    "@irp/utils": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

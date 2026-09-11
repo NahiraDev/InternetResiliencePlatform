@@ -59,11 +59,36 @@ export interface CanonicalTunnelControlPlane {
   readonly configured: boolean;
 }
 
+export interface CanonicalGatewaySelectionCandidate {
+  readonly gatewayId: string;
+  readonly eligible: boolean;
+  readonly score: number;
+  readonly rejectionReason?: string;
+  readonly explanation: readonly string[];
+}
+
+export interface CanonicalGatewaySelectionDecision {
+  readonly selectedGatewayId: string | undefined;
+  readonly switched: boolean;
+  readonly reason: string;
+  readonly candidates: readonly CanonicalGatewaySelectionCandidate[];
+}
+
+export interface CanonicalGatewaySelectionPlane {
+  readonly configured: boolean;
+  readonly currentGatewayId: string | undefined;
+  readonly gateways: () => readonly unknown[];
+  synchronize(): Promise<void>;
+  evaluate(): Promise<CanonicalGatewaySelectionDecision>;
+  apply(gatewayId: string): Promise<void>;
+}
+
 export interface CanonicalNetworkControlPlane {
   readonly connectivity: ConnectivityManager;
   readonly routing: RoutingEngine;
   readonly dns?: CanonicalDnsControlPlane;
   readonly tunnel?: CanonicalTunnelControlPlane;
+  readonly gatewaySelection?: CanonicalGatewaySelectionPlane;
   readonly destination?: RoutingDestination;
 }
 
@@ -138,6 +163,36 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         case 'connectivity_failover':
         case 'provider_switch': {
           await this.controlPlane.connectivity.discoverResources();
+          if (this.controlPlane.gatewaySelection?.configured) {
+            const gatewaySelection = this.controlPlane.gatewaySelection;
+            await gatewaySelection.synchronize();
+            const decision = await gatewaySelection.evaluate();
+            if (!decision.selectedGatewayId)
+              return createAdapterExecution(plan, context, false, 'failed');
+            const current = this.controlPlane.connectivity.getActiveSource()?.sourceId;
+            if (decision.switched && decision.selectedGatewayId !== current)
+              await gatewaySelection.apply(decision.selectedGatewayId);
+            const execution = createAdapterExecution(plan, context, false, 'success');
+            return {
+              ...execution,
+              metadata: {
+                ...execution.metadata,
+                controlPlane: 'gateway-registry',
+                transition: 'gateway-selection-and-failover',
+                previousSourceId: current,
+                selectedGatewayId: decision.selectedGatewayId,
+                selectionReason: decision.reason,
+                candidates: decision.candidates.map((candidate) => ({
+                  gatewayId: candidate.gatewayId,
+                  eligible: candidate.eligible,
+                  score: candidate.score,
+                  ...(candidate.rejectionReason
+                    ? { rejectionReason: candidate.rejectionReason }
+                    : {}),
+                })),
+              },
+            };
+          }
           const evaluation = await this.controlPlane.connectivity.selectSource();
           const selected = evaluation.selected?.source;
           if (!selected) return createAdapterExecution(plan, context, false, 'failed');
@@ -237,6 +292,11 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       ) {
         const active = this.controlPlane.connectivity.getActiveSource();
         if (!active) return createAdapterVerification(plan, context, 'failed');
+        if (this.controlPlane.gatewaySelection?.configured) {
+          const selectedGatewayId = execution.metadata.selectedGatewayId;
+          if (typeof selectedGatewayId !== 'string' || active.sourceId !== selectedGatewayId)
+            return createAdapterVerification(plan, context, 'failed');
+        }
         const health = await this.controlPlane.connectivity.registry
           .get(active.providerId)
           .getHealth(active.id);

@@ -100,6 +100,9 @@ importers:
       '@irp/events':
         specifier: workspace:*
         version: link:../../packages/events
+      '@irp/historical-analysis':
+        specifier: workspace:*
+        version: link:../../packages/historical-analysis
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -186,6 +189,9 @@ importers:
 
   apps/daemon:
     dependencies:
+      '@irp/auto-optimization':
+        specifier: workspace:*
+        version: link:../../packages/auto-optimization
       '@irp/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -198,13 +204,25 @@ importers:
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@irp/plugin-manager':
+        specifier: workspace:*
+        version: link:../../packages/plugin-manager
+      '@irp/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
       '@irp/resilience-runtime':
         specifier: workspace:*
         version: link:../../packages/resilience-runtime
       '@irp/routing':
         specifier: workspace:*
         version: link:../../packages/routing
+      '@irp/tunnel':
+        specifier: workspace:*
+        version: link:../../packages/tunnel
     devDependencies:
+      '@irp/plugin-samples':
+        specifier: workspace:*
+        version: link:../../packages/plugin-samples
       '@types/node':
         specifier: ^26.4.1
         version: 26.5.1
@@ -704,6 +722,9 @@ importers:
       '@irp/failover':
         specifier: workspace:*
         version: link:../failover
+      '@irp/gateway-registry':
+        specifier: workspace:*
+        version: link:../gateway-registry
       '@irp/internet-intelligence-agent':
         specifier: workspace:*
         version: link:../internet-intelligence-agent
@@ -716,6 +737,12 @@ importers:
       '@irp/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+      '@irp/tunnel':
+        specifier: workspace:*
+        version: link:../tunnel
+      '@irp/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@types/node':
         specifier: ^26.4.1
