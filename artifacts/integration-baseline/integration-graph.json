@@ -1,0 +1,1999 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-11T21:09:48.785Z",
+  "commit": "unknown",
+  "nodes": [
+    {
+      "id": "@irp/auth",
+      "path": "packages/auth",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/auto-optimization",
+      "path": "packages/auto-optimization",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/config",
+      "path": "packages/config",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/connectivity",
+      "path": "packages/connectivity",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/core",
+      "path": "packages/core",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/database",
+      "path": "packages/database",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "prisma:generate",
+        "prisma:migrate:deploy",
+        "prisma:migrate:reset",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/dns",
+      "path": "packages/dns",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/events",
+      "path": "packages/events",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/failover",
+      "path": "packages/failover",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/gateway-registry",
+      "path": "packages/gateway-registry",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/historical-analysis",
+      "path": "packages/historical-analysis",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/internet-intelligence-agent",
+      "path": "packages/internet-intelligence-agent",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/kernel",
+      "path": "packages/kernel",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/linux-client",
+      "path": "packages/linux-client",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/logger",
+      "path": "packages/logger",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/macos-client",
+      "path": "packages/macos-client",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/metrics",
+      "path": "packages/metrics",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/network",
+      "path": "packages/network",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/network-intelligence",
+      "path": "packages/network-intelligence",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-api",
+      "path": "packages/plugin-api",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-config",
+      "path": "packages/plugin-config",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-events",
+      "path": "packages/plugin-events",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-loader",
+      "path": "packages/plugin-loader",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-manager",
+      "path": "packages/plugin-manager",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-registry",
+      "path": "packages/plugin-registry",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-runtime",
+      "path": "packages/plugin-runtime",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-samples",
+      "path": "packages/plugin-samples",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-sandbox",
+      "path": "packages/plugin-sandbox",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/plugin-sdk",
+      "path": "packages/plugin-sdk",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/queue",
+      "path": "packages/queue",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/resilience-runtime",
+      "path": "packages/resilience-runtime",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "coverage",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/routing",
+      "path": "packages/routing",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/sdk",
+      "path": "packages/sdk",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/security",
+      "path": "packages/security",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/shared",
+      "path": "packages/shared",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/telemetry",
+      "path": "packages/telemetry",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/tunnel",
+      "path": "packages/tunnel",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/types",
+      "path": "packages/types",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/utils",
+      "path": "packages/utils",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/windows-client",
+      "path": "packages/windows-client",
+      "executable": true,
+      "entrypoint": null,
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/api",
+      "path": "apps/api",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/cli",
+      "path": "apps/cli",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/daemon",
+      "path": "apps/daemon",
+      "executable": true,
+      "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    }
+  ],
+  "edges": [
+    {
+      "source": "@irp/auth",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/auto-optimization",
+      "target": "@irp/resilience-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/connectivity",
+      "target": "@irp/events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/connectivity",
+      "target": "@irp/kernel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/connectivity",
+      "target": "@irp/network",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/connectivity",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/connectivity",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/core",
+      "target": "@irp/config",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/core",
+      "target": "@irp/logger",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/core",
+      "target": "@irp/dns",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/events",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/historical-analysis",
+      "target": "@irp/database",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-api",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-api",
+      "target": "@irp/security",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-config",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-config",
+      "target": "@irp/security",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-events",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-loader",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-loader",
+      "target": "@irp/plugin-registry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-manager",
+      "target": "@irp/plugin-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-manager",
+      "target": "@irp/plugin-loader",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-manager",
+      "target": "@irp/plugin-registry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-manager",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-manager",
+      "target": "@irp/plugin-samples",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-registry",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-api",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-config",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-registry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-runtime",
+      "target": "@irp/plugin-sandbox",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-samples",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-sandbox",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-sandbox",
+      "target": "@irp/security",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/plugin-sandbox",
+      "target": "@irp/plugin-samples",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/queue",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/connectivity",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/failover",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/gateway-registry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/internet-intelligence-agent",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/network-intelligence",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/routing",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/tunnel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
+      "target": "@irp/utils",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/routing",
+      "target": "@irp/connectivity",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/routing",
+      "target": "@irp/events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/routing",
+      "target": "@irp/kernel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/routing",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/routing",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/sdk",
+      "target": "@irp/kernel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/security",
+      "target": "@irp/auth",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/security",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/telemetry",
+      "target": "@irp/metrics",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/telemetry",
+      "target": "@irp/types",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/tunnel",
+      "target": "@irp/events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/tunnel",
+      "target": "@irp/shared",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/tunnel",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/auth",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/config",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/core",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/database",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/dns",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/events",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/historical-analysis",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/logger",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/metrics",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/network",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/queue",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/resilience-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/api",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/config",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/core",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/logger",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/network",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/dns",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/cli",
+      "target": "@irp/resilience-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/auto-optimization",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/config",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/connectivity",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/core",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/logger",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/plugin-manager",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/resilience-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/routing",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/tunnel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    }
+  ],
+  "closedLoop": {
+    "stages": [
+      "observe",
+      "measure",
+      "detect",
+      "diagnose",
+      "decide",
+      "policy",
+      "apply",
+      "verify",
+      "recover",
+      "telemetry"
+    ],
+    "status": "DETERMINISTIC_BASELINE_REQUIRED",
+    "realEnvironmentStatus": "BLOCKED"
+  },
+  "executionMatrix": [
+    {
+      "componentId": "@irp/auth",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/auto-optimization",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/config",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/connectivity",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/core",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/database",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/dns",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/events",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/failover",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/gateway-registry",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/historical-analysis",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/internet-intelligence-agent",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/kernel",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/linux-client",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/logger",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/macos-client",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/metrics",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/network",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/network-intelligence",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-api",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-config",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-events",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-loader",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-manager",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-registry",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-runtime",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-samples",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-sandbox",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/plugin-sdk",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/queue",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/resilience-runtime",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/routing",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/sdk",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/security",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/shared",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/telemetry",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/tunnel",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/types",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/utils",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/windows-client",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": null,
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/api",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/cli",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/daemon",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    }
+  ],
+  "failureMatrix": [
+    [
+      "dependency unavailable",
+      "consumer fails closed; no mutation without a valid dependency"
+    ],
+    [
+      "measurement degraded",
+      "decision remains policy-constrained and must not claim healthy state"
+    ],
+    [
+      "apply failure",
+      "verification must fail and recovery/failover must be attempted"
+    ],
+    [
+      "verification failure",
+      "rollback/recovery path must execute and emit evidence"
+    ],
+    [
+      "telemetry unavailable",
+      "operation may continue only according to explicit local safety policy; certification remains blocked"
+    ]
+  ],
+  "realEnvironment": [
+    {
+      "capability": "control-plane",
+      "environment": "deployed-control-plane",
+      "evidenceIds": [
+        "control-plane-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "resilience-runtime",
+      "environment": "deployed-runtime",
+      "evidenceIds": [
+        "control-plane-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "network-intelligence",
+      "environment": "real-network",
+      "evidenceIds": [
+        "control-plane-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "connectivity",
+      "environment": "real-network",
+      "evidenceIds": [
+        "gateway-runtime",
+        "regional-evidence"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "dns",
+      "environment": "real-resolver",
+      "evidenceIds": [
+        "gateway-runtime",
+        "regional-evidence"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "gateway-registry",
+      "environment": "real-gateway",
+      "evidenceIds": [
+        "gateway-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "routing",
+      "environment": "real-host-routing",
+      "evidenceIds": [
+        "gateway-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "failover",
+      "environment": "real-network",
+      "evidenceIds": [
+        "gateway-runtime",
+        "upgrade-rollback",
+        "chaos-soak"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "tunnel",
+      "environment": "real-tunnel",
+      "evidenceIds": [
+        "gateway-runtime",
+        "regional-evidence"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "database",
+      "environment": "real-database",
+      "evidenceIds": [
+        "backup-restore",
+        "upgrade-rollback"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "api",
+      "environment": "deployed-control-plane",
+      "evidenceIds": [
+        "control-plane-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "daemon",
+      "environment": "real-host",
+      "evidenceIds": [
+        "platform-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "security",
+      "environment": "production-like",
+      "evidenceIds": [
+        "security-audit"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "telemetry",
+      "environment": "deployed-observability",
+      "evidenceIds": [
+        "control-plane-runtime",
+        "chaos-soak"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "linux-client",
+      "environment": "real-linux-host",
+      "evidenceIds": [
+        "platform-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "macos-client",
+      "environment": "real-macos-host",
+      "evidenceIds": [
+        "platform-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "windows-client",
+      "environment": "real-windows-host",
+      "evidenceIds": [
+        "platform-runtime"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "android-client",
+      "environment": "real-android-device",
+      "evidenceIds": [
+        "android-device-smoke"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "ios-client",
+      "environment": "real-ios-device",
+      "evidenceIds": [
+        "ios-device-smoke"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "ios-network-extension",
+      "environment": "real-ios-device",
+      "evidenceIds": [
+        "ios-device-smoke"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "observability",
+      "environment": "deployed-observability",
+      "evidenceIds": [
+        "control-plane-runtime",
+        "chaos-soak"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "docker",
+      "environment": "real-container-host",
+      "evidenceIds": [
+        "platform-runtime",
+        "release-engineering"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "kubernetes",
+      "environment": "real-kubernetes-cluster",
+      "evidenceIds": [
+        "platform-runtime",
+        "release-engineering"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "release-engineering",
+      "environment": "release-pipeline",
+      "evidenceIds": [
+        "artifact-integrity",
+        "release-engineering"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "regional-validation",
+      "environment": "real-regional-sites",
+      "evidenceIds": [
+        "regional-evidence"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "backup-restore",
+      "environment": "real-backup-target",
+      "evidenceIds": [
+        "backup-restore"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "upgrade-rollback",
+      "environment": "real-deployment",
+      "evidenceIds": [
+        "upgrade-rollback"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    },
+    {
+      "capability": "chaos-soak",
+      "environment": "real-deployment",
+      "evidenceIds": [
+        "chaos-soak"
+      ],
+      "status": "BLOCKED_UNTIL_OBSERVED"
+    }
+  ]
+}

@@ -1,0 +1,5069 @@
+{
+  "schemaVersion": 3,
+  "generatedAt": "2026-09-11T20:36:30.322Z",
+  "commitSha": "unknown",
+  "repositoryScope": [
+    "packages",
+    "apps",
+    "clients",
+    ".github/workflows",
+    "scripts",
+    "infra",
+    "ops",
+    "docs/phases",
+    "docs/roadmap/MASTER_ROADMAP_V2.md"
+  ],
+  "componentCount": 221,
+  "sourceFileCount": 291,
+  "components": [
+    {
+      "componentId": "packages::auth",
+      "path": "packages/auth",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 4,
+      "upstreamDependencies": [
+        "@irp/shared"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "packages/security"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::auto-optimization",
+      "path": "packages/auto-optimization",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/resilience-runtime"
+      ],
+      "downstreamDependencies": [
+        "apps/daemon"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::config",
+      "path": "packages/config",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "yaml",
+        "zod"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "apps/daemon",
+        "packages/core"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::connectivity",
+      "path": "packages/connectivity",
+      "type": "package",
+      "capability": "connectivity",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 6,
+      "upstreamDependencies": [
+        "@irp/events",
+        "@irp/kernel",
+        "@irp/network",
+        "@irp/telemetry",
+        "@irp/shared"
+      ],
+      "downstreamDependencies": [
+        "apps/daemon",
+        "packages/resilience-runtime",
+        "packages/routing"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::core",
+      "path": "packages/core",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 6,
+      "upstreamDependencies": [
+        "@irp/config",
+        "@irp/logger",
+        "@irp/dns"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "apps/daemon"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::database",
+      "path": "packages/database",
+      "type": "package",
+      "capability": "database",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 5,
+      "upstreamDependencies": [
+        "pg"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "packages/historical-analysis"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::dns",
+      "path": "packages/dns",
+      "type": "package",
+      "capability": "dns",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 8,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "packages/core"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::events",
+      "path": "packages/events",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/shared"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "packages/connectivity",
+        "packages/resilience-runtime",
+        "packages/routing",
+        "packages/tunnel"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::failover",
+      "path": "packages/failover",
+      "type": "package",
+      "capability": "failover",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::gateway-registry",
+      "path": "packages/gateway-registry",
+      "type": "package",
+      "capability": "gateway-registry",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 16,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::historical-analysis",
+      "path": "packages/historical-analysis",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 4,
+      "upstreamDependencies": [
+        "@irp/database"
+      ],
+      "downstreamDependencies": [
+        "apps/api"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::internet-intelligence-agent",
+      "path": "packages/internet-intelligence-agent",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 8,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::kernel",
+      "path": "packages/kernel",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 3,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/connectivity",
+        "packages/routing",
+        "packages/sdk"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::linux-client",
+      "path": "packages/linux-client",
+      "type": "package",
+      "capability": "linux-client",
+      "executable": true,
+      "entrypoint": "pnpm --dir packages/linux-client start",
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime"
+        ],
+        "environment": "real-linux-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::logger",
+      "path": "packages/logger",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "pino",
+        "pino-pretty"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "apps/daemon",
+        "packages/core"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::macos-client",
+      "path": "packages/macos-client",
+      "type": "package",
+      "capability": "macos-client",
+      "executable": true,
+      "entrypoint": "pnpm --dir packages/macos-client start",
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime"
+        ],
+        "environment": "real-macos-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::metrics",
+      "path": "packages/metrics",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "apps/api",
+        "packages/telemetry"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::network",
+      "path": "packages/network",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "packages/connectivity"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::network-intelligence",
+      "path": "packages/network-intelligence",
+      "type": "package",
+      "capability": "network-intelligence",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 38,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-api",
+      "path": "packages/plugin-api",
+      "type": "package",
+      "capability": "api",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk",
+        "@irp/security"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-config",
+      "path": "packages/plugin-config",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk",
+        "@irp/security"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-events",
+      "path": "packages/plugin-events",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-loader",
+      "path": "packages/plugin-loader",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk",
+        "@irp/plugin-registry"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-manager"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-manager",
+      "path": "packages/plugin-manager",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-runtime",
+        "@irp/plugin-loader",
+        "@irp/plugin-registry",
+        "@irp/plugin-sdk",
+        "@irp/plugin-samples"
+      ],
+      "downstreamDependencies": [
+        "apps/daemon"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-registry",
+      "path": "packages/plugin-registry",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-loader",
+        "packages/plugin-manager",
+        "packages/plugin-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-runtime",
+      "path": "packages/plugin-runtime",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk",
+        "@irp/plugin-api",
+        "@irp/plugin-config",
+        "@irp/plugin-events",
+        "@irp/plugin-registry",
+        "@irp/plugin-sandbox"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-manager"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-samples",
+      "path": "packages/plugin-samples",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-manager",
+        "packages/plugin-sandbox"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-sandbox",
+      "path": "packages/plugin-sandbox",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/plugin-sdk",
+        "@irp/security",
+        "@irp/plugin-samples"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::plugin-sdk",
+      "path": "packages/plugin-sdk",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "apps/daemon",
+        "packages/plugin-api",
+        "packages/plugin-config",
+        "packages/plugin-events",
+        "packages/plugin-loader",
+        "packages/plugin-manager",
+        "packages/plugin-registry",
+        "packages/plugin-runtime",
+        "packages/plugin-samples",
+        "packages/plugin-sandbox"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::queue",
+      "path": "packages/queue",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/shared"
+      ],
+      "downstreamDependencies": [
+        "apps/api"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::resilience-runtime",
+      "path": "packages/resilience-runtime",
+      "type": "package",
+      "capability": "resilience-runtime",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 61,
+      "upstreamDependencies": [
+        "@irp/connectivity",
+        "@irp/events",
+        "@irp/failover",
+        "@irp/gateway-registry",
+        "@irp/internet-intelligence-agent",
+        "@irp/network-intelligence",
+        "@irp/routing",
+        "@irp/telemetry",
+        "@irp/tunnel",
+        "@irp/utils"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "apps/daemon",
+        "packages/auto-optimization"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::routing",
+      "path": "packages/routing",
+      "type": "package",
+      "capability": "routing",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 4,
+      "upstreamDependencies": [
+        "@irp/connectivity",
+        "@irp/events",
+        "@irp/kernel",
+        "@irp/shared",
+        "@irp/telemetry"
+      ],
+      "downstreamDependencies": [
+        "apps/daemon",
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::sdk",
+      "path": "packages/sdk",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/kernel"
+      ],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::security",
+      "path": "packages/security",
+      "type": "package",
+      "capability": "security",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 3,
+      "upstreamDependencies": [
+        "@irp/auth",
+        "@irp/shared"
+      ],
+      "downstreamDependencies": [
+        "packages/plugin-api",
+        "packages/plugin-config",
+        "packages/plugin-sandbox"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::shared",
+      "path": "packages/shared",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "zod"
+      ],
+      "downstreamDependencies": [
+        "packages/auth",
+        "packages/connectivity",
+        "packages/events",
+        "packages/queue",
+        "packages/routing",
+        "packages/security",
+        "packages/tunnel"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::telemetry",
+      "path": "packages/telemetry",
+      "type": "package",
+      "capability": "telemetry",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 12,
+      "upstreamDependencies": [
+        "@irp/metrics",
+        "@irp/types",
+        "prom-client",
+        "@opentelemetry/api",
+        "@opentelemetry/exporter-metrics-otlp-proto",
+        "@opentelemetry/exporter-trace-otlp-proto",
+        "@opentelemetry/resources",
+        "@opentelemetry/sdk-node",
+        "@opentelemetry/sdk-metrics",
+        "@opentelemetry/sdk-trace-base",
+        "@opentelemetry/semantic-conventions"
+      ],
+      "downstreamDependencies": [
+        "apps/api",
+        "apps/cli",
+        "packages/connectivity",
+        "packages/resilience-runtime",
+        "packages/routing",
+        "packages/tunnel"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::tunnel",
+      "path": "packages/tunnel",
+      "type": "package",
+      "capability": "tunnel",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 10,
+      "upstreamDependencies": [
+        "@irp/events",
+        "@irp/shared",
+        "@irp/telemetry"
+      ],
+      "downstreamDependencies": [
+        "apps/daemon",
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::types",
+      "path": "packages/types",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/telemetry"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::utils",
+      "path": "packages/utils",
+      "type": "package",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [
+        "packages/resilience-runtime"
+      ],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "packages::windows-client",
+      "path": "packages/windows-client",
+      "type": "package",
+      "capability": "windows-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "apps::api",
+      "path": "apps/api",
+      "type": "app",
+      "capability": "api",
+      "executable": true,
+      "entrypoint": "pnpm --dir apps/api start",
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 17,
+      "upstreamDependencies": [
+        "@fastify/cors",
+        "@fastify/helmet",
+        "@fastify/swagger",
+        "@fastify/swagger-ui",
+        "@irp/auth",
+        "@irp/config",
+        "@irp/core",
+        "@irp/database",
+        "@irp/dns",
+        "@irp/events",
+        "@irp/historical-analysis",
+        "@irp/logger",
+        "@irp/metrics",
+        "@irp/network",
+        "@irp/queue",
+        "@irp/resilience-runtime",
+        "@irp/telemetry",
+        "@opentelemetry/api",
+        "fastify",
+        "pino",
+        "pino-pretty",
+        "prom-client",
+        "zod"
+      ],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "control-plane-runtime"
+        ],
+        "environment": "deployed-control-plane",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "apps::cli",
+      "path": "apps/cli",
+      "type": "app",
+      "capability": "control-plane",
+      "executable": true,
+      "entrypoint": "pnpm --dir apps/cli start",
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 2,
+      "upstreamDependencies": [
+        "@irp/config",
+        "@irp/core",
+        "@irp/logger",
+        "commander",
+        "@irp/network",
+        "@irp/telemetry",
+        "@irp/dns",
+        "@irp/resilience-runtime"
+      ],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "control-plane-runtime"
+        ],
+        "environment": "deployed-control-plane",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "apps::daemon",
+      "path": "apps/daemon",
+      "type": "app",
+      "capability": "daemon",
+      "executable": true,
+      "entrypoint": "pnpm --dir apps/daemon start",
+      "buildCommand": "tsc -p tsconfig.json",
+      "testCommand": "vitest run",
+      "sourceFiles": 6,
+      "upstreamDependencies": [
+        "@irp/auto-optimization",
+        "@irp/config",
+        "@irp/connectivity",
+        "@irp/core",
+        "@irp/logger",
+        "@irp/plugin-manager",
+        "@irp/plugin-sdk",
+        "@irp/resilience-runtime",
+        "@irp/routing",
+        "@irp/tunnel"
+      ],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime"
+        ],
+        "environment": "real-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "clients::android",
+      "path": "clients/android",
+      "type": "android-client",
+      "capability": "android-client",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 15,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "android-device-smoke"
+        ],
+        "environment": "real-android-device",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "clients::ios",
+      "path": "clients/ios",
+      "type": "ios-client",
+      "capability": "ios-client",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 12,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "ios-device-smoke"
+        ],
+        "environment": "real-ios-device",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "clients::ios::PacketTunnel",
+      "path": "clients/ios/PacketTunnel",
+      "type": "ios-network-extension",
+      "capability": "ios-network-extension",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 1,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "ios-device-smoke"
+        ],
+        "environment": "real-ios-device",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "infra::docker",
+      "path": "infra/docker",
+      "type": "operations",
+      "capability": "docker",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime",
+          "release-engineering"
+        ],
+        "environment": "real-container-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "infra::kubernetes",
+      "path": "infra/kubernetes",
+      "type": "operations",
+      "capability": "docker",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime",
+          "release-engineering"
+        ],
+        "environment": "real-container-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "infra::terraform",
+      "path": "infra/terraform",
+      "type": "operations",
+      "capability": "docker",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime",
+          "release-engineering"
+        ],
+        "environment": "real-container-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "ops::observability",
+      "path": "ops/observability",
+      "type": "operations",
+      "capability": "observability",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "control-plane-runtime",
+          "chaos-soak"
+        ],
+        "environment": "deployed-observability",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "ops::release",
+      "path": "ops/release",
+      "type": "operations",
+      "capability": "release-engineering",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "artifact-integrity",
+          "release-engineering"
+        ],
+        "environment": "release-pipeline",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::android-client.yml",
+      "path": ".github/workflows/android-client.yml",
+      "type": "workflow",
+      "capability": "android-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::ci.yml",
+      "path": ".github/workflows/ci.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::codeql.yml",
+      "path": ".github/workflows/codeql.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::dependency-review.yml",
+      "path": ".github/workflows/dependency-review.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::docker-publish.yml",
+      "path": ".github/workflows/docker-publish.yml",
+      "type": "workflow",
+      "capability": "docker",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::ios-client.yml",
+      "path": ".github/workflows/ios-client.yml",
+      "type": "workflow",
+      "capability": "ios-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::ios-network-integration.yml",
+      "path": ".github/workflows/ios-network-integration.yml",
+      "type": "workflow",
+      "capability": "ios-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::linux-primary-device.yml",
+      "path": ".github/workflows/linux-primary-device.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::macos-client.yml",
+      "path": ".github/workflows/macos-client.yml",
+      "type": "workflow",
+      "capability": "macos-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::public-runtime-lab.yml",
+      "path": ".github/workflows/public-runtime-lab.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::release-gate.yml",
+      "path": ".github/workflows/release-gate.yml",
+      "type": "workflow",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::repository-deep-audit.yml",
+      "path": ".github/workflows/repository-deep-audit.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::runtime-lab.yml",
+      "path": ".github/workflows/runtime-lab.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::system-assurance.yml",
+      "path": ".github/workflows/system-assurance.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::windows-client.yml",
+      "path": ".github/workflows/windows-client.yml",
+      "type": "workflow",
+      "capability": "windows-client",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-0",
+      "path": "docs/phases/phase-00.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        0
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-1",
+      "path": "docs/phases/phase-01.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        1
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-2",
+      "path": "docs/phases/phase-02.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        2
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-3",
+      "path": "docs/phases/phase-03.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        3
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-4",
+      "path": "docs/phases/phase-04.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        4
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-5",
+      "path": "docs/phases/phase-05.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        5
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-6",
+      "path": "docs/phases/phase-06.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        6
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-7",
+      "path": "docs/phases/phase-07.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        7
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-8",
+      "path": "docs/phases/phase-08.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        8
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-9",
+      "path": "docs/phases/phase-09.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        9
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-10",
+      "path": "docs/phases/phase-10.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        10
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-11",
+      "path": "docs/phases/phase-11.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        11
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-12",
+      "path": "docs/phases/phase-12.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        12
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-13",
+      "path": "docs/phases/phase-13.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        13
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-14",
+      "path": "docs/phases/phase-14.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        14
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-15",
+      "path": "docs/phases/phase-15.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        15
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-16",
+      "path": "docs/phases/phase-16.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        16
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-17",
+      "path": "docs/phases/phase-17.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        17
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-18",
+      "path": "docs/phases/phase-18.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        18
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-19",
+      "path": "docs/phases/phase-19.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        19
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-20",
+      "path": "docs/phases/phase-20.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        20
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-21",
+      "path": "docs/phases/phase-21.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        21
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-22",
+      "path": "docs/phases/phase-22.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        22
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-23",
+      "path": "docs/phases/phase-23.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        23
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-24",
+      "path": "docs/phases/phase-24.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        24
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-25",
+      "path": "docs/phases/phase-25.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        25
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-26",
+      "path": "docs/phases/phase-26.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        26
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-27",
+      "path": "docs/phases/phase-27.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        27
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-28",
+      "path": "docs/phases/phase-28.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        28
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-29",
+      "path": "docs/phases/phase-29.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        29
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-30",
+      "path": "docs/phases/phase-30.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        30
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-31",
+      "path": "docs/phases/phase-31.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        31
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-32",
+      "path": "docs/phases/phase-32.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        32
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-33",
+      "path": "docs/phases/phase-33.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        33
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-34",
+      "path": "docs/phases/phase-34.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        34
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-35",
+      "path": "docs/phases/phase-35.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        35
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-36",
+      "path": "docs/phases/phase-36.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        36
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-37",
+      "path": "docs/phases/phase-37.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        37
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-38",
+      "path": "docs/phases/phase-38.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        38
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-39",
+      "path": "docs/phases/phase-39.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        39
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-40",
+      "path": "docs/phases/phase-40.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        40
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-41",
+      "path": "docs/phases/phase-41.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        41
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-42",
+      "path": "docs/phases/phase-42.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        42
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-43",
+      "path": "docs/phases/phase-43.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        43
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-44",
+      "path": "docs/phases/phase-44.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        44
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-45",
+      "path": "docs/phases/phase-45.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        45
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-46",
+      "path": "docs/phases/phase-46.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        46
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-47",
+      "path": "docs/phases/phase-47.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        47
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-48",
+      "path": "docs/phases/phase-48.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        48
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-49",
+      "path": "docs/phases/phase-49.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        49
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-50",
+      "path": "docs/phases/phase-50.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        50
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-51",
+      "path": "docs/phases/phase-51.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        51
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-52",
+      "path": "docs/phases/phase-52.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        52
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-53",
+      "path": "docs/phases/phase-53.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        53
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-54",
+      "path": "docs/phases/phase-54.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        54
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-55",
+      "path": "docs/phases/phase-55.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        55
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-56",
+      "path": "docs/phases/phase-56.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        56
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-57",
+      "path": "docs/phases/phase-57.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        57
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-58",
+      "path": "docs/phases/phase-58.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        58
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-59",
+      "path": "docs/phases/phase-59.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        59
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-60",
+      "path": "docs/phases/phase-60.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        60
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-61",
+      "path": "docs/phases/phase-61.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        61
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-62",
+      "path": "docs/phases/phase-62.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        62
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-63",
+      "path": "docs/phases/phase-63.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        63
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-64",
+      "path": "docs/phases/phase-64.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        64
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-65",
+      "path": "docs/phases/phase-65.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        65
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-66",
+      "path": "docs/phases/phase-66.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        66
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-67",
+      "path": "docs/phases/phase-67.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        67
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-68",
+      "path": "docs/phases/phase-68.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        68
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-69",
+      "path": "docs/phases/phase-69.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        69
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-70",
+      "path": "docs/phases/phase-70.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        70
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-71",
+      "path": "docs/phases/phase-71.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        71
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-72",
+      "path": "docs/phases/phase-72.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        72
+      ],
+      "realEnvironment": {
+        "status": "PENDING",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-73",
+      "path": "docs/phases/phase-73.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        73
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-74",
+      "path": "docs/phases/phase-74.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        74
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-75",
+      "path": "docs/phases/phase-75.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        75
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-76",
+      "path": "docs/phases/phase-76.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        76
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-77",
+      "path": "docs/phases/phase-77.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        77
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-78",
+      "path": "docs/phases/phase-78.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        78
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-79",
+      "path": "docs/phases/phase-79.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        79
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-80",
+      "path": "docs/phases/phase-80.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        80
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-81",
+      "path": "docs/phases/phase-81.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        81
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-82",
+      "path": "docs/phases/phase-82.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        82
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-83",
+      "path": "docs/phases/phase-83.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        83
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-84",
+      "path": "docs/phases/phase-84.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        84
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-85",
+      "path": "docs/phases/phase-85.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        85
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-86",
+      "path": "docs/phases/phase-86.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        86
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-87",
+      "path": "docs/phases/phase-87.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        87
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-88",
+      "path": "docs/phases/phase-88.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        88
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-89",
+      "path": "docs/phases/phase-89.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        89
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-90",
+      "path": "docs/phases/phase-90.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        90
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-91",
+      "path": "docs/phases/phase-91.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        91
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-92",
+      "path": "docs/phases/phase-92.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        92
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-93",
+      "path": "docs/phases/phase-93.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        93
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-94",
+      "path": "docs/phases/phase-94.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        94
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-95",
+      "path": "docs/phases/phase-95.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        95
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-96",
+      "path": "docs/phases/phase-96.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        96
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-97",
+      "path": "docs/phases/phase-97.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        97
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-98",
+      "path": "docs/phases/phase-98.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        98
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-99",
+      "path": "docs/phases/phase-99.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        99
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-100",
+      "path": "docs/phases/phase-100.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        100
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-101",
+      "path": "docs/phases/phase-101.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        101
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-102",
+      "path": "docs/phases/phase-102.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        102
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-103",
+      "path": "docs/phases/phase-103.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        103
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-104",
+      "path": "docs/phases/phase-104.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        104
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-105",
+      "path": "docs/phases/phase-105.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        105
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-106",
+      "path": "docs/phases/phase-106.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        106
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-107",
+      "path": "docs/phases/phase-107.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        107
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-108",
+      "path": "docs/phases/phase-108.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        108
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-109",
+      "path": "docs/phases/phase-109.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        109
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-110",
+      "path": "docs/phases/phase-110.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        110
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-111",
+      "path": "docs/phases/phase-111.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        111
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-112",
+      "path": "docs/phases/phase-112.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        112
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-113",
+      "path": "docs/phases/phase-113.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        113
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-114",
+      "path": "docs/phases/phase-114.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        114
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-115",
+      "path": "docs/phases/phase-115.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        115
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-116",
+      "path": "docs/phases/phase-116.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        116
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-117",
+      "path": "docs/phases/phase-117.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        117
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-118",
+      "path": "docs/phases/phase-118.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        118
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-119",
+      "path": "docs/phases/phase-119.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        119
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-120",
+      "path": "docs/phases/phase-120.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        120
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-121",
+      "path": "docs/phases/phase-121.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        121
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-122",
+      "path": "docs/phases/phase-122.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        122
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-123",
+      "path": "docs/phases/phase-123.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        123
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-124",
+      "path": "docs/phases/phase-124.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        124
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-125",
+      "path": "docs/phases/phase-125.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        125
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-126",
+      "path": "docs/phases/phase-126.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        126
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-127",
+      "path": "docs/phases/phase-127.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        127
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-128",
+      "path": "docs/phases/phase-128.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        128
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-129",
+      "path": "docs/phases/phase-129.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        129
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-130",
+      "path": "docs/phases/phase-130.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        130
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-131",
+      "path": "docs/phases/phase-131.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        131
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-132",
+      "path": "docs/phases/phase-132.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        132
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-133",
+      "path": "docs/phases/phase-133.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        133
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-134",
+      "path": "docs/phases/phase-134.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        134
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-135",
+      "path": "docs/phases/phase-135.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        135
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-136",
+      "path": "docs/phases/phase-136.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        136
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-137",
+      "path": "docs/phases/phase-137.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        137
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-138",
+      "path": "docs/phases/phase-138.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        138
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-139",
+      "path": "docs/phases/phase-139.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        139
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-140",
+      "path": "docs/phases/phase-140.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        140
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-141",
+      "path": "docs/phases/phase-141.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        141
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-142",
+      "path": "docs/phases/phase-142.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        142
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-143",
+      "path": "docs/phases/phase-143.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        143
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-144",
+      "path": "docs/phases/phase-144.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        144
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-145",
+      "path": "docs/phases/phase-145.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        145
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-146",
+      "path": "docs/phases/phase-146.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        146
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-147",
+      "path": "docs/phases/phase-147.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        147
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-148",
+      "path": "docs/phases/phase-148.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        148
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-149",
+      "path": "docs/phases/phase-149.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        149
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "roadmap::phase-150",
+      "path": "docs/phases/phase-150.md",
+      "type": "roadmap-phase",
+      "capability": "release-engineering",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [
+        150
+      ],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "assurance::kubernetes",
+      "path": "ops/release/real-environment::kubernetes",
+      "type": "assurance-surface",
+      "capability": "kubernetes",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime",
+          "release-engineering"
+        ],
+        "environment": "real-kubernetes-cluster",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "assurance::backup-restore",
+      "path": "ops/release/real-environment::backup-restore",
+      "type": "assurance-surface",
+      "capability": "backup-restore",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "backup-restore"
+        ],
+        "environment": "real-backup-target",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "assurance::upgrade-rollback",
+      "path": "ops/release/real-environment::upgrade-rollback",
+      "type": "assurance-surface",
+      "capability": "upgrade-rollback",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "upgrade-rollback"
+        ],
+        "environment": "real-deployment",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "assurance::chaos-soak",
+      "path": "ops/release/real-environment::chaos-soak",
+      "type": "assurance-surface",
+      "capability": "chaos-soak",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "chaos-soak"
+        ],
+        "environment": "real-deployment",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    }
+  ],
+  "roadmap": {
+    "expectedThrough": 150,
+    "discoveredPhaseDocs": [
+      0,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80
+    ],
+    "canonicalPhaseRecords": [
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      71,
+      72
+    ],
+    "missingCanonicalPhaseDocs": [],
+    "policy": "Only phase records explicitly designated as current/canonical by docs/phases/README.md are required. Historical 01–38 and future unstarted phases are not mechanically required."
+  },
+  "requiredCapabilitySurfaces": [
+    "control-plane",
+    "resilience-runtime",
+    "network-intelligence",
+    "connectivity",
+    "dns",
+    "gateway-registry",
+    "routing",
+    "failover",
+    "tunnel",
+    "database",
+    "api",
+    "daemon",
+    "security",
+    "telemetry",
+    "linux-client",
+    "macos-client",
+    "windows-client",
+    "android-client",
+    "ios-client",
+    "ios-network-extension",
+    "observability",
+    "docker",
+    "kubernetes",
+    "release-engineering",
+    "regional-validation",
+    "backup-restore",
+    "upgrade-rollback",
+    "chaos-soak"
+  ],
+  "assuranceOnlyCapabilitySurfaces": [
+    "kubernetes",
+    "backup-restore",
+    "upgrade-rollback",
+    "chaos-soak"
+  ],
+  "missingCapabilitySurfaces": [
+    "regional-validation"
+  ],
+  "closedLoopStages": [
+    "observe",
+    "measure",
+    "detect",
+    "diagnose",
+    "decide",
+    "policy",
+    "apply",
+    "verify",
+    "recover",
+    "telemetry"
+  ],
+  "verdict": "BLOCKED",
+  "failures": [],
+  "blocked": [
+    "regional-validation: capability surface has no discovered repository owner or assurance-surface contract"
+  ],
+  "executableComponentsWithoutAssurance": 0,
+  "registeredRealEnvironmentContracts": 28,
+  "realEnvironmentEvidenceSchema": {
+    "requiredFields": [
+      "componentId",
+      "commitSha",
+      "artifactSha256",
+      "environment",
+      "observedAt",
+      "entrypoint",
+      "result",
+      "traceId",
+      "failureInjection",
+      "recoveryVerification"
+    ],
+    "allowedResult": [
+      "pass",
+      "fail"
+    ]
+  },
+  "reportSha256": "75d04d3e46e6112f6a65504a5e45a2f4d378764e1a1f2838b8c301f268de72fd"
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T10:22:42.106Z",
+  "generatedAt": "2026-09-11T20:31:14.949Z",
   "workspaceCount": 43,
   "workflowCount": 15,
   "findings": [],
@@ -9,56 +9,99 @@
       "path": "apps/api/package.json",
       "sourceFiles": 10,
       "testFiles": 7,
-      "scripts": ["build", "lint", "start", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/cli",
       "path": "apps/cli/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "start", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/daemon",
       "path": "apps/daemon/package.json",
       "sourceFiles": 3,
       "testFiles": 3,
-      "scripts": ["build", "lint", "start", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/auth",
       "path": "packages/auth/package.json",
       "sourceFiles": 2,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/auto-optimization",
       "path": "packages/auto-optimization/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/config",
       "path": "packages/config/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/connectivity",
       "path": "packages/connectivity/package.json",
       "sourceFiles": 3,
       "testFiles": 3,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/core",
       "path": "packages/core/package.json",
       "sourceFiles": 3,
       "testFiles": 3,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/database",
@@ -80,238 +123,411 @@
       "path": "packages/dns/package.json",
       "sourceFiles": 5,
       "testFiles": 3,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/events",
       "path": "packages/events/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/failover",
       "path": "packages/failover/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/gateway-registry",
       "path": "packages/gateway-registry/package.json",
       "sourceFiles": 8,
       "testFiles": 8,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/historical-analysis",
       "path": "packages/historical-analysis/package.json",
       "sourceFiles": 2,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/internet-intelligence-agent",
       "path": "packages/internet-intelligence-agent/package.json",
       "sourceFiles": 6,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/kernel",
       "path": "packages/kernel/package.json",
       "sourceFiles": 1,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/linux-client",
       "path": "packages/linux-client/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "start", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/logger",
       "path": "packages/logger/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/macos-client",
       "path": "packages/macos-client/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "start", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/metrics",
       "path": "packages/metrics/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/network",
       "path": "packages/network/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/network-intelligence",
       "path": "packages/network-intelligence/package.json",
       "sourceFiles": 31,
       "testFiles": 6,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-api",
       "path": "packages/plugin-api/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-config",
       "path": "packages/plugin-config/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-events",
       "path": "packages/plugin-events/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-loader",
       "path": "packages/plugin-loader/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-manager",
       "path": "packages/plugin-manager/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-registry",
       "path": "packages/plugin-registry/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-runtime",
       "path": "packages/plugin-runtime/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-samples",
       "path": "packages/plugin-samples/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-sandbox",
       "path": "packages/plugin-sandbox/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/plugin-sdk",
       "path": "packages/plugin-sdk/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/queue",
       "path": "packages/queue/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
       "sourceFiles": 40,
       "testFiles": 20,
-      "scripts": ["build", "coverage", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "coverage",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/routing",
       "path": "packages/routing/package.json",
       "sourceFiles": 1,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/sdk",
       "path": "packages/sdk/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/security",
       "path": "packages/security/package.json",
       "sourceFiles": 1,
       "testFiles": 2,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/shared",
       "path": "packages/shared/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/telemetry",
       "path": "packages/telemetry/package.json",
       "sourceFiles": 6,
       "testFiles": 6,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/tunnel",
       "path": "packages/tunnel/package.json",
       "sourceFiles": 5,
       "testFiles": 5,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/types",
       "path": "packages/types/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/utils",
       "path": "packages/utils/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     },
     {
       "name": "@irp/windows-client",
       "path": "packages/windows-client/package.json",
       "sourceFiles": 1,
       "testFiles": 1,
-      "scripts": ["build", "lint", "test", "typecheck"]
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ]
     }
   ]
 }

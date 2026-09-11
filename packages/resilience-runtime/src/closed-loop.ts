@@ -3,7 +3,7 @@ import type { ResilienceRuntime } from './runtime.js';
 
 export type ClosedLoopStopReason = 'healthy' | 'max_cycles' | 'blocked' | 'failed' | 'aborted';
 
-export interface ClosedLoopOptions {
+export interface ClosedLoopOptions extends Partial<RuntimeContext> {
   /** Maximum number of runtime cycles to execute. Defaults to one for safe-by-default behavior. */
   readonly maxCycles?: number;
   /** Delay between cycles in milliseconds. Defaults to zero. */
@@ -92,6 +92,26 @@ export class BoundedClosedLoopController {
     const baseCorrelationId =
       options.correlationId ?? options.context?.correlationId ?? 'closed-loop';
     const baseIdempotencyKey = options.idempotencyKey ?? baseCorrelationId;
+    const runtimeContextOverrides: Partial<RuntimeContext> = {
+      ...(options.context ?? {}),
+    };
+    for (const key of [
+      'runtimeId',
+      'mode',
+      'deadline',
+      'cancelled',
+      'securityContext',
+      'policySnapshot',
+      'capabilitySnapshot',
+      'observationSnapshot',
+      'configuration',
+      'correlationId',
+    ] as const) {
+      const value = options[key];
+      if (value !== undefined) {
+        (runtimeContextOverrides as Record<string, unknown>)[key] = value;
+      }
+    }
 
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {
       if (signal?.aborted) {
@@ -116,7 +136,7 @@ export class BoundedClosedLoopController {
       let record: DecisionRecord;
       try {
         record = await this.runtime.cycle({
-          ...(options.context ?? {}),
+          ...runtimeContextOverrides,
           correlationId: `${baseCorrelationId}/cycle-${cycleNumber}`,
           idempotencyKey: `${baseIdempotencyKey}/cycle-${cycleNumber}`,
         });

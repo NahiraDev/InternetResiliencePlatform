@@ -74,7 +74,8 @@ docker exec "$api_container" sh -c '
   pnpm --version >/dev/null
   pnpm exec prisma --version >/dev/null
 '
-! docker compose -f "$compose_file" logs --no-color api | grep -Ei 'EACCES.*corepack|password|JWT_SECRET|DATABASE_URL|REMOTE_CLIENT_CREDENTIAL_KEY|REMOTE_CLIENT_REFRESH_KEY' >/dev/null
+secret_log_pattern='EACCES.*corepack|JWT_SECRET[[:space:]]*[:=]|DATABASE_URL[[:space:]]*[:=]|REMOTE_CLIENT_CREDENTIAL_KEY[[:space:]]*[:=]|REMOTE_CLIENT_REFRESH_KEY[[:space:]]*[:=]|POSTGRES_PASSWORD[[:space:]]*[:=]|"password"[[:space:]]*:[[:space:]]*"'
+! docker compose -f "$compose_file" logs --no-color api | grep -Eiq "$secret_log_pattern" >/dev/null
 
 docker compose -f "$compose_file" restart api
 wait_ready

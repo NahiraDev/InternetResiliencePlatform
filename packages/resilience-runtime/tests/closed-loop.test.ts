@@ -89,6 +89,26 @@ describe('BoundedClosedLoopController', () => {
     expect(fake.cycle).toHaveBeenCalledTimes(3);
   });
 
+  it('merges top-level runtime context overrides into each cycle input', async () => {
+    const fake = runtime('success');
+    const controller = new BoundedClosedLoopController(fake);
+
+    await controller.run({
+      maxCycles: 1,
+      mode: 'simulation',
+      runtimeId: 'loop-runtime',
+      securityContext: { trusted: true },
+    });
+
+    expect(fake.cycle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'simulation',
+        runtimeId: 'loop-runtime',
+        securityContext: { trusted: true },
+      }),
+    );
+  });
+
   it('stops on a blocked decision instead of continuing mutation attempts', async () => {
     const fake = runtime('blocked', 'success');
     const controller = new BoundedClosedLoopController(fake);
