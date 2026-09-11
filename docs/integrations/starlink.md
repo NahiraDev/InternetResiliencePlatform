@@ -26,16 +26,16 @@ The provider emits a normal `ConnectivityHealth` object so the existing Network 
 
 The following architectures are registered as **integration profiles**, not as public credentials or hard-coded endpoints:
 
-| Profile | Role | IRP use |
-| --- | --- | --- |
-| Starlink Reverse Egress | Starlink node initiates a persistent tunnel to a reachable VPS | Reverse-egress / shutdown-resilience topology |
-| JavidNet | Starlink gateway plus mesh/leaf/hop/gateway model | Mesh gateway adapter |
-| Javid Mask | Raspberry Pi gateway patterns using Xray/VLESS/VMess or WireGuard/VPS | Privacy gateway adapter |
-| GetAStatic | WireGuard tunnel from Starlink CGNAT to a dedicated public IPv4 | Public-ingress tunnel profile |
-| Egret | WireGuard tunnel from Starlink CGNAT to a dedicated public IPv4 | Public-ingress tunnel profile |
-| NASNET Connect | Starlink + MikroTik gateway and multiple VPN/proxy services | Router gateway profile |
-| Pi-Starlink / StarlinuX | Starlink + Linux/OpenWrt + WireGuard/OpenVPN/IPv6 | Self-hosted gateway profile |
-| Raspberry Gateway | Starlink monitoring plus Xray/SOCKS gateway | Local gateway profile |
+| Profile                 | Role                                                                  | IRP use                                       |
+| ----------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
+| Starlink Reverse Egress | Starlink node initiates a persistent tunnel to a reachable VPS        | Reverse-egress / shutdown-resilience topology |
+| JavidNet                | Starlink gateway plus mesh/leaf/hop/gateway model                     | Mesh gateway adapter                          |
+| Javid Mask              | Raspberry Pi gateway patterns using Xray/VLESS/VMess or WireGuard/VPS | Privacy gateway adapter                       |
+| GetAStatic              | WireGuard tunnel from Starlink CGNAT to a dedicated public IPv4       | Public-ingress tunnel profile                 |
+| Egret                   | WireGuard tunnel from Starlink CGNAT to a dedicated public IPv4       | Public-ingress tunnel profile                 |
+| NASNET Connect          | Starlink + MikroTik gateway and multiple VPN/proxy services           | Router gateway profile                        |
+| Pi-Starlink / StarlinuX | Starlink + Linux/OpenWrt + WireGuard/OpenVPN/IPv6                     | Self-hosted gateway profile                   |
+| Raspberry Gateway       | Starlink monitoring plus Xray/SOCKS gateway                           | Local gateway profile                         |
 
 IRP must never embed a third-party private key, public account, free proxy URI, or claimed public Starlink exit endpoint. Credentials and endpoints belong in the existing credential/configuration abstractions.
 

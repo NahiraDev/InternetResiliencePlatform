@@ -19,8 +19,7 @@ describe('Phase 42 remote client API', () => {
           : undefined;
       const message =
         typeof errorRecord?.message === 'string' ? errorRecord.message : String(error);
-      const statusCode =
-        typeof errorRecord?.statusCode === 'number' ? errorRecord.statusCode : 500;
+      const statusCode = typeof errorRecord?.statusCode === 'number' ? errorRecord.statusCode : 500;
       reply.code(statusCode).send({ error: message });
     });
     registerRemoteClientRoutes(app, { jwtSecret, credentialKey, refreshKey });

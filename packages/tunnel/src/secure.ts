@@ -39,7 +39,12 @@ export function validateProviderCompatibility(
     });
   }
 
-  if (!provider.endpoints.some((endpoint) => endpoint.host === config.endpoint.host && endpoint.port === config.endpoint.port)) {
+  if (
+    !provider.endpoints.some(
+      (endpoint) =>
+        endpoint.host === config.endpoint.host && endpoint.port === config.endpoint.port,
+    )
+  ) {
     throw tunnelErrors.policy('Tunnel endpoint is not advertised by the provider', {
       providerId: provider.id,
       endpoint: config.endpoint.host,
@@ -60,7 +65,9 @@ export function validateProviderCompatibility(
     });
   }
 
-  const missing = config.capabilities.filter((capability) => !provider.capabilities.includes(capability));
+  const missing = config.capabilities.filter(
+    (capability) => !provider.capabilities.includes(capability),
+  );
   if (missing.length > 0) {
     throw tunnelErrors.capability('Provider is missing required tunnel capabilities', {
       providerId: provider.id,
@@ -79,10 +86,13 @@ export async function withSecureTunnelTimeout<T>(
   timeoutMs: number,
 ): Promise<SecureTunnelOperationResult<T>> {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 300_000) {
-    throw tunnelErrors.configuration('Tunnel operation timeout must be between 1000 and 300000 milliseconds', {
-      operation: operationType,
-      timeoutMs,
-    });
+    throw tunnelErrors.configuration(
+      'Tunnel operation timeout must be between 1000 and 300000 milliseconds',
+      {
+        operation: operationType,
+        timeoutMs,
+      },
+    );
   }
 
   const controller = new AbortController();
@@ -95,7 +105,12 @@ export async function withSecureTunnelTimeout<T>(
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           controller.abort(new Error(`${operationType} timed out`));
-          reject(tunnelErrors.dependency(`Tunnel ${operationType} timed out`, { operation: operationType, timeoutMs }));
+          reject(
+            tunnelErrors.dependency(`Tunnel ${operationType} timed out`, {
+              operation: operationType,
+              timeoutMs,
+            }),
+          );
         }, timeoutMs);
       }),
     ]);
@@ -108,15 +123,26 @@ export async function withSecureTunnelTimeout<T>(
 
 export function validateTunnelHealthEvidence(health: TunnelHealth, nowMs = Date.now()): void {
   const checkedAtMs = Date.parse(health.checkedAt);
-  if (!Number.isFinite(checkedAtMs)) throw tunnelErrors.configuration('Tunnel health timestamp is invalid');
-  if (checkedAtMs > nowMs + 5_000) throw tunnelErrors.configuration('Tunnel health timestamp cannot be materially in the future');
-  if (health.latencyMs !== undefined && (!Number.isFinite(health.latencyMs) || health.latencyMs < 0)) {
+  if (!Number.isFinite(checkedAtMs))
+    throw tunnelErrors.configuration('Tunnel health timestamp is invalid');
+  if (checkedAtMs > nowMs + 5_000)
+    throw tunnelErrors.configuration('Tunnel health timestamp cannot be materially in the future');
+  if (
+    health.latencyMs !== undefined &&
+    (!Number.isFinite(health.latencyMs) || health.latencyMs < 0)
+  ) {
     throw tunnelErrors.configuration('Tunnel health latency must be non-negative');
   }
-  if (health.packetLoss !== undefined && (!Number.isFinite(health.packetLoss) || health.packetLoss < 0 || health.packetLoss > 100)) {
+  if (
+    health.packetLoss !== undefined &&
+    (!Number.isFinite(health.packetLoss) || health.packetLoss < 0 || health.packetLoss > 100)
+  ) {
     throw tunnelErrors.configuration('Tunnel health packet loss must be between 0 and 100 percent');
   }
-  if (health.status === 'healthy' && (!health.connectivity || !health.authenticated || !health.routeReachable)) {
+  if (
+    health.status === 'healthy' &&
+    (!health.connectivity || !health.authenticated || !health.routeReachable)
+  ) {
     throw tunnelErrors.configuration('Healthy tunnel evidence is internally inconsistent');
   }
 }

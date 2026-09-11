@@ -102,7 +102,9 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(activated.gateway.lifecycle).toBe('active');
     expect(manager.setDesiredState('gw-1', 'active', 'activate gateway')).toEqual(activated);
 
-    expect(manager.setDesiredState('gw-1', 'draining', 'maintenance drain').gateway.lifecycle).toBe('draining');
+    expect(manager.setDesiredState('gw-1', 'draining', 'maintenance drain').gateway.lifecycle).toBe(
+      'draining',
+    );
     manager.setCapacityLimit('gw-1', 10);
     manager.setAllocatedCapacity('gw-1', 10);
     expect(() => manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance')).toThrow(
@@ -110,7 +112,9 @@ describe('InMemoryGatewayFleetManager', () => {
     );
 
     manager.setAllocatedCapacity('gw-1', 0);
-    expect(manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance').gateway.lifecycle).toBe('disabled');
+    expect(
+      manager.setDesiredState('gw-1', 'disabled', 'disable during maintenance').gateway.lifecycle,
+    ).toBe('disabled');
 
     registry.transition('gw-1', 'retired');
     expect(() => manager.setDesiredState('gw-1', 'active', 'unsafe restore')).toThrow(
@@ -125,10 +129,18 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.setAllocatedCapacity('gw-1', 50).capacity.allocated).toBe(50);
     expect(manager.reserveCapacity('gw-1', 40).capacity.reserved).toBe(40);
     expect(() => manager.reserveCapacity('gw-1', 11)).toThrow('capacity allocation exceeds limit');
-    expect(() => manager.setAllocatedCapacity('gw-1', 61)).toThrow('capacity allocation exceeds limit');
-    expect(() => manager.setAllocatedCapacity('gw-1', -1)).toThrow('allocated capacity must be a finite non-negative number');
-    expect(() => manager.reserveCapacity('gw-1', 0)).toThrow('capacity amount must be a finite positive number');
-    expect(() => manager.releaseCapacity('gw-1', 41)).toThrow('cannot release more reserved capacity than available');
+    expect(() => manager.setAllocatedCapacity('gw-1', 61)).toThrow(
+      'capacity allocation exceeds limit',
+    );
+    expect(() => manager.setAllocatedCapacity('gw-1', -1)).toThrow(
+      'allocated capacity must be a finite non-negative number',
+    );
+    expect(() => manager.reserveCapacity('gw-1', 0)).toThrow(
+      'capacity amount must be a finite positive number',
+    );
+    expect(() => manager.releaseCapacity('gw-1', 41)).toThrow(
+      'cannot release more reserved capacity than available',
+    );
 
     manager.setAllocatedCapacity('gw-1', 0);
     expect(manager.releaseCapacity('gw-1', 40).capacity).toEqual({
@@ -146,7 +158,11 @@ describe('InMemoryGatewayFleetManager', () => {
     manager.setAllocatedCapacity('gw-1', 60);
     manager.reserveCapacity('gw-1', 20);
     expect(() => manager.setCapacityLimit('gw-1', 79)).toThrow('capacity allocation exceeds limit');
-    expect(manager.get('gw-1')?.capacity).toMatchObject({ limit: 100, allocated: 60, reserved: 20 });
+    expect(manager.get('gw-1')?.capacity).toMatchObject({
+      limit: 100,
+      allocated: 60,
+      reserved: 20,
+    });
   });
 
   it('validates maintenance windows and reports active windows deterministically', () => {
@@ -167,27 +183,37 @@ describe('InMemoryGatewayFleetManager', () => {
     expect(manager.get('gw-1')?.maintenanceWindow).toBeUndefined();
     expect(manager.isUnderMaintenance('gw-1', new Date('2026-08-28T13:30:00.000Z'))).toBe(false);
 
-    expect(() => manager.scheduleMaintenance('gw-1', {
-      startsAt: '2026-08-28T14:00:00.000Z',
-      endsAt: '2026-08-28T14:00:00.000Z',
-      reason: 'invalid',
-    })).toThrow('maintenance endsAt must be after startsAt');
+    expect(() =>
+      manager.scheduleMaintenance('gw-1', {
+        startsAt: '2026-08-28T14:00:00.000Z',
+        endsAt: '2026-08-28T14:00:00.000Z',
+        reason: 'invalid',
+      }),
+    ).toThrow('maintenance endsAt must be after startsAt');
   });
 
   it('tracks upgrades with a strict state machine', () => {
     const { manager } = createManager();
 
-    expect(manager.scheduleUpgrade('gw-1', '2026.08.28.2', 'planned upgrade').upgrade.status).toBe('scheduled');
+    expect(manager.scheduleUpgrade('gw-1', '2026.08.28.2', 'planned upgrade').upgrade.status).toBe(
+      'scheduled',
+    );
     expect(manager.markUpgradeStarted('gw-1').upgrade.status).toBe('in-progress');
-    expect(manager.markUpgradeCompleted('gw-1', 'verification passed').upgrade.status).toBe('succeeded');
+    expect(manager.markUpgradeCompleted('gw-1', 'verification passed').upgrade.status).toBe(
+      'succeeded',
+    );
     expect(manager.get('gw-1')?.upgrade.completedAt).toEqual(expect.any(String));
-    expect(() => manager.markUpgradeStarted('gw-1')).toThrow('gateway upgrade must be scheduled before starting');
+    expect(() => manager.markUpgradeStarted('gw-1')).toThrow(
+      'gateway upgrade must be scheduled before starting',
+    );
   });
 
   it('records failed upgrades and rejects invalid scheduling', () => {
     const { manager } = createManager();
 
-    expect(() => manager.scheduleUpgrade('gw-1', '', 'invalid')).toThrow('upgrade targetVersion is required');
+    expect(() => manager.scheduleUpgrade('gw-1', '', 'invalid')).toThrow(
+      'upgrade targetVersion is required',
+    );
     manager.scheduleUpgrade('gw-1', '2026.08.28.2', 'planned upgrade');
     manager.markUpgradeStarted('gw-1');
     expect(manager.markUpgradeFailed('gw-1', 'verification failed').upgrade.status).toBe('failed');
@@ -200,7 +226,9 @@ describe('InMemoryGatewayFleetManager', () => {
 
     manager.scheduleUpgrade('gw-1', '2026.08.28.2');
     manager.markUpgradeStarted('gw-1');
-    expect(() => manager.scheduleUpgrade('gw-1', '2026.08.28.3')).toThrow('gateway upgrade is already in progress');
+    expect(() => manager.scheduleUpgrade('gw-1', '2026.08.28.3')).toThrow(
+      'gateway upgrade is already in progress',
+    );
     const failed = manager.markUpgradeFailed('gw-1', 'executor rejected upgrade');
     expect(failed.upgrade.targetVersion).toBe('2026.08.28.2');
     expect(failed.upgrade.status).toBe('failed');
@@ -214,13 +242,19 @@ describe('InMemoryGatewayFleetManager', () => {
     registry.transition('gw-1', 'retired');
 
     expect(() => manager.updateProvisioning('gw-1', provisioning)).not.toThrow();
-    expect(() => manager.setDesiredState('gw-1', 'active', 'restore')).toThrow('retired gateways cannot be managed by fleet operations');
-    expect(() => manager.scheduleMaintenance('gw-1', {
-      startsAt: '2026-08-28T13:00:00.000Z',
-      endsAt: '2026-08-28T14:00:00.000Z',
-      reason: 'retired gateway',
-    })).toThrow('retired gateways cannot have maintenance scheduled');
-    expect(() => manager.scheduleUpgrade('gw-1', '2026.08.28.2')).toThrow('retired gateways cannot be upgraded');
+    expect(() => manager.setDesiredState('gw-1', 'active', 'restore')).toThrow(
+      'retired gateways cannot be managed by fleet operations',
+    );
+    expect(() =>
+      manager.scheduleMaintenance('gw-1', {
+        startsAt: '2026-08-28T13:00:00.000Z',
+        endsAt: '2026-08-28T14:00:00.000Z',
+        reason: 'retired gateway',
+      }),
+    ).toThrow('retired gateways cannot have maintenance scheduled');
+    expect(() => manager.scheduleUpgrade('gw-1', '2026.08.28.2')).toThrow(
+      'retired gateways cannot be upgraded',
+    );
   });
 
   it('publishes operational telemetry without changing state semantics', () => {
@@ -235,21 +269,30 @@ describe('InMemoryGatewayFleetManager', () => {
     });
 
     expect(publish).toHaveBeenCalledTimes(3);
-    expect(publish).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      type: 'gateway.fleet.state.changed',
-      gatewayId: 'gw-1',
-      reason: 'operator requested activation',
-      occurredAt: expect.any(String),
-    } satisfies Partial<GatewayFleetEvent>));
-    expect(publish).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      type: 'gateway.fleet.capacity.updated',
-      gatewayId: 'gw-1',
-    } satisfies Partial<GatewayFleetEvent>));
-    expect(publish).toHaveBeenNthCalledWith(3, expect.objectContaining({
-      type: 'gateway.fleet.maintenance.scheduled',
-      gatewayId: 'gw-1',
-      reason: 'maintenance',
-    } satisfies Partial<GatewayFleetEvent>));
+    expect(publish).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        type: 'gateway.fleet.state.changed',
+        gatewayId: 'gw-1',
+        reason: 'operator requested activation',
+        occurredAt: expect.any(String),
+      } satisfies Partial<GatewayFleetEvent>),
+    );
+    expect(publish).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        type: 'gateway.fleet.capacity.updated',
+        gatewayId: 'gw-1',
+      } satisfies Partial<GatewayFleetEvent>),
+    );
+    expect(publish).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        type: 'gateway.fleet.maintenance.scheduled',
+        gatewayId: 'gw-1',
+        reason: 'maintenance',
+      } satisfies Partial<GatewayFleetEvent>),
+    );
   });
 
   it('lists records deterministically and returns defensive copies', () => {

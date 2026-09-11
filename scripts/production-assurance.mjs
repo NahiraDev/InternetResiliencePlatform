@@ -19,15 +19,30 @@ const record = (id, status, detail, evidence = {}) => {
   if (status === 'fail' && evidence.diagnostic) console.error(evidence.diagnostic);
 };
 
-const run = (command, args) => new Promise((resolve) => {
-  const child = spawn(command, args, { cwd: root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
-  let stdout = '';
-  let stderr = '';
-  child.stdout.on('data', (chunk) => { stdout += chunk; });
-  child.stderr.on('data', (chunk) => { stderr += chunk; });
-  child.on('error', (error) => resolve({ code: 1, stdout, stderr: `${stderr}${error instanceof Error ? error.message : String(error)}` }));
-  child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
-});
+const run = (command, args) =>
+  new Promise((resolve) => {
+    const child = spawn(command, args, {
+      cwd: root,
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('error', (error) =>
+      resolve({
+        code: 1,
+        stdout,
+        stderr: `${stderr}${error instanceof Error ? error.message : String(error)}`,
+      }),
+    );
+    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
+  });
 
 const diagnostic = (result) => {
   const combined = `${result.stdout}\n${result.stderr}`.trim();
@@ -65,7 +80,9 @@ const build = await run('pnpm', ['build']);
 record(
   'runtime-build',
   build.code === 0 ? 'pass' : 'fail',
-  build.code === 0 ? 'full workspace build completed successfully' : `full workspace build failed with exit ${build.code}`,
+  build.code === 0
+    ? 'full workspace build completed successfully'
+    : `full workspace build failed with exit ${build.code}`,
   { exitCode: build.code, diagnostic: build.code === 0 ? undefined : diagnostic(build) },
 );
 
@@ -73,8 +90,13 @@ const integration = await run('pnpm', ['runtime:integration:strict']);
 record(
   'package-integration',
   integration.code === 0 ? 'pass' : 'fail',
-  integration.code === 0 ? 'all discovered package integrations passed' : `package integration failed with exit ${integration.code}`,
-  { exitCode: integration.code, diagnostic: integration.code === 0 ? undefined : diagnostic(integration) },
+  integration.code === 0
+    ? 'all discovered package integrations passed'
+    : `package integration failed with exit ${integration.code}`,
+  {
+    exitCode: integration.code,
+    diagnostic: integration.code === 0 ? undefined : diagnostic(integration),
+  },
 );
 
 const transactionIntegration = await run('pnpm', [
@@ -105,27 +127,74 @@ if (existsSync(runtimeModule) && build.code === 0) {
     validation = await runPhase40Validation();
     const scenarioNames = new Set(validation.scenarios.map((scenario) => scenario.name));
     const missingScenarios = contract.requiredScenarios.filter((name) => !scenarioNames.has(name));
-    const missingStages = contract.canonicalStages.filter((stage) => !validation.scenarios.some((scenario) => scenario.stages.includes(stage)));
-    const missingAcceptance = contract.requiredAcceptance.filter((criterion) => validation.acceptance[criterion] !== true);
-    if (missingScenarios.length) record('canonical-runtime-validation', 'fail', `missing required scenarios: ${missingScenarios.join(', ')}`);
-    else if (missingStages.length) record('canonical-runtime-validation', 'fail', `missing canonical stages: ${missingStages.join(', ')}`);
-    else if (missingAcceptance.length) record('canonical-runtime-validation', 'fail', `failed acceptance criteria: ${missingAcceptance.join(', ')}`);
-    else if (validation.status !== 'passed') record('canonical-runtime-validation', 'fail', `runtime validation returned ${validation.status}`);
-    else record('canonical-runtime-validation', 'pass', 'canonical runtime closed-loop scenarios passed', { validation });
+    const missingStages = contract.canonicalStages.filter(
+      (stage) => !validation.scenarios.some((scenario) => scenario.stages.includes(stage)),
+    );
+    const missingAcceptance = contract.requiredAcceptance.filter(
+      (criterion) => validation.acceptance[criterion] !== true,
+    );
+    if (missingScenarios.length)
+      record(
+        'canonical-runtime-validation',
+        'fail',
+        `missing required scenarios: ${missingScenarios.join(', ')}`,
+      );
+    else if (missingStages.length)
+      record(
+        'canonical-runtime-validation',
+        'fail',
+        `missing canonical stages: ${missingStages.join(', ')}`,
+      );
+    else if (missingAcceptance.length)
+      record(
+        'canonical-runtime-validation',
+        'fail',
+        `failed acceptance criteria: ${missingAcceptance.join(', ')}`,
+      );
+    else if (validation.status !== 'passed')
+      record(
+        'canonical-runtime-validation',
+        'fail',
+        `runtime validation returned ${validation.status}`,
+      );
+    else
+      record(
+        'canonical-runtime-validation',
+        'pass',
+        'canonical runtime closed-loop scenarios passed',
+        { validation },
+      );
   } catch (error) {
-    record('canonical-runtime-validation', 'fail', error instanceof Error ? error.message : String(error));
+    record(
+      'canonical-runtime-validation',
+      'fail',
+      error instanceof Error ? error.message : String(error),
+    );
   }
 } else {
-  record('canonical-runtime-validation', 'fail', 'canonical runtime validation module is unavailable after the full workspace build');
+  record(
+    'canonical-runtime-validation',
+    'fail',
+    'canonical runtime validation module is unavailable after the full workspace build',
+  );
 }
 
 let artifact = null;
 const distDir = join(root, 'packages/resilience-runtime/dist');
 if (existsSync(distDir) && build.code === 0) {
   artifact = await hashDirectory(distDir);
-  record('runtime-artifact-integrity', 'pass', `hashed ${artifact.files} runtime artifact files`, artifact);
+  record(
+    'runtime-artifact-integrity',
+    'pass',
+    `hashed ${artifact.files} runtime artifact files`,
+    artifact,
+  );
 } else {
-  record('runtime-artifact-integrity', 'fail', 'runtime artifact directory is missing after a successful build');
+  record(
+    'runtime-artifact-integrity',
+    'fail',
+    'runtime artifact directory is missing after a successful build',
+  );
 }
 
 const verdict = failures.length ? 'FAIL' : 'PASS';
@@ -140,12 +209,21 @@ const report = {
   checks,
   artifact,
   validation,
-  productionCertificationBoundary: 'This assurance report proves executable repository/runtime integration only. It does not claim real regional, device, backup/restore, upgrade/rollback, chaos/soak, or production infrastructure evidence.'
+  productionCertificationBoundary:
+    'This assurance report proves executable repository/runtime integration only. It does not claim real regional, device, backup/restore, upgrade/rollback, chaos/soak, or production infrastructure evidence.',
 };
 
 await mkdir(outputDir, { recursive: true });
-await writeFile(join(outputDir, 'assurance-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-await writeFile(join(outputDir, 'assurance-report.sha256'), `${await sha256File(join(outputDir, 'assurance-report.json'))}  assurance-report.json\n`, 'utf8');
+await writeFile(
+  join(outputDir, 'assurance-report.json'),
+  `${JSON.stringify(report, null, 2)}\n`,
+  'utf8',
+);
+await writeFile(
+  join(outputDir, 'assurance-report.sha256'),
+  `${await sha256File(join(outputDir, 'assurance-report.json'))}  assurance-report.json\n`,
+  'utf8',
+);
 
 console.log(`\nSYSTEM ASSURANCE: ${verdict}`);
 console.log(`Report: ${join(outputDir, 'assurance-report.json')}`);

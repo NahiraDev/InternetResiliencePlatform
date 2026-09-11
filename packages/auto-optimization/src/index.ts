@@ -145,11 +145,19 @@ export const defaultAutoOptimizationPolicy = (): AutoOptimizationPolicy => ({
 });
 
 const validatePolicy = (policy: AutoOptimizationPolicy): void => {
-  if (!Number.isFinite(policy.minimumConfidence) || policy.minimumConfidence < 0 || policy.minimumConfidence > 100)
+  if (
+    !Number.isFinite(policy.minimumConfidence) ||
+    policy.minimumConfidence < 0 ||
+    policy.minimumConfidence > 100
+  )
     throw new Error('minimumConfidence must be between 0 and 100');
   if (!Number.isFinite(policy.maximumRisk) || policy.maximumRisk < 0 || policy.maximumRisk > 100)
     throw new Error('maximumRisk must be between 0 and 100');
-  if (!Number.isFinite(policy.minimumExpectedBenefit) || policy.minimumExpectedBenefit < 0 || policy.minimumExpectedBenefit > 100)
+  if (
+    !Number.isFinite(policy.minimumExpectedBenefit) ||
+    policy.minimumExpectedBenefit < 0 ||
+    policy.minimumExpectedBenefit > 100
+  )
     throw new Error('minimumExpectedBenefit must be between 0 and 100');
   if (!Number.isInteger(policy.cooldownMs) || policy.cooldownMs < 0)
     throw new Error('cooldownMs must be a non-negative integer');
@@ -224,7 +232,10 @@ export class AutoOptimizationEngine {
 
     const recommendationConfidence = clamp(recommendation.confidence);
     const planConfidence = clamp(recommendation.plan.confidence);
-    if (recommendationConfidence < policy.minimumConfidence || planConfidence < policy.minimumConfidence) {
+    if (
+      recommendationConfidence < policy.minimumConfidence ||
+      planConfidence < policy.minimumConfidence
+    ) {
       reasons.push('recommendation confidence is below the automatic-apply threshold');
       blockReasons.push('low_confidence');
     }
@@ -239,13 +250,16 @@ export class AutoOptimizationEngine {
       reasons.push('expected benefit is below the automatic-apply threshold');
       blockReasons.push('low_expected_benefit');
     }
-    const riskClass: OptimizationRisk = recommendation.risk <= 10 ? 'low' : recommendation.risk <= 25 ? 'medium' : 'high';
+    const riskClass: OptimizationRisk =
+      recommendation.risk <= 10 ? 'low' : recommendation.risk <= 25 ? 'medium' : 'high';
     if (!policy.allowedRisks.includes(riskClass)) {
       reasons.push('recommendation risk class is not enabled by policy');
       blockReasons.push('high_risk');
     }
     if (policy.deniedIntents.includes(recommendation.plan.selectedAction.intent)) {
-      reasons.push(`action intent ${recommendation.plan.selectedAction.intent} is denied for auto-optimization`);
+      reasons.push(
+        `action intent ${recommendation.plan.selectedAction.intent} is denied for auto-optimization`,
+      );
       blockReasons.push('policy_denied');
     }
     if (recommendation.expiresAt && Date.parse(recommendation.expiresAt) <= this.now()) {
@@ -425,7 +439,8 @@ export class AutoOptimizationEngine {
       validation,
       execution,
       verification,
-      reason: 'automatic optimization verification failed and rollback was unavailable or unsuccessful',
+      reason:
+        'automatic optimization verification failed and rollback was unavailable or unsuccessful',
     };
   }
 

@@ -41,9 +41,7 @@ export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
       return createAdapterExecution(plan, context, false, 'failed');
     try {
       const providerId = providerIdFromPlan(plan);
-      const result = await this.controlPlane.connect(
-        providerId ? { providerId } : undefined,
-      );
+      const result = await this.controlPlane.connect(providerId ? { providerId } : undefined);
       return {
         ...createAdapterExecution(plan, context, false, 'success'),
         metadata: {
@@ -70,9 +68,7 @@ export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
     if (!this.controlPlane.configured || execution.status !== 'success')
       return createAdapterVerification(plan, context, 'failed');
     const tunnelId =
-      typeof execution.metadata.tunnelId === 'string'
-        ? execution.metadata.tunnelId
-        : undefined;
+      typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
     if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
     try {
       return createAdapterVerification(

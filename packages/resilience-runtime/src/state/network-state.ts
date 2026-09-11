@@ -1,12 +1,7 @@
 import type { AuditFields } from '../domain/types.js';
 
 export type NetworkStateLayer = 'desired' | 'observed' | 'actual';
-export type ReconciliationStatus =
-  | 'aligned'
-  | 'pending'
-  | 'drifted'
-  | 'unknown'
-  | 'conflicted';
+export type ReconciliationStatus = 'aligned' | 'pending' | 'drifted' | 'unknown' | 'conflicted';
 
 export interface NetworkStateResource extends AuditFields {
   readonly resourceId: string;
@@ -78,9 +73,12 @@ const reconcile = (
   const observedSignature = signature(observed);
   const actualSignature = signature(actual);
 
-  if (desiredSignature === actualSignature && actualSignature === observedSignature) return 'aligned';
-  if (desiredSignature !== actualSignature && observedSignature === actualSignature) return 'pending';
-  if (desiredSignature === actualSignature && observedSignature !== actualSignature) return 'drifted';
+  if (desiredSignature === actualSignature && actualSignature === observedSignature)
+    return 'aligned';
+  if (desiredSignature !== actualSignature && observedSignature === actualSignature)
+    return 'pending';
+  if (desiredSignature === actualSignature && observedSignature !== actualSignature)
+    return 'drifted';
   return 'conflicted';
 };
 

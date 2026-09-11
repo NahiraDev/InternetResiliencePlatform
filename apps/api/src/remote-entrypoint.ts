@@ -1,9 +1,11 @@
 import { loadConfig } from '@irp/config';
 import { buildServer } from './index.js';
+import { registerIntentRoutes } from './intent-api.js';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
 import { registerUnifiedProductRoutes } from './unified-product-api.js';
 import { registerNotificationIncidentRoutes } from './notifications-api.js';
+import { registerHistoryRoutes } from './history-api.js';
 
 const config = loadConfig();
 const server = await buildServer();
@@ -11,6 +13,8 @@ registerUnifiedProductRoutes(server);
 registerRemoteClientRoutes(server);
 registerProbeFederationRoutes(server);
 registerNotificationIncidentRoutes(server);
+registerIntentRoutes(server);
+registerHistoryRoutes(server);
 
 let shuttingDown = false;
 const shutdown = async (signal: string) => {

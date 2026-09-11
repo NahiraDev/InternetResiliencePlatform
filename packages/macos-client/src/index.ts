@@ -57,7 +57,15 @@ export class MacOSSystem implements MacOSSystemAdapter {
       command('networksetup', ['-listallnetworkservices']),
       command('scutil', ['--nc', 'list']),
     ]);
-    return { interfaces, routes, dns, networkServices, vpnServices, capturedAt: new Date().toISOString(), platform: 'darwin' };
+    return {
+      interfaces,
+      routes,
+      dns,
+      networkServices,
+      vpnServices,
+      capturedAt: new Date().toISOString(),
+      platform: 'darwin',
+    };
   }
 
   async setAutonomousMode(enabled: boolean): Promise<void> {
@@ -70,7 +78,11 @@ export class MacOSSystem implements MacOSSystemAdapter {
 }
 
 function escapeHtml(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 const html = (snapshot: MacOSNetworkSnapshot, policy: MacOSClientPolicy): string => `<!doctype html>
@@ -81,14 +93,22 @@ const html = (snapshot: MacOSNetworkSnapshot, policy: MacOSClientPolicy): string
 <div class="grid"><section><h2>Network interfaces</h2><pre>${escapeHtml(snapshot.interfaces)}</pre></section><section><h2>Default route</h2><pre>${escapeHtml(snapshot.routes)}</pre></section><section><h2>DNS</h2><pre>${escapeHtml(snapshot.dns)}</pre></section><section><h2>Network services</h2><pre>${escapeHtml(snapshot.networkServices)}</pre></section><section><h2>VPN services</h2><pre>${escapeHtml(snapshot.vpnServices)}</pre></section></div></body></html>`;
 
 export class MacOSClientServer {
-  private readonly server = createServer((request, response) => void this.handle(request, response));
+  private readonly server = createServer(
+    (request, response) => void this.handle(request, response),
+  );
 
   constructor(private readonly system: MacOSSystem) {}
 
   async start(port = 17862, host = '127.0.0.1'): Promise<void> {
     await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error) => { this.server.off('listening', onListening); reject(error); };
-      const onListening = () => { this.server.off('error', onError); resolve(); };
+      const onError = (error: Error) => {
+        this.server.off('listening', onListening);
+        reject(error);
+      };
+      const onListening = () => {
+        this.server.off('error', onError);
+        resolve();
+      };
       this.server.once('error', onError);
       this.server.once('listening', onListening);
       this.server.listen(port, host);
@@ -96,7 +116,9 @@ export class MacOSClientServer {
   }
 
   async stop(): Promise<void> {
-    await new Promise<void>((resolve, reject) => this.server.close((error) => error ? reject(error) : resolve()));
+    await new Promise<void>((resolve, reject) =>
+      this.server.close((error) => (error ? reject(error) : resolve())),
+    );
   }
 
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {

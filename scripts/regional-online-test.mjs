@@ -13,12 +13,19 @@ const getArg = (name) => {
 };
 
 const endpoint = getArg('--endpoint') || env.IRP_REGIONAL_PROBE_URL;
-const expectedCountry = (getArg('--country') || env.IRP_EXPECTED_COUNTRY || DEFAULT_EXPECTED_COUNTRY).toUpperCase();
+const expectedCountry = (
+  getArg('--country') ||
+  env.IRP_EXPECTED_COUNTRY ||
+  DEFAULT_EXPECTED_COUNTRY
+).toUpperCase();
 const timeoutMs = Math.min(
   Math.max(Number(getArg('--timeout') || env.IRP_REGIONAL_TIMEOUT_MS || DEFAULT_TIMEOUT_MS), 1000),
   MAX_TIMEOUT_MS,
 );
-const label = (getArg('--label') || env.IRP_REGIONAL_PROBE_LABEL || 'regional-online-probe').slice(0, MAX_LABEL_LENGTH);
+const label = (getArg('--label') || env.IRP_REGIONAL_PROBE_LABEL || 'regional-online-probe').slice(
+  0,
+  MAX_LABEL_LENGTH,
+);
 
 const startedAt = Date.now();
 
@@ -40,7 +47,9 @@ const fail = (message, details = {}, code = 1) => {
 };
 
 if (!endpoint) {
-  fail('A regional probe endpoint is required. Do not use the public geolocation service as an Iranian-vantage substitute.');
+  fail(
+    'A regional probe endpoint is required. Do not use the public geolocation service as an Iranian-vantage substitute.',
+  );
 }
 
 let url;
@@ -65,7 +74,8 @@ try {
     signal: controller.signal,
   });
 
-  if (!response.ok) fail(`Regional probe returned HTTP ${response.status}.`, { httpStatus: response.status });
+  if (!response.ok)
+    fail(`Regional probe returned HTTP ${response.status}.`, { httpStatus: response.status });
 
   const contentType = response.headers.get('content-type') || '';
   let payload;
@@ -75,16 +85,18 @@ try {
     payload = { ip: (await response.text()).trim() };
   }
 
-  const ip = typeof payload?.ip === 'string'
-    ? payload.ip.trim()
-    : typeof payload?.ip_address === 'string'
-      ? payload.ip_address.trim()
-      : '';
-  const country = typeof payload?.country === 'string'
-    ? payload.country.trim().toUpperCase()
-    : typeof payload?.country_code === 'string'
-      ? payload.country_code.trim().toUpperCase()
-      : '';
+  const ip =
+    typeof payload?.ip === 'string'
+      ? payload.ip.trim()
+      : typeof payload?.ip_address === 'string'
+        ? payload.ip_address.trim()
+        : '';
+  const country =
+    typeof payload?.country === 'string'
+      ? payload.country.trim().toUpperCase()
+      : typeof payload?.country_code === 'string'
+        ? payload.country_code.trim().toUpperCase()
+        : '';
 
   if (!ip) fail('Regional probe response did not contain a public IP address.');
   if (!country) fail('Regional probe response did not contain a country code.');
@@ -112,11 +124,12 @@ try {
   console.log(JSON.stringify(result, null, 2));
   exit(matched ? 0 : 2);
 } catch (error) {
-  const message = error?.name === 'AbortError'
-    ? `Regional probe timed out after ${timeoutMs} ms.`
-    : error instanceof Error
-      ? error.message
-      : String(error);
+  const message =
+    error?.name === 'AbortError'
+      ? `Regional probe timed out after ${timeoutMs} ms.`
+      : error instanceof Error
+        ? error.message
+        : String(error);
   fail(message);
 } finally {
   clearTimeout(timer);

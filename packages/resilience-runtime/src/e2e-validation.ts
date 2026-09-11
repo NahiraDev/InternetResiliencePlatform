@@ -1,5 +1,14 @@
-import { createAdapterExecution, createAdapterVerification, DeterministicRuntimeAdapter } from './adapter-registry.js';
-import { createCapabilitySnapshot, createPolicySnapshot, createRuntimeContext, defaultPolicy } from './context/context.js';
+import {
+  createAdapterExecution,
+  createAdapterVerification,
+  DeterministicRuntimeAdapter,
+} from './adapter-registry.js';
+import {
+  createCapabilitySnapshot,
+  createPolicySnapshot,
+  createRuntimeContext,
+  defaultPolicy,
+} from './context/context.js';
 import type {
   ActionExecution,
   ActionPlan,
@@ -15,10 +24,7 @@ import { ResilienceRuntime } from './runtime.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 
 export type Phase40ScenarioName =
-  | 'healthy'
-  | 'dns-degradation'
-  | 'provider-recovery'
-  | 'destination-specific';
+  'healthy' | 'dns-degradation' | 'provider-recovery' | 'destination-specific';
 export type Phase40Stage =
   | 'observe'
   | 'measure'
@@ -53,7 +59,11 @@ export interface Phase40FaultPlan {
   readonly recovery: RecoveryPlan['status'];
 }
 export interface Phase40ExecutionHarness {
-  readonly execute: (plan: ActionPlan, context: RuntimeContext, faults: Phase40FaultPlan) => Promise<ActionExecution>;
+  readonly execute: (
+    plan: ActionPlan,
+    context: RuntimeContext,
+    faults: Phase40FaultPlan,
+  ) => Promise<ActionExecution>;
   readonly verify: (
     plan: ActionPlan,
     execution: ActionExecution,
@@ -171,7 +181,10 @@ class FailureInjectingAdapter extends DeterministicRuntimeAdapter {
     super(descriptor, fault.verification);
   }
 
-  override async execute(plan: ActionPlan, runtimeContext: RuntimeContext): Promise<ActionExecution> {
+  override async execute(
+    plan: ActionPlan,
+    runtimeContext: RuntimeContext,
+  ): Promise<ActionExecution> {
     return this.fault.execution === 'failed'
       ? createAdapterExecution(plan, runtimeContext, false, 'failed')
       : createAdapterExecution(plan, runtimeContext, false, 'success');
@@ -246,7 +259,10 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
       mode: 'simulation',
       securityContext: { trusted: true },
       capabilitySnapshot: createCapabilitySnapshot([], true),
-      policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['noop'] }),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['noop'],
+      }),
     }),
   );
   scenarios.push({
@@ -269,7 +285,10 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
       mode: 'simulation',
       securityContext: { trusted: true },
       capabilitySnapshot: createCapabilitySnapshot([], true),
-      policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['health_reprobe'] }),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['health_reprobe'],
+      }),
     }),
   );
   scenarios.push({
@@ -291,7 +310,10 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
       mode: 'simulation',
       securityContext: { trusted: true },
       capabilitySnapshot: createCapabilitySnapshot([], true),
-      policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['health_reprobe'] }),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['health_reprobe'],
+      }),
     }),
   );
   const providerRecovery = await validateControlledLoop({
@@ -314,8 +336,14 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
   });
 
   const destinationSpecific = new ResilienceRuntime([
-    provider('destination-direct', [phase40Observation('direct-healthy', 'dns', 'healthy', { destination: 'direct' })]),
-    provider('destination-alternate', [phase40Observation('alternate-degraded', 'provider', 'degraded', { destination: 'alternate' })]),
+    provider('destination-direct', [
+      phase40Observation('direct-healthy', 'dns', 'healthy', { destination: 'direct' }),
+    ]),
+    provider('destination-alternate', [
+      phase40Observation('alternate-degraded', 'provider', 'degraded', {
+        destination: 'alternate',
+      }),
+    ]),
   ]);
   const destinationRecord = await destinationSpecific.cycle(
     createRuntimeContext({
@@ -323,7 +351,10 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
       mode: 'simulation',
       securityContext: { trusted: true },
       capabilitySnapshot: createCapabilitySnapshot([], true),
-      policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['health_reprobe'] }),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['health_reprobe'],
+      }),
     }),
   );
   scenarios.push({
@@ -341,14 +372,34 @@ export const runPhase40Validation = async (): Promise<Phase40ValidationReport> =
   });
 
   const acceptance = {
-    completeStageOrderCovered: scenarios.some((scenario) => stageOrder.every((stage) => scenario.stages.includes(stage))),
-    healthyPathRecorded: scenarios.some((scenario) => scenario.name === 'healthy' && scenario.outcomes.length === 1),
-    degradedPathDetected: scenarios.some((scenario) => scenario.name === 'dns-degradation' && scenario.incidents.includes('dns_failure')),
-    persistentDegradationDetected: scenarios.some((scenario) => scenario.name === 'provider-recovery' && scenario.incidents.includes('persistent_degradation')),
+    completeStageOrderCovered: scenarios.some((scenario) =>
+      stageOrder.every((stage) => scenario.stages.includes(stage)),
+    ),
+    healthyPathRecorded: scenarios.some(
+      (scenario) => scenario.name === 'healthy' && scenario.outcomes.length === 1,
+    ),
+    degradedPathDetected: scenarios.some(
+      (scenario) =>
+        scenario.name === 'dns-degradation' && scenario.incidents.includes('dns_failure'),
+    ),
+    persistentDegradationDetected: scenarios.some(
+      (scenario) =>
+        scenario.name === 'provider-recovery' &&
+        scenario.incidents.includes('persistent_degradation'),
+    ),
     applyFailureInjectionAvailable: applyFailure.execution.status === 'failed',
-    verificationFailureTriggersRecovery: scenarios.some((scenario) => scenario.name === 'provider-recovery' && scenario.verificationStatus === 'failed' && scenario.recoveryStatus === 'success'),
-    destinationIsolationRepresented: scenarios.some((scenario) => scenario.name === 'destination-specific'),
-    decisionsAreUnique: new Set(scenarios.flatMap((scenario) => scenario.decisionIds)).size === scenarios.flatMap((scenario) => scenario.decisionIds).length,
+    verificationFailureTriggersRecovery: scenarios.some(
+      (scenario) =>
+        scenario.name === 'provider-recovery' &&
+        scenario.verificationStatus === 'failed' &&
+        scenario.recoveryStatus === 'success',
+    ),
+    destinationIsolationRepresented: scenarios.some(
+      (scenario) => scenario.name === 'destination-specific',
+    ),
+    decisionsAreUnique:
+      new Set(scenarios.flatMap((scenario) => scenario.decisionIds)).size ===
+      scenarios.flatMap((scenario) => scenario.decisionIds).length,
   };
 
   const failedCriteria = Object.entries(acceptance)

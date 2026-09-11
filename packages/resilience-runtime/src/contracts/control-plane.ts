@@ -19,8 +19,10 @@ export type ControlPlaneEventType =
   | 'control-plane.execution.action-completed'
   | 'control-plane.assurance.verification-completed';
 
-export interface ControlPlaneEvent<TType extends ControlPlaneEventType, TPayload>
-  extends DomainEvent<TType, TPayload> {
+export interface ControlPlaneEvent<
+  TType extends ControlPlaneEventType,
+  TPayload,
+> extends DomainEvent<TType, TPayload> {
   readonly contractVersion: typeof CONTROL_PLANE_CONTRACT_VERSION;
   readonly correlationId: string;
   readonly causationId?: string;

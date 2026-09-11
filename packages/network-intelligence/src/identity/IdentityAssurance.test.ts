@@ -38,58 +38,86 @@ const evidence = (overrides: EvidenceOverrides = {}): IdentityEvidence => ({
 
 describe('assessIdentityPolicy', () => {
   it('accepts independently observed egress and destination identities', () => {
-    const result = assessIdentityPolicy(evidence(), {
-      allowedEgressAsns: [64500],
-      allowedDestinationHostnames: ['service.example'],
-      requiredEgressSource: 'independent-egress-probe',
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence(),
+      {
+        allowedEgressAsns: [64500],
+        allowedDestinationHostnames: ['service.example'],
+        requiredEgressSource: 'independent-egress-probe',
+      },
+      now,
+    );
 
     expect(result.status).toBe('compliant');
     expect(result.findings).toEqual([]);
   });
 
   it('normalizes destination hostnames without conflating identity dimensions', () => {
-    const result = assessIdentityPolicy(evidence({ destination: { hostname: 'Service.Example.' } }), {
-      allowedDestinationHostnames: ['service.example'],
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence({ destination: { hostname: 'Service.Example.' } }),
+      {
+        allowedDestinationHostnames: ['service.example'],
+      },
+      now,
+    );
 
     expect(result.status).toBe('compliant');
   });
 
   it('does not infer destination identity from egress identity', () => {
-    const result = assessIdentityPolicy(evidence(), {
-      allowedEgressIps: ['203.0.113.10'],
-      allowedDestinationHostnames: ['different.example'],
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence(),
+      {
+        allowedEgressIps: ['203.0.113.10'],
+        allowedDestinationHostnames: ['different.example'],
+      },
+      now,
+    );
 
     expect(result.status).toBe('non-compliant');
     expect(result.findings.map((finding) => finding.code)).toContain('destination-not-allowed');
   });
 
   it('rejects unauthorized egress even when destination is allowed', () => {
-    const result = assessIdentityPolicy(evidence(), {
-      allowedEgressAsns: [64501],
-      allowedDestinationHostnames: ['service.example'],
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence(),
+      {
+        allowedEgressAsns: [64501],
+        allowedDestinationHostnames: ['service.example'],
+      },
+      now,
+    );
 
     expect(result.status).toBe('non-compliant');
     expect(result.findings.map((finding) => finding.code)).toContain('egress-not-allowed');
   });
 
   it('requires the configured independent evidence source', () => {
-    const result = assessIdentityPolicy(evidence({ egress: { source: 'local-observer' } }), {
-      requiredEgressSource: 'independent-egress-probe',
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence({ egress: { source: 'local-observer' } }),
+      {
+        requiredEgressSource: 'independent-egress-probe',
+      },
+      now,
+    );
 
     expect(result.status).toBe('non-compliant');
     expect(result.findings.map((finding) => finding.code)).toContain('egress-source-mismatch');
   });
 
   it('does not silently accept stale or future-dated evidence', () => {
-    const stale = assessIdentityPolicy(evidence({ egress: { observedAt: '2026-08-23T11:00:00.000Z' } }), {
-      maxEvidenceAgeMs: 60_000,
-    }, now);
-    const future = assessIdentityPolicy(evidence({ destination: { observedAt: '2026-08-23T12:00:01.000Z' } }), {}, now);
+    const stale = assessIdentityPolicy(
+      evidence({ egress: { observedAt: '2026-08-23T11:00:00.000Z' } }),
+      {
+        maxEvidenceAgeMs: 60_000,
+      },
+      now,
+    );
+    const future = assessIdentityPolicy(
+      evidence({ destination: { observedAt: '2026-08-23T12:00:01.000Z' } }),
+      {},
+      now,
+    );
 
     expect(stale.status).toBe('insufficient-data');
     expect(stale.findings.map((finding) => finding.code)).toContain('stale-evidence');
@@ -105,22 +133,36 @@ describe('assessIdentityPolicy', () => {
   });
 
   it('supports address-level destination policy', () => {
-    const result = assessIdentityPolicy(evidence(), {
-      allowedDestinationAddresses: ['198.51.100.20'],
-    }, now);
+    const result = assessIdentityPolicy(
+      evidence(),
+      {
+        allowedDestinationAddresses: ['198.51.100.20'],
+      },
+      now,
+    );
 
     expect(result.status).toBe('compliant');
   });
 
   it('rejects malformed identity evidence before policy evaluation', () => {
-    expect(() => assessIdentityPolicy(evidence({ egress: { ip: 'not-an-ip' } }), {}, now)).toThrow('egress ip');
-    expect(() => assessIdentityPolicy(evidence({ egress: { ip: '2001:db8::10', family: 'ipv4' } }), {}, now)).toThrow('address family');
-    expect(() => assessIdentityPolicy(evidence({ destination: { addresses: [] } }), {}, now)).toThrow('destination addresses');
-    expect(() => assessIdentityPolicy(evidence({ destination: { addresses: ['not-an-ip'] } }), {}, now)).toThrow('destination addresses');
+    expect(() => assessIdentityPolicy(evidence({ egress: { ip: 'not-an-ip' } }), {}, now)).toThrow(
+      'egress ip',
+    );
+    expect(() =>
+      assessIdentityPolicy(evidence({ egress: { ip: '2001:db8::10', family: 'ipv4' } }), {}, now),
+    ).toThrow('address family');
+    expect(() =>
+      assessIdentityPolicy(evidence({ destination: { addresses: [] } }), {}, now),
+    ).toThrow('destination addresses');
+    expect(() =>
+      assessIdentityPolicy(evidence({ destination: { addresses: ['not-an-ip'] } }), {}, now),
+    ).toThrow('destination addresses');
   });
 
   it('rejects invalid destination ports', () => {
-    expect(() => assessIdentityPolicy(evidence({ destination: { port: 70000 } }), {}, now)).toThrow('destination port');
+    expect(() => assessIdentityPolicy(evidence({ destination: { port: 70000 } }), {}, now)).toThrow(
+      'destination port',
+    );
   });
 
   it('reports missing evidence explicitly', () => {

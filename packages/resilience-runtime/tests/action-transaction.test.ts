@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ActionTransactionEngine, IdempotencyConflictError } from '../src/transactions/action-transaction.js';
+import {
+  ActionTransactionEngine,
+  IdempotencyConflictError,
+} from '../src/transactions/action-transaction.js';
 import type { ActionExecution, ActionPlan, RuntimeContext } from '../src/domain/types.js';
 import type { ActionExecutor, EventSink } from '../src/ports/ports.js';
 
@@ -113,7 +116,11 @@ describe('ActionTransactionEngine', () => {
       },
     };
     const events: string[] = [];
-    const sink: EventSink = { emit: async (event) => { events.push(event); } };
+    const sink: EventSink = {
+      emit: async (event) => {
+        events.push(event);
+      },
+    };
     const engine = new ActionTransactionEngine(executor, sink);
 
     const first = await engine.execute(plan('a'), context(), 'key-a');
@@ -145,7 +152,9 @@ describe('ActionTransactionEngine', () => {
   it('coalesces concurrent requests for the same key', async () => {
     let calls = 0;
     let release!: () => void;
-    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const executor: ActionExecutor = {
       execute: async (p) => {
         calls += 1;
@@ -168,7 +177,11 @@ describe('ActionTransactionEngine', () => {
 
   it('records failed executions without pretending they committed', async () => {
     const executor: ActionExecutor = {
-      execute: async (p) => ({ ...execution(p.selectedAction.id), status: 'failed', error: 'adapter failed' }),
+      execute: async (p) => ({
+        ...execution(p.selectedAction.id),
+        status: 'failed',
+        error: 'adapter failed',
+      }),
     };
     const sink: EventSink = { emit: async () => undefined };
     const engine = new ActionTransactionEngine(executor, sink);

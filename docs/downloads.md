@@ -8,13 +8,13 @@ Internet Resilience Platform client downloads are published on GitHub Releases.
 
 Choose the asset matching your platform:
 
-| Platform | Asset | Install/use |
-|---|---|---|
-| Android | `IRP-Android-debug.apk` | Download the APK to the Android device and install it. Development/test installation may require allowing installation from the source used to obtain the APK. |
-| Linux | `IRP-Linux-*.tar.gz` | Extract the bundle and run the packaged Linux client according to the included README/operational contract. |
-| macOS | `IRP-macOS-*.tar.gz` | Extract the bundle and follow the included macOS client/launchd instructions. |
-| Windows | `IRP-Windows-*.zip` | Extract the bundle and follow the included Windows client instructions. |
-| iPhone / iPad | `IRP-iOS-source-*.zip` | **Developer/source bundle only.** An installable iOS `.ipa` is not published until Apple signing/provisioning is configured. |
+| Platform      | Asset                   | Install/use                                                                                                                                                    |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Android       | `IRP-Android-debug.apk` | Download the APK to the Android device and install it. Development/test installation may require allowing installation from the source used to obtain the APK. |
+| Linux         | `IRP-Linux-*.tar.gz`    | Extract the bundle and run the packaged Linux client according to the included README/operational contract.                                                    |
+| macOS         | `IRP-macOS-*.tar.gz`    | Extract the bundle and follow the included macOS client/launchd instructions.                                                                                  |
+| Windows       | `IRP-Windows-*.zip`     | Extract the bundle and follow the included Windows client instructions.                                                                                        |
+| iPhone / iPad | `IRP-iOS-source-*.zip`  | **Developer/source bundle only.** An installable iOS `.ipa` is not published until Apple signing/provisioning is configured.                                   |
 
 ## Important
 

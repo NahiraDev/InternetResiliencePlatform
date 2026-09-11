@@ -60,11 +60,17 @@ const html = (snapshot: NetworkSnapshot, policy: ClientPolicy): string => `<!doc
 <h2>Network diagnostics</h2><pre>${escapeHtml(JSON.stringify(snapshot, null, 2))}</pre></body></html>`;
 
 function escapeHtml(value: string): string {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 export class LinuxClientServer {
-  private readonly server = createServer((request, response) => void this.handle(request, response));
+  private readonly server = createServer(
+    (request, response) => void this.handle(request, response),
+  );
 
   constructor(private readonly system: LinuxSystem) {}
 
@@ -76,7 +82,9 @@ export class LinuxClientServer {
   }
 
   async stop(): Promise<void> {
-    await new Promise<void>((resolve, reject) => this.server.close((error) => error ? reject(error) : resolve()));
+    await new Promise<void>((resolve, reject) =>
+      this.server.close((error) => (error ? reject(error) : resolve())),
+    );
   }
 
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {

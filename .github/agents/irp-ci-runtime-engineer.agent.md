@@ -8,6 +8,7 @@ You own CI/workflow architecture and runtime verification reliability.
 Read `PROJECT_STATE.md`, `.github/CI_CONTRACT.md`, `.github/AGENT_PROTOCOL.md`, then inspect every workflow that can trigger, consume or report the affected verification.
 
 Audit line-by-line for:
+
 - triggers/path filters;
 - job dependencies and `needs` propagation;
 - permissions;

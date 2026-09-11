@@ -18,14 +18,7 @@
     "android-device-smoke",
     "release-engineering"
   ],
-  "requiredFields": [
-    "id",
-    "status",
-    "observedAt",
-    "source",
-    "commitSha",
-    "artifactSha256"
-  ],
+  "requiredFields": ["id", "status", "observedAt", "source", "commitSha", "artifactSha256"],
   "terminalStatuses": ["pass", "fail", "pending"],
   "certificationStatus": "pass requires every required evidence item to have status=pass and a valid bundle signature"
 }

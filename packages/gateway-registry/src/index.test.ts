@@ -33,18 +33,30 @@ describe('@irp/gateway-registry', () => {
     const registry = new InMemoryGatewayRegistry();
     registry.register(gateway());
     expect(() => registry.register(gateway())).toThrow('already exists');
-    expect(() => registry.register(gateway({ id: 'gw-2', endpoint: { host: 'x', port: 70000, family: 'ipv4' } }))).toThrow(
-      'port must be an integer between 1 and 65535',
-    );
+    expect(() =>
+      registry.register(
+        gateway({ id: 'gw-2', endpoint: { host: 'x', port: 70000, family: 'ipv4' } }),
+      ),
+    ).toThrow('port must be an integer between 1 and 65535');
   });
 
   it('filters by lifecycle, trust, ownership, region and tags', () => {
     const registry = new InMemoryGatewayRegistry();
     registry.register(gateway({ region: 'eu-west', trust: 'trusted' }));
-    registry.register(gateway({ id: 'gw-2', region: 'ir-central', tags: ['regional'], lifecycle: 'active', trust: 'trusted' }));
+    registry.register(
+      gateway({
+        id: 'gw-2',
+        region: 'ir-central',
+        tags: ['regional'],
+        lifecycle: 'active',
+        trust: 'trusted',
+      }),
+    );
 
     expect(registry.list({ region: 'ir-central' }).map((item) => item.id)).toEqual(['gw-2']);
-    expect(registry.list({ lifecycle: 'active', tag: 'regional' }).map((item) => item.id)).toEqual(['gw-2']);
+    expect(registry.list({ lifecycle: 'active', tag: 'regional' }).map((item) => item.id)).toEqual([
+      'gw-2',
+    ]);
     expect(registry.list({ trust: 'trusted' })).toHaveLength(2);
   });
 
@@ -64,7 +76,9 @@ describe('@irp/gateway-registry', () => {
     const registry = new InMemoryGatewayRegistry();
     registry.register(gateway());
 
-    expect(() => registry.transition('gw-1', 'draining')).toThrow('invalid gateway lifecycle transition');
+    expect(() => registry.transition('gw-1', 'draining')).toThrow(
+      'invalid gateway lifecycle transition',
+    );
     expect(() => registry.remove('gw-1')).toThrow('only retired gateways can be removed');
   });
 

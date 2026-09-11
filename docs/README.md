@@ -58,23 +58,23 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 
 ## Documentation structure
 
-| Section | Purpose |
-| --- | --- |
-| Root guides | Stable user-facing entry points retained for compatibility |
-| `getting-started/` | Installation, platform support and first-run workflows |
-| `concepts/` | Durable product concepts and terminology |
-| `api/` | API contracts and examples |
-| `architecture/` | Current architecture, product model, governance and release rules |
-| `roadmap/` | Current post-v1 roadmap and execution dependencies |
-| `network/` | Network-specific concepts and boundaries |
-| `guides/` | Task-oriented procedures and troubleshooting |
-| `operations/` | Deployment, recovery and operational procedures |
-| `reference/` | Stable package and implementation references |
-| `security/` | Security-specific documentation |
-| `adr/` | Durable architectural decisions |
-| `phases/` | Historical/current phase implementation and audit evidence |
-| `audits/` | Documentation/repository audit records and migration evidence |
-| `testing/` | Test policy and exception metadata |
+| Section            | Purpose                                                           |
+| ------------------ | ----------------------------------------------------------------- |
+| Root guides        | Stable user-facing entry points retained for compatibility        |
+| `getting-started/` | Installation, platform support and first-run workflows            |
+| `concepts/`        | Durable product concepts and terminology                          |
+| `api/`             | API contracts and examples                                        |
+| `architecture/`    | Current architecture, product model, governance and release rules |
+| `roadmap/`         | Current post-v1 roadmap and execution dependencies                |
+| `network/`         | Network-specific concepts and boundaries                          |
+| `guides/`          | Task-oriented procedures and troubleshooting                      |
+| `operations/`      | Deployment, recovery and operational procedures                   |
+| `reference/`       | Stable package and implementation references                      |
+| `security/`        | Security-specific documentation                                   |
+| `adr/`             | Durable architectural decisions                                   |
+| `phases/`          | Historical/current phase implementation and audit evidence        |
+| `audits/`          | Documentation/repository audit records and migration evidence     |
+| `testing/`         | Test policy and exception metadata                                |
 
 ## Canonical-source rules
 

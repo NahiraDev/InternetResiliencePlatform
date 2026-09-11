@@ -24,7 +24,7 @@
   "devDependencies": {
     "@types/node": "^26.4.1",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   },
   "bin": {
     "irp": "dist/index.js"

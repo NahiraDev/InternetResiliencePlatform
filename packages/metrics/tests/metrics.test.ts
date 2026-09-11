@@ -10,18 +10,26 @@ describe('MetricRegistry', () => {
   it('registers and returns deterministic definitions', () => {
     const registry = new MetricRegistry();
     registry.register({ name: 'irp_test_total', type: 'counter', description: 'Test counter' });
-    registry.register({ name: 'irp_latency_ms', type: 'histogram', description: 'Latency', unit: 'ms' });
+    registry.register({
+      name: 'irp_latency_ms',
+      type: 'histogram',
+      description: 'Latency',
+      unit: 'ms',
+    });
 
-    expect(registry.list().map((metric) => metric.name)).toEqual(['irp_latency_ms', 'irp_test_total']);
+    expect(registry.list().map((metric) => metric.name)).toEqual([
+      'irp_latency_ms',
+      'irp_test_total',
+    ]);
     expect(registry.get('irp_test_total')?.type).toBe('counter');
   });
 
   it('rejects conflicting metric definitions', () => {
     const registry = new MetricRegistry();
     registry.register({ name: 'irp_conflict', type: 'gauge', description: 'Original' });
-    expect(() => registry.register({ name: 'irp_conflict', type: 'counter', description: 'Changed' })).toThrow(
-      'Metric definition conflict',
-    );
+    expect(() =>
+      registry.register({ name: 'irp_conflict', type: 'counter', description: 'Changed' }),
+    ).toThrow('Metric definition conflict');
   });
 });
 
@@ -59,7 +67,9 @@ describe('InternalMetricsBus', () => {
 
     expect(point.labels).toEqual({ method: 'GET' });
     expect(bus.query({ name: 'irp_requests_total', labels: { method: 'GET' } })).toHaveLength(1);
-    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ value: 1, name: 'irp_requests_total' }));
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 1, name: 'irp_requests_total' }),
+    );
 
     unsubscribe();
     bus.record('irp_requests_total', 2, { timestamp: 11_000 });
@@ -68,10 +78,14 @@ describe('InternalMetricsBus', () => {
 
   it('rejects invalid values, names, timestamps, and undeclared metrics', () => {
     const bus = new InternalMetricsBus();
-    expect(() => bus.define({ name: 'bad-name', type: 'gauge', description: 'bad' })).toThrow('Invalid metric name');
+    expect(() => bus.define({ name: 'bad-name', type: 'gauge', description: 'bad' })).toThrow(
+      'Invalid metric name',
+    );
     bus.define({ name: 'irp_counter_total', type: 'counter', description: 'Counter' });
     expect(() => bus.record('irp_counter_total', -1)).toThrow('Counter values cannot be negative');
-    expect(() => bus.record('irp_counter_total', Number.NaN)).toThrow('Metric value must be finite');
+    expect(() => bus.record('irp_counter_total', Number.NaN)).toThrow(
+      'Metric value must be finite',
+    );
     expect(() => bus.record('irp_counter_total', 1, { timestamp: 0 })).toThrow('Metric timestamp');
     expect(() => bus.record('missing_metric', 1)).toThrow('Metric is not registered');
   });
@@ -79,7 +93,9 @@ describe('InternalMetricsBus', () => {
   it('enforces label cardinality limits', () => {
     const bus = new InternalMetricsBus();
     bus.define({ name: 'irp_cardinality', type: 'gauge', description: 'Cardinality test' });
-    const labels = Object.fromEntries(Array.from({ length: 17 }, (_, index) => [`label_${index}`, 'x']));
+    const labels = Object.fromEntries(
+      Array.from({ length: 17 }, (_, index) => [`label_${index}`, 'x']),
+    );
     expect(() => bus.record('irp_cardinality', 1, { labels })).toThrow('maximum of 16');
   });
 

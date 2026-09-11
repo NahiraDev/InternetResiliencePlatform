@@ -13,6 +13,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 ## Phase Groups
 
 ### Group A — Unified Control Plane (72–78)
+
 - **Phase 72 — Control-Plane Architecture Completion**: canonical control-plane boundaries and ownership.
 - **Phase 73 — Unified Network State Model**: canonical desired/observed/actual network state.
 - **Phase 74 — Control-Plane Contracts**: typed interfaces/events across intelligence, policy, execution, and assurance.
@@ -22,6 +23,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 78 — Closed-Loop Control Foundation**: bounded observe → decide → apply → verify loop.
 
 ### Group B — Intent & Policy (79–85)
+
 - **Phase 79 — Intent Model & Lifecycle**
 - **Phase 80 — Intent API & Ingestion**
 - **Phase 81 — Intent Translation / Compilation**
@@ -31,6 +33,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 85 — Intent Assurance & Drift Management**
 
 ### Group C — Connectivity Fabric (86–92)
+
 - **Phase 86 — Unified Connectivity Fabric**
 - **Phase 87 — Multi-Interface Intelligence**
 - **Phase 88 — Multi-Path Connectivity Management**
@@ -40,6 +43,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 92 — Connectivity Service Assurance**
 
 ### Group D — Advanced Routing & Recovery (93–99)
+
 - **Phase 93 — Advanced Routing Control**
 - **Phase 94 — Traffic Classification**
 - **Phase 95 — Policy-Based Routing**
@@ -49,6 +53,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 99 — Predictive Failover & Recovery**
 
 ### Group E — Telemetry & Network Intelligence (100–106)
+
 - **Phase 100 — Unified Telemetry Plane**
 - **Phase 101 — Streaming Metrics & Events**
 - **Phase 102 — Cross-Layer Event Correlation**
@@ -58,6 +63,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 106 — Telemetry-Driven Closed-Loop Assurance**
 
 ### Group F — Security & Trust (107–113)
+
 - **Phase 107 — Secure Control-Plane Architecture**
 - **Phase 108 — Device Identity & Enrollment Trust**
 - **Phase 109 — Authorization / Capability Model**
@@ -67,6 +73,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 113 — Security Monitoring & Automated Response**
 
 ### Group G — Fleet & Distributed Control (114–120)
+
 - **Phase 114 — Fleet Management Foundation**
 - **Phase 115 — Device Enrollment & Lifecycle**
 - **Phase 116 — Remote Configuration & Policy Distribution**
@@ -76,6 +83,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 120 — Fleet Health & Observability**
 
 ### Group H — Intelligence, Simulation & Production (121–127)
+
 - **Phase 121 — Network Knowledge Base**
 - **Phase 122 — Network State Prediction**
 - **Phase 123 — Decision Intelligence & AI Assistance**
@@ -85,6 +93,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 127 — Final Production Certification & Release Readiness**
 
 ### Group I — Data Plane & Traffic Engineering (128–134)
+
 - **Phase 128 — Data-Plane Abstraction & Enforcement**
 - **Phase 129 — Flow / Connection Lifecycle Intelligence**
 - **Phase 130 — QoS, Priority & Traffic Engineering**
@@ -94,6 +103,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 134 — Data-Plane Assurance & Safe Reconciliation**
 
 ### Group J — Platform APIs & Extensibility (135–140)
+
 - **Phase 135 — Versioned Control-Plane API**
 - **Phase 136 — Event Bus & Integration Contracts**
 - **Phase 137 — Plugin / Provider Lifecycle Governance**
@@ -102,6 +112,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 140 — API Compatibility, Migration & Deprecation Framework**
 
 ### Group K — Privacy, Governance & Compliance (141–145)
+
 - **Phase 141 — Privacy-Preserving Telemetry**
 - **Phase 142 — Data Classification, Retention & Deletion**
 - **Phase 143 — Auditability & Immutable Control History**
@@ -109,6 +120,7 @@ The target architecture follows an intent-based closed loop: ingest/normalize in
 - **Phase 145 — Compliance & Operational Evidence Framework**
 
 ### Group L — Reliability, Scale & Disaster Recovery (146–150)
+
 - **Phase 146 — Control-Plane High Availability**
 - **Phase 147 — Distributed State Consistency & Conflict Recovery**
 - **Phase 148 — Horizontal Scale & Backpressure Engineering**

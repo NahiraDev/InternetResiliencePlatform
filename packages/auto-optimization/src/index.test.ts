@@ -142,7 +142,9 @@ const validation: ActionValidation = {
   policy: { allowed: true, reasons: [], requiredCapabilities: [] },
 };
 
-const ports = (verification: ActionVerification = successVerification()): AutoOptimizationPorts => ({
+const ports = (
+  verification: ActionVerification = successVerification(),
+): AutoOptimizationPorts => ({
   validator: { validate: async () => validation },
   executor: { execute: async () => successfulExecution() },
   verifier: { verify: async () => verification },
@@ -171,7 +173,11 @@ describe('AutoOptimizationEngine', () => {
 
   it('blocks low-confidence recommendations', async () => {
     const policy = { ...defaultAutoOptimizationPolicy(), enabled: true };
-    const engine = new AutoOptimizationEngine(policy, ports(), new MemoryAutoOptimizationStateStore(true));
+    const engine = new AutoOptimizationEngine(
+      policy,
+      ports(),
+      new MemoryAutoOptimizationStateStore(true),
+    );
     const low = buildRecommendation(plan({ confidence: 50 }), {
       id: 'low-confidence',
       source: 'recommendation',
@@ -188,7 +194,11 @@ describe('AutoOptimizationEngine', () => {
 
   it('applies and verifies an eligible recommendation', async () => {
     const policy = { ...defaultAutoOptimizationPolicy(), enabled: true };
-    const engine = new AutoOptimizationEngine(policy, ports(), new MemoryAutoOptimizationStateStore(true));
+    const engine = new AutoOptimizationEngine(
+      policy,
+      ports(),
+      new MemoryAutoOptimizationStateStore(true),
+    );
     const result = await engine.apply(recommendation(), context());
     expect(result.status).toBe('applied');
     expect(result.verification?.status).toBe('success');
@@ -209,7 +219,11 @@ describe('AutoOptimizationEngine', () => {
 
   it('honors runtime manual override and never bypasses runtime policy', async () => {
     const policy = { ...defaultAutoOptimizationPolicy(), enabled: true };
-    const engine = new AutoOptimizationEngine(policy, ports(), new MemoryAutoOptimizationStateStore(true));
+    const engine = new AutoOptimizationEngine(
+      policy,
+      ports(),
+      new MemoryAutoOptimizationStateStore(true),
+    );
     const base = context();
     const overridden = {
       ...base,
@@ -229,9 +243,18 @@ describe('AutoOptimizationEngine', () => {
     const basePorts = ports();
     const testPorts: AutoOptimizationPorts = {
       ...basePorts,
-      executor: { execute: async () => { executions += 1; return successfulExecution(); } },
+      executor: {
+        execute: async () => {
+          executions += 1;
+          return successfulExecution();
+        },
+      },
     };
-    const engine = new AutoOptimizationEngine(policy, testPorts, new MemoryAutoOptimizationStateStore(true));
+    const engine = new AutoOptimizationEngine(
+      policy,
+      testPorts,
+      new MemoryAutoOptimizationStateStore(true),
+    );
     const result = await engine.apply(recommendation(), context());
     expect(result.status).toBe('dry_run');
     expect(executions).toBe(0);
@@ -239,7 +262,11 @@ describe('AutoOptimizationEngine', () => {
 
   it('enforces cooldown after a successful apply', async () => {
     const policy = { ...defaultAutoOptimizationPolicy(), enabled: true, cooldownMs: 60_000 };
-    const engine = new AutoOptimizationEngine(policy, ports(), new MemoryAutoOptimizationStateStore(true));
+    const engine = new AutoOptimizationEngine(
+      policy,
+      ports(),
+      new MemoryAutoOptimizationStateStore(true),
+    );
     expect((await engine.apply(recommendation(), context())).status).toBe('applied');
     const second = await engine.apply({ ...recommendation(), id: 'recommendation-2' }, context());
     expect(second.status).toBe('blocked');

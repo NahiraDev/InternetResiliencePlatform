@@ -11,6 +11,7 @@ export * from './validation/validation.js';
 export * from './execution/execution.js';
 export * from './verification/verification.js';
 export * from './recovery/recovery.js';
+export * from './safety/safety-kernel.js';
 export * from './decisions/records.js';
 export * from './replay/replay.js';
 export * from './stores/memory.js';
@@ -30,5 +31,8 @@ export * from './decision-orchestration.js';
 export * from './transactions/action-transaction.js';
 export * from './canonical-network-adapter.js';
 export * from './core-integration.js';
+export * from './closed-loop.js';
+export * from './gateway/gateway-registry-plane.js';
+export * from './tunnel/tunnel-control-plane.js';
 
 export * from './autopilot/autopilot.js';

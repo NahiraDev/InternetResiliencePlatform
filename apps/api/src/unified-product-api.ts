@@ -177,7 +177,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/federation/evidence`],
       authentication: 'none',
       requiredPermissions: [],
-      description: 'Signed probe-evidence ingestion; evidence authenticity remains server-validated.',
+      description:
+        'Signed probe-evidence ingestion; evidence authenticity remains server-validated.',
     },
     {
       id: 'devices.enrollment',
@@ -220,7 +221,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/tunnels`, `${PRODUCT_API_PATH}/tunnels/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.inspect'],
-      description: 'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
+      description:
+        'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
     },
     {
       id: 'policies.control',
@@ -230,7 +232,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/policies`, `${PRODUCT_API_PATH}/policies/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.admin'],
-      description: 'Server-authoritative policy configuration without client-side policy duplication.',
+      description:
+        'Server-authoritative policy configuration without client-side policy duplication.',
     },
     {
       id: 'analytics.network',
@@ -248,7 +251,10 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
 const normalizeHeaderValues = (value: string | string[] | undefined): string[] => {
   if (value === undefined) return [];
   const values = Array.isArray(value) ? value : [value];
-  return values.flatMap((entry) => entry.split(',')).map((entry) => entry.trim()).filter(Boolean);
+  return values
+    .flatMap((entry) => entry.split(','))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 };
 
 const authorizationVersion = (request: FastifyRequest): string | null => {
@@ -257,7 +263,8 @@ const authorizationVersion = (request: FastifyRequest): string | null => {
   const requested = explicit.length > 0 ? explicit : accepted;
 
   if (requested.length === 0) return null;
-  if (requested.some((version) => !versionSchema.safeParse(version).success)) return requested[0] ?? null;
+  if (requested.some((version) => !versionSchema.safeParse(version).success))
+    return requested[0] ?? null;
   if (requested.some((version) => version !== requested[0])) return requested.join(',');
 
   return requested[0] ?? null;
@@ -324,7 +331,8 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
     const principal = await authenticate(request);
     const visibleCapabilities: string[] = [];
     for (const capability of PRODUCT_API_MANIFEST.capabilities) {
-      if (await hasCapability(request, principal, capability)) visibleCapabilities.push(capability.id);
+      if (await hasCapability(request, principal, capability))
+        visibleCapabilities.push(capability.id);
     }
 
     return {

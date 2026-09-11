@@ -1,5 +1,5 @@
 {
-  "name": "@platform/sdk",
+  "name": "@irp/sdk",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/node": "^26.4.1",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@irp/kernel": "workspace:*"

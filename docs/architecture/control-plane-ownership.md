@@ -12,24 +12,24 @@ This does **not** make every intelligence, state, provider or telemetry object a
 
 ## Ownership map
 
-| Capability | Canonical owner | Allowed responsibility | Explicit non-ownership |
-|---|---|---|---|
-| Observation | Resilience Runtime observation boundary + domain observation providers | Collect and normalize evidence | Must not mutate network state or authorize changes. |
-| Network intelligence | `@irp/network-intelligence` | Measurements, models, scoring and decision inputs | Must not become an independent mutation/orchestration authority. |
-| Control-loop orchestration | `@irp/resilience-runtime` | Sequence lifecycle stages and coordinate contracts | Must not duplicate domain provider registries. |
-| Runtime lifecycle | `RuntimeStateMachine` | Runtime lifecycle state (`idle`, `observing`, `planning`, etc.) | Not a replacement for Phase 73 desired/observed/actual network state. |
-| Network state semantics | Phase 73 state contract in `@irp/resilience-runtime` | Cross-domain desired/observed/actual envelope and reconciliation semantics | Not a generic database or replacement for domain stores. |
-| Decision composition | Runtime decision/autopilot boundary | Combine admitted intelligence inputs into an actionable decision | Intelligence packages remain providers/inputs unless a later contract explicitly changes authority. |
-| Policy and safety | Existing runtime policy + security/capability authorization | Admit, constrain or reject proposed changes | No second policy engine. |
-| Planning | `packages/resilience-runtime/src/planning/` | Produce bounded plans from admitted decisions | Must not apply host mutations. |
-| Execution | Runtime execution boundary + domain adapters | Apply authorized actions and report outcomes | Adapters do not independently bypass policy/authorization. |
-| Verification / assurance | Runtime verification/validation + telemetry evidence | Verify requested outcomes and correlate evidence | Must not silently authorize a new mutation. |
-| Recovery / rollback | Runtime recovery + domain failover primitives | Compensate or recover failed/unsafe changes | Must not create a parallel control loop. |
-| Shared events | `@irp/events` for cross-package domain/integration contracts | Versioned shared event types and transport-neutral event contracts | Local implementation events remain local and are not automatically public contracts. |
-| Domain registries | DNS, gateway, tunnel, connectivity and plugin packages | Own their domain inventory/provider lifecycle | No generic registry may absorb unrelated domain ownership. |
-| API | Versioned Product/Control API | Authenticate, authorize and expose stable capabilities | API/UI layers do not own network-control decisions. |
-| Clients | Linux/macOS/Windows/mobile clients and native adapters | Presentation, lifecycle integration and permitted platform operations | No client-side source of truth for routing, policy, gateway selection or failover. |
-| Telemetry | Existing telemetry/metrics/observability packages | Metrics, traces, events and evidence | No independent health calculation that becomes a competing control authority. |
+| Capability                 | Canonical owner                                                        | Allowed responsibility                                                     | Explicit non-ownership                                                                              |
+| -------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Observation                | Resilience Runtime observation boundary + domain observation providers | Collect and normalize evidence                                             | Must not mutate network state or authorize changes.                                                 |
+| Network intelligence       | `@irp/network-intelligence`                                            | Measurements, models, scoring and decision inputs                          | Must not become an independent mutation/orchestration authority.                                    |
+| Control-loop orchestration | `@irp/resilience-runtime`                                              | Sequence lifecycle stages and coordinate contracts                         | Must not duplicate domain provider registries.                                                      |
+| Runtime lifecycle          | `RuntimeStateMachine`                                                  | Runtime lifecycle state (`idle`, `observing`, `planning`, etc.)            | Not a replacement for Phase 73 desired/observed/actual network state.                               |
+| Network state semantics    | Phase 73 state contract in `@irp/resilience-runtime`                   | Cross-domain desired/observed/actual envelope and reconciliation semantics | Not a generic database or replacement for domain stores.                                            |
+| Decision composition       | Runtime decision/autopilot boundary                                    | Combine admitted intelligence inputs into an actionable decision           | Intelligence packages remain providers/inputs unless a later contract explicitly changes authority. |
+| Policy and safety          | Existing runtime policy + security/capability authorization            | Admit, constrain or reject proposed changes                                | No second policy engine.                                                                            |
+| Planning                   | `packages/resilience-runtime/src/planning/`                            | Produce bounded plans from admitted decisions                              | Must not apply host mutations.                                                                      |
+| Execution                  | Runtime execution boundary + domain adapters                           | Apply authorized actions and report outcomes                               | Adapters do not independently bypass policy/authorization.                                          |
+| Verification / assurance   | Runtime verification/validation + telemetry evidence                   | Verify requested outcomes and correlate evidence                           | Must not silently authorize a new mutation.                                                         |
+| Recovery / rollback        | Runtime recovery + domain failover primitives                          | Compensate or recover failed/unsafe changes                                | Must not create a parallel control loop.                                                            |
+| Shared events              | `@irp/events` for cross-package domain/integration contracts           | Versioned shared event types and transport-neutral event contracts         | Local implementation events remain local and are not automatically public contracts.                |
+| Domain registries          | DNS, gateway, tunnel, connectivity and plugin packages                 | Own their domain inventory/provider lifecycle                              | No generic registry may absorb unrelated domain ownership.                                          |
+| API                        | Versioned Product/Control API                                          | Authenticate, authorize and expose stable capabilities                     | API/UI layers do not own network-control decisions.                                                 |
+| Clients                    | Linux/macOS/Windows/mobile clients and native adapters                 | Presentation, lifecycle integration and permitted platform operations      | No client-side source of truth for routing, policy, gateway selection or failover.                  |
+| Telemetry                  | Existing telemetry/metrics/observability packages                      | Metrics, traces, events and evidence                                       | No independent health calculation that becomes a competing control authority.                       |
 
 ## Control-loop boundary
 

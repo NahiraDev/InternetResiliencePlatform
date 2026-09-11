@@ -13,12 +13,7 @@
     "verify",
     "recover"
   ],
-  "requiredScenarios": [
-    "healthy",
-    "dns-degradation",
-    "provider-recovery",
-    "destination-specific"
-  ],
+  "requiredScenarios": ["healthy", "dns-degradation", "provider-recovery", "destination-specific"],
   "requiredAcceptance": [
     "completeStageOrderCovered",
     "healthyPathRecorded",

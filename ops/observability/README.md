@@ -27,14 +27,14 @@ docker compose -f ops/observability/docker-compose.yml up
 
 ## Endpoints
 
-| Component | URL |
-|---|---|
-| Runtime Lab | http://localhost:8080 |
-| Runtime report | http://localhost:8080/report |
+| Component       | URL                           |
+| --------------- | ----------------------------- |
+| Runtime Lab     | http://localhost:8080         |
+| Runtime report  | http://localhost:8080/report  |
 | Runtime metrics | http://localhost:9464/metrics |
-| Grafana | http://localhost:3001 |
-| Prometheus | http://localhost:9090 |
-| Tempo | http://localhost:3200 |
+| Grafana         | http://localhost:3001         |
+| Prometheus      | http://localhost:9090         |
+| Tempo           | http://localhost:3200         |
 
 Grafana is provisioned automatically with Prometheus and Tempo and loads the **IRP Runtime Lab** dashboard.
 

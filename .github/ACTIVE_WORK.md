@@ -15,13 +15,13 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Active agent slots
 
-| Slot | Role | Scope | Status |
-|---|---|---|---|
-| A | phase-implementer | One roadmap phase | available |
-| B | ci-runtime-engineer | `.github/workflows`, runtime lab infrastructure | available |
-| C | architecture-reviewer | architecture/contracts/dependency direction | available |
-| D | test-verification-engineer | tests, deterministic verification, failure analysis | available |
-| E | integration-release-engineer | integration, final gates, release readiness | available |
+| Slot | Role                         | Scope                                               | Status    |
+| ---- | ---------------------------- | --------------------------------------------------- | --------- |
+| A    | phase-implementer            | One roadmap phase                                   | available |
+| B    | ci-runtime-engineer          | `.github/workflows`, runtime lab infrastructure     | available |
+| C    | architecture-reviewer        | architecture/contracts/dependency direction         | available |
+| D    | test-verification-engineer   | tests, deterministic verification, failure analysis | available |
+| E    | integration-release-engineer | integration, final gates, release readiness         | available |
 
 ## Coordination rules
 
