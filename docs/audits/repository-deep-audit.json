@@ -1,27 +1,14 @@
 {
-  "generatedAt": "2026-09-11T08:28:51.668Z",
+  "generatedAt": "2026-09-11T10:22:42.106Z",
   "workspaceCount": 43,
   "workflowCount": 15,
-  "findings": [
-    {
-      "severity": "P0",
-      "kind": "missing-manifest",
-      "path": "apps/dashboard/package.json",
-      "detail": "workspace directory has no package.json"
-    },
-    {
-      "severity": "P0",
-      "kind": "missing-manifest",
-      "path": "apps/desktop/package.json",
-      "detail": "workspace directory has no package.json"
-    }
-  ],
+  "findings": [],
   "workspaces": [
     {
       "name": "@irp/api",
       "path": "apps/api/package.json",
-      "sourceFiles": 9,
-      "testFiles": 6,
+      "sourceFiles": 10,
+      "testFiles": 7,
       "scripts": [
         "build",
         "lint",
@@ -46,8 +33,8 @@
     {
       "name": "@irp/daemon",
       "path": "apps/daemon/package.json",
-      "sourceFiles": 1,
-      "testFiles": 1,
+      "sourceFiles": 3,
+      "testFiles": 3,
       "scripts": [
         "build",
         "lint",
@@ -424,8 +411,8 @@
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
-      "sourceFiles": 38,
-      "testFiles": 17,
+      "sourceFiles": 40,
+      "testFiles": 20,
       "scripts": [
         "build",
         "coverage",
@@ -447,7 +434,7 @@
       ]
     },
     {
-      "name": "@platform/sdk",
+      "name": "@irp/sdk",
       "path": "packages/sdk/package.json",
       "sourceFiles": 1,
       "testFiles": 1,

@@ -22,6 +22,7 @@
     "@irp/database": "workspace:*",
     "@irp/dns": "workspace:*",
     "@irp/events": "workspace:*",
+    "@irp/historical-analysis": "workspace:*",
     "@irp/logger": "workspace:*",
     "@irp/metrics": "workspace:*",
     "@irp/network": "workspace:*",

@@ -5,15 +5,20 @@ import { loadConfig } from '@irp/config';
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
 import { createLogger } from '@irp/logger';
 import { RoutingEngine } from '@irp/routing';
+import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
+  GatewayRegistrySelectionPlane,
   ResilienceRuntime,
   RuntimeScheduler,
+  TunnelRegistryControlPlane,
   type Observation,
   type ObservationProvider,
   type ObservationProviderResult,
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
+import { AutoOptimizationHost } from './auto-optimization-host.js';
+import { PluginHost } from './plugin-host.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -85,7 +90,15 @@ export class RuntimeDaemonHost {
   readonly dnsProviders = createAllBuiltinProviders();
   readonly dns = new IntelligentDnsEngine(this.dnsProviders, { check: async (provider) => provider.health() });
   readonly observer = new LinuxObservationProvider(this.connectivity);
-  readonly runtime = new ResilienceRuntime([this.observer], { runtimeId: 'daemon-runtime', networkControlPlane: { connectivity: this.connectivity, routing: this.routing, dns: { engine: this.dns, getActiveProviderId: () => this.dns.status().activeProviderId, applyProvider: async (provider) => this.applyDnsProvider(provider.id) } } });
+  readonly tunnelPlane = new TunnelRegistryControlPlane(new TunnelProviderRegistry(), {
+    enabled: process.env.IRP_TUNNEL_ENABLED === '1',
+  });
+  readonly gatewaySelection = new GatewayRegistrySelectionPlane(this.connectivity, {
+    enabled: process.env.IRP_GATEWAY_SELECTION_ENABLED === '1',
+  });
+  readonly runtime = new ResilienceRuntime([this.observer], { runtimeId: 'daemon-runtime', networkControlPlane: { connectivity: this.connectivity, routing: this.routing, dns: { engine: this.dns, getActiveProviderId: () => this.dns.status().activeProviderId, applyProvider: async (provider) => this.applyDnsProvider(provider.id) }, tunnel: this.tunnelPlane, gatewaySelection: this.gatewaySelection } });
+  readonly plugins = new PluginHost([]);
+  readonly autoOptimization = new AutoOptimizationHost({ adapters: this.runtime.adapters });
   readonly scheduler: RuntimeScheduler;
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) { this.scheduler = new RuntimeScheduler(this.runtime, { enabled: false, mode: 'safe', cycleIntervalMs: 30_000, maxConcurrentCycles: 1, cooldownMs: 5_000, executionBudgetMs: 10_000, ...config }); }
   private async applyDnsProvider(providerId: string): Promise<void> {
@@ -100,9 +113,9 @@ export class RuntimeDaemonHost {
     this.dns.selectProvider(providerId);
   }
   async initialize() { await this.connectivity.discoverResources(); await this.dns.evaluate(); this.lifecycle = 'ready'; }
-  async start() { if (this.lifecycle === 'created') await this.initialize(); this.lifecycle = 'running'; this.scheduler.start(); }
-  async stop() { this.lifecycle = 'stopping'; this.scheduler.stop(); this.lifecycle = 'stopped'; }
-  health() { return { lifecycle: this.lifecycle, scheduler: this.scheduler.status(), runtimeId: this.runtime.runtimeId, instanceId: this.runtime.instanceId, connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id), connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId), dns: { providers: this.dnsProviders.map((provider) => provider.id), activeProviderId: this.dns.status().activeProviderId }, capabilities: this.runtime.capabilities() }; }
+  async start() { if (this.lifecycle === 'created') await this.initialize(); await this.plugins.start(); this.lifecycle = 'running'; this.scheduler.start(); }
+  async stop() { this.lifecycle = 'stopping'; this.scheduler.stop(); await this.plugins.stop(); this.lifecycle = 'stopped'; }
+  health() { return { lifecycle: this.lifecycle, scheduler: this.scheduler.status(), runtimeId: this.runtime.runtimeId, instanceId: this.runtime.instanceId, connectivityProviders: this.connectivity.getProviders().map((provider) => provider.id), connectivitySources: this.connectivity.getAvailableSources().map((source) => source.sourceId), dns: { providers: this.dnsProviders.map((provider) => provider.id), activeProviderId: this.dns.status().activeProviderId }, gatewaySelection: { configured: this.gatewaySelection.configured, currentGatewayId: this.gatewaySelection.currentGatewayId, gateways: this.gatewaySelection.gateways().length }, tunnel: { configured: this.tunnelPlane.configured, activeTunnel: this.tunnelPlane.activeTunnel }, plugins: this.plugins.status(), autoOptimization: { bound: true, enabled: this.autoOptimization.enabled }, capabilities: this.runtime.capabilities() }; }
 }
 
 export const createDaemon = (): Application => { const config = loadConfig(); const logger = createLogger(config.logger.level); return new Application(config, logger); };
