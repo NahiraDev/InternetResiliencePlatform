@@ -14,7 +14,7 @@ describe('BoundedClosedLoopController integration', () => {
     const result = await controller.run({
       maxCycles: 2,
       stopWhenHealthy: false,
-      mode: 'simulation',
+      context: { mode: 'simulation' },
       correlationId: 'phase-78/integration',
       idempotencyKey: 'phase-78/integration',
     });
