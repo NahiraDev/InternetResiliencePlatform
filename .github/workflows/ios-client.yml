@@ -85,7 +85,7 @@ jobs:
           missing = [item for item in required if item not in text]
           if missing:
               raise SystemExit(f'Missing Xcode project contract entries: {missing}')
-          if 'files = (A10000010000000000000009, A100000000000000000000006);' in text:
+          if 'files = (A10000010000000000000009, A10000010000000000000006);' in text:
               raise SystemExit('PacketTunnelConfiguration.swift must not be compiled by IRPPacketTunnel')
           print('Xcode project metadata contract passed')
           PY
