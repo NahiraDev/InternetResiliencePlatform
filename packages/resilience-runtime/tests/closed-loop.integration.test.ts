@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BoundedClosedLoopController } from '../src/closed-loop.js';
+import { createCapabilitySnapshot } from '../src/context/context.js';
 import { ResilienceRuntime } from '../src/runtime.js';
 
 describe('BoundedClosedLoopController integration', () => {
@@ -17,6 +18,10 @@ describe('BoundedClosedLoopController integration', () => {
       mode: 'simulation',
       correlationId: 'phase-78/integration',
       idempotencyKey: 'phase-78/integration',
+      context: {
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+      },
     });
 
     expect(cycle).toHaveBeenCalledTimes(2);
