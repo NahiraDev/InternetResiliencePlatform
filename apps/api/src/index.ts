@@ -46,7 +46,12 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
-import { ResilienceRuntime, runtimeEnvelope } from '@irp/resilience-runtime';
+import {
+  ResilienceRuntime,
+  runtimeEnvelope,
+  type Observation,
+  type ObservationProvider,
+} from '@irp/resilience-runtime';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -589,7 +594,38 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 `,
     );
   });
-  const resilienceRuntime = new ResilienceRuntime();
+  const runtimeObservationProvider: ObservationProvider = {
+    id: 'api-network-monitor',
+    async collect(context) {
+      const snapshot = await networkMonitor.runOnce();
+      const observations: Observation[] = snapshot.measurements.map((measurement) => {
+        const healthy = measurement.success;
+        return {
+          id: `api-${measurement.probeType}-${context.correlationId}`,
+          schemaVersion: 1,
+          createdAt: measurement.timestamp,
+          correlationId: context.correlationId,
+          source: 'irp-api-network-monitor',
+          metadata: measurement.metadata,
+          category: 'network',
+          metric: `${measurement.probeType}_health`,
+          value: healthy ? (measurement.latency ?? 1) : null,
+          timestamp: measurement.timestamp,
+          freshnessMs: 0,
+          confidence: healthy ? 0.9 : 0.8,
+          severity: healthy ? 'info' : 'critical',
+          status: healthy ? 'healthy' : 'failed',
+        };
+      });
+      return {
+        providerId: 'api-network-monitor',
+        collectedAt: new Date().toISOString(),
+        errors: [],
+        observations,
+      };
+    },
+  };
+  const resilienceRuntime = new ResilienceRuntime([runtimeObservationProvider]);
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
 
@@ -627,22 +663,14 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   });
   app.post('/api/v1/autopilot/runs', async (request) => {
     await requirePermission(request, 'autopilot.execute');
-    z.object({
-      dryRun: z.boolean().default(false),
-      shadow: z.boolean().default(false),
-      forceVerificationFailure: z.boolean().default(false),
-    }).parse(request.body ?? {});
-    // API-hosted runtime cycles are simulation-only. This preserves the former
-    // autopilot endpoint without granting a management API a privileged network
-    // mutation path; local daemon adapters remain the live execution boundary.
-    return runtimeResponse(
-      request,
-      await resilienceRuntime.runCycle({
-        mode: 'simulation',
-        correlationId: `api-autopilot-${request.id}`,
-        idempotencyKey: `api-autopilot-${request.id}`,
-      }),
-    );
+    const body = z
+      .object({
+        dryRun: z.boolean().default(false),
+        shadow: z.boolean().default(false),
+        forceVerificationFailure: z.boolean().default(false),
+      })
+      .parse(request.body ?? {});
+    return runtimeResponse(request, await autopilot.run(body));
   });
   app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
     await requirePermission(request, 'autopilot.admin');
@@ -687,10 +715,9 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   });
   app.get('/api/v1/autopilot/health', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    const status = await canonicalAutopilotStatus();
     return runtimeResponse(request, {
-      status: status.health,
-      autopilot: status,
+      status: autopilot.status().circuitBreaker === 'OPEN' ? 'degraded' : 'healthy',
+      autopilot: autopilot.status(),
     });
   });
   app.get('/api/v1/autopilot/circuit-breaker', async (request) => {

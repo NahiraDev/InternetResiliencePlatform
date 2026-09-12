@@ -32,6 +32,11 @@ import type { DecisionProvider, ObservationProvider } from './ports/ports.js';
 import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
 import { DecisionOrchestrator } from './decision-orchestration.js';
 import type { CanonicalNetworkControlPlane } from './canonical-network-adapter.js';
+import {
+  SafetyRollbackRecoveryKernel,
+  SafetyViolationError,
+  type SafetyKernelOptions,
+} from './safety/safety-kernel.js';
 import { MetricsRegistry } from '@irp/telemetry';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
@@ -43,6 +48,7 @@ export interface ResilienceRuntimeOptions {
   decisionProvider?: DecisionProvider;
   networkControlPlane?: CanonicalNetworkControlPlane;
   telemetryRegistry?: MetricsRegistry;
+  safetyKernel?: SafetyKernelOptions;
 }
 
 export class ResilienceRuntime {
@@ -72,6 +78,7 @@ export class ResilienceRuntime {
   private readonly decisionProvider: DecisionProvider;
   private readonly decisionOrchestrator: DecisionOrchestrator;
   private readonly transactionEngine: ActionTransactionEngine;
+  private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
@@ -92,6 +99,12 @@ export class ResilienceRuntime {
     this.transactionEngine = new ActionTransactionEngine(
       new CoordinatedActionExecutor(this.adapters),
       this.events,
+    );
+    this.safetyKernel = new SafetyRollbackRecoveryKernel(
+      this.transactionEngine,
+      this.events,
+      new FailoverRecoveryProvider(this.adapters, this.networkControlPlane),
+      options.safetyKernel,
     );
   }
   capabilities() {
@@ -189,16 +202,23 @@ export class ResilienceRuntime {
       let verification;
       let recovery;
       const verifier = new RuntimeActionVerifier(this.adapters);
-      const recoveryProvider = new FailoverRecoveryProvider(
-        this.adapters,
-        this.networkControlPlane,
-      );
 
       if (context.mode === 'simulation') {
         outcome = 'simulated';
       } else {
         await this.state.transition('executing', context.correlationId);
-        execution = await this.transactionEngine.execute(plan, context, input.idempotencyKey);
+        try {
+          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey)).execution;
+        } catch (error) {
+          if (error instanceof SafetyViolationError) {
+            return this.recordBlocked(context, before, observations, found, candidates, plan, start, {
+              ...validation,
+              valid: false,
+              reasons: [...validation.reasons, ...error.assessment.reasons],
+            });
+          }
+          throw error;
+        }
         await this.events.emit('runtime.execution.completed', {
           correlationId: context.correlationId,
           status: execution.status,
@@ -211,12 +231,11 @@ export class ResilienceRuntime {
         });
         if (verification.status === 'failed') {
           await this.state.transition('recovering', context.correlationId);
-          recovery = await recoveryProvider.recover(plan, 'verification failed', context);
+          recovery = await this.safetyKernel.recover(plan, 'verification failed', context);
           outcome = 'degraded';
           await this.state.transition('degraded', context.correlationId);
         } else
-          outcome =
-            execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
+          outcome = execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
       }
       const record = createDecisionRecord({
         context,

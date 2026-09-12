@@ -47,4 +47,47 @@ describe('BoundedClosedLoopController integration', () => {
     expect(snapshot.counters.cyclesTotal).toBe(2);
     expect(snapshot.counters.decisionsTotal).toBe(2);
   });
+
+  it('passes live execution through the safety kernel before the transaction boundary', async () => {
+    const runtime = new ResilienceRuntime([], {
+      runtimeId: 'phase-78-safety-integration',
+      instanceId: 'phase-78-safety-test',
+    });
+
+    const result = await new BoundedClosedLoopController(runtime).run({
+      maxCycles: 1,
+      mode: 'live',
+      correlationId: 'phase-78/safety',
+      context: {
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+        policySnapshot: {
+          id: 'phase-78-policy',
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+          source: 'phase-78-test',
+          metadata: {},
+          policy: {
+            allowedActions: ['noop'],
+            deniedActions: [],
+            capabilityRequirements: {},
+            securityConstraints: ['trusted-context'],
+            actionBudget: 1,
+            maxConcurrentActions: 1,
+            confidenceThreshold: 0,
+            telemetryFreshnessMs: 60_000,
+            simulationOnly: false,
+            failClosed: true,
+          },
+        },
+      },
+    });
+
+    expect(result.records[0]?.outcome).toBe('simulated');
+    const events = runtime.events.events.map(({ event }) => event);
+    expect(events.indexOf('runtime.safety.assessed')).toBeGreaterThanOrEqual(0);
+    expect(events.indexOf('runtime.safety.assessed')).toBeLessThan(
+      events.indexOf('runtime.transaction.created'),
+    );
+  });
 });

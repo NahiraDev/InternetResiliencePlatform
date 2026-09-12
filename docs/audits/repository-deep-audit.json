@@ -208,6 +208,8 @@
       "sourceFiles": 1,
       "testFiles": 1,
       "scripts": [
+        "@irp/resilience-runtime",
+        "@irp/telemetry",
         "build",
         "lint",
         "start",
