@@ -26,6 +26,7 @@ export * from './observation-providers.js';
 export * from './scheduler.js';
 export * from './e2e-validation.js';
 export * from './federation/probe-federation.js';
+export * from './federation/federated-advisory.js';
 export * from './canonical-decision-provider.js';
 export * from './historical-advisory.js';
 export * from './decision-orchestration.js';
