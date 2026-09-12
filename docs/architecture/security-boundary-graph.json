@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "title": "Implemented security boundary graph",
+  "boundaries": [
+    { "from": "user/client", "to": "API", "control": "authentication and route permission checks", "evidence": "apps/api/src/index.ts" },
+    { "from": "API", "to": "runtime", "control": "simulation allowed; live API cycle explicitly returns LIVE_MODE_DISABLED", "evidence": "apps/api/src/index.ts" },
+    { "from": "daemon", "to": "runtime adapters", "control": "runtime policy, capability snapshot, validation, transaction and safety kernel", "evidence": "packages/resilience-runtime/src/runtime.ts" },
+    { "from": "runtime adapter", "to": "OS network", "control": "daemon DNS mutation requires a discovered Linux interface and invokes resolvectl with a timeout", "evidence": "apps/daemon/src/index.ts" },
+    { "from": "plugins", "to": "daemon", "control": "PluginHost lifecycle boundary; plugins are not RuntimeAdapterRegistry owners", "evidence": "apps/daemon/src/plugin-host.ts" },
+    { "from": "federation/remote evidence", "to": "runtime", "control": "advisory observation/evidence path; local policy and validation remain before mutation", "evidence": "packages/resilience-runtime/src/federation/probe-federation.ts" }
+  ]
+}

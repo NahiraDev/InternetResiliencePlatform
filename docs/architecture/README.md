@@ -14,6 +14,7 @@ This directory contains canonical architecture and engineering-governance docume
 8. [Security boundaries](security-boundaries.md) — trust zones and security responsibilities.
 9. [Event stream](event-stream.md) — event contracts and flow.
 10. [Runtime adapter model](runtime-adapter-model.md) — runtime adapters.
+11. [Full-system reconstruction](../audits/full-system-architecture-reconstruction.md) — evidence-based system map, drift register, and machine-readable graphs.
 
 ## Product planning
 

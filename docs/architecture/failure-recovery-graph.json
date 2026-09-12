@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "title": "Implemented failure and recovery graph",
+  "domains": [
+    { "domain": "DNS", "detection": "DNS observations and decision candidates", "mutation": "CanonicalNetworkRuntimeAdapter dns_switch", "verification": "active provider health", "rollback": "restore retained previous provider id" },
+    { "domain": "connectivity/gateway", "detection": "connectivity source health", "mutation": "source or GatewayRegistrySelectionPlane selection", "verification": "active source provider health", "rollback": "switch previous source when available" },
+    { "domain": "route", "detection": "route candidate/observation", "mutation": "RoutingEngine.applyPlan", "verification": "new RoutingEngine decision selects a path", "rollback": "delegated recovery; no route-specific compensator is currently documented" },
+    { "domain": "tunnel", "detection": "tunnel action candidate", "mutation": "TunnelRegistryControlPlane", "verification": "tunnel verify(tunnelId)", "rollback": "tunnel rollback()" },
+    { "domain": "verification", "detection": "RuntimeActionVerifier failed status", "mutation": "none", "verification": "n/a", "rollback": "FailoverRecoveryProvider" },
+    { "domain": "telemetry", "detection": "telemetry sink errors are not a modeled runtime incident", "mutation": "none", "verification": "n/a", "rollback": "control loop remains locally in-memory; external telemetry isolation needs a dedicated test" },
+    { "domain": "database/federation", "detection": "outside current hot-path runtime cycle", "mutation": "none", "verification": "n/a", "rollback": "local runtime cycle does not require either dependency" }
+  ]
+}

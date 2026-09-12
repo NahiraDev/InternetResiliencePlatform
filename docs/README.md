@@ -31,6 +31,7 @@ This directory is the canonical documentation tree for InternetResiliencePlatfor
 12. [Historical phase evidence matrix](audits/phase-history-evidence-matrix.md)
 13. [Documentation audit](audits/documentation-audit-2026-08-23.md)
 14. [ADRs](adr/)
+15. [Full-system architecture reconstruction](audits/full-system-architecture-reconstruction.md)
 
 ### Operator / troubleshooter
 
