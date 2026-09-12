@@ -3,39 +3,203 @@
   "title": "IRP implemented system integration map",
   "scope": "Repository reconstruction at the Phase 78 baseline. Nodes and edges describe source-level relationships, not production certification.",
   "nodes": [
-    { "id": "clients", "kind": "experience", "owner": "clients/* and apps/cli", "status": "PARTIALLY_CONNECTED" },
+    {
+      "id": "clients",
+      "kind": "experience",
+      "owner": "clients/* and apps/cli",
+      "status": "PARTIALLY_CONNECTED"
+    },
     { "id": "api", "kind": "management-api", "owner": "apps/api", "status": "PARTIALLY_CONNECTED" },
     { "id": "daemon", "kind": "local-runtime-host", "owner": "apps/daemon", "status": "CONNECTED" },
-    { "id": "runtime", "kind": "control-plane", "owner": "@irp/resilience-runtime", "status": "CONNECTED" },
-    { "id": "network-intelligence", "kind": "measurement-and-decision-input", "owner": "@irp/network-intelligence", "status": "CONNECTED" },
-    { "id": "internet-intelligence", "kind": "intelligence-input", "owner": "@irp/internet-intelligence-agent", "status": "CONNECTED" },
-    { "id": "historical-analysis", "kind": "historical-intelligence", "owner": "@irp/historical-analysis", "status": "PARTIALLY_CONNECTED" },
-    { "id": "connectivity", "kind": "data-plane-adapter", "owner": "@irp/connectivity", "status": "CONNECTED" },
-    { "id": "routing", "kind": "data-plane-adapter", "owner": "@irp/routing", "status": "CONNECTED" },
-    { "id": "dns", "kind": "strategy-domain", "owner": "@irp/core IntelligentDnsEngine and @irp/dns", "status": "PARTIALLY_CONNECTED" },
-    { "id": "gateway", "kind": "path-resource", "owner": "@irp/gateway-registry", "status": "CONNECTED" },
+    {
+      "id": "runtime",
+      "kind": "control-plane",
+      "owner": "@irp/resilience-runtime",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "network-intelligence",
+      "kind": "measurement-and-decision-input",
+      "owner": "@irp/network-intelligence",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "internet-intelligence",
+      "kind": "intelligence-input",
+      "owner": "@irp/internet-intelligence-agent",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "historical-analysis",
+      "kind": "historical-intelligence",
+      "owner": "@irp/historical-analysis advisory port",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "connectivity",
+      "kind": "data-plane-adapter",
+      "owner": "@irp/connectivity",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "routing",
+      "kind": "data-plane-adapter",
+      "owner": "@irp/routing",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "dns",
+      "kind": "strategy-domain",
+      "owner": "@irp/core IntelligentDnsEngine and @irp/dns",
+      "status": "PARTIALLY_CONNECTED"
+    },
+    {
+      "id": "gateway",
+      "kind": "path-resource",
+      "owner": "@irp/gateway-registry",
+      "status": "CONNECTED"
+    },
     { "id": "tunnel", "kind": "path-resource", "owner": "@irp/tunnel", "status": "CONNECTED" },
-    { "id": "failover", "kind": "recovery-domain", "owner": "@irp/failover", "status": "CONNECTED" },
-    { "id": "federation", "kind": "remote-evidence", "owner": "@irp/resilience-runtime/federation", "status": "PARTIALLY_CONNECTED" },
-    { "id": "security", "kind": "identity-and-authorization", "owner": "@irp/auth and @irp/security", "status": "PARTIALLY_CONNECTED" },
-    { "id": "telemetry", "kind": "observability", "owner": "@irp/telemetry and runtime telemetry", "status": "CONNECTED" },
-    { "id": "database", "kind": "durable-state", "owner": "@irp/database", "status": "PARTIALLY_CONNECTED" },
-    { "id": "plugins", "kind": "extension-boundary", "owner": "plugin packages and daemon PluginHost", "status": "PARTIALLY_CONNECTED" }
+    {
+      "id": "failover",
+      "kind": "recovery-domain",
+      "owner": "@irp/failover",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "federation",
+      "kind": "remote-evidence",
+      "owner": "@irp/resilience-runtime/federation",
+      "status": "PARTIALLY_CONNECTED"
+    },
+    {
+      "id": "security",
+      "kind": "identity-and-authorization",
+      "owner": "@irp/auth and @irp/security",
+      "status": "PARTIALLY_CONNECTED"
+    },
+    {
+      "id": "telemetry",
+      "kind": "observability",
+      "owner": "@irp/telemetry and runtime telemetry",
+      "status": "CONNECTED"
+    },
+    {
+      "id": "database",
+      "kind": "durable-state",
+      "owner": "@irp/database",
+      "status": "PARTIALLY_CONNECTED"
+    },
+    {
+      "id": "plugins",
+      "kind": "extension-boundary",
+      "owner": "plugin packages and daemon PluginHost",
+      "status": "PARTIALLY_CONNECTED"
+    }
   ],
   "edges": [
-    { "from": "clients", "to": "api", "relationship": "authenticated management/status API", "evidence": ["apps/api/src/index.ts"] },
-    { "from": "daemon", "to": "runtime", "relationship": "constructs ResilienceRuntime with local observation and network-control adapters", "evidence": ["apps/daemon/src/index.ts"] },
-    { "from": "api", "to": "runtime", "relationship": "simulation cycle/status/decision API", "evidence": ["apps/api/src/index.ts"] },
-    { "from": "runtime", "to": "network-intelligence", "relationship": "canonical decision provider imports measurement and intelligence inputs", "evidence": ["packages/resilience-runtime/package.json", "packages/resilience-runtime/src/canonical-decision-provider.ts"] },
-    { "from": "runtime", "to": "internet-intelligence", "relationship": "intelligence is consumed as an advisory input", "evidence": ["packages/resilience-runtime/package.json", "packages/resilience-runtime/src/canonical-decision-provider.ts"] },
-    { "from": "runtime", "to": "connectivity", "relationship": "canonical adapter discovers/selects/switches sources", "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"] },
-    { "from": "runtime", "to": "routing", "relationship": "canonical adapter decides and applies a route plan", "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"] },
-    { "from": "runtime", "to": "dns", "relationship": "daemon injects DNS engine/provider application port", "evidence": ["apps/daemon/src/index.ts", "packages/resilience-runtime/src/canonical-network-adapter.ts"] },
-    { "from": "runtime", "to": "gateway", "relationship": "gateway selection plane synchronizes/evaluates/applies selected gateway", "evidence": ["packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"] },
-    { "from": "runtime", "to": "tunnel", "relationship": "tunnel control plane is an adapter port for lifecycle/verification/rollback", "evidence": ["packages/resilience-runtime/src/tunnel/tunnel-control-plane.ts"] },
-    { "from": "runtime", "to": "failover", "relationship": "verification failure delegates recovery to canonical failover provider", "evidence": ["packages/resilience-runtime/src/recovery/recovery.ts"] },
-    { "from": "runtime", "to": "telemetry", "relationship": "cycle, decision, action, verification and recovery counters/events", "evidence": ["packages/resilience-runtime/src/runtime.ts"] },
-    { "from": "api", "to": "security", "relationship": "permission checks guard runtime and autopilot endpoints", "evidence": ["apps/api/src/index.ts"] },
-    { "from": "daemon", "to": "plugins", "relationship": "daemon hosts plugin lifecycle separately from runtime action authority", "evidence": ["apps/daemon/src/index.ts", "apps/daemon/src/plugin-host.ts"] }
+    {
+      "from": "clients",
+      "to": "api",
+      "relationship": "authenticated management/status API",
+      "evidence": ["apps/api/src/index.ts"]
+    },
+    {
+      "from": "daemon",
+      "to": "runtime",
+      "relationship": "constructs ResilienceRuntime with local observation and network-control adapters",
+      "evidence": ["apps/daemon/src/index.ts"]
+    },
+    {
+      "from": "api",
+      "to": "runtime",
+      "relationship": "simulation cycle/status/decision API",
+      "evidence": ["apps/api/src/index.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "network-intelligence",
+      "relationship": "canonical decision provider imports measurement and intelligence inputs",
+      "evidence": [
+        "packages/resilience-runtime/package.json",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts"
+      ]
+    },
+    {
+      "from": "runtime",
+      "to": "internet-intelligence",
+      "relationship": "intelligence is consumed as an advisory input",
+      "evidence": [
+        "packages/resilience-runtime/package.json",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts"
+      ]
+    },
+    {
+      "from": "runtime",
+      "to": "historical-analysis",
+      "relationship": "injected retained-measurement advisor contributes read-only candidate ranking evidence; store failure preserves local decisioning",
+      "evidence": [
+        "packages/resilience-runtime/src/historical-advisory.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/tests/historical-advisory.integration.test.ts"
+      ]
+    },
+    {
+      "from": "runtime",
+      "to": "connectivity",
+      "relationship": "canonical adapter discovers/selects/switches sources",
+      "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "routing",
+      "relationship": "canonical adapter decides and applies a route plan",
+      "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "dns",
+      "relationship": "daemon injects DNS engine/provider application port",
+      "evidence": [
+        "apps/daemon/src/index.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts"
+      ]
+    },
+    {
+      "from": "runtime",
+      "to": "gateway",
+      "relationship": "gateway selection plane synchronizes/evaluates/applies selected gateway",
+      "evidence": ["packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "tunnel",
+      "relationship": "tunnel control plane is an adapter port for lifecycle/verification/rollback",
+      "evidence": ["packages/resilience-runtime/src/tunnel/tunnel-control-plane.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "failover",
+      "relationship": "verification failure delegates recovery to canonical failover provider",
+      "evidence": ["packages/resilience-runtime/src/recovery/recovery.ts"]
+    },
+    {
+      "from": "runtime",
+      "to": "telemetry",
+      "relationship": "cycle, decision, action, verification and recovery counters/events",
+      "evidence": ["packages/resilience-runtime/src/runtime.ts"]
+    },
+    {
+      "from": "api",
+      "to": "security",
+      "relationship": "permission checks guard runtime and autopilot endpoints",
+      "evidence": ["apps/api/src/index.ts"]
+    },
+    {
+      "from": "daemon",
+      "to": "plugins",
+      "relationship": "daemon hosts plugin lifecycle separately from runtime action authority",
+      "evidence": ["apps/daemon/src/index.ts", "apps/daemon/src/plugin-host.ts"]
+    }
   ]
 }
