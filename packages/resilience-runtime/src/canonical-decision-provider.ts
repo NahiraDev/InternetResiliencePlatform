@@ -14,11 +14,8 @@ import type {
   ObservationBatch,
   RuntimeContext,
 } from './domain/types.js';
-import type {
-  DecisionProvider,
-  FederatedEvidenceProvider,
-  HistoricalEvidenceProvider,
-} from './ports/ports.js';
+import type { DecisionProvider } from './ports/ports.js';
+import type { HistoricalEvidenceProvider } from './ports/ports.js';
 
 /**
  * Production decision boundary for the resilience runtime.
@@ -39,7 +36,6 @@ export class CanonicalDecisionProvider implements DecisionProvider {
       agentTimeoutMs?: number;
       decisionTimeoutMs?: number;
       historicalEvidence?: HistoricalEvidenceProvider;
-      federatedEvidence?: FederatedEvidenceProvider;
     } = {},
   ) {
     this.engine = new NetworkDecisionEngine({
@@ -84,20 +80,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
       recommendation,
       context,
     );
-    const historicalObservations = mergeEvidence(
-      await this.historyFor(
-        this.options.historicalEvidence,
-        intelligenceAdjusted,
-        incidents,
-        context,
-      ),
-      await this.historyFor(
-        this.options.federatedEvidence,
-        intelligenceAdjusted,
-        incidents,
-        context,
-      ),
-    );
+    const historicalObservations = await this.historyFor(intelligenceAdjusted, incidents, context);
     const candidatesWithHistory = annotateHistory(intelligenceAdjusted, historicalObservations);
     const decision = await this.engine.evaluate({
       type: decisionType(candidatesWithHistory[0]?.intent),
@@ -132,34 +115,20 @@ export class CanonicalDecisionProvider implements DecisionProvider {
   }
 
   private async historyFor(
-    provider: HistoricalEvidenceProvider | FederatedEvidenceProvider | undefined,
     candidates: readonly CandidateAction[],
     incidents: readonly Incident[],
     context: RuntimeContext,
   ) {
-    if (!provider) return {};
+    if (!this.options.historicalEvidence) return {};
     try {
-      return await provider.observationsFor(candidates, incidents, context);
+      return await this.options.historicalEvidence.observationsFor(candidates, incidents, context);
     } catch {
-      // Advisory storage or federation failure must not block local control.
+      // History is advisory. A database or analysis outage must not block the
+      // local canonical control loop.
       return {};
     }
   }
 }
-
-const mergeEvidence = (
-  ...sources: readonly Readonly<
-    Record<string, readonly import('@irp/network-intelligence').HistoricalObservation[]>
-  >[]
-): Readonly<
-  Record<string, readonly import('@irp/network-intelligence').HistoricalObservation[]>
-> => {
-  const merged: Record<string, import('@irp/network-intelligence').HistoricalObservation[]> = {};
-  for (const source of sources)
-    for (const [candidateId, observations] of Object.entries(source))
-      (merged[candidateId] ??= []).push(...observations);
-  return merged;
-};
 
 const annotateHistory = (
   candidates: readonly CandidateAction[],

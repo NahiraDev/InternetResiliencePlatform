@@ -146,16 +146,6 @@
     },
     {
       "from": "runtime",
-      "to": "federation",
-      "relationship": "accepted signed probe evidence is normalized as destination-scoped, read-only candidate ranking input; unavailable federation preserves local decisioning",
-      "evidence": [
-        "packages/resilience-runtime/src/federation/federated-advisory.ts",
-        "packages/resilience-runtime/src/canonical-decision-provider.ts",
-        "packages/resilience-runtime/tests/historical-advisory.integration.test.ts"
-      ]
-    },
-    {
-      "from": "runtime",
       "to": "connectivity",
       "relationship": "canonical adapter discovers/selects/switches sources",
       "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"]

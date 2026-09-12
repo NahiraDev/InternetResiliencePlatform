@@ -45,17 +45,6 @@ export interface HistoricalEvidenceProvider {
     context: RuntimeContext,
   ): Promise<Readonly<Record<string, readonly HistoricalObservation[]>>>;
 }
-/**
- * Read-only, trusted remote evidence boundary. Federation can improve ranking
- * but can neither admit an action nor prevent a local decision when absent.
- */
-export interface FederatedEvidenceProvider {
-  observationsFor(
-    candidates: readonly CandidateAction[],
-    incidents: readonly Incident[],
-    context: RuntimeContext,
-  ): Promise<Readonly<Record<string, readonly HistoricalObservation[]>>>;
-}
 export interface ActionPlanner {
   plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan>;
 }
