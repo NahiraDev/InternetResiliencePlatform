@@ -113,12 +113,15 @@ for (const workspaceRoot of ['apps', 'packages']) {
 }
 
 const rootPackage = readJson(join(root, 'package.json'));
-if (rootPackage?.packageManager !== 'pnpm@11.21.0')
+const pinnedPnpm = rootPackage?.packageManager;
+// Corepack may pin the same package-manager release with an integrity suffix.
+// Audit the executable version without rejecting that stronger supply-chain pin.
+if (!/^pnpm@11\.21\.0(?:\+sha(?:256|384|512)\.[A-Za-z0-9]+)?$/.test(pinnedPnpm ?? ''))
   findings.push({
     severity: 'P0',
     kind: 'toolchain-drift',
     path: 'package.json',
-    detail: `expected pnpm@11.21.0, found ${rootPackage?.packageManager ?? 'missing'}`,
+    detail: `expected pnpm@11.21.0 (optionally Corepack integrity-pinned), found ${pinnedPnpm ?? 'missing'}`,
   });
 if (rootPackage?.engines?.node !== '>=24.0.0')
   findings.push({

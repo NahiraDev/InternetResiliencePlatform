@@ -13,6 +13,7 @@ import type {
   RuntimeSnapshot,
   RuntimeState,
 } from '../domain/types.js';
+import type { HistoricalObservation } from '@irp/network-intelligence';
 export interface ObservationProvider {
   readonly id: string;
   collect(context: RuntimeContext): Promise<ObservationProviderResult>;
@@ -31,6 +32,18 @@ export interface DecisionProvider {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ): Promise<readonly CandidateAction[]>;
+}
+/**
+ * Read-only, advisory history boundary. Implementations must not perform
+ * mutations or make policy decisions; unavailable history is intentionally
+ * treated as no additional evidence so local recovery can continue.
+ */
+export interface HistoricalEvidenceProvider {
+  observationsFor(
+    candidates: readonly CandidateAction[],
+    incidents: readonly Incident[],
+    context: RuntimeContext,
+  ): Promise<Readonly<Record<string, readonly HistoricalObservation[]>>>;
 }
 export interface ActionPlanner {
   plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan>;
