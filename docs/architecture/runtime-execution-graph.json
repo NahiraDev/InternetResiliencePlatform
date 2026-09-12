@@ -1,23 +1,86 @@
 {
   "schemaVersion": 1,
   "title": "Canonical local runtime execution graph",
-  "entrypoints": ["apps/daemon/src/index.ts RuntimeScheduler", "apps/api/src/index.ts POST /api/v1/runtime/cycle", "BoundedClosedLoopController"],
+  "entrypoints": [
+    "apps/daemon/src/index.ts RuntimeScheduler",
+    "apps/api/src/index.ts POST /api/v1/runtime/cycle",
+    "BoundedClosedLoopController"
+  ],
   "stages": [
-    { "id": "observe", "owner": "ObservationAggregator", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "detect", "owner": "IncidentCorrelator", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "decide", "owner": "DecisionOrchestrator", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "plan", "owner": "DeterministicPlanner", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "policy-and-validation", "owner": "plan policy result and RuntimeActionValidator", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "transaction", "owner": "ActionTransactionEngine", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "execute", "owner": "RuntimeAdapterRegistry / CanonicalNetworkRuntimeAdapter", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "verify", "owner": "RuntimeActionVerifier", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "recover", "owner": "FailoverRecoveryProvider", "evidence": "packages/resilience-runtime/src/runtime.ts" },
-    { "id": "record", "owner": "decision, incident, event and telemetry stores", "evidence": "packages/resilience-runtime/src/runtime.ts" }
+    {
+      "id": "observe",
+      "owner": "ObservationAggregator",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "detect",
+      "owner": "IncidentCorrelator",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "decide",
+      "owner": "DecisionOrchestrator",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "historical-advisory",
+      "owner": "HistoricalAnalysisAdvisor (optional injected port)",
+      "evidence": "packages/resilience-runtime/src/canonical-decision-provider.ts; packages/resilience-runtime/src/historical-advisory.ts"
+    },
+    {
+      "id": "federated-advisory",
+      "owner": "FederatedEvidenceAdvisor (optional injected port)",
+      "evidence": "packages/resilience-runtime/src/canonical-decision-provider.ts; packages/resilience-runtime/src/federation/federated-advisory.ts"
+    },
+    {
+      "id": "plan",
+      "owner": "DeterministicPlanner",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "policy-and-validation",
+      "owner": "plan policy result and RuntimeActionValidator",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "transaction",
+      "owner": "ActionTransactionEngine",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "execute",
+      "owner": "RuntimeAdapterRegistry / CanonicalNetworkRuntimeAdapter",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "verify",
+      "owner": "RuntimeActionVerifier",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "recover",
+      "owner": "FailoverRecoveryProvider",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "id": "record",
+      "owner": "decision, incident, event and telemetry stores",
+      "evidence": "packages/resilience-runtime/src/runtime.ts"
+    }
   ],
   "transitions": [
-    ["observe", "detect"], ["detect", "decide"], ["decide", "plan"], ["plan", "policy-and-validation"],
-    ["policy-and-validation", "transaction"], ["transaction", "execute"], ["execute", "verify"],
-    ["verify", "record"], ["verify", "recover"], ["recover", "record"]
+    ["observe", "detect"],
+    ["detect", "decide"],
+    ["decide", "historical-advisory"],
+    ["historical-advisory", "federated-advisory"],
+    ["federated-advisory", "plan"],
+    ["plan", "policy-and-validation"],
+    ["policy-and-validation", "transaction"],
+    ["transaction", "execute"],
+    ["execute", "verify"],
+    ["verify", "record"],
+    ["verify", "recover"],
+    ["recover", "record"]
   ],
-  "localFirst": "Remote federation, durable database, and telemetry are not invoked as preconditions before ResilienceRuntime begins a cycle."
+  "localFirst": "Remote federation, durable database, and telemetry are not invoked as preconditions before ResilienceRuntime begins a cycle. Historical analysis and federation are optional advisory evidence; unavailable sources yield no additional evidence rather than blocking local decisioning. Federated evidence is destination-scoped from current observation metadata and only originates from accepted signed probes."
 }

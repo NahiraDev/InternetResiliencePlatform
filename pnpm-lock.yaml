@@ -725,6 +725,9 @@ importers:
       '@irp/gateway-registry':
         specifier: workspace:*
         version: link:../gateway-registry
+      '@irp/historical-analysis':
+        specifier: workspace:*
+        version: link:../historical-analysis
       '@irp/internet-intelligence-agent':
         specifier: workspace:*
         version: link:../internet-intelligence-agent

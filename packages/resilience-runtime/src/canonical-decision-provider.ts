@@ -14,7 +14,11 @@ import type {
   ObservationBatch,
   RuntimeContext,
 } from './domain/types.js';
-import type { DecisionProvider } from './ports/ports.js';
+import type {
+  DecisionProvider,
+  FederatedEvidenceProvider,
+  HistoricalEvidenceProvider,
+} from './ports/ports.js';
 
 /**
  * Production decision boundary for the resilience runtime.
@@ -31,7 +35,12 @@ export class CanonicalDecisionProvider implements DecisionProvider {
 
   constructor(
     agent = new InternetIntelligenceAgent(),
-    options: { agentTimeoutMs?: number; decisionTimeoutMs?: number } = {},
+    private readonly options: {
+      agentTimeoutMs?: number;
+      decisionTimeoutMs?: number;
+      historicalEvidence?: HistoricalEvidenceProvider;
+      federatedEvidence?: FederatedEvidenceProvider;
+    } = {},
   ) {
     this.engine = new NetworkDecisionEngine({
       model: { timeoutMs: options.decisionTimeoutMs ?? 250, maxConcurrent: 1 },
@@ -75,8 +84,23 @@ export class CanonicalDecisionProvider implements DecisionProvider {
       recommendation,
       context,
     );
+    const historicalObservations = mergeEvidence(
+      await this.historyFor(
+        this.options.historicalEvidence,
+        intelligenceAdjusted,
+        incidents,
+        context,
+      ),
+      await this.historyFor(
+        this.options.federatedEvidence,
+        intelligenceAdjusted,
+        incidents,
+        context,
+      ),
+    );
+    const candidatesWithHistory = annotateHistory(intelligenceAdjusted, historicalObservations);
     const decision = await this.engine.evaluate({
-      type: decisionType(intelligenceAdjusted[0]?.intent),
+      type: decisionType(candidatesWithHistory[0]?.intent),
       context: {
         timestamp: context.observationSnapshot.createdAt,
         versions: {
@@ -84,7 +108,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
           networkStateVersion: context.observationSnapshot.schemaVersion.toString(),
           securityStateVersion: context.securityContext.trusted ? 'trusted' : 'untrusted',
         },
-        candidates: intelligenceAdjusted.map((candidate) => ({
+        candidates: candidatesWithHistory.map((candidate) => ({
           id: candidate.id,
           type: candidateType(candidate.intent),
           capabilities: candidate.requiredCapabilities,
@@ -95,18 +119,76 @@ export class CanonicalDecisionProvider implements DecisionProvider {
           timestamp: candidate.createdAt,
           metadata: { runtimeIntent: candidate.intent },
         })),
-        historicalObservations: {},
+        historicalObservations,
         requiredCapabilities: context.capabilitySnapshot.capabilities,
       },
     });
 
     const selectedId = decision.selectedCandidate?.id;
-    if (!selectedId) return intelligenceAdjusted;
-    const selected = intelligenceAdjusted.find((candidate) => candidate.id === selectedId);
-    if (!selected) return intelligenceAdjusted;
-    return [selected, ...intelligenceAdjusted.filter((candidate) => candidate.id !== selectedId)];
+    if (!selectedId) return candidatesWithHistory;
+    const selected = candidatesWithHistory.find((candidate) => candidate.id === selectedId);
+    if (!selected) return candidatesWithHistory;
+    return [selected, ...candidatesWithHistory.filter((candidate) => candidate.id !== selectedId)];
+  }
+
+  private async historyFor(
+    provider: HistoricalEvidenceProvider | FederatedEvidenceProvider | undefined,
+    candidates: readonly CandidateAction[],
+    incidents: readonly Incident[],
+    context: RuntimeContext,
+  ) {
+    if (!provider) return {};
+    try {
+      return await provider.observationsFor(candidates, incidents, context);
+    } catch {
+      // Advisory storage or federation failure must not block local control.
+      return {};
+    }
   }
 }
+
+const mergeEvidence = (
+  ...sources: readonly Readonly<
+    Record<string, readonly import('@irp/network-intelligence').HistoricalObservation[]>
+  >[]
+): Readonly<
+  Record<string, readonly import('@irp/network-intelligence').HistoricalObservation[]>
+> => {
+  const merged: Record<string, import('@irp/network-intelligence').HistoricalObservation[]> = {};
+  for (const source of sources)
+    for (const [candidateId, observations] of Object.entries(source))
+      (merged[candidateId] ??= []).push(...observations);
+  return merged;
+};
+
+const annotateHistory = (
+  candidates: readonly CandidateAction[],
+  history: Readonly<
+    Record<string, readonly import('@irp/network-intelligence').HistoricalObservation[]>
+  >,
+): readonly CandidateAction[] =>
+  candidates.map((candidate) => {
+    const observations = history[candidate.id] ?? [];
+    if (!observations.length) return candidate;
+    const successes = observations.filter(
+      (observation) => observation.availabilityRatio === 1,
+    ).length;
+    return {
+      ...candidate,
+      metadata: {
+        ...candidate.metadata,
+        historicalEvidence: {
+          sampleCount: observations.length,
+          successRatio: successes / observations.length,
+          freshestAt: observations.reduce(
+            (freshest, observation) =>
+              observation.timestamp > freshest ? observation.timestamp : freshest,
+            observations[0]!.timestamp,
+          ),
+        },
+      },
+    };
+  });
 
 const candidateType = (intent: CandidateAction['intent']) => {
   switch (intent) {
