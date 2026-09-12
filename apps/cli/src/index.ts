@@ -5,7 +5,7 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import { NetworkAutopilot, ResilienceRuntime } from '@irp/resilience-runtime';
+import { ResilienceRuntime } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -129,30 +129,41 @@ export const createProgram = (): Command => {
       printJson(record);
     });
 
-  const autopilot = program.command('autopilot').description('Network Autopilot commands');
-  const autopilotInstance = () => new NetworkAutopilot();
+  const autopilot = program
+    .command('autopilot')
+    .description('Canonical resilience-runtime compatibility commands');
+  const autopilotRuntime = () => new ResilienceRuntime();
   autopilot
     .command('status')
-    .description('Show autopilot status')
-    .action(() => printJson(autopilotInstance().status()));
+    .description('Show canonical runtime status')
+    .action(async () => printJson(await autopilotRuntime().getRuntimeSnapshot()));
   autopilot
     .command('runs')
-    .description('List autopilot runs')
-    .action(() => printJson(autopilotInstance().listRuns()));
+    .description('List canonical runtime decision records')
+    .action(async () => printJson(await autopilotRuntime().decisions.list()));
   autopilot
     .command('run <id>')
-    .description('Show autopilot run by id')
-    .action((id: string) =>
-      printJson(autopilotInstance().getRun(id) ?? { error: 'not found', id }),
-    );
+    .description('Show canonical runtime decision record by id')
+    .action(async (id: string) => {
+      const run = (await autopilotRuntime().decisions.list()).find(
+        (decision) => decision.decisionId === id,
+      );
+      printJson(run ?? { error: 'not found', id });
+    });
   autopilot
     .command('actions')
-    .description('List governed autopilot action catalog')
-    .action(() => printJson(autopilotInstance().actions()));
+    .description('List actions selected by canonical runtime decisions')
+    .action(async () =>
+      printJson(
+        (await autopilotRuntime().decisions.list()).flatMap((decision) =>
+          decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
+        ),
+      ),
+    );
   autopilot
     .command('policy')
-    .description('Show autopilot policy')
-    .action(() => printJson(autopilotInstance().policies()));
+    .description('Show canonical runtime policy snapshot')
+    .action(async () => printJson((await autopilotRuntime().getRuntimeSnapshot()).policySnapshot));
   autopilot
     .command('approve <action>')
     .description('Approve pending autopilot action through API workflow')
@@ -173,8 +184,14 @@ export const createProgram = (): Command => {
     );
   autopilot
     .command('circuit-breaker')
-    .description('Show autopilot circuit breaker')
-    .action(() => printJson({ state: autopilotInstance().status().circuitBreaker }));
+    .description('Explain legacy circuit-breaker compatibility status')
+    .action(() =>
+      printJson({
+        state: 'NOT_APPLICABLE',
+        reason:
+          'canonical runtime uses bounded cycles and validation locks instead of a legacy autopilot circuit breaker',
+      }),
+    );
 
   program
     .command('doctor')

@@ -60,6 +60,57 @@ describe('phase 6 network intelligence API', () => {
   }, 15000);
 });
 
+describe('canonical autopilot compatibility API', () => {
+  it('projects the bounded canonical runtime and never instantiates a legacy action engine', async () => {
+    const app = await buildServer();
+    const register = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { email: 'autopilot@example.com', name: 'Autopilot', password: 'Production12345' },
+    });
+    expect(register.statusCode).toBe(201);
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'autopilot@example.com', password: 'Production12345' },
+    });
+    expect(login.statusCode).toBe(200);
+    const token = login.json().data.accessToken;
+
+    const status = await app.inject({
+      method: 'GET',
+      url: '/api/v1/autopilot/status',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json().data).toMatchObject({
+      source: 'resilience-runtime',
+      deprecated: true,
+    });
+
+    const run = await app.inject({
+      method: 'POST',
+      url: '/api/v1/autopilot/runs',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { dryRun: false, shadow: false },
+    });
+    expect(run.statusCode).toBe(200);
+    expect(run.json().data).toMatchObject({
+      decisionId: expect.any(String),
+      runtimeContext: { correlationId: expect.stringMatching(/^api-autopilot-/) },
+    });
+
+    const actions = await app.inject({
+      method: 'POST',
+      url: '/api/v1/autopilot/actions/example/approve',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(actions.statusCode).toBe(409);
+    expect(actions.json().error.code).toBe('CONFLICT');
+    await app.close();
+  }, 15000);
+});
+
 describe('phase 21.3 stabilization API', () => {
   it('fails safely when production JWT_SECRET is missing', async () => {
     const previousNodeEnv = process.env.NODE_ENV;

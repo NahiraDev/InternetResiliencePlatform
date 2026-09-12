@@ -46,12 +46,7 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
-import {
-  ResilienceRuntime,
-  NetworkAutopilot,
-  createAutopilotPolicy,
-  runtimeEnvelope,
-} from '@irp/resilience-runtime';
+import { ResilienceRuntime, runtimeEnvelope } from '@irp/resilience-runtime';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -598,92 +593,120 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
 
-  const autopilot = new NetworkAutopilot(
-    [],
-    createAutopilotPolicy({
-      enabled: process.env.AUTOPILOT_ENABLED === 'true',
-      mode:
-        (process.env.AUTOPILOT_MODE as
-          ReturnType<typeof createAutopilotPolicy>['mode'] | undefined) ?? 'OBSERVE_ONLY',
-    }),
-  );
+  // The legacy /autopilot API remains a compatibility surface, but it must not
+  // instantiate NetworkAutopilot: that class owns a historical, parallel
+  // decision state machine. All live control-loop state is projected from the
+  // canonical ResilienceRuntime below.
+  const canonicalAutopilotStatus = async () => {
+    const snapshot = await resilienceRuntime.getRuntimeSnapshot();
+    return {
+      source: 'resilience-runtime',
+      mode: snapshot.mode,
+      state: snapshot.state,
+      health: snapshot.health,
+      counters: snapshot.counters,
+      deprecated: true,
+    };
+  };
   app.get('/api/v1/autopilot/status', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.status());
+    return runtimeResponse(request, await canonicalAutopilotStatus());
   });
   app.get('/api/v1/autopilot/runs', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.listRuns());
+    return runtimeResponse(request, await resilienceRuntime.decisions.list());
   });
   app.get('/api/v1/autopilot/runs/:id', async (request) => {
     await requirePermission(request, 'autopilot.read');
     const params = z.object({ id: z.string().min(1) }).parse(request.params);
-    const run = autopilot.getRun(params.id);
+    const run = (await resilienceRuntime.decisions.list()).find(
+      (decision) => decision.decisionId === params.id,
+    );
     if (!run) throw new NotFoundAppError('autopilot run');
     return runtimeResponse(request, run);
   });
   app.post('/api/v1/autopilot/runs', async (request) => {
     await requirePermission(request, 'autopilot.execute');
-    const body = z
-      .object({
-        dryRun: z.boolean().default(false),
-        shadow: z.boolean().default(false),
-        forceVerificationFailure: z.boolean().default(false),
-      })
-      .parse(request.body ?? {});
-    return runtimeResponse(request, await autopilot.run(body));
+    z.object({
+      dryRun: z.boolean().default(false),
+      shadow: z.boolean().default(false),
+      forceVerificationFailure: z.boolean().default(false),
+    }).parse(request.body ?? {});
+    // API-hosted runtime cycles are simulation-only. This preserves the former
+    // autopilot endpoint without granting a management API a privileged network
+    // mutation path; local daemon adapters remain the live execution boundary.
+    return runtimeResponse(
+      request,
+      await resilienceRuntime.runCycle({
+        mode: 'simulation',
+        correlationId: `api-autopilot-${request.id}`,
+        idempotencyKey: `api-autopilot-${request.id}`,
+      }),
+    );
   });
   app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    return runtimeResponse(request, {
-      id: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'cancel-requested',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot run '${id}' cannot be cancelled through the legacy API; canonical runtime cycles are bounded and API cycles are synchronous simulations.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/approve', async (request) => {
     await requirePermission(request, 'autopilot.approve');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'approved',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be approved through the legacy API; use a policy-governed runtime plan.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/reject', async (request) => {
     await requirePermission(request, 'autopilot.approve');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'rejected',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be rejected through the legacy API; use a policy-governed runtime plan.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/rollback', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'rollback-requested',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be rolled back through the legacy API; rollback is owned by the canonical transaction/recovery path.`,
+    );
   });
   app.get('/api/v1/autopilot/policies', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.policies());
+    return runtimeResponse(request, (await resilienceRuntime.getRuntimeSnapshot()).policySnapshot);
   });
   app.get('/api/v1/autopilot/actions', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.actions());
+    return runtimeResponse(
+      request,
+      (await resilienceRuntime.decisions.list()).flatMap((decision) =>
+        decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
+      ),
+    );
   });
   app.get('/api/v1/autopilot/health', async (request) => {
     await requirePermission(request, 'autopilot.read');
+    const status = await canonicalAutopilotStatus();
     return runtimeResponse(request, {
-      status: autopilot.status().circuitBreaker === 'OPEN' ? 'degraded' : 'healthy',
-      autopilot: autopilot.status(),
+      status: status.health,
+      autopilot: status,
     });
   });
   app.get('/api/v1/autopilot/circuit-breaker', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+    return runtimeResponse(request, {
+      state: 'NOT_APPLICABLE',
+      reason:
+        'canonical ResilienceRuntime uses validation locks and bounded cycles, not a legacy circuit breaker',
+    });
   });
   app.post('/api/v1/autopilot/circuit-breaker/reset', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    autopilot.resetCircuitBreaker();
-    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+    return runtimeResponse(request, {
+      state: 'NOT_APPLICABLE',
+      reason: 'there is no legacy autopilot circuit breaker to reset',
+    });
   });
 
   app.get('/api/v1/runtime/status', async (request) => {
