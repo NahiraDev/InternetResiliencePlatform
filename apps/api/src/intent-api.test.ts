@@ -113,6 +113,33 @@ describe('intent API', () => {
     await app.close();
   });
 
+  it('hands activated intents to the canonical runtime callback', async () => {
+    const activated: string[] = [];
+    const app = Fastify();
+    app.setErrorHandler((error, _request, reply) => {
+      if (error instanceof Error) return reply.code(500).send({ success: false });
+      return reply.code(500).send({ success: false });
+    });
+    registerIntentRoutes(app, {
+      requirePermission: async () => undefined,
+      onActivated: (intent) => activated.push(`${intent.id}@${intent.version}`),
+    });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents',
+      headers: { 'idempotency-key': 'create-runtime-1' },
+      payload: { id: 'intent-runtime', spec: { outcome: 'maintain access' } },
+    });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/intents/intent-runtime/commands',
+      payload: { type: 'activate' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(activated).toEqual(['intent-runtime@2']);
+    await app.close();
+  });
+
   it('returns not found for an unknown intent', async () => {
     const app = await build();
     const response = await app.inject({ method: 'GET', url: '/api/v1/intents/missing' });

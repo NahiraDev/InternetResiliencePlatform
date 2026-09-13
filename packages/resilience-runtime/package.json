@@ -15,6 +15,7 @@
     "coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
+    "@irp/core": "workspace:*",
     "@irp/connectivity": "workspace:*",
     "@irp/events": "workspace:*",
     "@irp/failover": "workspace:*",

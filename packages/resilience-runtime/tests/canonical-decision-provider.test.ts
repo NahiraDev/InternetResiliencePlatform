@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ObservationBatch, RuntimeContext } from '../src/domain/types.js';
 import { CanonicalDecisionProvider } from '../src/canonical-decision-provider.js';
+import { compileNetworkIntent } from '../src/intent/compiler.js';
+import { createNetworkIntent } from '@irp/core';
 
 const context = (observations: ObservationBatch): RuntimeContext => ({
   runtimeId: 'test-runtime',
@@ -113,6 +115,26 @@ describe('CanonicalDecisionProvider', () => {
     const result = await provider.decide([], context(batch({ internet_reachable: true })));
     expect(result).toHaveLength(1);
     expect(result[0]?.intent).toBe('noop');
+  });
+
+  it('carries a compiled intent into candidate metadata without granting execution authority', async () => {
+    const intent = {
+      ...createNetworkIntent({
+        id: 'intent-destination',
+        spec: { outcome: 'Maintain access', target: { destination: 'github.com' } },
+      }),
+      status: 'active' as const,
+    };
+    const result = await new CanonicalDecisionProvider().decide(
+      [],
+      { ...context(batch({ internet_reachable: true })), compiledIntent: compileNetworkIntent(intent) },
+    );
+
+    expect(result[0]?.intent).toBe('noop');
+    expect(result[0]?.metadata).toMatchObject({
+      intent: { id: 'intent-destination', desiredOutcome: 'Maintain access' },
+      destination: 'github.com',
+    });
   });
 
   it('mounts routing path evidence before canonical policy and execution', async () => {

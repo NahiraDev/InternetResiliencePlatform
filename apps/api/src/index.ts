@@ -52,6 +52,7 @@ import {
   type Observation,
   type ObservationProvider,
 } from '@irp/resilience-runtime';
+import { registerIntentRoutes } from './intent-api.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -628,6 +629,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   const resilienceRuntime = new ResilienceRuntime([runtimeObservationProvider]);
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
+
+  registerIntentRoutes(app, {
+    onActivated: (intent) =>
+      resilienceRuntime.runIntent(intent, {
+        mode: 'simulation',
+        correlationId: `intent-${intent.id}-v${intent.version}`,
+        idempotencyKey: `intent-${intent.id}-v${intent.version}`,
+      }),
+  });
 
   // The legacy /autopilot API remains a compatibility surface, but it must not
   // instantiate NetworkAutopilot: that class owns a historical, parallel

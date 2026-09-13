@@ -543,6 +543,38 @@ describe('Phase 22 resilience runtime', () => {
     });
     expect(await rt.decisions.list()).toHaveLength(1);
   });
+  it('carries an active intent through the canonical runtime decision record', async () => {
+    const rt = new ResilienceRuntime();
+    const result = await rt.runIntent(
+      {
+        id: 'intent-runtime',
+        version: 1,
+        status: 'active',
+        priority: 10,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        spec: {
+          outcome: 'Maintain stable access to github.com',
+          target: { destination: 'github.com' },
+          constraints: { 'objective.latency': '0.9' },
+        },
+      },
+      {
+        mode: 'simulation',
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+        policySnapshot: createPolicySnapshot({
+          ...defaultPolicy('simulation'),
+          allowedActions: ['noop'],
+          simulationOnly: false,
+        }),
+      },
+    );
+
+    expect(result.runtimeContext.compiledIntent?.intentId).toBe('intent-runtime');
+    expect(result.runtimeContext.compiledIntent?.target.destination).toBe('github.com');
+    expect(result.candidates[0]?.metadata.intent).toMatchObject({ id: 'intent-runtime' });
+  });
   it('runtime records incidents', async () => {
     const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('s', 'security')])]);
     await rt.cycle({

@@ -38,6 +38,8 @@ import {
   type SafetyKernelOptions,
 } from './safety/safety-kernel.js';
 import { MetricsRegistry } from '@irp/telemetry';
+import { compileNetworkIntent } from './intent/compiler.js';
+import type { NetworkIntent } from '@irp/core';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
 
@@ -114,6 +116,12 @@ export class ResilienceRuntime {
   }
   async runCycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {
     return this.cycle(input);
+  }
+  async runIntent(
+    intent: NetworkIntent,
+    input: Partial<RuntimeContext> & { idempotencyKey?: string } = {},
+  ) {
+    return this.cycle({ ...input, compiledIntent: compileNetworkIntent(intent) });
   }
   async cycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {
     if (input.idempotencyKey && this.idempotency.has(input.idempotencyKey))

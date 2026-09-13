@@ -10,6 +10,12 @@
       "status": "PARTIALLY_CONNECTED"
     },
     { "id": "api", "kind": "management-api", "owner": "apps/api", "status": "PARTIALLY_CONNECTED" },
+    {
+      "id": "intent",
+      "kind": "intent-compilation",
+      "owner": "@irp/core NetworkIntent + @irp/resilience-runtime compiler",
+      "status": "PARTIALLY_CONNECTED"
+    },
     { "id": "daemon", "kind": "local-runtime-host", "owner": "apps/daemon", "status": "CONNECTED" },
     {
       "id": "runtime",
@@ -121,6 +127,22 @@
       "to": "runtime",
       "relationship": "simulation cycle/status/decision API",
       "evidence": ["apps/api/src/index.ts"]
+    },
+    {
+      "from": "api",
+      "to": "intent",
+      "relationship": "active intent lifecycle invokes the compiler/runtime bridge",
+      "evidence": ["apps/api/src/intent-api.ts", "apps/api/src/index.ts"]
+    },
+    {
+      "from": "intent",
+      "to": "runtime",
+      "relationship": "active intents compile into bounded runtime context and decision metadata; API activation uses simulation mode",
+      "evidence": [
+        "packages/resilience-runtime/src/intent/compiler.ts",
+        "packages/resilience-runtime/src/runtime.ts",
+        "packages/resilience-runtime/tests/runtime.test.ts"
+      ]
     },
     {
       "from": "runtime",

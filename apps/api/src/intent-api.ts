@@ -80,6 +80,7 @@ export class InMemoryIntentStore implements IntentApiStore {
 
 export interface IntentApiOptions {
   store?: IntentApiStore;
+  onActivated?: (intent: NetworkIntent) => Promise<unknown> | unknown;
   requirePermission?: (
     request: FastifyRequest,
     permission: 'runtime.inspect' | 'runtime.execute',
@@ -181,6 +182,7 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const command = commandSchema.parse(request.body ?? {}) as IntentCommand;
     try {
       const updated = transitionIntent(intent, command);
+      if (updated.status === 'active') await options.onActivated?.(updated);
       store.put(updated);
       return { success: true, data: updated };
     } catch (error) {

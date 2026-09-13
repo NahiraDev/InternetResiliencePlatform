@@ -312,7 +312,10 @@ export class RuntimeDaemonHost {
       .map((observation) => observation.metadata.destination)
       .find(
         (value): value is string => typeof value === 'string' && value.length > 0,
-      ) ?? configuredDestination?.hostname;
+      ) ??
+      context.compiledIntent?.target.destination ??
+      context.compiledIntent?.target.hostname ??
+      configuredDestination?.hostname;
     if (!destinationValue) return undefined;
     await this.connectivity.discoverResources();
     const destination = parseDestination(destinationValue);

@@ -107,6 +107,7 @@ export interface RuntimeContext {
   readonly cancelled: boolean;
   readonly securityContext: Readonly<{ trusted: boolean; principal?: string }>;
   readonly configuration: RuntimeConfiguration;
+  readonly compiledIntent?: import('../intent/compiler.js').CompiledIntent | undefined;
 }
 export interface Observation extends AuditFields {
   readonly category: string;
@@ -205,7 +206,10 @@ export interface DecisionRecord extends AuditFields {
   readonly runtimeStateBefore: RuntimeState;
   readonly runtimeStateAfter: RuntimeState;
   readonly runtimeContext: Readonly<
-    Pick<RuntimeContext, 'runtimeId' | 'correlationId' | 'mode' | 'deadline' | 'configuration'>
+    Pick<
+      RuntimeContext,
+      'runtimeId' | 'correlationId' | 'mode' | 'deadline' | 'configuration' | 'compiledIntent'
+    >
   >;
   readonly observations: ObservationBatch;
   readonly incidents: readonly Incident[];

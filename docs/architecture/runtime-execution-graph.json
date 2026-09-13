@@ -13,6 +13,11 @@
       "evidence": "packages/resilience-runtime/src/runtime.ts"
     },
     {
+      "id": "intent-compile",
+      "owner": "ResilienceRuntime.runIntent / compileNetworkIntent",
+      "evidence": "packages/resilience-runtime/src/intent/compiler.ts; packages/resilience-runtime/src/runtime.ts"
+    },
+    {
       "id": "detect",
       "owner": "IncidentCorrelator",
       "evidence": "packages/resilience-runtime/src/runtime.ts"
@@ -69,6 +74,7 @@
     }
   ],
   "transitions": [
+    ["intent-compile", "observe"],
     ["observe", "detect"],
     ["detect", "decide"],
     ["decide", "path-graph"],

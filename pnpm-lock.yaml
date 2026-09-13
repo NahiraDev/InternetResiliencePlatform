@@ -716,6 +716,9 @@ importers:
 
   packages/resilience-runtime:
     dependencies:
+      '@irp/core':
+        specifier: workspace:*
+        version: link:../core
       '@irp/connectivity':
         specifier: workspace:*
         version: link:../connectivity

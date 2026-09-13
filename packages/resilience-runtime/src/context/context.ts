@@ -65,6 +65,7 @@ export const createRuntimeContext = (
       input.policySnapshot ?? createPolicySnapshot(defaultPolicy(input.mode ?? 'safe')),
     capabilitySnapshot: input.capabilitySnapshot ?? createCapabilitySnapshot(),
     observationSnapshot: input.observationSnapshot,
+    compiledIntent: input.compiledIntent,
     deadline: input.deadline ?? new Date(Date.now() + 5000).toISOString(),
     cancelled: input.cancelled ?? false,
     securityContext: input.securityContext ?? { trusted: false },

@@ -61,6 +61,7 @@ export const createDecisionRecord = (input: {
         mode: input.context.mode,
         deadline: input.context.deadline,
         configuration: input.context.configuration,
+        compiledIntent: input.context.compiledIntent,
       },
       observations: input.observations,
       incidents: input.incidents,

@@ -23,6 +23,7 @@ import type {
   FederatedEvidenceProvider,
   HistoricalEvidenceProvider,
 } from './ports/ports.js';
+import type { CompiledIntent } from './intent/compiler.js';
 
 /**
  * Production decision boundary for the resilience runtime.
@@ -59,8 +60,8 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ): Promise<readonly CandidateAction[]> {
-    const candidates = await this.subsystem.decide(incidents, context);
-    if (!incidents.length || !context.observationSnapshot) return candidates;
+    const candidates = withIntentMetadata(await this.subsystem.decide(incidents, context), context.compiledIntent);
+    if ((!incidents.length && !context.compiledIntent) || !context.observationSnapshot) return candidates;
 
     const pathEvidence = await this.pathFor(context);
     const pathCandidates = applyPathEvidence(candidates, pathEvidence, context);
@@ -222,6 +223,28 @@ const applyPathEvidence = (
       rejectionReasons: [],
     },
   ];
+};
+
+const withIntentMetadata = (
+  candidates: readonly CandidateAction[],
+  intent: CompiledIntent | undefined,
+): readonly CandidateAction[] => {
+  if (!intent) return candidates;
+  const target = intent.target.destination ?? intent.target.hostname;
+  return candidates.map((candidate) => ({
+    ...candidate,
+    metadata: {
+      ...candidate.metadata,
+      intent: {
+        id: intent.intentId,
+        version: intent.version,
+        priority: intent.priority,
+        desiredOutcome: intent.desiredOutcome,
+        objectives: intent.objectives,
+      },
+      ...(target ? { destination: target } : {}),
+    },
+  }));
 };
 
 const annotateHistory = (
