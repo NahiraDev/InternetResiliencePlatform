@@ -1,4 +1,5 @@
 import type { TelemetrySink } from '../ports/ports.js';
+
 export class InMemoryTelemetrySink implements TelemetrySink {
   private values: Record<string, number> = {};
   increment(metric: string, value = 1) {
@@ -9,6 +10,39 @@ export class InMemoryTelemetrySink implements TelemetrySink {
   }
   snapshot() {
     return Object.freeze({ ...this.values });
+  }
+}
+
+/**
+ * Keeps local runtime telemetry authoritative when an optional external sink
+ * is unavailable. Export/collector failures are evidence, not control-loop
+ * failures.
+ */
+export class ResilientTelemetrySink implements TelemetrySink {
+  private readonly local = new InMemoryTelemetrySink();
+
+  constructor(private readonly external?: TelemetrySink) {}
+
+  increment(metric: string, value = 1): void {
+    this.local.increment(metric, value);
+    this.forward(() => this.external?.increment(metric, value));
+  }
+
+  observe(metric: string, value: number): void {
+    this.local.observe(metric, value);
+    this.forward(() => this.external?.observe(metric, value));
+  }
+
+  snapshot(): Readonly<Record<string, number>> {
+    return this.local.snapshot();
+  }
+
+  private forward(write: () => void): void {
+    try {
+      write();
+    } catch {
+      this.local.increment('runtime_telemetry_failures_total');
+    }
   }
 }
 export const runtimeMetricNames = [

@@ -26,6 +26,7 @@ import {
   SubsystemDecisionAdapter,
   type Observation,
   type CandidateAction,
+  type TelemetrySink,
 } from '../src/index.js';
 const obs = (
   id: string,
@@ -486,6 +487,42 @@ describe('Phase 22 resilience runtime', () => {
     const t = new InMemoryTelemetrySink();
     t.increment('runtime_cycles_total');
     expect(t.snapshot().runtime_cycles_total).toBe(1);
+  });
+  it('continues local control when external telemetry fails', async () => {
+    const failingSink: TelemetrySink = {
+      increment: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+      observe: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+      snapshot: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+    };
+    const failingRegistry = {
+      record: () => {
+        throw new Error('telemetry registry unavailable');
+      },
+    } as never;
+    const rt = new ResilienceRuntime([], {
+      telemetrySink: failingSink,
+      telemetryRegistry: failingRegistry,
+    });
+
+    const result = await rt.cycle({
+      mode: 'simulation',
+      securityContext: { trusted: true },
+      capabilitySnapshot: createCapabilitySnapshot([], true),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['noop'],
+        simulationOnly: false,
+      }),
+    });
+
+    expect(result).toBeDefined();
+    expect(rt.telemetry.snapshot().runtime_telemetry_failures_total).toBeGreaterThan(0);
   });
   it('emits events', async () => {
     const e = new InMemoryEventSink();

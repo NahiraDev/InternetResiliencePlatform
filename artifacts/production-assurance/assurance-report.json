@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "verdict": "PASS",
+  "generatedAt": "2026-09-12T23:42:19.015Z",
+  "startedAt": "2026-09-12T23:41:55.135Z",
+  "commitSha": "unknown",
+  "contractSha256": "ec26a137445be3faa4b70da389012946f008bedc2bf29b697ad0888c944d3787",
+  "checks": [
+    {
+      "id": "contract",
+      "status": "pass",
+      "detail": "schemaVersion=1"
+    },
+    {
+      "id": "runtime-build",
+      "status": "pass",
+      "detail": "full workspace build completed successfully",
+      "exitCode": 0
+    },
+    {
+      "id": "package-integration",
+      "status": "pass",
+      "detail": "all discovered package integrations passed",
+      "exitCode": 0
+    },
+    {
+      "id": "phase76-transaction-integration",
+      "status": "pass",
+      "detail": "Phase 76 transaction engine passed against the real coordinated executor path",
+      "exitCode": 0
+    },
+    {
+      "id": "canonical-runtime-validation",
+      "status": "pass",
+      "detail": "canonical runtime closed-loop scenarios passed",
+      "validation": {
+        "schemaVersion": 1,
+        "status": "passed",
+        "deterministic": true,
+        "scenarios": [
+          {
+            "name": "healthy",
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000014"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_health"
+            ]
+          },
+          {
+            "name": "dns-degradation",
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000026"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_failure"
+            ]
+          },
+          {
+            "name": "provider-recovery",
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy",
+              "apply",
+              "verify",
+              "recover"
+            ],
+            "decisionIds": [
+              "decision-000039"
+            ],
+            "outcomes": [
+              "success"
+            ],
+            "incidents": [
+              "persistent_degradation"
+            ],
+            "verificationStatus": "failed",
+            "recoveryStatus": "success"
+          },
+          {
+            "name": "destination-specific",
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000059"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_health",
+              "provider_health"
+            ]
+          }
+        ],
+        "acceptance": {
+          "completeStageOrderCovered": true,
+          "healthyPathRecorded": true,
+          "degradedPathDetected": true,
+          "persistentDegradationDetected": true,
+          "applyFailureInjectionAvailable": true,
+          "verificationFailureTriggersRecovery": true,
+          "destinationIsolationRepresented": true,
+          "decisionsAreUnique": true
+        },
+        "failedCriteria": []
+      }
+    },
+    {
+      "id": "runtime-artifact-integrity",
+      "status": "pass",
+      "detail": "hashed 168 runtime artifact files",
+      "sha256": "879c63a4a95c4b82189647a82a0e6592b4ffaac31531c6e1565c468552079bb5",
+      "files": 168
+    }
+  ],
+  "artifact": {
+    "sha256": "879c63a4a95c4b82189647a82a0e6592b4ffaac31531c6e1565c468552079bb5",
+    "files": 168
+  },
+  "validation": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "deterministic": true,
+    "scenarios": [
+      {
+        "name": "healthy",
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000014"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_health"
+        ]
+      },
+      {
+        "name": "dns-degradation",
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000026"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_failure"
+        ]
+      },
+      {
+        "name": "provider-recovery",
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy",
+          "apply",
+          "verify",
+          "recover"
+        ],
+        "decisionIds": [
+          "decision-000039"
+        ],
+        "outcomes": [
+          "success"
+        ],
+        "incidents": [
+          "persistent_degradation"
+        ],
+        "verificationStatus": "failed",
+        "recoveryStatus": "success"
+      },
+      {
+        "name": "destination-specific",
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000059"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_health",
+          "provider_health"
+        ]
+      }
+    ],
+    "acceptance": {
+      "completeStageOrderCovered": true,
+      "healthyPathRecorded": true,
+      "degradedPathDetected": true,
+      "persistentDegradationDetected": true,
+      "applyFailureInjectionAvailable": true,
+      "verificationFailureTriggersRecovery": true,
+      "destinationIsolationRepresented": true,
+      "decisionsAreUnique": true
+    },
+    "failedCriteria": []
+  },
+  "productionCertificationBoundary": "This assurance report proves executable repository/runtime integration only. It does not claim real regional, device, backup/restore, upgrade/rollback, chaos/soak, or production infrastructure evidence."
+}

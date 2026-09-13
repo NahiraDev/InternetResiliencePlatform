@@ -670,7 +670,14 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
         forceVerificationFailure: z.boolean().default(false),
       })
       .parse(request.body ?? {});
-    return runtimeResponse(request, await autopilot.run(body));
+    return runtimeResponse(
+      request,
+      await resilienceRuntime.runCycle({
+        mode: 'simulation',
+        correlationId: `api-autopilot-${request.id}`,
+        idempotencyKey: `api-autopilot-${request.id}-${body.dryRun ? 'dry' : 'run'}-${body.shadow ? 'shadow' : 'active'}`,
+      }),
+    );
   });
   app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
     await requirePermission(request, 'autopilot.admin');
@@ -715,9 +722,17 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   });
   app.get('/api/v1/autopilot/health', async (request) => {
     await requirePermission(request, 'autopilot.read');
+    const snapshot = await resilienceRuntime.getRuntimeSnapshot();
     return runtimeResponse(request, {
-      status: autopilot.status().circuitBreaker === 'OPEN' ? 'degraded' : 'healthy',
-      autopilot: autopilot.status(),
+      status: snapshot.health.status === 'failed' ? 'degraded' : 'healthy',
+      autopilot: {
+        source: 'resilience-runtime',
+        circuitBreaker: 'NOT_APPLICABLE',
+        state: snapshot.state,
+        health: snapshot.health,
+        counters: snapshot.counters,
+        deprecated: true,
+      },
     });
   });
   app.get('/api/v1/autopilot/circuit-breaker', async (request) => {

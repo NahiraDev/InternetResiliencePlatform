@@ -14,8 +14,15 @@ import type {
   ObservationBatch,
   RuntimeContext,
 } from './domain/types.js';
-import type { DecisionProvider } from './ports/ports.js';
-import type { HistoricalEvidenceProvider } from './ports/ports.js';
+import type {
+  DecisionProvider,
+  PathEvidenceProvider,
+  PathStrategyEvidence,
+} from './ports/ports.js';
+import type {
+  FederatedEvidenceProvider,
+  HistoricalEvidenceProvider,
+} from './ports/ports.js';
 
 /**
  * Production decision boundary for the resilience runtime.
@@ -36,6 +43,8 @@ export class CanonicalDecisionProvider implements DecisionProvider {
       agentTimeoutMs?: number;
       decisionTimeoutMs?: number;
       historicalEvidence?: HistoricalEvidenceProvider;
+      federatedEvidence?: FederatedEvidenceProvider;
+      pathEvidence?: PathEvidenceProvider;
     } = {},
   ) {
     this.engine = new NetworkDecisionEngine({
@@ -53,6 +62,8 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     const candidates = await this.subsystem.decide(incidents, context);
     if (!incidents.length || !context.observationSnapshot) return candidates;
 
+    const pathEvidence = await this.pathFor(context);
+    const pathCandidates = applyPathEvidence(candidates, pathEvidence, context);
     const internetEvidence = toInternetEvidence(context.observationSnapshot);
     const recommendation = await this.bridge.analyze({
       timestamp: context.observationSnapshot.createdAt,
@@ -61,7 +72,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
         networkStateVersion: context.observationSnapshot.schemaVersion.toString(),
         securityStateVersion: context.securityContext.trusted ? 'trusted' : 'untrusted',
       },
-      candidates: candidates.map((candidate) => ({
+      candidates: pathCandidates.map((candidate) => ({
         id: candidate.id,
         type: candidateType(candidate.intent),
         capabilities: candidate.requiredCapabilities,
@@ -76,7 +87,7 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     });
 
     const intelligenceAdjusted = ensureRecommendedCandidate(
-      applyRecommendation(candidates, recommendation),
+      applyRecommendation(pathCandidates, recommendation),
       recommendation,
       context,
     );
@@ -119,16 +130,99 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ) {
-    if (!this.options.historicalEvidence) return {};
+    const providers = [this.options.historicalEvidence, this.options.federatedEvidence].filter(
+      (provider): provider is HistoricalEvidenceProvider => provider !== undefined,
+    );
+    if (!providers.length) return {};
+
+    const results = await Promise.all(
+      providers.map(async (provider) => {
+        try {
+          return await provider.observationsFor(candidates, incidents, context);
+        } catch {
+          // Advisory evidence is fail-open. A database, federation, or
+          // analysis outage must not block the local canonical control loop.
+          return {};
+        }
+      }),
+    );
+    return Object.fromEntries(
+      candidates.map((candidate) => [
+        candidate.id,
+        results.flatMap((result) => result[candidate.id] ?? []),
+      ]),
+    );
+  }
+
+  private async pathFor(context: RuntimeContext): Promise<PathStrategyEvidence | undefined> {
+    if (!this.options.pathEvidence) return undefined;
     try {
-      return await this.options.historicalEvidence.observationsFor(candidates, incidents, context);
+      return await this.options.pathEvidence.evaluate(context);
     } catch {
-      // History is advisory. A database or analysis outage must not block the
-      // local canonical control loop.
-      return {};
+      // Path evidence is advisory. The canonical runtime remains able to
+      // diagnose and recover through other candidates if routing is unavailable.
+      return undefined;
     }
   }
 }
+
+const applyPathEvidence = (
+  candidates: readonly CandidateAction[],
+  evidence: PathStrategyEvidence | undefined,
+  context: RuntimeContext,
+): readonly CandidateAction[] => {
+  if (!evidence) return candidates;
+  const routeCandidate = candidates.find((candidate) => candidate.intent === 'route_change');
+  const metadata = {
+    pathEvidence: evidence,
+    destination: evidence.destination,
+    ...(evidence.selectedPathId ? { pathId: evidence.selectedPathId } : {}),
+  };
+  if (evidence.recommendation !== 'switch') {
+    return routeCandidate
+      ? candidates.map((candidate) =>
+          candidate === routeCandidate
+            ? { ...candidate, metadata: { ...candidate.metadata, ...metadata } }
+            : candidate,
+        )
+      : candidates;
+  }
+  if (routeCandidate) {
+    return candidates.map((candidate) =>
+      candidate === routeCandidate
+        ? {
+            ...candidate,
+            expectedBenefit: Math.max(candidate.expectedBenefit, evidence.expectedBenefit),
+            risk: Math.min(candidate.risk, evidence.risk),
+            confidence: Math.max(candidate.confidence, evidence.confidence),
+            metadata: { ...candidate.metadata, ...metadata },
+          }
+        : candidate,
+    );
+  }
+  const confidence = Math.max(0.01, Math.min(1, evidence.confidence));
+  return [
+    ...candidates,
+    {
+      id: nextId('candidate'),
+      schemaVersion: 1,
+      createdAt: nowIso(),
+      correlationId: context.correlationId,
+      source: 'routing-path-evidence',
+      metadata,
+      intent: 'route_change',
+      expectedBenefit: evidence.expectedBenefit,
+      risk: evidence.risk,
+      confidence,
+      requiredCapabilities: ['route.write'],
+      dependencies: ['route_change', evidence.selectedPathId ?? 'routing'],
+      postconditions: ['route_change verified', 'destination reachable'],
+      verificationRequirements: ['route_change postcondition', 'destination outcome'],
+      rollbackStrategy: 'restore-previous-route',
+      rejectionReasons: [],
+    },
+  ];
+};
 
 const annotateHistory = (
   candidates: readonly CandidateAction[],

@@ -601,6 +601,38 @@ export class RoutingEngine {
       this.transitions.delete(key);
     }
   }
+
+  /**
+   * Compensates a previously committed route transition using the plan's
+   * captured currentPath. The kernel owns the privileged rollback; the active
+   * path index is updated only after that operation succeeds.
+   */
+  async rollbackPlan(plan: RoutePlan): Promise<boolean> {
+    if (!plan.selectedPath || !this.options.kernel) return false;
+    try {
+      await this.options.kernel.execute('routing', 'rollbackRoutePlan', plan, {
+        ...(this.options.principal ? { principal: this.options.principal } : {}),
+        priority: 'critical',
+        persist: true,
+      });
+      const key = this.key(plan.destination);
+      if (plan.currentPath) this.active.set(key, plan.currentPath);
+      else this.active.delete(key);
+      await this.emit('routing.transition.rolled_back', {
+        planId: plan.id,
+        restoredPathId: plan.currentPath?.id,
+      });
+      this.metric('routing_path_switch_rollback_total', 1);
+      return true;
+    } catch (error) {
+      await this.emit('routing.transition.rollback_failed', {
+        planId: plan.id,
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+      this.metric('routing_path_switch_rollback_failure_total', 1);
+      return false;
+    }
+  }
   async failover(context: RoutingDecisionContext): Promise<RoutePlan> {
     await this.emit('routing.failover.started', { destination: context.destination });
     const decision = await this.decide(context);

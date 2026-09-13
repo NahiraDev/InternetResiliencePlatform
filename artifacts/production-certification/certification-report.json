@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-12T23:12:10.303Z",
+  "verdict": "PENDING",
+  "commitSha": "unknown",
+  "contractSha256": "c6d37a9e7e5995e980bc03aa58e0b71ba3e64bd580636106d16f880b08cf92a5",
+  "checks": [
+    {
+      "id": "contract",
+      "status": "pass",
+      "detail": "schemaVersion=1"
+    },
+    {
+      "id": "evidence-bundle",
+      "status": "pending",
+      "detail": "no independently supplied evidence bundle was provided"
+    },
+    {
+      "id": "runtime-probe",
+      "status": "pending",
+      "detail": "runtime URL was not supplied; no live runtime evidence claimed"
+    }
+  ],
+  "runtimeEvidence": null,
+  "suppliedEvidence": null
+}

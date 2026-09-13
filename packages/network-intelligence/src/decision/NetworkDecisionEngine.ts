@@ -44,6 +44,12 @@ export interface CandidateMetrics {
 }
 export interface HistoricalObservation extends CandidateMetrics {
   timestamp: string;
+  /** Optional scope carried with advisory evidence; ranking must not treat it as authority. */
+  destination?: string;
+  providerId?: string;
+  pathId?: string;
+  region?: string;
+  failureDomain?: string;
   failureCount?: number;
   recoveryCount?: number;
   uptimeRatio?: number;

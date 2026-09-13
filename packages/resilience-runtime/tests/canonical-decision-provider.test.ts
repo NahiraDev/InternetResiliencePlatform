@@ -114,4 +114,67 @@ describe('CanonicalDecisionProvider', () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.intent).toBe('noop');
   });
+
+  it('mounts routing path evidence before canonical policy and execution', async () => {
+    const provider = new CanonicalDecisionProvider(undefined, {
+      pathEvidence: {
+        evaluate: async () => ({
+          destination: 'github.com',
+          recommendation: 'switch',
+          currentPathId: 'path:direct-a',
+          selectedPathId: 'path:tunnel-b',
+          currentScore: 35,
+          selectedScore: 90,
+          candidatePaths: [
+            {
+              id: 'path:direct-a',
+              type: 'direct',
+              score: 35,
+              state: 'degraded',
+              failureDomains: ['isp-a'],
+            },
+            {
+              id: 'path:tunnel-b',
+              type: 'tunnel',
+              score: 90,
+              state: 'available',
+              failureDomains: ['provider-b'],
+            },
+          ],
+          diverseAlternativeCount: 1,
+          confidence: 0.9,
+          expectedBenefit: 0.55,
+          risk: 0.2,
+          explanation: ['selected tunnel-b by score'],
+        }),
+      },
+    });
+    const result = await provider.decide(
+      [
+        {
+          id: 'incident-2',
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+          correlationId: 'test-correlation',
+          source: 'test',
+          metadata: {},
+          rootCause: 'network path degradation',
+          affectedComponents: ['route'],
+          confidence: 0.9,
+          evidence: ['direct path degraded'],
+          correlationReason: 'test',
+          classification: 'primary_failure',
+        },
+      ],
+      context(batch({ internet_reachable: false, packet_loss_percent: 0.4 })),
+    );
+
+    expect(result.find((candidate) => candidate.intent === 'route_change')?.metadata).toMatchObject({
+      pathEvidence: {
+        selectedPathId: 'path:tunnel-b',
+        diverseAlternativeCount: 1,
+      },
+      pathId: 'path:tunnel-b',
+    });
+  });
 });

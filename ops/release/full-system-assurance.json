@@ -67,6 +67,7 @@
   ],
   "assuranceOnlyCapabilitySurfaces": [
     "kubernetes",
+    "regional-validation",
     "backup-restore",
     "upgrade-rollback",
     "chaos-soak"

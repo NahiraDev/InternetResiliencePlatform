@@ -204,6 +204,9 @@ importers:
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@irp/network':
+        specifier: workspace:*
+        version: link:../../packages/network
       '@irp/plugin-manager':
         specifier: workspace:*
         version: link:../../packages/plugin-manager

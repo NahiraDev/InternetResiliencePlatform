@@ -19,6 +19,7 @@
     "@irp/logger": "workspace:*",
     "@irp/plugin-manager": "workspace:*",
     "@irp/plugin-sdk": "workspace:*",
+    "@irp/network": "workspace:*",
     "@irp/resilience-runtime": "workspace:*",
     "@irp/routing": "workspace:*",
     "@irp/tunnel": "workspace:*"

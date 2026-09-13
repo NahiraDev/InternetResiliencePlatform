@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-09-11T21:09:48.785Z
+Generated: 2026-09-12T23:47:40.279Z
 Commit: unknown
 
 ## Component status
@@ -95,6 +95,7 @@ Commit: unknown
 | @irp/resilience-runtime | @irp/events | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/failover | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/gateway-registry | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/resilience-runtime | @irp/historical-analysis | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/internet-intelligence-agent | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/network-intelligence | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/routing | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
@@ -141,6 +142,7 @@ Commit: unknown
 | @irp/daemon | @irp/logger | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/plugin-manager | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/plugin-sdk | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/daemon | @irp/network | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/resilience-runtime | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/routing | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/tunnel | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |

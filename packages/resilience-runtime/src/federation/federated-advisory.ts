@@ -36,7 +36,9 @@ export class FederatedEvidenceAdvisor implements FederatedEvidenceProvider {
     return Object.fromEntries(
       candidates.map((candidate) => [
         candidate.id,
-        evidence.filter((item) => belongsToCandidate(item, candidate)).map(toHistoricalObservation),
+        evidence
+          .filter((item) => belongsToCandidate(item, candidate))
+          .map(toHistoricalObservation),
       ]),
     );
   }
@@ -51,26 +53,51 @@ const destinationFromContext = (context: RuntimeContext): string | undefined =>
     );
 
 const belongsToCandidate = (evidence: ProbeEvidence, candidate: CandidateAction): boolean => {
-  const target = evidence.metadata?.candidateId;
-  return target === undefined || target === candidate.id || target === candidate.intent;
+  const metadata = evidence.metadata;
+  const target = metadata?.candidateId;
+  if (target !== undefined && target !== candidate.id && target !== candidate.intent) return false;
+  for (const key of ['providerId', 'pathId', 'region', 'failureDomain'] as const) {
+    const requested = metadataString(candidate.metadata, key);
+    const observed = metadata?.[key];
+    if (requested && observed !== undefined && requested !== String(observed)) return false;
+  }
+  return true;
 };
 
-const toHistoricalObservation = (evidence: ProbeEvidence): HistoricalObservation => ({
-  timestamp: evidence.observedAt,
-  availabilityRatio:
-    evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
-  reliabilityRatio:
-    evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
-  uptimeRatio:
-    evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
-  ...(evidence.measurements.latencyMs === undefined
-    ? {}
-    : { latencyMs: evidence.measurements.latencyMs }),
-  ...(evidence.measurements.jitterMs === undefined
-    ? {}
-    : { jitterMs: evidence.measurements.jitterMs }),
-  ...(evidence.measurements.packetLossPercent === undefined
-    ? {}
-    : { packetLossRatio: evidence.measurements.packetLossPercent / 100 }),
-  ...(evidence.serviceStatus === 'reachable' ? { recoveryCount: 1 } : { failureCount: 1 }),
-});
+const toHistoricalObservation = (evidence: ProbeEvidence): HistoricalObservation => {
+  const providerId = metadataString(evidence.metadata, 'providerId');
+  const pathId = metadataString(evidence.metadata, 'pathId');
+  const failureDomain = metadataString(evidence.metadata, 'failureDomain');
+  return {
+    timestamp: evidence.observedAt,
+    destination: evidence.destination,
+    region: evidence.region,
+    ...(providerId ? { providerId } : {}),
+    ...(pathId ? { pathId } : {}),
+    ...(failureDomain ? { failureDomain } : {}),
+    availabilityRatio:
+      evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
+    reliabilityRatio:
+      evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
+    uptimeRatio:
+      evidence.serviceStatus === 'reachable' ? 1 : evidence.serviceStatus === 'degraded' ? 0.5 : 0,
+    ...(evidence.measurements.latencyMs === undefined
+      ? {}
+      : { latencyMs: evidence.measurements.latencyMs }),
+    ...(evidence.measurements.jitterMs === undefined
+      ? {}
+      : { jitterMs: evidence.measurements.jitterMs }),
+    ...(evidence.measurements.packetLossPercent === undefined
+      ? {}
+      : { packetLossRatio: evidence.measurements.packetLossPercent / 100 }),
+    ...(evidence.serviceStatus === 'reachable' ? { recoveryCount: 1 } : { failureCount: 1 }),
+  };
+};
+
+const metadataString = (
+  metadata: Readonly<Record<string, unknown>> | undefined,
+  key: string,
+): string | undefined => {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+};

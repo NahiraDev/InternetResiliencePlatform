@@ -126,7 +126,10 @@ const context = (mode: RuntimeContext['mode']): RuntimeContext => ({
   },
 });
 
-const actionPlan = (intent: ActionPlan['selectedAction']['intent']): ActionPlan => ({
+const actionPlan = (
+  intent: ActionPlan['selectedAction']['intent'],
+  destination?: string,
+): ActionPlan => ({
   id: 'plan',
   schemaVersion: 1,
   createdAt: new Date().toISOString(),
@@ -137,7 +140,7 @@ const actionPlan = (intent: ActionPlan['selectedAction']['intent']): ActionPlan 
     schemaVersion: 1,
     createdAt: new Date().toISOString(),
     source: 'test',
-    metadata: {},
+    metadata: destination ? { destination } : {},
     intent,
     expectedBenefit: 0.9,
     risk: 0.1,
@@ -197,5 +200,27 @@ describe('CanonicalNetworkRuntimeAdapter', () => {
 
     expect(execution.simulated).toBe(true);
     expect(connectivity.getActiveSource()?.sourceId).toBe('fake:eth0');
+  });
+
+  it('requires destination outcome verification when the canonical port is configured', async () => {
+    const connectivity = new ConnectivityManager();
+    const provider = new FakeConnectivityProvider();
+    await connectivity.registerProvider(provider);
+    const adapter = new CanonicalNetworkRuntimeAdapter({
+      connectivity,
+      routing: new RoutingEngine(),
+      verifyDestination: async (destination) => ({
+        status: destination.value === 'github.com' ? 'failed' : 'reachable',
+        reason: 'deterministic destination test',
+      }),
+    });
+
+    const plan = actionPlan('connectivity_failover', 'github.com');
+    const execution = await adapter.execute(plan, context('live'));
+    const verification = await adapter.verify(plan, execution, context('live'));
+
+    expect(execution.status).toBe('success');
+    expect(verification.status).toBe('failed');
+    expect(verification.failedPostconditions).toEqual(plan.expectedPostconditions);
   });
 });

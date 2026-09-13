@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-11T21:09:48.785Z",
+  "generatedAt": "2026-09-12T23:47:40.279Z",
   "commit": "unknown",
   "nodes": [
     {
@@ -194,6 +194,8 @@
       "executable": true,
       "entrypoint": "dist/index.js",
       "scripts": [
+        "@irp/resilience-runtime",
+        "@irp/telemetry",
         "build",
         "lint",
         "start",
@@ -978,6 +980,15 @@
     },
     {
       "source": "@irp/resilience-runtime",
+      "target": "@irp/historical-analysis",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/resilience-runtime",
       "target": "@irp/internet-intelligence-agent",
       "contract": "workspace dependency",
       "transport": "node module import/link",
@@ -1384,6 +1395,15 @@
     {
       "source": "@irp/daemon",
       "target": "@irp/plugin-sdk",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/network",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",

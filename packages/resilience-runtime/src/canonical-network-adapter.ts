@@ -1,5 +1,10 @@
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
-import { RoutingEngine, parseDestination, type RoutingDestination } from '@irp/routing';
+import {
+  RoutingEngine,
+  parseDestination,
+  type RoutePlan,
+  type RoutingDestination,
+} from '@irp/routing';
 import type {
   ActionExecution,
   ActionPlan,
@@ -76,6 +81,13 @@ export interface CanonicalGatewaySelectionPlane {
   apply(gatewayId: string): Promise<void>;
 }
 
+export interface CanonicalDestinationOutcome {
+  readonly status: 'reachable' | 'degraded' | 'failed' | 'unknown';
+  readonly service?: string;
+  readonly latencyMs?: number;
+  readonly reason?: string;
+}
+
 export interface CanonicalNetworkControlPlane {
   readonly connectivity: ConnectivityManager;
   readonly routing: RoutingEngine;
@@ -83,6 +95,10 @@ export interface CanonicalNetworkControlPlane {
   readonly tunnel?: CanonicalTunnelControlPlane;
   readonly gatewaySelection?: CanonicalGatewaySelectionPlane;
   readonly destination?: RoutingDestination;
+  readonly verifyDestination?: (
+    destination: RoutingDestination,
+    context: RuntimeContext,
+  ) => Promise<CanonicalDestinationOutcome>;
 }
 
 const destinationFromPlan = (
@@ -130,6 +146,7 @@ const dnsSelectionMetadata = (
 
 export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
   private readonly previousDnsProviders = new Map<string, string | undefined>();
+  private readonly appliedRoutePlans = new Map<string, RoutePlan>();
 
   readonly descriptor: RuntimeAdapterDescriptor = {
     adapterId: 'canonical-network-control-plane',
@@ -147,6 +164,29 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
   };
 
   constructor(private readonly controlPlane: CanonicalNetworkControlPlane) {}
+
+  private async verifyDestinationOutcome(
+    plan: ActionPlan,
+    context: RuntimeContext,
+    componentVerification: ActionVerification,
+  ): Promise<ActionVerification> {
+    if (componentVerification.status !== 'success' || !this.controlPlane.verifyDestination)
+      return componentVerification;
+
+    try {
+      const outcome = await this.controlPlane.verifyDestination(
+        destinationFromPlan(plan, this.controlPlane.destination),
+        context,
+      );
+      return createAdapterVerification(
+        plan,
+        context,
+        outcome.status === 'reachable' ? 'success' : 'failed',
+      );
+    } catch {
+      return createAdapterVerification(plan, context, 'failed');
+    }
+  }
 
   async execute(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
     if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
@@ -223,6 +263,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
             false,
             success ? 'success' : 'failed',
           );
+          if (success) this.appliedRoutePlans.set(plan.selectedAction.id, applied);
           return {
             ...execution,
             metadata: {
@@ -294,7 +335,11 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           .get(active.providerId)
           .getHealth(active.id);
         const healthy = health.status !== 'unhealthy' && health.internetReachable !== false;
-        return createAdapterVerification(plan, context, healthy ? 'success' : 'failed');
+        return this.verifyDestinationOutcome(
+          plan,
+          context,
+          createAdapterVerification(plan, context, healthy ? 'success' : 'failed'),
+        );
       }
 
       if (plan.selectedAction.intent === 'route_change') {
@@ -304,10 +349,14 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           destination,
           connectivitySources: sources,
         });
-        return createAdapterVerification(
+        return this.verifyDestinationOutcome(
           plan,
           context,
-          decision.selected && decision.plan.selectedPath ? 'success' : 'failed',
+          createAdapterVerification(
+            plan,
+            context,
+            decision.selected && decision.plan.selectedPath ? 'success' : 'failed',
+          ),
         );
       }
 
@@ -326,7 +375,11 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           health !== null &&
           'healthy' in health &&
           (health as { healthy?: unknown }).healthy === true;
-        return createAdapterVerification(plan, context, healthy ? 'success' : 'failed');
+        return this.verifyDestinationOutcome(
+          plan,
+          context,
+          createAdapterVerification(plan, context, healthy ? 'success' : 'failed'),
+        );
       }
 
       if (plan.selectedAction.intent === 'tunnel_switch') {
@@ -335,10 +388,14 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         const tunnelId =
           typeof execution.metadata.tunnelId === 'string' ? execution.metadata.tunnelId : undefined;
         if (!tunnelId) return createAdapterVerification(plan, context, 'failed');
-        return createAdapterVerification(
+        return this.verifyDestinationOutcome(
           plan,
           context,
-          (await this.controlPlane.tunnel.verify(tunnelId)) ? 'success' : 'failed',
+          createAdapterVerification(
+            plan,
+            context,
+            (await this.controlPlane.tunnel.verify(tunnelId)) ? 'success' : 'failed',
+          ),
         );
       }
 
@@ -382,6 +439,19 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       } catch {
         return createAdapterExecution(plan, context, false, 'failed');
       }
+    }
+
+    if (plan.selectedAction.intent === 'route_change') {
+      const routePlan = this.appliedRoutePlans.get(plan.selectedAction.id);
+      if (!routePlan) return createAdapterExecution(plan, context, false, 'failed');
+      const rolledBack = await this.controlPlane.routing.rollbackPlan(routePlan);
+      if (rolledBack) this.appliedRoutePlans.delete(plan.selectedAction.id);
+      return createAdapterExecution(
+        plan,
+        context,
+        false,
+        rolledBack ? 'success' : 'failed',
+      );
     }
 
     if (plan.selectedAction.intent === 'tunnel_switch') {

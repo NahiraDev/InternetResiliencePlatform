@@ -34,6 +34,34 @@ export interface DecisionProvider {
   ): Promise<readonly CandidateAction[]>;
 }
 /**
+ * Read-only path evidence supplied by the domain routing owner. The provider
+ * may rank paths, but it cannot authorize or mutate them; the runtime still
+ * applies policy, safety, transaction, and destination verification.
+ */
+export interface PathStrategyEvidence {
+  readonly destination: string;
+  readonly recommendation: 'remain' | 'switch' | 'unavailable';
+  readonly currentPathId?: string;
+  readonly selectedPathId?: string;
+  readonly currentScore?: number;
+  readonly selectedScore?: number;
+  readonly candidatePaths: readonly {
+    readonly id: string;
+    readonly type: string;
+    readonly score?: number;
+    readonly state: string;
+    readonly failureDomains: readonly string[];
+  }[];
+  readonly diverseAlternativeCount: number;
+  readonly confidence: number;
+  readonly expectedBenefit: number;
+  readonly risk: number;
+  readonly explanation: readonly string[];
+}
+export interface PathEvidenceProvider {
+  evaluate(context: RuntimeContext): Promise<PathStrategyEvidence | undefined>;
+}
+/**
  * Read-only, advisory history boundary. Implementations must not perform
  * mutations or make policy decisions; unavailable history is intentionally
  * treated as no additional evidence so local recovery can continue.
@@ -45,6 +73,13 @@ export interface HistoricalEvidenceProvider {
     context: RuntimeContext,
   ): Promise<Readonly<Record<string, readonly HistoricalObservation[]>>>;
 }
+/**
+ * Read-only, advisory federation boundary. Federated evidence deliberately
+ * shares the historical observation shape so the canonical decision provider
+ * can consume it through the same guarded ranking path without granting
+ * remote evidence authority over policy or mutation.
+ */
+export type FederatedEvidenceProvider = HistoricalEvidenceProvider;
 export interface ActionPlanner {
   plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan>;
 }

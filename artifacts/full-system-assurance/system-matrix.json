@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-09-11T20:36:30.322Z",
+  "generatedAt": "2026-09-12T23:47:42.562Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -13,8 +13,8 @@
     "docs/phases",
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
-  "componentCount": 221,
-  "sourceFileCount": 291,
+  "componentCount": 222,
+  "sourceFileCount": 294,
   "components": [
     {
       "componentId": "packages::auth",
@@ -276,7 +276,8 @@
         "@irp/database"
       ],
       "downstreamDependencies": [
-        "apps/api"
+        "apps/api",
+        "packages/resilience-runtime"
       ],
       "owningPhases": [],
       "realEnvironment": {
@@ -446,6 +447,7 @@
       "downstreamDependencies": [
         "apps/api",
         "apps/cli",
+        "apps/daemon",
         "packages/connectivity"
       ],
       "owningPhases": [],
@@ -762,12 +764,13 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 61,
+      "sourceFiles": 64,
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/events",
         "@irp/failover",
         "@irp/gateway-registry",
+        "@irp/historical-analysis",
         "@irp/internet-intelligence-agent",
         "@irp/network-intelligence",
         "@irp/routing",
@@ -1122,6 +1125,7 @@
         "@irp/logger",
         "@irp/plugin-manager",
         "@irp/plugin-sdk",
+        "@irp/network",
         "@irp/resilience-runtime",
         "@irp/routing",
         "@irp/tunnel"
@@ -4848,6 +4852,33 @@
       "evidenceId": null
     },
     {
+      "componentId": "assurance::regional-validation",
+      "path": "ops/release/real-environment::regional-validation",
+      "type": "assurance-surface",
+      "capability": "regional-validation",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "regional-evidence"
+        ],
+        "environment": "real-regional-sites",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
       "componentId": "assurance::backup-restore",
       "path": "ops/release/real-environment::backup-restore",
       "type": "assurance-surface",
@@ -5021,13 +5052,12 @@
   ],
   "assuranceOnlyCapabilitySurfaces": [
     "kubernetes",
+    "regional-validation",
     "backup-restore",
     "upgrade-rollback",
     "chaos-soak"
   ],
-  "missingCapabilitySurfaces": [
-    "regional-validation"
-  ],
+  "missingCapabilitySurfaces": [],
   "closedLoopStages": [
     "observe",
     "measure",
@@ -5040,11 +5070,9 @@
     "recover",
     "telemetry"
   ],
-  "verdict": "BLOCKED",
+  "verdict": "PASS",
   "failures": [],
-  "blocked": [
-    "regional-validation: capability surface has no discovered repository owner or assurance-surface contract"
-  ],
+  "blocked": [],
   "executableComponentsWithoutAssurance": 0,
   "registeredRealEnvironmentContracts": 28,
   "realEnvironmentEvidenceSchema": {
@@ -5065,5 +5093,5 @@
       "fail"
     ]
   },
-  "reportSha256": "75d04d3e46e6112f6a65504a5e45a2f4d378764e1a1f2838b8c301f268de72fd"
+  "reportSha256": "5a2ed578a0de5391e693309991c0edafe9267843233a417ada9db95e115e5613"
 }

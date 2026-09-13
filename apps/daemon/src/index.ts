@@ -3,17 +3,20 @@ import { promisify } from 'node:util';
 import { Application, createAllBuiltinProviders, IntelligentDnsEngine } from '@irp/core';
 import { loadConfig } from '@irp/config';
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
+import { HttpAvailabilityProbe } from '@irp/network';
 import { createLogger } from '@irp/logger';
-import { RoutingEngine } from '@irp/routing';
+import { RoutingEngine, parseDestination, type NetworkPath } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
   GatewayRegistrySelectionPlane,
+  CanonicalDecisionProvider,
   ResilienceRuntime,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
   type Observation,
   type ObservationProvider,
   type ObservationProviderResult,
+  type PathStrategyEvidence,
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
@@ -34,6 +37,18 @@ type Health = {
   ipv4?: boolean;
   ipv6?: boolean;
 };
+
+const configuredDestinationUrl = process.env.IRP_DESTINATION_URL;
+const configuredDestination = configuredDestinationUrl
+  ? (() => {
+      try {
+        const url = new URL(configuredDestinationUrl);
+        return { hostname: url.hostname, port: url.port ? Number(url.port) : undefined };
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
 
 const observationsForSource = (
   context: RuntimeContext,
@@ -228,8 +243,17 @@ export class RuntimeDaemonHost {
   readonly gatewaySelection = new GatewayRegistrySelectionPlane(this.connectivity, {
     enabled: process.env.IRP_GATEWAY_SELECTION_ENABLED === '1',
   });
+  readonly destinationProbe = configuredDestinationUrl
+    ? new HttpAvailabilityProbe({ url: configuredDestinationUrl, timeoutMs: 5_000 })
+    : undefined;
+  readonly decisionProvider = new CanonicalDecisionProvider(undefined, {
+    pathEvidence: {
+      evaluate: async (context) => this.evaluatePathEvidence(context),
+    },
+  });
   readonly runtime = new ResilienceRuntime([this.observer], {
     runtimeId: 'daemon-runtime',
+    decisionProvider: this.decisionProvider,
     networkControlPlane: {
       connectivity: this.connectivity,
       routing: this.routing,
@@ -240,6 +264,33 @@ export class RuntimeDaemonHost {
       },
       tunnel: this.tunnelPlane,
       gatewaySelection: this.gatewaySelection,
+      ...(configuredDestination
+        ? { destination: parseDestination(configuredDestination.hostname) }
+        : {}),
+      verifyDestination: async (destination, _context) => {
+        if (!this.destinationProbe || !configuredDestination)
+          return { status: 'unknown' as const, reason: 'IRP_DESTINATION_URL is not configured' };
+        if (
+          destination.kind === 'hostname' &&
+          destination.value !== configuredDestination.hostname
+        )
+          return { status: 'failed' as const, reason: 'destination is outside configured probe scope' };
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5_000);
+        try {
+          const result = await this.destinationProbe.execute({
+            signal: controller.signal,
+            now: () => new Date().toISOString(),
+          });
+          return {
+            status: result.success ? ('reachable' as const) : ('failed' as const),
+            latencyMs: result.latencyMs,
+            ...(result.error ? { reason: result.error } : {}),
+          };
+        } finally {
+          clearTimeout(timeout);
+        }
+      },
     },
   });
   readonly plugins = new PluginHost([]);
@@ -255,6 +306,84 @@ export class RuntimeDaemonHost {
       executionBudgetMs: 10_000,
       ...config,
     });
+  }
+  private async evaluatePathEvidence(context: RuntimeContext): Promise<PathStrategyEvidence | undefined> {
+    const destinationValue = context.observationSnapshot?.observations
+      .map((observation) => observation.metadata.destination)
+      .find(
+        (value): value is string => typeof value === 'string' && value.length > 0,
+      ) ?? configuredDestination?.hostname;
+    if (!destinationValue) return undefined;
+    await this.connectivity.discoverResources();
+    const destination = parseDestination(destinationValue);
+    const decision = await this.routing.simulateRouting({
+      destination,
+      connectivitySources: this.connectivity.getAvailableSources(),
+    });
+    const current = decision.plan.currentPath;
+    const selected = decision.selected;
+    const currentScore = current
+      ? decision.candidates.find((candidate) => candidate.path.id === current.id)?.totalScore
+      : undefined;
+    const selectedScore = selected?.totalScore;
+    const currentFailureDomains = current ? failureDomains(current) : [];
+    const candidates = decision.candidates.map((candidate) => ({
+      id: candidate.path.id,
+      type: candidate.path.type,
+      ...(candidate.totalScore === undefined ? {} : { score: candidate.totalScore }),
+      state: candidate.path.state,
+      failureDomains: failureDomains(candidate.path),
+    }));
+    const alternativeDomains = new Set(
+      decision.candidates
+        .filter((candidate) => candidate.path.id !== current?.id && candidate.eligibility !== 'rejected')
+        .flatMap((candidate) => failureDomains(candidate.path)),
+    );
+    if (!selected || selectedScore === undefined) {
+      return {
+        destination: destinationValue,
+        recommendation: 'unavailable',
+        ...(current?.id ? { currentPathId: current.id } : {}),
+        ...(currentScore === undefined ? {} : { currentScore }),
+        candidatePaths: candidates,
+        diverseAlternativeCount: 0,
+        confidence: 0,
+        expectedBenefit: 0,
+        risk: 1,
+        explanation: ['routing engine found no eligible destination path'],
+      };
+    }
+    const improvement = currentScore === undefined ? selectedScore : selectedScore - currentScore;
+    const switching = selected.path.id !== current?.id && improvement >= this.routing.config.hysteresis;
+    const selectedDomains = new Set(failureDomains(selected.path));
+    const diverseAlternativeCount = decision.candidates.filter(
+      (candidate) =>
+        candidate.path.id !== selected.path.id &&
+        candidate.eligibility !== 'rejected' &&
+        failureDomains(candidate.path).some((domain) => !selectedDomains.has(domain)),
+    ).length;
+    return {
+      destination: destinationValue,
+      recommendation: switching ? 'switch' : 'remain',
+      ...(current?.id ? { currentPathId: current.id } : {}),
+      selectedPathId: selected.path.id,
+      ...(currentScore === undefined ? {} : { currentScore }),
+      selectedScore,
+      candidatePaths: candidates,
+      diverseAlternativeCount,
+      confidence: Math.max(0, Math.min(1, selectedScore / 100)),
+      expectedBenefit: Math.max(0, Math.min(1, improvement / 100)),
+      risk: switching && diverseAlternativeCount === 0 ? 0.45 : 0.2,
+      explanation: [
+        decision.plan.reason,
+        `routing candidates: ${candidates.length}`,
+        `failure-domain-diverse alternatives: ${diverseAlternativeCount}`,
+        ...(currentFailureDomains.length
+          ? [`current failure domains: ${currentFailureDomains.join(',')}`]
+          : []),
+        ...(alternativeDomains.size ? [`alternative domains: ${[...alternativeDomains].join(',')}`] : []),
+      ],
+    };
   }
   private async applyDnsProvider(providerId: string): Promise<void> {
     const provider = this.dnsProviders.find((candidate) => candidate.id === providerId);
@@ -316,6 +445,16 @@ export class RuntimeDaemonHost {
     };
   }
 }
+
+const failureDomains = (path: NetworkPath): string[] => {
+  const declared = path.route.metadata.failureDomains;
+  if (Array.isArray(declared))
+    return declared.filter((value): value is string => typeof value === 'string' && value.length > 0);
+  const domains = [path.provider, path.route.source, path.route.gateway].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+  return domains.length ? domains : ['unknown'];
+};
 
 export const createDaemon = (): Application => {
   const config = loadConfig();

@@ -2,7 +2,11 @@ import { InMemoryHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { describe, expect, it } from 'vitest';
 import {
   CanonicalDecisionProvider,
+  FederatedEvidenceAdvisor,
   HistoricalAnalysisAdvisor,
+  ProbeFederation,
+  createProbeKeyPair,
+  signProbeEvidence,
   createRuntimeContext,
   createCapabilitySnapshot,
   createPolicySnapshot,
@@ -28,7 +32,7 @@ const observations: ObservationBatch = {
       schemaVersion: 1,
       createdAt: timestamp,
       source: 'test',
-      metadata: {},
+      metadata: { destination: 'example.test' },
       category: 'network',
       metric: 'internet_reachable',
       value: false,
@@ -103,6 +107,33 @@ describe('historical analysis advisory integration', () => {
     });
   });
 
+  it('rejects retained evidence from a different destination', async () => {
+    const store = new InMemoryHistoricalMeasurementStore([
+      {
+        timestamp: '2026-09-12T11:00:00.000Z',
+        probeType: 'dns_switch',
+        success: false,
+        metadata: { destination: 'other.example' },
+      },
+      {
+        timestamp: '2026-09-12T11:30:00.000Z',
+        probeType: 'dns_switch',
+        success: true,
+        metadata: { destination: 'example.test', providerId: 'resolver-a' },
+      },
+    ]);
+    const provider = new CanonicalDecisionProvider(undefined, {
+      historicalEvidence: new HistoricalAnalysisAdvisor(store),
+    });
+
+    const candidates = await provider.decide([incident], context());
+    expect(
+      candidates.find((candidate) => candidate.intent === 'dns_switch')?.metadata,
+    ).toMatchObject({
+      historicalEvidence: { sampleCount: 1, successRatio: 1 },
+    });
+  });
+
   it('continues with local decisioning when the historical store is unavailable', async () => {
     const provider = new CanonicalDecisionProvider(undefined, {
       historicalEvidence: {
@@ -113,5 +144,41 @@ describe('historical analysis advisory integration', () => {
     const candidates = await provider.decide([incident], context());
     expect(candidates.find((candidate) => candidate.intent === 'dns_switch')).toBeDefined();
     expect(candidates[0]?.metadata).not.toHaveProperty('historicalEvidence');
+  });
+
+  it('feeds accepted, destination-scoped federated evidence into canonical ranking', async () => {
+    const keys = createProbeKeyPair();
+    const federation = new ProbeFederation();
+    federation.registerProbe({
+      probeId: 'probe-1',
+      name: 'Frankfurt',
+      region: 'de-frankfurt',
+      publicKeyPem: keys.publicKeyPem,
+    });
+    const result = federation.ingest(
+      signProbeEvidence(
+        {
+          evidenceId: 'federated-example-1',
+          probeId: 'probe-1',
+          region: 'de-frankfurt',
+          observedAt: new Date().toISOString(),
+          destination: 'example.test',
+          serviceStatus: 'reachable',
+          measurements: { latencyMs: 35, packetLossPercent: 0 },
+        },
+        keys.privateKeyPem,
+      ),
+    );
+    expect(result.accepted).toBe(true);
+
+    const provider = new CanonicalDecisionProvider(undefined, {
+      federatedEvidence: new FederatedEvidenceAdvisor(federation),
+    });
+    const candidates = await provider.decide([incident], context());
+    expect(
+      candidates.find((candidate) => candidate.intent === 'dns_switch')?.metadata,
+    ).toMatchObject({
+      historicalEvidence: { sampleCount: 1, successRatio: 1 },
+    });
   });
 });

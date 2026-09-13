@@ -48,11 +48,12 @@ export class HistoricalAnalysisAdvisor implements HistoricalEvidenceProvider {
       probeTypes: [...new Set(candidates.flatMap((candidate) => [candidate.id, candidate.intent]))],
       limit: this.maxSamples,
     });
+    const destination = destinationFromContext(context);
     return Object.fromEntries(
       candidates.map((candidate) => [
         candidate.id,
         measurements
-          .filter((measurement) => belongsToCandidate(measurement, candidate))
+          .filter((measurement) => belongsToCandidate(measurement, candidate, destination))
           .map(toHistoricalObservation),
       ]),
     );
@@ -65,8 +66,19 @@ const bounded = (value: number, min: number, max: number): number =>
 const belongsToCandidate = (
   measurement: HistoricalMeasurement,
   candidate: CandidateAction,
+  destination: string | undefined,
 ): boolean => {
-  const candidateId = measurement.metadata?.candidateId;
+  const metadata = measurement.metadata;
+  const candidateId = metadata?.candidateId;
+  const observedDestination = stringMetadata(metadata, 'destination');
+  const candidateDestination = stringMetadata(candidate.metadata, 'destination') ?? destination;
+  if (candidateDestination && observedDestination && candidateDestination !== observedDestination)
+    return false;
+  for (const key of ['providerId', 'pathId', 'region', 'failureDomain'] as const) {
+    const requested = stringMetadata(candidate.metadata, key);
+    const observed = stringMetadata(metadata, key);
+    if (requested && observed && requested !== observed) return false;
+  }
   return (
     candidateId === candidate.id ||
     measurement.probeType === candidate.id ||
@@ -74,14 +86,43 @@ const belongsToCandidate = (
   );
 };
 
-const toHistoricalObservation = (measurement: HistoricalMeasurement): HistoricalObservation => ({
-  timestamp: measurement.timestamp,
-  availabilityRatio: measurement.success ? 1 : 0,
-  reliabilityRatio: measurement.success ? 1 : 0,
-  uptimeRatio: measurement.success ? 1 : 0,
-  ...(measurement.latencyMs === undefined ? {} : { latencyMs: measurement.latencyMs }),
-  ...(measurement.packetLossPercent === undefined
-    ? {}
-    : { packetLossRatio: Math.min(1, Math.max(0, measurement.packetLossPercent / 100)) }),
-  ...(measurement.success ? { recoveryCount: 1 } : { failureCount: 1 }),
-});
+const toHistoricalObservation = (measurement: HistoricalMeasurement): HistoricalObservation => {
+  const metadata = measurement.metadata;
+  const destination = stringMetadata(metadata, 'destination');
+  const providerId = stringMetadata(metadata, 'providerId');
+  const pathId = stringMetadata(metadata, 'pathId');
+  const region = stringMetadata(metadata, 'region');
+  const failureDomain = stringMetadata(metadata, 'failureDomain');
+  return {
+    timestamp: measurement.timestamp,
+    availabilityRatio: measurement.success ? 1 : 0,
+    reliabilityRatio: measurement.success ? 1 : 0,
+    uptimeRatio: measurement.success ? 1 : 0,
+    ...(destination ? { destination } : {}),
+    ...(providerId ? { providerId } : {}),
+    ...(pathId ? { pathId } : {}),
+    ...(region ? { region } : {}),
+    ...(failureDomain ? { failureDomain } : {}),
+    ...(measurement.latencyMs === undefined ? {} : { latencyMs: measurement.latencyMs }),
+    ...(measurement.packetLossPercent === undefined
+      ? {}
+      : { packetLossRatio: Math.min(1, Math.max(0, measurement.packetLossPercent / 100)) }),
+    ...(measurement.success ? { recoveryCount: 1 } : { failureCount: 1 }),
+  };
+};
+
+const destinationFromContext = (context: RuntimeContext): string | undefined =>
+  context.observationSnapshot?.observations
+    .map((observation) => observation.metadata.destination)
+    .find(
+      (destination): destination is string =>
+        typeof destination === 'string' && destination.length > 0,
+    );
+
+const stringMetadata = (
+  metadata: Readonly<Record<string, unknown>> | undefined,
+  key: string,
+): string | undefined => {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+};

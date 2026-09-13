@@ -100,4 +100,58 @@ describe('routing runtime integration guards', () => {
     expect(plan.verification.status).toBe('failed');
     expect(failed).toBe(true);
   });
+
+  it('restores the captured route pre-state through the canonical rollback operation', async () => {
+    const applied: string[] = [];
+    const kernel = new KernelRuntime(undefined, {
+      id: 'operator',
+      capabilities: ['network.route'],
+    });
+    kernel.registerContract(
+      createContract({
+        namespace: 'routing',
+        version: '1.0.0',
+        operations: {
+          applyRoutePlan: {
+            capability: 'network.route',
+            execute: (input) => {
+              applied.push(`apply:${(input as { id: string }).id}`);
+              return { ok: true };
+            },
+          },
+          rollbackRoutePlan: {
+            capability: 'network.route',
+            execute: (input) => {
+              applied.push(`rollback:${(input as { id: string }).id}`);
+              return { ok: true };
+            },
+          },
+        },
+      }),
+    );
+    const engine = new RoutingEngine({
+      kernel,
+      principal: { id: 'operator', capabilities: ['network.route'] },
+    });
+    engine.registerProvider({
+      id: 'verifier',
+      discoverRoutes: async () => [route('direct', 'direct')],
+      verify: async () => true,
+    });
+    const decision = await engine.decide(
+      {
+        destination: parseDestination('8.8.8.8'),
+        routes: [route('direct', '0.0.0.0/0')],
+      },
+      false,
+    );
+    const appliedPlan = await engine.applyPlan(decision.plan);
+
+    expect(appliedPlan.verification.status).toBe('succeeded');
+    expect(await engine.rollbackPlan(appliedPlan)).toBe(true);
+    expect(applied).toEqual([
+      `apply:${appliedPlan.id}`,
+      `rollback:${appliedPlan.id}`,
+    ]);
+  });
 });
