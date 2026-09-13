@@ -543,6 +543,29 @@ describe('Phase 22 resilience runtime', () => {
     });
     expect(await rt.decisions.list()).toHaveLength(1);
   });
+  it('projects the exact governing policy snapshot to canonical runtime consumers', async () => {
+    const rt = new ResilienceRuntime();
+    const policySnapshot = createPolicySnapshot({
+      ...defaultPolicy('simulation'),
+      allowedActions: ['noop'],
+      actionBudget: 7,
+      simulationOnly: false,
+    });
+    const capabilitySnapshot = createCapabilitySnapshot([], true);
+
+    const result = await rt.cycle({
+      mode: 'simulation',
+      securityContext: { trusted: true },
+      capabilitySnapshot,
+      policySnapshot,
+    });
+    const snapshot = await rt.getRuntimeSnapshot();
+
+    expect(result.runtimeContext.policySnapshot).toEqual(policySnapshot);
+    expect(result.runtimeContext.capabilitySnapshot).toEqual(capabilitySnapshot);
+    expect(snapshot.policySnapshot).toEqual(policySnapshot);
+    expect(snapshot.policySnapshot.id).toBe(policySnapshot.id);
+  });
   it('carries an active intent through the canonical runtime decision record', async () => {
     const rt = new ResilienceRuntime();
     const result = await rt.runIntent(

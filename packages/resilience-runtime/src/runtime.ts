@@ -374,9 +374,12 @@ export class ResilienceRuntime {
       state,
       activeIncident: lastIncidents.at(-1),
       recentObservations: this.last?.observations,
-      policySnapshot: this.last?.runtimeContext
-        ? createRuntimeContext({ mode: this.last.runtimeContext.mode }).policySnapshot
-        : createRuntimeContext().policySnapshot,
+      // API, CLI, and cockpit consumers must observe the policy that actually
+      // governed the latest decision. Recreating a default snapshot here made
+      // a historical/custom rejection appear to have been made by a different
+      // policy, breaking both explainability and replay semantics.
+      policySnapshot:
+        this.last?.runtimeContext.policySnapshot ?? createRuntimeContext().policySnapshot,
       currentPlan: this.last?.selectedPlan,
       currentAction: this.last?.selectedPlan?.selectedAction,
       verificationStatus: this.last?.verificationResult,

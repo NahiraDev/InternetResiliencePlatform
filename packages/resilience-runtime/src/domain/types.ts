@@ -208,7 +208,14 @@ export interface DecisionRecord extends AuditFields {
   readonly runtimeContext: Readonly<
     Pick<
       RuntimeContext,
-      'runtimeId' | 'correlationId' | 'mode' | 'deadline' | 'configuration' | 'compiledIntent'
+      | 'runtimeId'
+      | 'correlationId'
+      | 'mode'
+      | 'policySnapshot'
+      | 'capabilitySnapshot'
+      | 'deadline'
+      | 'configuration'
+      | 'compiledIntent'
     >
   >;
   readonly observations: ObservationBatch;
