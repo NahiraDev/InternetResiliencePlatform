@@ -1,12 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type {
-  ActionExecution,
-  ActionExecutor,
   ActionPlan,
-  ActionValidation,
-  ActionValidator,
-  ActionVerification,
-  ActionVerifier,
   CandidateAction,
   EventSink,
   RuntimeContext,
@@ -55,8 +49,6 @@ export interface AutoOptimizationPolicy {
   readonly requireLiveRuntime: boolean;
   readonly requireTrustedSecurityContext: boolean;
   readonly requireTrustedCapabilities: boolean;
-  readonly dryRun: boolean;
-  readonly rollbackOnVerificationFailure: boolean;
 }
 
 export interface AutoOptimizationState {
@@ -94,14 +86,6 @@ export class MemoryAutoOptimizationStateStore implements AutoOptimizationStateSt
 }
 
 export interface AutoOptimizationPorts {
-  readonly validator: ActionValidator;
-  readonly executor: ActionExecutor;
-  readonly verifier: ActionVerifier;
-  readonly rollback?: (
-    plan: ActionPlan,
-    execution: ActionExecution,
-    context: RuntimeContext,
-  ) => Promise<ActionExecution>;
   readonly events?: EventSink;
   readonly telemetry?: TelemetrySink;
   readonly policyArbitrator?: RuntimePolicyArbitrator;
@@ -115,13 +99,14 @@ export interface AutoOptimizationEvaluation {
 }
 
 export interface AutoOptimizationResult {
-  readonly status: 'blocked' | 'dry_run' | 'applied' | 'rolled_back' | 'failed';
+  /**
+   * `recommended` is deliberately not an execution outcome. A caller must
+   * submit the plan to ResilienceRuntime, which remains the only mutation,
+   * verification, rollback, and recovery authority.
+   */
+  readonly status: 'blocked' | 'recommended';
   readonly recommendationId: string;
-  readonly execution?: ActionExecution;
-  readonly verification?: ActionVerification;
-  readonly rollbackExecution?: ActionExecution;
   readonly evaluation: AutoOptimizationEvaluation;
-  readonly validation?: ActionValidation;
   readonly reason: string;
 }
 
@@ -140,8 +125,6 @@ export const defaultAutoOptimizationPolicy = (): AutoOptimizationPolicy => ({
   requireLiveRuntime: true,
   requireTrustedSecurityContext: true,
   requireTrustedCapabilities: true,
-  dryRun: false,
-  rollbackOnVerificationFailure: true,
 });
 
 const validatePolicy = (policy: AutoOptimizationPolicy): void => {
@@ -294,7 +277,12 @@ export class AutoOptimizationEngine {
     };
   }
 
-  async apply(
+  /**
+   * Evaluates and publishes a recommendation. This package intentionally
+   * cannot execute an ActionPlan: recommendation generation must not become a
+   * second privileged control plane beside ResilienceRuntime.
+   */
+  async submit(
     recommendation: OptimizationRecommendation,
     context: RuntimeContext,
   ): Promise<AutoOptimizationResult> {
@@ -321,126 +309,17 @@ export class AutoOptimizationEngine {
       };
     }
 
-    const validation = await this.ports.validator.validate(recommendation.plan, context);
-    if (!validation.valid) {
-      const failedEvaluation: AutoOptimizationEvaluation = {
-        ...evaluation,
-        allowed: false,
-        reasons: [...evaluation.reasons, ...validation.reasons],
-        blockReasons: [...evaluation.blockReasons, 'validation_failed'],
-      };
-      await this.recordOutcome(recommendation.id, 'blocked');
-      await this.emit('auto_optimization.blocked', {
-        recommendationId: recommendation.id,
-        reasons: validation.reasons,
-        blockReasons: ['validation_failed'],
-      });
-      this.metric('irp_auto_optimization_validation_failed_total');
-      return {
-        status: 'blocked',
-        recommendationId: recommendation.id,
-        evaluation: failedEvaluation,
-        validation,
-        reason: validation.reasons.join('; '),
-      };
-    }
-
-    if (this.policy.dryRun) {
-      await this.emit('auto_optimization.dry_run', { recommendationId: recommendation.id });
-      this.metric('irp_auto_optimization_dry_run_total');
-      return {
-        status: 'dry_run',
-        recommendationId: recommendation.id,
-        evaluation,
-        validation,
-        reason: 'automatic optimization is configured for dry-run mode',
-      };
-    }
-
-    const execution = await this.ports.executor.execute(recommendation.plan, context);
-    if (execution.status !== 'success') {
-      await this.recordOutcome(recommendation.id, 'failed');
-      await this.emit('auto_optimization.failed', {
-        recommendationId: recommendation.id,
-        status: execution.status,
-        error: execution.error ?? 'action execution failed',
-      });
-      this.metric('irp_auto_optimization_failed_total');
-      return {
-        status: 'failed',
-        recommendationId: recommendation.id,
-        evaluation,
-        validation,
-        execution,
-        reason: execution.error ?? 'action execution failed',
-      };
-    }
-
-    await this.emit('auto_optimization.applied', {
+    await this.emit('auto_optimization.recommended', {
       recommendationId: recommendation.id,
-      actionId: execution.actionId,
+      actionId: recommendation.plan.selectedAction.id,
       intent: recommendation.plan.selectedAction.intent,
     });
-    this.metric('irp_auto_optimization_applied_total');
-
-    const verification = await this.ports.verifier.verify(recommendation.plan, execution, context);
-    if (verification.status === 'success') {
-      await this.recordOutcome(recommendation.id, 'applied', true);
-      await this.emit('auto_optimization.verified', {
-        recommendationId: recommendation.id,
-        verifiedPostconditions: verification.verifiedPostconditions,
-      });
-      return {
-        status: 'applied',
-        recommendationId: recommendation.id,
-        evaluation,
-        validation,
-        execution,
-        verification,
-        reason: 'automatic optimization applied and verified',
-      };
-    }
-
-    if (this.policy.rollbackOnVerificationFailure && this.ports.rollback) {
-      const rollbackExecution = await this.ports.rollback(recommendation.plan, execution, context);
-      if (rollbackExecution.status === 'success') {
-        await this.recordOutcome(recommendation.id, 'rolled_back', true);
-        await this.emit('auto_optimization.rolled_back', {
-          recommendationId: recommendation.id,
-          actionId: execution.actionId,
-          rollbackActionId: rollbackExecution.actionId,
-          failedPostconditions: verification.failedPostconditions,
-        });
-        this.metric('irp_auto_optimization_rollback_total');
-        return {
-          status: 'rolled_back',
-          recommendationId: recommendation.id,
-          evaluation,
-          validation,
-          execution,
-          verification,
-          rollbackExecution,
-          reason: 'verification failed and the applied action was rolled back',
-        };
-      }
-    }
-
-    await this.recordOutcome(recommendation.id, 'failed');
-    await this.emit('auto_optimization.failed', {
-      recommendationId: recommendation.id,
-      status: 'verification_failed',
-      failedPostconditions: verification.failedPostconditions,
-    });
-    this.metric('irp_auto_optimization_verification_failed_total');
+    this.metric('irp_auto_optimization_recommended_total');
     return {
-      status: 'failed',
+      status: 'recommended',
       recommendationId: recommendation.id,
       evaluation,
-      validation,
-      execution,
-      verification,
-      reason:
-        'automatic optimization verification failed and rollback was unavailable or unsuccessful',
+      reason: 'recommendation approved; submit it to ResilienceRuntime for canonical execution',
     };
   }
 

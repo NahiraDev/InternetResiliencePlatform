@@ -294,7 +294,9 @@ export class RuntimeDaemonHost {
     },
   });
   readonly plugins = new PluginHost([]);
-  readonly autoOptimization = new AutoOptimizationHost({ adapters: this.runtime.adapters });
+  // Advisory-only: recommendations cannot execute through this host. Any
+  // mutation must enter ResilienceRuntime's canonical safety/transaction path.
+  readonly autoOptimization = new AutoOptimizationHost();
   readonly scheduler: RuntimeScheduler;
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {

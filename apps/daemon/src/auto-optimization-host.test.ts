@@ -1,20 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createDefaultRuntimeAdapterRegistry,
-  createRuntimeContext,
-  noopCandidate,
-} from '@irp/resilience-runtime';
+import { createRuntimeContext, noopCandidate } from '@irp/resilience-runtime';
 import { AutoOptimizationHost } from './auto-optimization-host.js';
 
 describe('AutoOptimizationHost', () => {
   it('binds an auto-optimization engine that is disabled by default', async () => {
-    const host = new AutoOptimizationHost({ adapters: createDefaultRuntimeAdapterRegistry() });
+    const host = new AutoOptimizationHost();
     const state = await host.engine.getState();
     expect(state.enabled).toBe(false);
   });
 
   it('blocks recommendations while automatic optimization is disabled', async () => {
-    const host = new AutoOptimizationHost({ adapters: createDefaultRuntimeAdapterRegistry() });
+    const host = new AutoOptimizationHost();
     const context = createRuntimeContext({ mode: 'safe' });
     const plan = {
       id: 'test-plan',
@@ -35,7 +31,7 @@ describe('AutoOptimizationHost', () => {
       expectedPostconditions: ['no mutation performed'],
       verificationRequirements: [],
     };
-    const result = await host.engine.apply(
+    const result = await host.engine.submit(
       {
         id: 'recommendation-1',
         plan,
