@@ -67,6 +67,47 @@ describe('route normalization and destination matching', () => {
 });
 
 describe('routing engine decisions', () => {
+  it('projects destination paths into a queryable graph with correlated failure domains', async () => {
+    const engine = new RoutingEngine();
+    const decision = await engine.simulateRouting({
+      destination: parseDestination('8.8.8.8'),
+      routes: [
+        route('isp-a-gateway-a', '0.0.0.0/0', 10, 95, {
+          source: 'isp-a:link-a',
+          gateway: '10.0.0.1',
+          metadata: { pathType: 'direct', failureDomains: ['provider:isp-a', 'region:r1'] },
+        }),
+        route('isp-a-gateway-b', '0.0.0.0/0', 20, 90, {
+          source: 'isp-a:link-b',
+          gateway: '10.0.0.2',
+          metadata: { pathType: 'direct', failureDomains: ['provider:isp-a', 'region:r1'] },
+        }),
+        route('isp-b', '0.0.0.0/0', 30, 80, {
+          source: 'isp-b:link-a',
+          gateway: '10.1.0.1',
+          metadata: { pathType: 'tunnel', failureDomains: ['provider:isp-b', 'region:r2'] },
+        }),
+      ],
+    });
+
+    expect(decision.graph.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'destination:ip:8.8.8.8', kind: 'destination' }),
+        expect.objectContaining({ id: 'provider:isp-a', kind: 'provider' }),
+      ]),
+    );
+    expect(decision.graph.pathsFor(parseDestination('8.8.8.8'))).toHaveLength(3);
+    expect(decision.graph.usablePaths(parseDestination('8.8.8.8'))).toHaveLength(3);
+    expect(decision.graph.independentAlternatives('path:isp-a-gateway-a', parseDestination('8.8.8.8'))).toEqual([
+      expect.objectContaining({ id: 'path:isp-b' }),
+    ]);
+    expect(decision.graph.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: 'path:path:isp-a-gateway-a', kind: 'reaches' }),
+      ]),
+    );
+  });
+
   it('selects a single eligible route and emits explanation events in simulation mode without kernel calls', async () => {
     const kernel = new KernelRuntime();
     const execute = vi.spyOn(kernel, 'execute');

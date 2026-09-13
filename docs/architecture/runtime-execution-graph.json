@@ -23,6 +23,11 @@
       "evidence": "packages/resilience-runtime/src/runtime.ts"
     },
     {
+      "id": "path-graph",
+      "owner": "RoutingEngine / NetworkPathGraph",
+      "evidence": "packages/routing/src/index.ts"
+    },
+    {
       "id": "historical-advisory",
       "owner": "HistoricalAnalysisAdvisor (optional injected port)",
       "evidence": "packages/resilience-runtime/src/canonical-decision-provider.ts; packages/resilience-runtime/src/historical-advisory.ts"
@@ -66,7 +71,8 @@
   "transitions": [
     ["observe", "detect"],
     ["detect", "decide"],
-    ["decide", "historical-advisory"],
+    ["decide", "path-graph"],
+    ["path-graph", "historical-advisory"],
     ["historical-advisory", "plan"],
     ["plan", "policy-and-validation"],
     ["policy-and-validation", "transaction"],

@@ -4,14 +4,14 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation gate: **Phase 71 — Cross-Platform Distribution & GitHub Releases**.
+- Current implementation gate: **Phase 78 — Closed-Loop Control Foundation**; the repository is now being advanced under the product-realization mission above the historical phase system.
 - Phase 71 status: implementation complete; external release evidence is still required before certification.
 - Main branch: `main`
 - Current main commit observed for this baseline: `3d2b78e1c95eb1bdf48c70113a6331813c54a1a8` (`docs(state): make Phase 71 certification gate explicit`).
 - The Phase 71 release workflow has an Android artifact-upload path fix on `main` (`08bbea196b6d23fd7f661cae5315834b7ff22e9f`).
 - Repository release state: no published GitHub Releases are currently present, so Phase 71 certification remains open.
-- Phase 72 exists as an architecture-preparation baseline and is **blocked from completion** until the Phase 71 external release-certification requirement is satisfied.
-- Next execution priority: execute and verify a real tagged Phase 71 release; meanwhile no downstream phase may be declared complete merely from architecture/source presence.
+- The Phase 71 external release-certification requirement remains open and must not be represented as certified.
+- Product-realization work must close source/runtime gaps without creating a new phase or declaring completion from architecture/source presence alone.
 
 ## Active agent slots
 

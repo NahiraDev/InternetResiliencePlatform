@@ -48,6 +48,12 @@
       "status": "CONNECTED"
     },
     {
+      "id": "path-graph",
+      "kind": "destination-scoped-path-graph",
+      "owner": "@irp/routing NetworkPathGraph",
+      "status": "CONNECTED"
+    },
+    {
       "id": "dns",
       "kind": "strategy-domain",
       "owner": "@irp/core IntelligentDnsEngine and @irp/dns",
@@ -155,6 +161,12 @@
       "to": "routing",
       "relationship": "canonical adapter decides and applies a route plan",
       "evidence": ["packages/resilience-runtime/src/canonical-network-adapter.ts"]
+    },
+    {
+      "from": "routing",
+      "to": "path-graph",
+      "relationship": "each routing decision projects destination paths, resource edges, evidence and failure-domain diversity into a read-only graph",
+      "evidence": ["packages/routing/src/index.ts", "packages/routing/src/index.test.ts"]
     },
     {
       "from": "runtime",

@@ -5,7 +5,7 @@ import { loadConfig } from '@irp/config';
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
 import { HttpAvailabilityProbe } from '@irp/network';
 import { createLogger } from '@irp/logger';
-import { RoutingEngine, parseDestination, type NetworkPath } from '@irp/routing';
+import { RoutingEngine, parseDestination, pathFailureDomains, type NetworkPath } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
   GatewayRegistrySelectionPlane,
@@ -446,15 +446,7 @@ export class RuntimeDaemonHost {
   }
 }
 
-const failureDomains = (path: NetworkPath): string[] => {
-  const declared = path.route.metadata.failureDomains;
-  if (Array.isArray(declared))
-    return declared.filter((value): value is string => typeof value === 'string' && value.length > 0);
-  const domains = [path.provider, path.route.source, path.route.gateway].filter(
-    (value): value is string => typeof value === 'string' && value.length > 0,
-  );
-  return domains.length ? domains : ['unknown'];
-};
+const failureDomains = (path: NetworkPath): string[] => [...pathFailureDomains(path)];
 
 export const createDaemon = (): Application => {
   const config = loadConfig();
