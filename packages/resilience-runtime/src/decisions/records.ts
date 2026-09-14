@@ -59,6 +59,11 @@ export const createDecisionRecord = (input: {
         runtimeId: input.context.runtimeId,
         correlationId: input.context.correlationId,
         mode: input.context.mode,
+        // A decision record is also the runtime's durable explainability and
+        // replay boundary. Preserve the exact policy/capability snapshots that
+        // admitted the action rather than reconstructing contemporary defaults.
+        policySnapshot: input.context.policySnapshot,
+        capabilitySnapshot: input.context.capabilitySnapshot,
         deadline: input.context.deadline,
         configuration: input.context.configuration,
         compiledIntent: input.context.compiledIntent,

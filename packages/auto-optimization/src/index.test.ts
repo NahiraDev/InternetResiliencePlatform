@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  ActionExecution,
-  ActionPlan,
-  ActionValidation,
-  ActionVerification,
-  RuntimeContext,
-} from '@irp/resilience-runtime';
+import type { ActionPlan, RuntimeContext } from '@irp/resilience-runtime';
 import {
   AutoOptimizationEngine,
   MemoryAutoOptimizationStateStore,
@@ -102,54 +96,7 @@ const context = (): RuntimeContext =>
     },
   }) as RuntimeContext;
 
-const successfulExecution = (): ActionExecution => ({
-  id: 'execution-1',
-  schemaVersion: 1,
-  createdAt: new Date().toISOString(),
-  source: 'test',
-  metadata: {},
-  status: 'success',
-  simulated: false,
-  actionId: 'action-1',
-});
-
-const successVerification = (): ActionVerification => ({
-  id: 'verification-1',
-  schemaVersion: 1,
-  createdAt: new Date().toISOString(),
-  source: 'test',
-  metadata: {},
-  status: 'success',
-  verifiedPostconditions: ['route healthy'],
-  failedPostconditions: [],
-});
-
-const failingVerification = (): ActionVerification => ({
-  ...successVerification(),
-  status: 'failed',
-  verifiedPostconditions: [],
-  failedPostconditions: ['route healthy'],
-});
-
-const validation: ActionValidation = {
-  id: 'validation-1',
-  schemaVersion: 1,
-  createdAt: new Date().toISOString(),
-  source: 'test',
-  metadata: {},
-  valid: true,
-  reasons: [],
-  policy: { allowed: true, reasons: [], requiredCapabilities: [] },
-};
-
-const ports = (
-  verification: ActionVerification = successVerification(),
-): AutoOptimizationPorts => ({
-  validator: { validate: async () => validation },
-  executor: { execute: async () => successfulExecution() },
-  verifier: { verify: async () => verification },
-  rollback: async () => ({ ...successfulExecution(), actionId: 'rollback-1' }),
-});
+const ports = (): AutoOptimizationPorts => ({});
 
 const recommendation = (): OptimizationRecommendation =>
   buildRecommendation(plan(), {
@@ -187,34 +134,22 @@ describe('AutoOptimizationEngine', () => {
       explanation: [],
       createdAt: new Date().toISOString(),
     });
-    const result = await engine.apply(low, context());
+    const result = await engine.submit(low, context());
     expect(result.status).toBe('blocked');
     expect(result.evaluation.blockReasons).toContain('low_confidence');
   });
 
-  it('applies and verifies an eligible recommendation', async () => {
+  it('publishes an eligible recommendation without creating a mutation path', async () => {
     const policy = { ...defaultAutoOptimizationPolicy(), enabled: true };
     const engine = new AutoOptimizationEngine(
       policy,
       ports(),
       new MemoryAutoOptimizationStateStore(true),
     );
-    const result = await engine.apply(recommendation(), context());
-    expect(result.status).toBe('applied');
-    expect(result.verification?.status).toBe('success');
-    expect((await engine.getState()).lastOutcome).toBe('applied');
-  });
-
-  it('rolls back when verification fails', async () => {
-    const policy = { ...defaultAutoOptimizationPolicy(), enabled: true };
-    const engine = new AutoOptimizationEngine(
-      policy,
-      ports(failingVerification()),
-      new MemoryAutoOptimizationStateStore(true),
-    );
-    const result = await engine.apply(recommendation(), context());
-    expect(result.status).toBe('rolled_back');
-    expect(result.rollbackExecution?.actionId).toBe('rollback-1');
+    const result = await engine.submit(recommendation(), context());
+    expect(result.status).toBe('recommended');
+    expect(result.reason).toContain('ResilienceRuntime');
+    expect((await engine.getState()).lastOutcome).toBeUndefined();
   });
 
   it('honors runtime manual override and never bypasses runtime policy', async () => {
@@ -232,44 +167,18 @@ describe('AutoOptimizationEngine', () => {
         policy: { ...base.policySnapshot.policy, manualOverride: true },
       },
     } as RuntimeContext;
-    const result = await engine.apply(recommendation(), overridden);
+    const result = await engine.submit(recommendation(), overridden);
     expect(result.status).toBe('blocked');
     expect(result.evaluation.blockReasons).toContain('manual_override');
   });
 
-  it('supports deterministic dry-run without mutating the executor', async () => {
-    let executions = 0;
-    const policy = { ...defaultAutoOptimizationPolicy(), enabled: true, dryRun: true };
-    const basePorts = ports();
-    const testPorts: AutoOptimizationPorts = {
-      ...basePorts,
-      executor: {
-        execute: async () => {
-          executions += 1;
-          return successfulExecution();
-        },
-      },
-    };
+  it('never consumes an execution budget while publishing recommendations', async () => {
     const engine = new AutoOptimizationEngine(
-      policy,
-      testPorts,
-      new MemoryAutoOptimizationStateStore(true),
-    );
-    const result = await engine.apply(recommendation(), context());
-    expect(result.status).toBe('dry_run');
-    expect(executions).toBe(0);
-  });
-
-  it('enforces cooldown after a successful apply', async () => {
-    const policy = { ...defaultAutoOptimizationPolicy(), enabled: true, cooldownMs: 60_000 };
-    const engine = new AutoOptimizationEngine(
-      policy,
+      { ...defaultAutoOptimizationPolicy(), enabled: true },
       ports(),
       new MemoryAutoOptimizationStateStore(true),
     );
-    expect((await engine.apply(recommendation(), context())).status).toBe('applied');
-    const second = await engine.apply({ ...recommendation(), id: 'recommendation-2' }, context());
-    expect(second.status).toBe('blocked');
-    expect(second.evaluation.blockReasons).toContain('cooldown');
+    expect((await engine.submit(recommendation(), context())).status).toBe('recommended');
+    expect((await engine.getState()).actionsInWindow).toBe(0);
   });
 });
