@@ -218,14 +218,24 @@ export class ResilienceRuntime {
       } else {
         await this.state.transition('executing', context.correlationId);
         try {
-          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey)).execution;
+          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey))
+            .execution;
         } catch (error) {
           if (error instanceof SafetyViolationError) {
-            return this.recordBlocked(context, before, observations, found, candidates, plan, start, {
-              ...validation,
-              valid: false,
-              reasons: [...validation.reasons, ...error.assessment.reasons],
-            });
+            return this.recordBlocked(
+              context,
+              before,
+              observations,
+              found,
+              candidates,
+              plan,
+              start,
+              {
+                ...validation,
+                valid: false,
+                reasons: [...validation.reasons, ...error.assessment.reasons],
+              },
+            );
           }
           throw error;
         }
@@ -245,7 +255,8 @@ export class ResilienceRuntime {
           outcome = 'degraded';
           await this.state.transition('degraded', context.correlationId);
         } else
-          outcome = execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
+          outcome =
+            execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
       }
       const record = createDecisionRecord({
         context,
@@ -284,10 +295,7 @@ export class ResilienceRuntime {
       this.recordMetric('runtime_cycles_total', this.counters.cyclesTotal);
       this.recordMetric('runtime_decisions_total', this.counters.decisionsTotal);
       this.recordMetric('runtime_actions_total', this.counters.actionsTotal);
-      this.recordMetric(
-        'runtime_actions_failed_total',
-        this.counters.actionsFailedTotal,
-      );
+      this.recordMetric('runtime_actions_failed_total', this.counters.actionsFailedTotal);
       this.recordMetric(
         'runtime_verifications_failed_total',
         this.counters.verificationsFailedTotal,

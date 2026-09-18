@@ -174,10 +174,7 @@
       "state": "executed",
       "mode": "process-e2e",
       "latencyMs": 5004,
-      "checks": [
-        "process-start",
-        "process-stays-running"
-      ]
+      "checks": ["process-start", "process-stays-running"]
     },
     {
       "package": "@irp/database",
