@@ -23,12 +23,13 @@ for (const path of manifest.requiredPaths) {
 }
 
 const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
-if (packageJson.packageManager !== manifest.runtime.packageManager)
+const declaredPackageManager = packageJson.packageManager?.split('+', 1)[0];
+if (declaredPackageManager !== manifest.runtime.packageManager)
   fail(
     'package manager',
-    `${packageJson.packageManager ?? 'unset'} != ${manifest.runtime.packageManager}`,
+    `${declaredPackageManager ?? 'unset'} != ${manifest.runtime.packageManager}`,
   );
-else pass('package manager', packageJson.packageManager);
+else pass('package manager', declaredPackageManager);
 
 const nodeMajor = Number(process.versions.node.split('.')[0]);
 if (nodeMajor < 24) fail('node runtime', `Node ${process.versions.node} is below 24`);
