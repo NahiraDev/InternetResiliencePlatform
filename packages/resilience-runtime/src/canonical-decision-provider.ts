@@ -19,10 +19,7 @@ import type {
   PathEvidenceProvider,
   PathStrategyEvidence,
 } from './ports/ports.js';
-import type {
-  FederatedEvidenceProvider,
-  HistoricalEvidenceProvider,
-} from './ports/ports.js';
+import type { FederatedEvidenceProvider, HistoricalEvidenceProvider } from './ports/ports.js';
 import type { CompiledIntent } from './intent/compiler.js';
 
 /**
@@ -60,8 +57,12 @@ export class CanonicalDecisionProvider implements DecisionProvider {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ): Promise<readonly CandidateAction[]> {
-    const candidates = withIntentMetadata(await this.subsystem.decide(incidents, context), context.compiledIntent);
-    if ((!incidents.length && !context.compiledIntent) || !context.observationSnapshot) return candidates;
+    const candidates = withIntentMetadata(
+      await this.subsystem.decide(incidents, context),
+      context.compiledIntent,
+    );
+    if ((!incidents.length && !context.compiledIntent) || !context.observationSnapshot)
+      return candidates;
 
     const pathEvidence = await this.pathFor(context);
     const pathCandidates = applyPathEvidence(candidates, pathEvidence, context);

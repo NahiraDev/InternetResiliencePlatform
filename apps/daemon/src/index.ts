@@ -5,7 +5,12 @@ import { loadConfig } from '@irp/config';
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
 import { HttpAvailabilityProbe } from '@irp/network';
 import { createLogger } from '@irp/logger';
-import { RoutingEngine, parseDestination, pathFailureDomains, type NetworkPath } from '@irp/routing';
+import {
+  RoutingEngine,
+  parseDestination,
+  pathFailureDomains,
+  type NetworkPath,
+} from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
   GatewayRegistrySelectionPlane,
@@ -270,11 +275,11 @@ export class RuntimeDaemonHost {
       verifyDestination: async (destination, _context) => {
         if (!this.destinationProbe || !configuredDestination)
           return { status: 'unknown' as const, reason: 'IRP_DESTINATION_URL is not configured' };
-        if (
-          destination.kind === 'hostname' &&
-          destination.value !== configuredDestination.hostname
-        )
-          return { status: 'failed' as const, reason: 'destination is outside configured probe scope' };
+        if (destination.kind === 'hostname' && destination.value !== configuredDestination.hostname)
+          return {
+            status: 'failed' as const,
+            reason: 'destination is outside configured probe scope',
+          };
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5_000);
         try {
@@ -309,12 +314,13 @@ export class RuntimeDaemonHost {
       ...config,
     });
   }
-  private async evaluatePathEvidence(context: RuntimeContext): Promise<PathStrategyEvidence | undefined> {
-    const destinationValue = context.observationSnapshot?.observations
-      .map((observation) => observation.metadata.destination)
-      .find(
-        (value): value is string => typeof value === 'string' && value.length > 0,
-      ) ??
+  private async evaluatePathEvidence(
+    context: RuntimeContext,
+  ): Promise<PathStrategyEvidence | undefined> {
+    const destinationValue =
+      context.observationSnapshot?.observations
+        .map((observation) => observation.metadata.destination)
+        .find((value): value is string => typeof value === 'string' && value.length > 0) ??
       context.compiledIntent?.target.destination ??
       context.compiledIntent?.target.hostname ??
       configuredDestination?.hostname;
@@ -341,7 +347,9 @@ export class RuntimeDaemonHost {
     }));
     const alternativeDomains = new Set(
       decision.candidates
-        .filter((candidate) => candidate.path.id !== current?.id && candidate.eligibility !== 'rejected')
+        .filter(
+          (candidate) => candidate.path.id !== current?.id && candidate.eligibility !== 'rejected',
+        )
         .flatMap((candidate) => failureDomains(candidate.path)),
     );
     if (!selected || selectedScore === undefined) {
@@ -359,7 +367,8 @@ export class RuntimeDaemonHost {
       };
     }
     const improvement = currentScore === undefined ? selectedScore : selectedScore - currentScore;
-    const switching = selected.path.id !== current?.id && improvement >= this.routing.config.hysteresis;
+    const switching =
+      selected.path.id !== current?.id && improvement >= this.routing.config.hysteresis;
     const selectedDomains = new Set(failureDomains(selected.path));
     const diverseAlternativeCount = decision.candidates.filter(
       (candidate) =>
@@ -386,7 +395,9 @@ export class RuntimeDaemonHost {
         ...(currentFailureDomains.length
           ? [`current failure domains: ${currentFailureDomains.join(',')}`]
           : []),
-        ...(alternativeDomains.size ? [`alternative domains: ${[...alternativeDomains].join(',')}`] : []),
+        ...(alternativeDomains.size
+          ? [`alternative domains: ${[...alternativeDomains].join(',')}`]
+          : []),
       ],
     };
   }
