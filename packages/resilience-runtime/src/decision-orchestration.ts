@@ -24,9 +24,17 @@ export class DecisionOrchestrator {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ): Promise<DecisionOrchestrationResult> {
-    const candidates = await this.decisionProvider.decide(incidents, context);
-    const compiledIntents = context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
+    const compiledIntents =
+      context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
     const governance = resolveIntentGovernance(compiledIntents, context);
+    const governedContext =
+      governance.selectedIntent && governance.selectedIntent !== context.compiledIntent
+        ? Object.freeze({
+            ...context,
+            compiledIntent: governance.selectedIntent,
+          })
+        : context;
+    const candidates = await this.decisionProvider.decide(incidents, governedContext);
     const allowed = candidates
       .map((candidate) => this.applyGovernance(candidate, governance))
       .filter((candidate) => this.isEligible(candidate, context));
@@ -59,7 +67,11 @@ export class DecisionOrchestrator {
   ): CandidateAction {
     const reasons = [...candidate.rejectionReasons];
     if (candidate.intent !== 'noop') {
-      if (!governance.mutationAllowed) reasons.push(...governance.reasons);
+      if (
+        !governance.mutationAllowed &&
+        context.mode === 'live'
+      )
+        reasons.push(...governance.reasons);
       if (candidate.risk > governance.maxRisk)
         reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
     }
