@@ -29,6 +29,15 @@ const createSchema = z
     spec: specSchema,
     effectiveFrom: timestamp.optional(),
     expiresAt: timestamp.optional(),
+    provenance: z.string().trim().min(1).max(512).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    autonomy: z.enum([
+      'OBSERVE_ONLY',
+      'ADVISORY',
+      'SAFE_AUTOMATION',
+      'AUTONOMOUS',
+      'HIGH_RISK_REQUIRES_APPROVAL',
+    ]).optional(),
     metadata: z.record(z.string(), z.string().max(512)).optional(),
   })
   .strict();
@@ -148,6 +157,9 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       },
       ...(input.effectiveFrom !== undefined ? { effectiveFrom: input.effectiveFrom } : {}),
       ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt } : {}),
+      ...(input.provenance !== undefined ? { provenance: input.provenance } : {}),
+      ...(input.confidence !== undefined ? { confidence: input.confidence } : {}),
+      ...(input.autonomy !== undefined ? { autonomy: input.autonomy } : {}),
       ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
     } satisfies Parameters<typeof createNetworkIntent>[0];
 

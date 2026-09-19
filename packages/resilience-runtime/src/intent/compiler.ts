@@ -21,7 +21,9 @@ export interface CompiledIntent {
   readonly constraints: Readonly<Record<string, string | number | boolean>>;
   readonly objectives: Readonly<Record<IntentObjective, number>>;
   readonly confidence: number;
-  readonly provenance: 'network-intent';
+  readonly provenance: string;
+  readonly autonomy: NetworkIntent['autonomy'];
+  readonly scope: Readonly<Record<string, string>>;
   readonly compiledAt: string;
 }
 
@@ -120,8 +122,13 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
         ? explicitObjective(constraints)
         : defaultsFor(intent.spec.outcome),
     ),
-    confidence: 1,
-    provenance: 'network-intent' as const,
+    confidence: intent.confidence ?? 1,
+    provenance: intent.provenance ?? 'network-intent',
+    autonomy: intent.autonomy ?? 'ADVISORY',
+    scope: Object.freeze({
+      ...(intent.target ?? {}),
+      intentId: intent.id,
+    }),
     compiledAt: at.toISOString(),
   });
 };
