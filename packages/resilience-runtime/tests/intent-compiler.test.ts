@@ -25,8 +25,27 @@ describe('compileNetworkIntent', () => {
       target: { destination: 'github.com' },
       constraints: { maxLatencyMs: 150 },
       provenance: 'network-intent',
+      autonomy: 'ADVISORY',
+      scope: { destination: 'github.com', intentId: 'intent-github' },
     });
     expect(compiled.objectives.latency).toBeGreaterThan(compiled.objectives.cost);
+  });
+
+  it('preserves governance metadata and rejects invalid confidence', () => {
+    const intent = {
+      ...activeIntent({
+        provenance: 'workload:developer-shell',
+        confidence: 0.82,
+        autonomy: 'SAFE_AUTOMATION',
+      }),
+      status: 'active' as const,
+    };
+    const compiled = compileNetworkIntent(intent);
+    expect(compiled.confidence).toBe(0.82);
+    expect(compiled.provenance).toBe('workload:developer-shell');
+    expect(compiled.autonomy).toBe('SAFE_AUTOMATION');
+    expect(compiled.scope).toMatchObject({ destination: 'github.com' });
+    expect(() => activeIntent({ confidence: 1.1 })).toThrow('confidence must be between 0 and 1');
   });
 
   it('rejects draft and expired intents before they can enter runtime', () => {
