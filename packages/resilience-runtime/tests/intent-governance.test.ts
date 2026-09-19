@@ -4,7 +4,7 @@ import { arbitrateIntents, resolveIntentGovernance } from '../src/intent/governa
 import { createRuntimeContext } from '../src/context/context.js';
 import { createNetworkIntent, type IntentAutonomyLevel } from '@irp/core';
 import { DecisionOrchestrator } from '../src/decision-orchestration.js';
-import type { CandidateAction } from '../src/domain/types.js';
+import type { CandidateAction, Incident } from '../src/domain/types.js';
 
 const intent = (
   id: string,
@@ -65,7 +65,7 @@ describe('intent governance', () => {
     let generatedFor: string | undefined;
     const provider = {
       async decide(
-        _incidents: readonly never[],
+        _incidents: readonly Incident[],
         context: ReturnType<typeof createRuntimeContext>,
       ) {
         generatedFor = context.compiledIntent?.intentId;
