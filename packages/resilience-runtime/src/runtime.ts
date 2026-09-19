@@ -122,7 +122,20 @@ export class ResilienceRuntime {
     intent: NetworkIntent,
     input: Partial<RuntimeContext> & { idempotencyKey?: string } = {},
   ) {
-    return this.cycle({ ...input, compiledIntent: compileNetworkIntent(intent) });
+    const compiled = compileNetworkIntent(intent);
+    return this.cycle({ ...input, compiledIntent: compiled, compiledIntents: [compiled] });
+  }
+
+  async runIntents(
+    intents: readonly NetworkIntent[],
+    input: Partial<RuntimeContext> & { idempotencyKey?: string } = {},
+  ) {
+    const compiledIntents = intents.map((intent) => compileNetworkIntent(intent));
+    return this.cycle({
+      ...input,
+      compiledIntent: compiledIntents[0],
+      compiledIntents,
+    });
   }
   async cycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {
     if (input.idempotencyKey && this.idempotency.has(input.idempotencyKey))
