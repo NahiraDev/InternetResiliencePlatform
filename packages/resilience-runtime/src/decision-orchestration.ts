@@ -61,7 +61,7 @@ export class DecisionOrchestrator {
     if (candidate.intent !== 'noop') {
       if (!governance.mutationAllowed) reasons.push(...governance.reasons);
       if (candidate.risk > governance.maxRisk)
-        reasons.push(\`candidate risk ${}candidate.risk} exceeds intent risk budget ${}governance.maxRisk}\`);
+                reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
     }
     return reasons.length === candidate.rejectionReasons.length
       ? candidate
