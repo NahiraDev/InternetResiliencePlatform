@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 const root = process.cwd();
 
 const examples = [
-  ['network-measurement', 'examples/network-measurement/measure-dns.mjs', ['example.com']],
-  ['dns-diagnostics', 'examples/dns-diagnostics/inspect.mjs', ['example.com']],
+  ['network-measurement', 'examples/network-measurement/measure-dns.mjs', ['localhost']],
+  ['dns-diagnostics', 'examples/dns-diagnostics/inspect.mjs', ['localhost']],
   ['failover', 'examples/failover/simulate.mjs'],
   ['autopilot', 'examples/autopilot/simulate.mjs'],
 ];
