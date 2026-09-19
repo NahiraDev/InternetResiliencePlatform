@@ -114,7 +114,9 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
     target: normalizedRecord<string>(intent.spec.target),
     constraints,
     objectives: Object.freeze(
-      Object.keys(constraints).some((key) => key.startsWith('objective.') || OBJECTIVES.includes(key as IntentObjective))
+      Object.keys(constraints).some(
+        (key) => key.startsWith('objective.') || OBJECTIVES.includes(key as IntentObjective),
+      )
         ? explicitObjective(constraints)
         : defaultsFor(intent.spec.outcome),
     ),

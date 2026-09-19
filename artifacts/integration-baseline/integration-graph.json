@@ -8,12 +8,7 @@
       "path": "packages/auth",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -22,12 +17,7 @@
       "path": "packages/auto-optimization",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -36,12 +26,7 @@
       "path": "packages/config",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -50,12 +35,7 @@
       "path": "packages/connectivity",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -64,12 +44,7 @@
       "path": "packages/core",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -95,12 +70,7 @@
       "path": "packages/dns",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -109,12 +79,7 @@
       "path": "packages/events",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -123,12 +88,7 @@
       "path": "packages/failover",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -137,12 +97,7 @@
       "path": "packages/gateway-registry",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -151,12 +106,7 @@
       "path": "packages/historical-analysis",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -165,12 +115,7 @@
       "path": "packages/internet-intelligence-agent",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -179,12 +124,7 @@
       "path": "packages/kernel",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -210,12 +150,7 @@
       "path": "packages/logger",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -224,13 +159,7 @@
       "path": "packages/macos-client",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "start",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "start", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -239,12 +168,7 @@
       "path": "packages/metrics",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -253,12 +177,7 @@
       "path": "packages/network",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -267,12 +186,7 @@
       "path": "packages/network-intelligence",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -281,12 +195,7 @@
       "path": "packages/plugin-api",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -295,12 +204,7 @@
       "path": "packages/plugin-config",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -309,12 +213,7 @@
       "path": "packages/plugin-events",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -323,12 +222,7 @@
       "path": "packages/plugin-loader",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -337,12 +231,7 @@
       "path": "packages/plugin-manager",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -351,12 +240,7 @@
       "path": "packages/plugin-registry",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -365,12 +249,7 @@
       "path": "packages/plugin-runtime",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -379,12 +258,7 @@
       "path": "packages/plugin-samples",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -393,12 +267,7 @@
       "path": "packages/plugin-sandbox",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -407,12 +276,7 @@
       "path": "packages/plugin-sdk",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -421,12 +285,7 @@
       "path": "packages/queue",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -435,13 +294,7 @@
       "path": "packages/resilience-runtime",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "coverage",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "coverage", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -450,12 +303,7 @@
       "path": "packages/routing",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -464,12 +312,7 @@
       "path": "packages/sdk",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -478,12 +321,7 @@
       "path": "packages/security",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -492,12 +330,7 @@
       "path": "packages/shared",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -506,12 +339,7 @@
       "path": "packages/telemetry",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -520,12 +348,7 @@
       "path": "packages/tunnel",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -534,12 +357,7 @@
       "path": "packages/types",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -548,12 +366,7 @@
       "path": "packages/utils",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -562,12 +375,7 @@
       "path": "packages/windows-client",
       "executable": true,
       "entrypoint": null,
-      "scripts": [
-        "build",
-        "lint",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -576,13 +384,7 @@
       "path": "apps/api",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "start",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "start", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -591,13 +393,7 @@
       "path": "apps/cli",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "start",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "start", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     },
@@ -606,13 +402,7 @@
       "path": "apps/daemon",
       "executable": true,
       "entrypoint": "dist/index.js",
-      "scripts": [
-        "build",
-        "lint",
-        "start",
-        "test",
-        "typecheck"
-      ],
+      "scripts": ["build", "lint", "start", "test", "typecheck"],
       "status": "CONNECTED_BUT_UNVERIFIED",
       "realEnvironment": "BLOCKED"
     }
@@ -1758,22 +1548,13 @@
     }
   ],
   "failureMatrix": [
-    [
-      "dependency unavailable",
-      "consumer fails closed; no mutation without a valid dependency"
-    ],
+    ["dependency unavailable", "consumer fails closed; no mutation without a valid dependency"],
     [
       "measurement degraded",
       "decision remains policy-constrained and must not claim healthy state"
     ],
-    [
-      "apply failure",
-      "verification must fail and recovery/failover must be attempted"
-    ],
-    [
-      "verification failure",
-      "rollback/recovery path must execute and emit evidence"
-    ],
+    ["apply failure", "verification must fail and recovery/failover must be attempted"],
+    ["verification failure", "rollback/recovery path must execute and emit evidence"],
     [
       "telemetry unavailable",
       "operation may continue only according to explicit local safety policy; certification remains blocked"
@@ -1783,236 +1564,169 @@
     {
       "capability": "control-plane",
       "environment": "deployed-control-plane",
-      "evidenceIds": [
-        "control-plane-runtime"
-      ],
+      "evidenceIds": ["control-plane-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "resilience-runtime",
       "environment": "deployed-runtime",
-      "evidenceIds": [
-        "control-plane-runtime"
-      ],
+      "evidenceIds": ["control-plane-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "network-intelligence",
       "environment": "real-network",
-      "evidenceIds": [
-        "control-plane-runtime"
-      ],
+      "evidenceIds": ["control-plane-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "connectivity",
       "environment": "real-network",
-      "evidenceIds": [
-        "gateway-runtime",
-        "regional-evidence"
-      ],
+      "evidenceIds": ["gateway-runtime", "regional-evidence"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "dns",
       "environment": "real-resolver",
-      "evidenceIds": [
-        "gateway-runtime",
-        "regional-evidence"
-      ],
+      "evidenceIds": ["gateway-runtime", "regional-evidence"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "gateway-registry",
       "environment": "real-gateway",
-      "evidenceIds": [
-        "gateway-runtime"
-      ],
+      "evidenceIds": ["gateway-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "routing",
       "environment": "real-host-routing",
-      "evidenceIds": [
-        "gateway-runtime"
-      ],
+      "evidenceIds": ["gateway-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "failover",
       "environment": "real-network",
-      "evidenceIds": [
-        "gateway-runtime",
-        "upgrade-rollback",
-        "chaos-soak"
-      ],
+      "evidenceIds": ["gateway-runtime", "upgrade-rollback", "chaos-soak"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "tunnel",
       "environment": "real-tunnel",
-      "evidenceIds": [
-        "gateway-runtime",
-        "regional-evidence"
-      ],
+      "evidenceIds": ["gateway-runtime", "regional-evidence"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "database",
       "environment": "real-database",
-      "evidenceIds": [
-        "backup-restore",
-        "upgrade-rollback"
-      ],
+      "evidenceIds": ["backup-restore", "upgrade-rollback"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "api",
       "environment": "deployed-control-plane",
-      "evidenceIds": [
-        "control-plane-runtime"
-      ],
+      "evidenceIds": ["control-plane-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "daemon",
       "environment": "real-host",
-      "evidenceIds": [
-        "platform-runtime"
-      ],
+      "evidenceIds": ["platform-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "security",
       "environment": "production-like",
-      "evidenceIds": [
-        "security-audit"
-      ],
+      "evidenceIds": ["security-audit"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "telemetry",
       "environment": "deployed-observability",
-      "evidenceIds": [
-        "control-plane-runtime",
-        "chaos-soak"
-      ],
+      "evidenceIds": ["control-plane-runtime", "chaos-soak"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "linux-client",
       "environment": "real-linux-host",
-      "evidenceIds": [
-        "platform-runtime"
-      ],
+      "evidenceIds": ["platform-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "macos-client",
       "environment": "real-macos-host",
-      "evidenceIds": [
-        "platform-runtime"
-      ],
+      "evidenceIds": ["platform-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "windows-client",
       "environment": "real-windows-host",
-      "evidenceIds": [
-        "platform-runtime"
-      ],
+      "evidenceIds": ["platform-runtime"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "android-client",
       "environment": "real-android-device",
-      "evidenceIds": [
-        "android-device-smoke"
-      ],
+      "evidenceIds": ["android-device-smoke"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "ios-client",
       "environment": "real-ios-device",
-      "evidenceIds": [
-        "ios-device-smoke"
-      ],
+      "evidenceIds": ["ios-device-smoke"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "ios-network-extension",
       "environment": "real-ios-device",
-      "evidenceIds": [
-        "ios-device-smoke"
-      ],
+      "evidenceIds": ["ios-device-smoke"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "observability",
       "environment": "deployed-observability",
-      "evidenceIds": [
-        "control-plane-runtime",
-        "chaos-soak"
-      ],
+      "evidenceIds": ["control-plane-runtime", "chaos-soak"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "docker",
       "environment": "real-container-host",
-      "evidenceIds": [
-        "platform-runtime",
-        "release-engineering"
-      ],
+      "evidenceIds": ["platform-runtime", "release-engineering"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "kubernetes",
       "environment": "real-kubernetes-cluster",
-      "evidenceIds": [
-        "platform-runtime",
-        "release-engineering"
-      ],
+      "evidenceIds": ["platform-runtime", "release-engineering"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "release-engineering",
       "environment": "release-pipeline",
-      "evidenceIds": [
-        "artifact-integrity",
-        "release-engineering"
-      ],
+      "evidenceIds": ["artifact-integrity", "release-engineering"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "regional-validation",
       "environment": "real-regional-sites",
-      "evidenceIds": [
-        "regional-evidence"
-      ],
+      "evidenceIds": ["regional-evidence"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "backup-restore",
       "environment": "real-backup-target",
-      "evidenceIds": [
-        "backup-restore"
-      ],
+      "evidenceIds": ["backup-restore"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "upgrade-rollback",
       "environment": "real-deployment",
-      "evidenceIds": [
-        "upgrade-rollback"
-      ],
+      "evidenceIds": ["upgrade-rollback"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     },
     {
       "capability": "chaos-soak",
       "environment": "real-deployment",
-      "evidenceIds": [
-        "chaos-soak"
-      ],
+      "evidenceIds": ["chaos-soak"],
       "status": "BLOCKED_UNTIL_OBSERVED"
     }
   ]

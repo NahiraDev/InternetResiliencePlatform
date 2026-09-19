@@ -125,15 +125,13 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const previous = requests.get(key);
     if (previous) {
       if (previous.fingerprint !== fingerprint) {
-        return reply
-          .code(409)
-          .send({
-            success: false,
-            error: {
-              code: 'IDEMPOTENCY_KEY_REUSE',
-              message: 'Idempotency-Key was already used with a different request.',
-            },
-          });
+        return reply.code(409).send({
+          success: false,
+          error: {
+            code: 'IDEMPOTENCY_KEY_REUSE',
+            message: 'Idempotency-Key was already used with a different request.',
+          },
+        });
       }
       return reply
         .code(200)
