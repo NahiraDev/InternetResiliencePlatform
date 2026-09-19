@@ -40,7 +40,7 @@ const trustedSim = (allowed: string[]) => ({
   ),
   policySnapshot: createPolicySnapshot({
     ...defaultPolicy('simulation'),
-    allowedActions: [],
+    allowedActions: allowed,
     deniedActions: [],
     capabilityRequirements: { dns_switch: ['dns.write'] },
     simulationOnly: false,
