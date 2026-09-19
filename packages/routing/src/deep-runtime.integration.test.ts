@@ -149,9 +149,6 @@ describe('routing runtime integration guards', () => {
 
     expect(appliedPlan.verification.status).toBe('succeeded');
     expect(await engine.rollbackPlan(appliedPlan)).toBe(true);
-    expect(applied).toEqual([
-      `apply:${appliedPlan.id}`,
-      `rollback:${appliedPlan.id}`,
-    ]);
+    expect(applied).toEqual([`apply:${appliedPlan.id}`, `rollback:${appliedPlan.id}`]);
   });
 });

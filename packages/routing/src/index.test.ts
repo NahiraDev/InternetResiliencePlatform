@@ -98,9 +98,9 @@ describe('routing engine decisions', () => {
     );
     expect(decision.graph.pathsFor(parseDestination('8.8.8.8'))).toHaveLength(3);
     expect(decision.graph.usablePaths(parseDestination('8.8.8.8'))).toHaveLength(3);
-    expect(decision.graph.independentAlternatives('path:isp-a-gateway-a', parseDestination('8.8.8.8'))).toEqual([
-      expect.objectContaining({ id: 'path:isp-b' }),
-    ]);
+    expect(
+      decision.graph.independentAlternatives('path:isp-a-gateway-a', parseDestination('8.8.8.8')),
+    ).toEqual([expect.objectContaining({ id: 'path:isp-b' })]);
     expect(decision.graph.edges).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ from: 'path:path:isp-a-gateway-a', kind: 'reaches' }),

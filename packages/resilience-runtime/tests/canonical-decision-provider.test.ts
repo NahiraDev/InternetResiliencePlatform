@@ -125,10 +125,10 @@ describe('CanonicalDecisionProvider', () => {
       }),
       status: 'active' as const,
     };
-    const result = await new CanonicalDecisionProvider().decide(
-      [],
-      { ...context(batch({ internet_reachable: true })), compiledIntent: compileNetworkIntent(intent) },
-    );
+    const result = await new CanonicalDecisionProvider().decide([], {
+      ...context(batch({ internet_reachable: true })),
+      compiledIntent: compileNetworkIntent(intent),
+    });
 
     expect(result[0]?.intent).toBe('noop');
     expect(result[0]?.metadata).toMatchObject({
@@ -191,12 +191,14 @@ describe('CanonicalDecisionProvider', () => {
       context(batch({ internet_reachable: false, packet_loss_percent: 0.4 })),
     );
 
-    expect(result.find((candidate) => candidate.intent === 'route_change')?.metadata).toMatchObject({
-      pathEvidence: {
-        selectedPathId: 'path:tunnel-b',
-        diverseAlternativeCount: 1,
+    expect(result.find((candidate) => candidate.intent === 'route_change')?.metadata).toMatchObject(
+      {
+        pathEvidence: {
+          selectedPathId: 'path:tunnel-b',
+          diverseAlternativeCount: 1,
+        },
+        pathId: 'path:tunnel-b',
       },
-      pathId: 'path:tunnel-b',
-    });
+    );
   });
 });

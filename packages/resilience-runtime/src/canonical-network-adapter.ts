@@ -446,12 +446,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       if (!routePlan) return createAdapterExecution(plan, context, false, 'failed');
       const rolledBack = await this.controlPlane.routing.rollbackPlan(routePlan);
       if (rolledBack) this.appliedRoutePlans.delete(plan.selectedAction.id);
-      return createAdapterExecution(
-        plan,
-        context,
-        false,
-        rolledBack ? 'success' : 'failed',
-      );
+      return createAdapterExecution(plan, context, false, rolledBack ? 'success' : 'failed');
     }
 
     if (plan.selectedAction.intent === 'tunnel_switch') {

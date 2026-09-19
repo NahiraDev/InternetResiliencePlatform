@@ -26,13 +26,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 4,
-      "upstreamDependencies": [
-        "@irp/shared"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "packages/security"
-      ],
+      "upstreamDependencies": ["@irp/shared"],
+      "downstreamDependencies": ["apps/api", "packages/security"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -50,12 +45,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/resilience-runtime"
-      ],
-      "downstreamDependencies": [
-        "apps/daemon"
-      ],
+      "upstreamDependencies": ["@irp/resilience-runtime"],
+      "downstreamDependencies": ["apps/daemon"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -73,16 +64,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "yaml",
-        "zod"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "apps/cli",
-        "apps/daemon",
-        "packages/core"
-      ],
+      "upstreamDependencies": ["yaml", "zod"],
+      "downstreamDependencies": ["apps/api", "apps/cli", "apps/daemon", "packages/core"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -107,11 +90,7 @@
         "@irp/telemetry",
         "@irp/shared"
       ],
-      "downstreamDependencies": [
-        "apps/daemon",
-        "packages/resilience-runtime",
-        "packages/routing"
-      ],
+      "downstreamDependencies": ["apps/daemon", "packages/resilience-runtime", "packages/routing"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -129,16 +108,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 6,
-      "upstreamDependencies": [
-        "@irp/config",
-        "@irp/logger",
-        "@irp/dns"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "apps/cli",
-        "apps/daemon"
-      ],
+      "upstreamDependencies": ["@irp/config", "@irp/logger", "@irp/dns"],
+      "downstreamDependencies": ["apps/api", "apps/cli", "apps/daemon"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -156,13 +127,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 5,
-      "upstreamDependencies": [
-        "pg"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "packages/historical-analysis"
-      ],
+      "upstreamDependencies": ["pg"],
+      "downstreamDependencies": ["apps/api", "packages/historical-analysis"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -181,11 +147,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 8,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "apps/api",
-        "apps/cli",
-        "packages/core"
-      ],
+      "downstreamDependencies": ["apps/api", "apps/cli", "packages/core"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -203,9 +165,7 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/shared"
-      ],
+      "upstreamDependencies": ["@irp/shared"],
       "downstreamDependencies": [
         "apps/api",
         "packages/connectivity",
@@ -231,9 +191,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 2,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -252,9 +210,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 16,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -272,13 +228,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 4,
-      "upstreamDependencies": [
-        "@irp/database"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "packages/resilience-runtime"
-      ],
+      "upstreamDependencies": ["@irp/database"],
+      "downstreamDependencies": ["apps/api", "packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -297,9 +248,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 8,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -318,11 +267,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 3,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/connectivity",
-        "packages/routing",
-        "packages/sdk"
-      ],
+      "downstreamDependencies": ["packages/connectivity", "packages/routing", "packages/sdk"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -346,9 +291,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime"
-        ],
+        "evidenceIds": ["platform-runtime"],
         "environment": "real-linux-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -367,16 +310,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "pino",
-        "pino-pretty"
-      ],
-      "downstreamDependencies": [
-        "apps/api",
-        "apps/cli",
-        "apps/daemon",
-        "packages/core"
-      ],
+      "upstreamDependencies": ["pino", "pino-pretty"],
+      "downstreamDependencies": ["apps/api", "apps/cli", "apps/daemon", "packages/core"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -400,9 +335,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime"
-        ],
+        "evidenceIds": ["platform-runtime"],
         "environment": "real-macos-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -422,10 +355,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 2,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "apps/api",
-        "packages/telemetry"
-      ],
+      "downstreamDependencies": ["apps/api", "packages/telemetry"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -444,12 +374,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 2,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "apps/api",
-        "apps/cli",
-        "apps/daemon",
-        "packages/connectivity"
-      ],
+      "downstreamDependencies": ["apps/api", "apps/cli", "apps/daemon", "packages/connectivity"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -468,9 +393,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 38,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -488,13 +411,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk",
-        "@irp/security"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-runtime"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk", "@irp/security"],
+      "downstreamDependencies": ["packages/plugin-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -512,13 +430,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk",
-        "@irp/security"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-runtime"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk", "@irp/security"],
+      "downstreamDependencies": ["packages/plugin-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -536,12 +449,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-runtime"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk"],
+      "downstreamDependencies": ["packages/plugin-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -559,13 +468,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk",
-        "@irp/plugin-registry"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-manager"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk", "@irp/plugin-registry"],
+      "downstreamDependencies": ["packages/plugin-manager"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -590,9 +494,7 @@
         "@irp/plugin-sdk",
         "@irp/plugin-samples"
       ],
-      "downstreamDependencies": [
-        "apps/daemon"
-      ],
+      "downstreamDependencies": ["apps/daemon"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -610,9 +512,7 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk"],
       "downstreamDependencies": [
         "packages/plugin-loader",
         "packages/plugin-manager",
@@ -643,9 +543,7 @@
         "@irp/plugin-registry",
         "@irp/plugin-sandbox"
       ],
-      "downstreamDependencies": [
-        "packages/plugin-manager"
-      ],
+      "downstreamDependencies": ["packages/plugin-manager"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -663,13 +561,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-manager",
-        "packages/plugin-sandbox"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk"],
+      "downstreamDependencies": ["packages/plugin-manager", "packages/plugin-sandbox"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -687,14 +580,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/plugin-sdk",
-        "@irp/security",
-        "@irp/plugin-samples"
-      ],
-      "downstreamDependencies": [
-        "packages/plugin-runtime"
-      ],
+      "upstreamDependencies": ["@irp/plugin-sdk", "@irp/security", "@irp/plugin-samples"],
+      "downstreamDependencies": ["packages/plugin-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -742,12 +629,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/shared"
-      ],
-      "downstreamDependencies": [
-        "apps/api"
-      ],
+      "upstreamDependencies": ["@irp/shared"],
+      "downstreamDependencies": ["apps/api"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -808,10 +691,7 @@
         "@irp/shared",
         "@irp/telemetry"
       ],
-      "downstreamDependencies": [
-        "apps/daemon",
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["apps/daemon", "packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -829,9 +709,7 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "@irp/kernel"
-      ],
+      "upstreamDependencies": ["@irp/kernel"],
       "downstreamDependencies": [],
       "owningPhases": [],
       "realEnvironment": {
@@ -850,10 +728,7 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 3,
-      "upstreamDependencies": [
-        "@irp/auth",
-        "@irp/shared"
-      ],
+      "upstreamDependencies": ["@irp/auth", "@irp/shared"],
       "downstreamDependencies": [
         "packages/plugin-api",
         "packages/plugin-config",
@@ -876,9 +751,7 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 2,
-      "upstreamDependencies": [
-        "zod"
-      ],
+      "upstreamDependencies": ["zod"],
       "downstreamDependencies": [
         "packages/auth",
         "packages/connectivity",
@@ -943,15 +816,8 @@
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
       "sourceFiles": 10,
-      "upstreamDependencies": [
-        "@irp/events",
-        "@irp/shared",
-        "@irp/telemetry"
-      ],
-      "downstreamDependencies": [
-        "apps/daemon",
-        "packages/resilience-runtime"
-      ],
+      "upstreamDependencies": ["@irp/events", "@irp/shared", "@irp/telemetry"],
+      "downstreamDependencies": ["apps/daemon", "packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -970,9 +836,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 2,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/telemetry"
-      ],
+      "downstreamDependencies": ["packages/telemetry"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -991,9 +855,7 @@
       "testCommand": "vitest run",
       "sourceFiles": 2,
       "upstreamDependencies": [],
-      "downstreamDependencies": [
-        "packages/resilience-runtime"
-      ],
+      "downstreamDependencies": ["packages/resilience-runtime"],
       "owningPhases": [],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
@@ -1060,9 +922,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "control-plane-runtime"
-        ],
+        "evidenceIds": ["control-plane-runtime"],
         "environment": "deployed-control-plane",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1096,9 +956,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "control-plane-runtime"
-        ],
+        "evidenceIds": ["control-plane-runtime"],
         "environment": "deployed-control-plane",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1135,9 +993,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime"
-        ],
+        "evidenceIds": ["platform-runtime"],
         "environment": "real-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1162,9 +1018,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "android-device-smoke"
-        ],
+        "evidenceIds": ["android-device-smoke"],
         "environment": "real-android-device",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1189,9 +1043,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "ios-device-smoke"
-        ],
+        "evidenceIds": ["ios-device-smoke"],
         "environment": "real-ios-device",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1216,9 +1068,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "ios-device-smoke"
-        ],
+        "evidenceIds": ["ios-device-smoke"],
         "environment": "real-ios-device",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1243,10 +1093,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime",
-          "release-engineering"
-        ],
+        "evidenceIds": ["platform-runtime", "release-engineering"],
         "environment": "real-container-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1271,10 +1118,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime",
-          "release-engineering"
-        ],
+        "evidenceIds": ["platform-runtime", "release-engineering"],
         "environment": "real-container-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1299,10 +1143,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime",
-          "release-engineering"
-        ],
+        "evidenceIds": ["platform-runtime", "release-engineering"],
         "environment": "real-container-host",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1327,10 +1168,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "control-plane-runtime",
-          "chaos-soak"
-        ],
+        "evidenceIds": ["control-plane-runtime", "chaos-soak"],
         "environment": "deployed-observability",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1355,10 +1193,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "artifact-integrity",
-          "release-engineering"
-        ],
+        "evidenceIds": ["artifact-integrity", "release-engineering"],
         "environment": "release-pipeline",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -1664,9 +1499,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        0
-      ],
+      "owningPhases": [0],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1685,9 +1518,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        1
-      ],
+      "owningPhases": [1],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1706,9 +1537,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        2
-      ],
+      "owningPhases": [2],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1727,9 +1556,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        3
-      ],
+      "owningPhases": [3],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1748,9 +1575,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        4
-      ],
+      "owningPhases": [4],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1769,9 +1594,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        5
-      ],
+      "owningPhases": [5],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1790,9 +1613,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        6
-      ],
+      "owningPhases": [6],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1811,9 +1632,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        7
-      ],
+      "owningPhases": [7],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1832,9 +1651,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        8
-      ],
+      "owningPhases": [8],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1853,9 +1670,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        9
-      ],
+      "owningPhases": [9],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1874,9 +1689,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        10
-      ],
+      "owningPhases": [10],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1895,9 +1708,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        11
-      ],
+      "owningPhases": [11],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1916,9 +1727,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        12
-      ],
+      "owningPhases": [12],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1937,9 +1746,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        13
-      ],
+      "owningPhases": [13],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1958,9 +1765,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        14
-      ],
+      "owningPhases": [14],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -1979,9 +1784,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        15
-      ],
+      "owningPhases": [15],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2000,9 +1803,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        16
-      ],
+      "owningPhases": [16],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2021,9 +1822,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        17
-      ],
+      "owningPhases": [17],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2042,9 +1841,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        18
-      ],
+      "owningPhases": [18],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2063,9 +1860,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        19
-      ],
+      "owningPhases": [19],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2084,9 +1879,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        20
-      ],
+      "owningPhases": [20],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2105,9 +1898,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        21
-      ],
+      "owningPhases": [21],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2126,9 +1917,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        22
-      ],
+      "owningPhases": [22],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2147,9 +1936,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        23
-      ],
+      "owningPhases": [23],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2168,9 +1955,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        24
-      ],
+      "owningPhases": [24],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2189,9 +1974,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        25
-      ],
+      "owningPhases": [25],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2210,9 +1993,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        26
-      ],
+      "owningPhases": [26],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2231,9 +2012,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        27
-      ],
+      "owningPhases": [27],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2252,9 +2031,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        28
-      ],
+      "owningPhases": [28],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2273,9 +2050,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        29
-      ],
+      "owningPhases": [29],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2294,9 +2069,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        30
-      ],
+      "owningPhases": [30],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2315,9 +2088,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        31
-      ],
+      "owningPhases": [31],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2336,9 +2107,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        32
-      ],
+      "owningPhases": [32],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2357,9 +2126,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        33
-      ],
+      "owningPhases": [33],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2378,9 +2145,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        34
-      ],
+      "owningPhases": [34],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2399,9 +2164,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        35
-      ],
+      "owningPhases": [35],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2420,9 +2183,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        36
-      ],
+      "owningPhases": [36],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2441,9 +2202,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        37
-      ],
+      "owningPhases": [37],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2462,9 +2221,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        38
-      ],
+      "owningPhases": [38],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2483,9 +2240,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        39
-      ],
+      "owningPhases": [39],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2504,9 +2259,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        40
-      ],
+      "owningPhases": [40],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2525,9 +2278,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        41
-      ],
+      "owningPhases": [41],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2546,9 +2297,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        42
-      ],
+      "owningPhases": [42],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2567,9 +2316,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        43
-      ],
+      "owningPhases": [43],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2588,9 +2335,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        44
-      ],
+      "owningPhases": [44],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -2609,9 +2354,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        45
-      ],
+      "owningPhases": [45],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2630,9 +2373,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        46
-      ],
+      "owningPhases": [46],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2651,9 +2392,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        47
-      ],
+      "owningPhases": [47],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2672,9 +2411,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        48
-      ],
+      "owningPhases": [48],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2693,9 +2430,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        49
-      ],
+      "owningPhases": [49],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2714,9 +2449,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        50
-      ],
+      "owningPhases": [50],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2735,9 +2468,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        51
-      ],
+      "owningPhases": [51],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2756,9 +2487,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        52
-      ],
+      "owningPhases": [52],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2777,9 +2506,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        53
-      ],
+      "owningPhases": [53],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2798,9 +2525,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        54
-      ],
+      "owningPhases": [54],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2819,9 +2544,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        55
-      ],
+      "owningPhases": [55],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2840,9 +2563,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        56
-      ],
+      "owningPhases": [56],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2861,9 +2582,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        57
-      ],
+      "owningPhases": [57],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2882,9 +2601,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        58
-      ],
+      "owningPhases": [58],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2903,9 +2620,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        59
-      ],
+      "owningPhases": [59],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2924,9 +2639,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        60
-      ],
+      "owningPhases": [60],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2945,9 +2658,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        61
-      ],
+      "owningPhases": [61],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2966,9 +2677,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        62
-      ],
+      "owningPhases": [62],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -2987,9 +2696,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        63
-      ],
+      "owningPhases": [63],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3008,9 +2715,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        64
-      ],
+      "owningPhases": [64],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3029,9 +2734,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        65
-      ],
+      "owningPhases": [65],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3050,9 +2753,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        66
-      ],
+      "owningPhases": [66],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3071,9 +2772,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        67
-      ],
+      "owningPhases": [67],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3092,9 +2791,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        68
-      ],
+      "owningPhases": [68],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3113,9 +2810,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        69
-      ],
+      "owningPhases": [69],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3134,9 +2829,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        70
-      ],
+      "owningPhases": [70],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3155,9 +2848,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        71
-      ],
+      "owningPhases": [71],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -3176,9 +2867,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        72
-      ],
+      "owningPhases": [72],
       "realEnvironment": {
         "status": "PENDING",
         "evidenceRequired": false
@@ -3197,9 +2886,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        73
-      ],
+      "owningPhases": [73],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3218,9 +2905,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        74
-      ],
+      "owningPhases": [74],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3239,9 +2924,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        75
-      ],
+      "owningPhases": [75],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3260,9 +2943,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        76
-      ],
+      "owningPhases": [76],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3281,9 +2962,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        77
-      ],
+      "owningPhases": [77],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3302,9 +2981,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        78
-      ],
+      "owningPhases": [78],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3323,9 +3000,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        79
-      ],
+      "owningPhases": [79],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3344,9 +3019,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        80
-      ],
+      "owningPhases": [80],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3365,9 +3038,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        81
-      ],
+      "owningPhases": [81],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3386,9 +3057,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        82
-      ],
+      "owningPhases": [82],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3407,9 +3076,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        83
-      ],
+      "owningPhases": [83],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3428,9 +3095,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        84
-      ],
+      "owningPhases": [84],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3449,9 +3114,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        85
-      ],
+      "owningPhases": [85],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3470,9 +3133,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        86
-      ],
+      "owningPhases": [86],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3491,9 +3152,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        87
-      ],
+      "owningPhases": [87],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3512,9 +3171,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        88
-      ],
+      "owningPhases": [88],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3533,9 +3190,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        89
-      ],
+      "owningPhases": [89],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3554,9 +3209,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        90
-      ],
+      "owningPhases": [90],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3575,9 +3228,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        91
-      ],
+      "owningPhases": [91],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3596,9 +3247,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        92
-      ],
+      "owningPhases": [92],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3617,9 +3266,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        93
-      ],
+      "owningPhases": [93],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3638,9 +3285,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        94
-      ],
+      "owningPhases": [94],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3659,9 +3304,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        95
-      ],
+      "owningPhases": [95],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3680,9 +3323,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        96
-      ],
+      "owningPhases": [96],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3701,9 +3342,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        97
-      ],
+      "owningPhases": [97],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3722,9 +3361,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        98
-      ],
+      "owningPhases": [98],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3743,9 +3380,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        99
-      ],
+      "owningPhases": [99],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3764,9 +3399,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        100
-      ],
+      "owningPhases": [100],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3785,9 +3418,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        101
-      ],
+      "owningPhases": [101],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3806,9 +3437,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        102
-      ],
+      "owningPhases": [102],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3827,9 +3456,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        103
-      ],
+      "owningPhases": [103],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3848,9 +3475,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        104
-      ],
+      "owningPhases": [104],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3869,9 +3494,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        105
-      ],
+      "owningPhases": [105],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3890,9 +3513,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        106
-      ],
+      "owningPhases": [106],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3911,9 +3532,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        107
-      ],
+      "owningPhases": [107],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3932,9 +3551,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        108
-      ],
+      "owningPhases": [108],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3953,9 +3570,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        109
-      ],
+      "owningPhases": [109],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3974,9 +3589,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        110
-      ],
+      "owningPhases": [110],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -3995,9 +3608,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        111
-      ],
+      "owningPhases": [111],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4016,9 +3627,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        112
-      ],
+      "owningPhases": [112],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4037,9 +3646,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        113
-      ],
+      "owningPhases": [113],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4058,9 +3665,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        114
-      ],
+      "owningPhases": [114],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4079,9 +3684,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        115
-      ],
+      "owningPhases": [115],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4100,9 +3703,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        116
-      ],
+      "owningPhases": [116],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4121,9 +3722,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        117
-      ],
+      "owningPhases": [117],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4142,9 +3741,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        118
-      ],
+      "owningPhases": [118],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4163,9 +3760,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        119
-      ],
+      "owningPhases": [119],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4184,9 +3779,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        120
-      ],
+      "owningPhases": [120],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4205,9 +3798,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        121
-      ],
+      "owningPhases": [121],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4226,9 +3817,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        122
-      ],
+      "owningPhases": [122],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4247,9 +3836,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        123
-      ],
+      "owningPhases": [123],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4268,9 +3855,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        124
-      ],
+      "owningPhases": [124],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4289,9 +3874,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        125
-      ],
+      "owningPhases": [125],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4310,9 +3893,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        126
-      ],
+      "owningPhases": [126],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4331,9 +3912,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        127
-      ],
+      "owningPhases": [127],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4352,9 +3931,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        128
-      ],
+      "owningPhases": [128],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4373,9 +3950,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        129
-      ],
+      "owningPhases": [129],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4394,9 +3969,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        130
-      ],
+      "owningPhases": [130],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4415,9 +3988,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        131
-      ],
+      "owningPhases": [131],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4436,9 +4007,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        132
-      ],
+      "owningPhases": [132],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4457,9 +4026,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        133
-      ],
+      "owningPhases": [133],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4478,9 +4045,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        134
-      ],
+      "owningPhases": [134],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4499,9 +4064,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        135
-      ],
+      "owningPhases": [135],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4520,9 +4083,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        136
-      ],
+      "owningPhases": [136],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4541,9 +4102,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        137
-      ],
+      "owningPhases": [137],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4562,9 +4121,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        138
-      ],
+      "owningPhases": [138],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4583,9 +4140,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        139
-      ],
+      "owningPhases": [139],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4604,9 +4159,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        140
-      ],
+      "owningPhases": [140],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4625,9 +4178,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        141
-      ],
+      "owningPhases": [141],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4646,9 +4197,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        142
-      ],
+      "owningPhases": [142],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4667,9 +4216,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        143
-      ],
+      "owningPhases": [143],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4688,9 +4235,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        144
-      ],
+      "owningPhases": [144],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4709,9 +4254,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        145
-      ],
+      "owningPhases": [145],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4730,9 +4273,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        146
-      ],
+      "owningPhases": [146],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4751,9 +4292,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        147
-      ],
+      "owningPhases": [147],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4772,9 +4311,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        148
-      ],
+      "owningPhases": [148],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4793,9 +4330,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        149
-      ],
+      "owningPhases": [149],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4814,9 +4349,7 @@
       "sourceFiles": 0,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
-      "owningPhases": [
-        150
-      ],
+      "owningPhases": [150],
       "realEnvironment": {
         "status": "NOT_APPLICABLE",
         "evidenceRequired": false
@@ -4839,10 +4372,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "platform-runtime",
-          "release-engineering"
-        ],
+        "evidenceIds": ["platform-runtime", "release-engineering"],
         "environment": "real-kubernetes-cluster",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -4867,9 +4397,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "regional-evidence"
-        ],
+        "evidenceIds": ["regional-evidence"],
         "environment": "real-regional-sites",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -4894,9 +4422,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "backup-restore"
-        ],
+        "evidenceIds": ["backup-restore"],
         "environment": "real-backup-target",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -4921,9 +4447,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "upgrade-rollback"
-        ],
+        "evidenceIds": ["upgrade-rollback"],
         "environment": "real-deployment",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -4948,9 +4472,7 @@
       "realEnvironment": {
         "status": "PENDING",
         "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "chaos-soak"
-        ],
+        "evidenceIds": ["chaos-soak"],
         "environment": "real-deployment",
         "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
         "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
@@ -4963,60 +4485,10 @@
   "roadmap": {
     "expectedThrough": 150,
     "discoveredPhaseDocs": [
-      0,
-      39,
-      40,
-      41,
-      42,
-      43,
-      44,
-      45,
-      46,
-      47,
-      48,
-      49,
-      50,
-      51,
-      52,
-      53,
-      54,
-      55,
-      56,
-      57,
-      58,
-      59,
-      60,
-      61,
-      62,
-      63,
-      64,
-      65,
-      66,
-      67,
-      68,
-      69,
-      70,
-      71,
-      72,
-      73,
-      74,
-      75,
-      76,
-      77,
-      78,
-      79,
-      80
+      0, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+      62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80
     ],
-    "canonicalPhaseRecords": [
-      39,
-      40,
-      41,
-      42,
-      43,
-      44,
-      71,
-      72
-    ],
+    "canonicalPhaseRecords": [39, 40, 41, 42, 43, 44, 71, 72],
     "missingCanonicalPhaseDocs": [],
     "policy": "Only phase records explicitly designated as current/canonical by docs/phases/README.md are required. Historical 01–38 and future unstarted phases are not mechanically required."
   },
@@ -5088,10 +4560,7 @@
       "failureInjection",
       "recoveryVerification"
     ],
-    "allowedResult": [
-      "pass",
-      "fail"
-    ]
+    "allowedResult": ["pass", "fail"]
   },
   "reportSha256": "5a2ed578a0de5391e693309991c0edafe9267843233a417ada9db95e115e5613"
 }

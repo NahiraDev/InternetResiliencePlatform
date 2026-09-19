@@ -41,7 +41,11 @@ describe('Architecture invariants (section 109)', () => {
   it('legacy NetworkAutopilot remains deprecated and not instantiated in prod', () => {
     const autopilot = read('packages/resilience-runtime/src/autopilot/autopilot.ts');
     expect(autopilot).toContain('@deprecated');
-    for (const f of ['apps/api/src/index.ts', 'apps/daemon/src/index.ts', 'apps/cli/src/index.ts']) {
+    for (const f of [
+      'apps/api/src/index.ts',
+      'apps/daemon/src/index.ts',
+      'apps/cli/src/index.ts',
+    ]) {
       expect(read(f)).not.toMatch(/new\s+NetworkAutopilot/);
     }
   });

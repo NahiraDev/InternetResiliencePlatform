@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createProbeKeyPair, ProbeFederation, signProbeEvidence } from '../../src/federation/probe-federation.js';
+import {
+  createProbeKeyPair,
+  ProbeFederation,
+  signProbeEvidence,
+} from '../../src/federation/probe-federation.js';
 
 const evidence = (
   probeId: string,

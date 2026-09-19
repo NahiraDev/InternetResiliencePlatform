@@ -36,9 +36,7 @@ export class FederatedEvidenceAdvisor implements FederatedEvidenceProvider {
     return Object.fromEntries(
       candidates.map((candidate) => [
         candidate.id,
-        evidence
-          .filter((item) => belongsToCandidate(item, candidate))
-          .map(toHistoricalObservation),
+        evidence.filter((item) => belongsToCandidate(item, candidate)).map(toHistoricalObservation),
       ]),
     );
   }

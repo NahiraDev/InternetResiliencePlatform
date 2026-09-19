@@ -133,15 +133,38 @@ export interface NetworkPath {
   state: RouteState;
   metadata: Record<string, unknown>;
 }
-export type PathGraphNodeKind = 'path' | 'interface' | 'route' | 'gateway' | 'provider' | 'tunnel' | 'transport' | 'egress' | 'region' | 'destination';
+export type PathGraphNodeKind =
+  | 'path'
+  | 'interface'
+  | 'route'
+  | 'gateway'
+  | 'provider'
+  | 'tunnel'
+  | 'transport'
+  | 'egress'
+  | 'region'
+  | 'destination';
 export interface PathGraphNode {
   readonly id: string;
   readonly kind: PathGraphNodeKind;
   readonly state: RouteState;
   readonly metadata: Readonly<Record<string, unknown>>;
 }
-export type PathGraphEdgeKind = 'connected_to' | 'routes_through' | 'uses_gateway' | 'uses_provider' | 'uses_tunnel' | 'uses_transport' | 'egresses_through' | 'reaches' | 'depends_on';
-export interface PathGraphEdge { readonly from: string; readonly to: string; readonly kind: PathGraphEdgeKind; }
+export type PathGraphEdgeKind =
+  | 'connected_to'
+  | 'routes_through'
+  | 'uses_gateway'
+  | 'uses_provider'
+  | 'uses_tunnel'
+  | 'uses_transport'
+  | 'egresses_through'
+  | 'reaches'
+  | 'depends_on';
+export interface PathGraphEdge {
+  readonly from: string;
+  readonly to: string;
+  readonly kind: PathGraphEdgeKind;
+}
 export interface PathGraphEvidence {
   readonly latencyMs?: number;
   readonly jitterMs?: number;
@@ -155,7 +178,10 @@ export interface PathGraphEvidence {
   readonly cost?: number;
   readonly failureDomains: readonly string[];
 }
-export interface PathGraphEntry { readonly path: NetworkPath; readonly evidence: PathGraphEvidence; }
+export interface PathGraphEntry {
+  readonly path: NetworkPath;
+  readonly evidence: PathGraphEvidence;
+}
 /** Read-only graph projection used by routing decisions; it has no mutation authority. */
 export class NetworkPathGraph {
   readonly nodes: readonly PathGraphNode[];
@@ -166,18 +192,34 @@ export class NetworkPathGraph {
     const nodes = new Map<string, PathGraphNode>();
     const edges: PathGraphEdge[] = [];
     const addNode = (node: PathGraphNode) => nodes.set(node.id, node);
-    const addEdge = (from: string, to: string, kind: PathGraphEdgeKind) => edges.push({ from, to, kind });
+    const addEdge = (from: string, to: string, kind: PathGraphEdgeKind) =>
+      edges.push({ from, to, kind });
     for (const { path } of entries) {
       const pathId = `path:${path.id}`;
       addNode({ id: pathId, kind: 'path', state: path.state, metadata: path.metadata });
-      addNode({ id: `route:${path.route.id}`, kind: 'route', state: path.route.state, metadata: path.route.metadata });
+      addNode({
+        id: `route:${path.route.id}`,
+        kind: 'route',
+        state: path.route.state,
+        metadata: path.route.metadata,
+      });
       addEdge(pathId, `route:${path.route.id}`, 'routes_through');
       if (path.route.interfaceName) {
-        addNode({ id: `interface:${path.route.interfaceName}`, kind: 'interface', state: path.state, metadata: {} });
+        addNode({
+          id: `interface:${path.route.interfaceName}`,
+          kind: 'interface',
+          state: path.state,
+          metadata: {},
+        });
         addEdge(`route:${path.route.id}`, `interface:${path.route.interfaceName}`, 'connected_to');
       }
       if (path.route.gateway) {
-        addNode({ id: `gateway:${path.route.gateway}`, kind: 'gateway', state: path.state, metadata: {} });
+        addNode({
+          id: `gateway:${path.route.gateway}`,
+          kind: 'gateway',
+          state: path.state,
+          metadata: {},
+        });
         addEdge(`route:${path.route.id}`, `gateway:${path.route.gateway}`, 'uses_gateway');
       }
       const provider = path.source?.providerId ?? path.provider?.split(':')[0];
@@ -187,12 +229,22 @@ export class NetworkPathGraph {
       }
       const transport = path.metadata.transport;
       if (typeof transport === 'string') {
-        addNode({ id: `transport:${transport}`, kind: 'transport', state: path.state, metadata: {} });
+        addNode({
+          id: `transport:${transport}`,
+          kind: 'transport',
+          state: path.state,
+          metadata: {},
+        });
         addEdge(pathId, `transport:${transport}`, 'uses_transport');
       }
       if (destination) {
         const destinationId = `destination:${destination.kind}:${destination.value}`;
-        addNode({ id: destinationId, kind: 'destination', state: path.state, metadata: destination.metadata ?? {} });
+        addNode({
+          id: destinationId,
+          kind: 'destination',
+          state: path.state,
+          metadata: destination.metadata ?? {},
+        });
         addEdge(pathId, destinationId, 'reaches');
       }
     }
@@ -201,33 +253,56 @@ export class NetworkPathGraph {
     this.edges = edges;
   }
   pathsFor(destination?: RoutingDestination): readonly NetworkPath[] {
-    return (destination ? this.entries.filter(({ path }) => routeMatchesDestination(path.route, destination)) : this.entries).map(({ path }) => path);
+    return (
+      destination
+        ? this.entries.filter(({ path }) => routeMatchesDestination(path.route, destination))
+        : this.entries
+    ).map(({ path }) => path);
   }
   usablePaths(destination?: RoutingDestination): readonly NetworkPath[] {
-    return this.pathsFor(destination).filter((path) => !['failed', 'disabled', 'expired'].includes(path.state));
+    return this.pathsFor(destination).filter(
+      (path) => !['failed', 'disabled', 'expired'].includes(path.state),
+    );
   }
-  independentAlternatives(pathId: string, destination?: RoutingDestination): readonly NetworkPath[] {
+  independentAlternatives(
+    pathId: string,
+    destination?: RoutingDestination,
+  ): readonly NetworkPath[] {
     const selected = this.entries.find(({ path }) => path.id === pathId);
     if (!selected) return [];
     const domains = new Set(selected.evidence.failureDomains);
     const usable = new Set(this.usablePaths(destination));
-    return this.entries.filter(({ path, evidence }) => path.id !== pathId && usable.has(path) && evidence.failureDomains.some((domain) => !domains.has(domain))).map(({ path }) => path);
+    return this.entries
+      .filter(
+        ({ path, evidence }) =>
+          path.id !== pathId &&
+          usable.has(path) &&
+          evidence.failureDomains.some((domain) => !domains.has(domain)),
+      )
+      .map(({ path }) => path);
   }
 }
 export const pathFailureDomains = (path: NetworkPath): readonly string[] => {
   const declared = path.route.metadata.failureDomains;
   if (Array.isArray(declared)) {
-    const values = declared.filter((value): value is string => typeof value === 'string' && value.length > 0);
+    const values = declared.filter(
+      (value): value is string => typeof value === 'string' && value.length > 0,
+    );
     if (values.length) return values;
   }
-  const inferred = [path.source?.providerId ?? path.provider?.split(':')[0], path.route.gateway].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  const inferred = [
+    path.source?.providerId ?? path.provider?.split(':')[0],
+    path.route.gateway,
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   return inferred.length ? inferred : ['unknown'];
 };
 const pathEvidence = (path: NetworkPath): PathGraphEvidence => ({
   ...(path.health?.latencyMs === undefined ? {} : { latencyMs: path.health.latencyMs }),
   ...(path.health?.jitterMs === undefined ? {} : { jitterMs: path.health.jitterMs }),
   ...(path.health?.packetLoss === undefined ? {} : { packetLoss: path.health.packetLoss }),
-  ...(path.health?.score === undefined ? {} : { availability: path.health.score / 100, reliability: path.health.score / 100 }),
+  ...(path.health?.score === undefined
+    ? {}
+    : { availability: path.health.score / 100, reliability: path.health.score / 100 }),
   ...(typeof path.metadata.confidence === 'number' ? { confidence: path.metadata.confidence } : {}),
   ...(typeof path.metadata.freshness === 'string' ? { freshness: path.metadata.freshness } : {}),
   ...(typeof path.metadata.security === 'number' ? { security: path.metadata.security } : {}),

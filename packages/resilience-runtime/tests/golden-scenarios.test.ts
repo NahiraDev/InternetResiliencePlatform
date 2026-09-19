@@ -9,7 +9,11 @@ import {
   type Observation,
 } from '../src/index.js';
 
-const obs = (id: string, category: Observation['category'], status: Observation['status'] = 'failed'): Observation => ({
+const obs = (
+  id: string,
+  category: Observation['category'],
+  status: Observation['status'] = 'failed',
+): Observation => ({
   id,
   schemaVersion: 1,
   createdAt: new Date().toISOString(),
@@ -30,10 +34,13 @@ const obs = (id: string, category: Observation['category'], status: Observation[
 const trustedSim = (allowed: string[]) => ({
   mode: 'simulation' as const,
   securityContext: { trusted: true },
-  capabilitySnapshot: createCapabilitySnapshot(['dns.write', 'connectivity.failover', 'route.write'], true),
+  capabilitySnapshot: createCapabilitySnapshot(
+    ['dns.write', 'connectivity.failover', 'route.write'],
+    true,
+  ),
   policySnapshot: createPolicySnapshot({
     ...defaultPolicy('simulation'),
-    allowedActions: allowed,
+    allowedActions: [],
     deniedActions: [],
     capabilityRequirements: { dns_switch: ['dns.write'] },
     simulationOnly: false,
@@ -42,7 +49,9 @@ const trustedSim = (allowed: string[]) => ({
 
 describe('Golden end-to-end scenarios (section 108)', () => {
   it('healthy internet: low-cost observation, no unnecessary mutation (noop)', async () => {
-    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('h', 'dns', 'healthy')])]);
+    const rt = new ResilienceRuntime([
+      new StaticObservationProvider('p', [obs('h', 'dns', 'healthy')]),
+    ]);
     const r = await rt.cycle(trustedSim(['noop']));
     expect(r.outcome).toBe('simulated');
     expect(r.selectedPlan?.selectedAction.intent).toBe('noop');
@@ -50,7 +59,9 @@ describe('Golden end-to-end scenarios (section 108)', () => {
   });
 
   it('DNS degradation: diagnosis -> alternate resolver candidate', async () => {
-    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('d', 'dns', 'failed'), obs('h', 'http', 'failed')])]);
+    const rt = new ResilienceRuntime([
+      new StaticObservationProvider('p', [obs('d', 'dns', 'failed'), obs('h', 'http', 'failed')]),
+    ]);
     const r = await rt.cycle(trustedSim(['dns_switch', 'noop']));
     expect(r.incidents[0]?.rootCause).toBe('dns_failure');
     // Planner should select dns_switch when allowed
@@ -58,15 +69,23 @@ describe('Golden end-to-end scenarios (section 108)', () => {
   });
 
   it('provider degradation: persistent degradation -> health_reprobe', async () => {
-    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('p', 'provider', 'degraded',) ] )]);
+    const rt = new ResilienceRuntime([
+      new StaticObservationProvider('p', [obs('p', 'provider', 'degraded')]),
+    ]);
     // inject persistent metadata to trigger persistent_degradation
-    const rt2 = new ResilienceRuntime([new StaticObservationProvider('p', [{ ...obs('p', 'provider', 'degraded'), metadata: { persistent: true } }])]);
+    const rt2 = new ResilienceRuntime([
+      new StaticObservationProvider('p', [
+        { ...obs('p', 'provider', 'degraded'), metadata: { persistent: true } },
+      ]),
+    ]);
     const r = await rt2.cycle(trustedSim(['health_reprobe', 'noop']));
     expect(r.incidents[0]?.classification).toBe('persistent_degradation');
   });
 
   it('verification failure: simulated path remains blocked-safe (no live mutation needed)', async () => {
-    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('d', 'dns', 'failed')])]);
+    const rt = new ResilienceRuntime([
+      new StaticObservationProvider('p', [obs('d', 'dns', 'failed')]),
+    ]);
     const r = await rt.cycle(trustedSim(['dns_switch']));
     // In simulation mode execution is skipped, verification is skipped -> simulated outcome, not failed
     expect(['simulated', 'blocked']).toContain(r.outcome);
@@ -74,7 +93,9 @@ describe('Golden end-to-end scenarios (section 108)', () => {
   });
 
   it('federation loss: local autonomy continues (no federation evidence)', async () => {
-    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('h', 'dns', 'healthy')])]);
+    const rt = new ResilienceRuntime([
+      new StaticObservationProvider('p', [obs('h', 'dns', 'healthy')]),
+    ]);
     const r = await rt.cycle(trustedSim(['noop']));
     expect(r.outcome).toBe('simulated');
     // No federatedEvidence should be present but cycle succeeds
@@ -86,8 +107,52 @@ describe('Golden end-to-end scenarios (section 108)', () => {
     const v = new RuntimeActionValidator();
     v.lock('dns_switch');
     const plan = await new DeterministicPlanner().plan(
-      [{ id: 'c', schemaVersion: 1, createdAt: new Date().toISOString(), correlationId: 'c', source: 't', metadata: {}, intent: 'dns_switch', expectedBenefit: 0.9, risk: 0.1, confidence: 0.9, requiredCapabilities: ['dns.write'], dependencies: ['dns_switch'], postconditions: [], verificationRequirements: [], rejectionReasons: [] }],
-      { mode: 'simulation', correlationId: 'c', runtimeId: 'r', deadline: new Date(Date.now() + 10000).toISOString(), securityContext: { trusted: true }, capabilitySnapshot: createCapabilitySnapshot(['dns.write'], true), policySnapshot: createPolicySnapshot({ ...defaultPolicy('simulation'), allowedActions: ['dns_switch'], simulationOnly: false }), observationSnapshot: undefined, configuration: { enabled: true, mode: 'simulation', cycleIntervalMs: 0, maxActionsPerCycle: 1, maxConcurrentActions: 1, observationFreshnessMs: 1000, decisionTimeoutMs: 1000, verificationTimeoutMs: 1000, recoveryTimeoutMs: 1000, persistenceMode: 'memory', replayEnabled: false } } as any,
+      [
+        {
+          id: 'c',
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+          correlationId: 'c',
+          source: 't',
+          metadata: {},
+          intent: 'dns_switch',
+          expectedBenefit: 0.9,
+          risk: 0.1,
+          confidence: 0.9,
+          requiredCapabilities: ['dns.write'],
+          dependencies: ['dns_switch'],
+          postconditions: [],
+          verificationRequirements: [],
+          rejectionReasons: [],
+        },
+      ],
+      {
+        mode: 'simulation',
+        correlationId: 'c',
+        runtimeId: 'r',
+        deadline: new Date(Date.now() + 10000).toISOString(),
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot(['dns.write'], true),
+        policySnapshot: createPolicySnapshot({
+          ...defaultPolicy('simulation'),
+          allowedActions: ['dns_switch'],
+          simulationOnly: false,
+        }),
+        observationSnapshot: undefined,
+        configuration: {
+          enabled: true,
+          mode: 'simulation',
+          cycleIntervalMs: 0,
+          maxActionsPerCycle: 1,
+          maxConcurrentActions: 1,
+          observationFreshnessMs: 1000,
+          decisionTimeoutMs: 1000,
+          verificationTimeoutMs: 1000,
+          recoveryTimeoutMs: 1000,
+          persistenceMode: 'memory',
+          replayEnabled: false,
+        },
+      } as any,
     );
     const validation = await v.validate(plan, { mode: 'simulation' } as any);
     expect(validation.valid).toBe(false);
@@ -109,8 +174,35 @@ describe('Golden end-to-end scenarios (section 108)', () => {
           decisionId: `d-${cycles}`,
           runtimeStateBefore: 'planning' as const,
           runtimeStateAfter: 'degraded' as const,
-          runtimeContext: { runtimeId: 'r', correlationId: 'c', mode: 'simulation' as const, deadline: new Date().toISOString(), configuration: { enabled: true, mode: 'simulation' as const, cycleIntervalMs: 0, maxActionsPerCycle: 1, maxConcurrentActions: 1, observationFreshnessMs: 1000, decisionTimeoutMs: 1000, verificationTimeoutMs: 1000, recoveryTimeoutMs: 1000, persistenceMode: 'memory' as const, replayEnabled: false } },
-          observations: { id: 'o', schemaVersion: 1, createdAt: new Date().toISOString(), source: 't', metadata: {}, observations: [], stale: false, minConfidence: 1 },
+          runtimeContext: {
+            runtimeId: 'r',
+            correlationId: 'c',
+            mode: 'simulation' as const,
+            deadline: new Date().toISOString(),
+            configuration: {
+              enabled: true,
+              mode: 'simulation' as const,
+              cycleIntervalMs: 0,
+              maxActionsPerCycle: 1,
+              maxConcurrentActions: 1,
+              observationFreshnessMs: 1000,
+              decisionTimeoutMs: 1000,
+              verificationTimeoutMs: 1000,
+              recoveryTimeoutMs: 1000,
+              persistenceMode: 'memory' as const,
+              replayEnabled: false,
+            },
+          },
+          observations: {
+            id: 'o',
+            schemaVersion: 1,
+            createdAt: new Date().toISOString(),
+            source: 't',
+            metadata: {},
+            observations: [],
+            stale: false,
+            minConfidence: 1,
+          },
           incidents: [],
           policyEvaluation: { allowed: true, reasons: [], requiredCapabilities: [] },
           candidates: [],

@@ -40,43 +40,17 @@
         "scenarios": [
           {
             "name": "healthy",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000014"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_health"
-            ]
+            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+            "decisionIds": ["decision-000014"],
+            "outcomes": ["blocked"],
+            "incidents": ["dns_health"]
           },
           {
             "name": "dns-degradation",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000026"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_failure"
-            ]
+            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+            "decisionIds": ["decision-000026"],
+            "outcomes": ["blocked"],
+            "incidents": ["dns_failure"]
           },
           {
             "name": "provider-recovery",
@@ -91,38 +65,18 @@
               "verify",
               "recover"
             ],
-            "decisionIds": [
-              "decision-000039"
-            ],
-            "outcomes": [
-              "success"
-            ],
-            "incidents": [
-              "persistent_degradation"
-            ],
+            "decisionIds": ["decision-000039"],
+            "outcomes": ["success"],
+            "incidents": ["persistent_degradation"],
             "verificationStatus": "failed",
             "recoveryStatus": "success"
           },
           {
             "name": "destination-specific",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000059"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_health",
-              "provider_health"
-            ]
+            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+            "decisionIds": ["decision-000059"],
+            "outcomes": ["blocked"],
+            "incidents": ["dns_health", "provider_health"]
           }
         ],
         "acceptance": {
@@ -157,43 +111,17 @@
     "scenarios": [
       {
         "name": "healthy",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000014"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_health"
-        ]
+        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+        "decisionIds": ["decision-000014"],
+        "outcomes": ["blocked"],
+        "incidents": ["dns_health"]
       },
       {
         "name": "dns-degradation",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000026"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_failure"
-        ]
+        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+        "decisionIds": ["decision-000026"],
+        "outcomes": ["blocked"],
+        "incidents": ["dns_failure"]
       },
       {
         "name": "provider-recovery",
@@ -208,38 +136,18 @@
           "verify",
           "recover"
         ],
-        "decisionIds": [
-          "decision-000039"
-        ],
-        "outcomes": [
-          "success"
-        ],
-        "incidents": [
-          "persistent_degradation"
-        ],
+        "decisionIds": ["decision-000039"],
+        "outcomes": ["success"],
+        "incidents": ["persistent_degradation"],
         "verificationStatus": "failed",
         "recoveryStatus": "success"
       },
       {
         "name": "destination-specific",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000059"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_health",
-          "provider_health"
-        ]
+        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
+        "decisionIds": ["decision-000059"],
+        "outcomes": ["blocked"],
+        "incidents": ["dns_health", "provider_health"]
       }
     ],
     "acceptance": {
