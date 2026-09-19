@@ -14,11 +14,10 @@ Regional Validation (manual)
       └── label: iran
           └── pnpm regional:online
               └── regional-validation.json
-                  ├── GitHub Step Summary
-                  └── GitHub Actions artifact
+                  └── retained by the regional evidence operator
 ```
 
-The workflow is `.github/workflows/regional-validation.yml` and is `workflow_dispatch` only.
+Regional evidence is intentionally run by the operator on the self-hosted runner rather than by a repository workflow. This prevents GitHub-hosted CI from being misrepresented as a regional vantage point.
 
 ## Regional runner requirement
 
@@ -48,9 +47,7 @@ The result is evidence rather than absolute proof of physical location; geolocat
 1. Add a self-hosted Linux runner to the repository.
 2. Assign the custom label `iran`.
 3. Keep the runner online.
-4. Open **Actions → Regional Validation → Run workflow**.
-5. Leave `expected_country` as `IR`.
-6. The `probe_url` can remain at its default unless a different trusted endpoint is available.
-7. Inspect the JSON in the workflow Step Summary or download the `regional-validation-<run-id>` artifact.
+4. Run `pnpm regional:online -- --endpoint https://<trusted-regional-probe> --country IR` on that runner.
+5. Retain the command output as the regional evidence artifact.
 
-If no matching runner is online, GitHub keeps the job queued instead of executing it on an unrelated hosted runner. citeturn1search7
+The command requires an explicit HTTPS probe endpoint; it does not substitute a public geolocation service or a GitHub-hosted runner for the required regional vantage.

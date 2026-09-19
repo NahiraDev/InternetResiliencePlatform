@@ -42,6 +42,7 @@ import { compileNetworkIntent } from './intent/compiler.js';
 import type { NetworkIntent } from '@irp/core';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
+// capabilitySnapshot is carried by RuntimeContext and evaluated by policy/validation before actions.
 
 export interface ResilienceRuntimeOptions {
   runtimeId?: string;
