@@ -7,6 +7,7 @@ import {
   StaticObservationProvider,
   BoundedClosedLoopController,
   type Observation,
+  createRuntimeContext,
 } from '../src/index.js';
 
 const obs = (
@@ -40,7 +41,7 @@ const trustedSim = (allowed: string[]) => ({
   ),
   policySnapshot: createPolicySnapshot({
     ...defaultPolicy('simulation'),
-    allowedActions: [],
+    allowedActions: allowed,
     deniedActions: [],
     capabilityRequirements: { dns_switch: ['dns.write'] },
     simulationOnly: false,
@@ -69,10 +70,7 @@ describe('Golden end-to-end scenarios (section 108)', () => {
   });
 
   it('provider degradation: persistent degradation -> health_reprobe', async () => {
-    const rt = new ResilienceRuntime([
-      new StaticObservationProvider('p', [obs('p', 'provider', 'degraded')]),
-    ]);
-    // inject persistent metadata to trigger persistent_degradation
+    // Inject persistent metadata to trigger persistent_degradation
     const rt2 = new ResilienceRuntime([
       new StaticObservationProvider('p', [
         { ...obs('p', 'provider', 'degraded'), metadata: { persistent: true } },
@@ -152,9 +150,9 @@ describe('Golden end-to-end scenarios (section 108)', () => {
           persistenceMode: 'memory',
           replayEnabled: false,
         },
-      } as any,
+      },
     );
-    const validation = await v.validate(plan, { mode: 'simulation' } as any);
+    const validation = await v.validate(plan, createRuntimeContext({ mode: 'simulation' }));
     expect(validation.valid).toBe(false);
   });
 
@@ -206,14 +204,14 @@ describe('Golden end-to-end scenarios (section 108)', () => {
           incidents: [],
           policyEvaluation: { allowed: true, reasons: [], requiredCapabilities: [] },
           candidates: [],
-          outcome: (isHealthy ? 'success' : 'degraded') as any,
+          outcome: isHealthy ? 'success' as const : 'degraded' as const,
           confidence: 1,
           durationMs: 1,
           explanation: [],
         };
       },
     };
-    const controller = new BoundedClosedLoopController(fake as any);
+    const controller = new BoundedClosedLoopController(fake as Pick<ResilienceRuntime, 'cycle'>);
     const result = await controller.run({ maxCycles: 5, correlationId: 'golden-loop' });
     expect(result.status).toBe('healthy');
     expect(cycles).toBe(2);
