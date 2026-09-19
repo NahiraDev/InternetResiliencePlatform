@@ -126,7 +126,7 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
     provenance: intent.provenance ?? 'network-intent',
     autonomy: intent.autonomy ?? 'ADVISORY',
     scope: Object.freeze({
-      ...(intent.target ?? {}),
+      ...intent.spec.target,
       intentId: intent.id,
     }),
     compiledAt: at.toISOString(),
