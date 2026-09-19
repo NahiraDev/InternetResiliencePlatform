@@ -66,6 +66,7 @@ export const createRuntimeContext = (
     capabilitySnapshot: input.capabilitySnapshot ?? createCapabilitySnapshot(),
     observationSnapshot: input.observationSnapshot,
     compiledIntent: input.compiledIntent,
+    compiledIntents: input.compiledIntents,
     deadline: input.deadline ?? new Date(Date.now() + 5000).toISOString(),
     cancelled: input.cancelled ?? false,
     securityContext: input.securityContext ?? { trusted: false },
