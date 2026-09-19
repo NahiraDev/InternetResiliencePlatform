@@ -42,7 +42,7 @@ export class DecisionOrchestrator {
       blockedCandidates: blocked,
       reason: selectedCandidate
         ? governance.reasons.length
-          ? `selected highest-confidence eligible candidate after intent governance: ${}governance.reasons.join('; ')}`
+          ? `selected highest-confidence eligible candidate after intent governance: ${governance.reasons.join('; ')}`
           : 'selected highest-confidence eligible candidate using deterministic ordering'
         : governance.admission === 'REQUIRE_APPROVAL'
           ? 'no candidate admitted because intent governance requires approval'
@@ -61,7 +61,7 @@ export class DecisionOrchestrator {
     if (candidate.intent !== 'noop') {
       if (!governance.mutationAllowed) reasons.push(...governance.reasons);
       if (candidate.risk > governance.maxRisk)
-                reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
+        reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
     }
     return reasons.length === candidate.rejectionReasons.length
       ? candidate
