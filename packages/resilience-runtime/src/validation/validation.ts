@@ -1,5 +1,5 @@
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import { createRuntimeContext } from '../context/context.js';
+import { createRuntimeContext } from '../context/normalizedContext.js';
 import type { ActionPlan, ActionValidation, RuntimeContext } from '../domain/types.js';
 import { RuntimePolicyArbitrator } from '../policy/policy.js';
 import {
