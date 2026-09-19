@@ -108,6 +108,7 @@ export interface RuntimeContext {
   readonly securityContext: Readonly<{ trusted: boolean; principal?: string }>;
   readonly configuration: RuntimeConfiguration;
   readonly compiledIntent?: import('../intent/compiler.js').CompiledIntent | undefined;
+  readonly compiledIntents?: readonly import('../intent/compiler.js').CompiledIntent[] | undefined;
 }
 export interface Observation extends AuditFields {
   readonly category: string;

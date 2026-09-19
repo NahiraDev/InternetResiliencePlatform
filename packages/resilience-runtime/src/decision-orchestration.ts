@@ -1,11 +1,13 @@
 import type { CandidateAction, Incident, RuntimeContext } from './domain/types.js';
 import type { DecisionProvider } from './ports/ports.js';
+import { resolveIntentGovernance } from './intent/governance.js';
 
 export interface DecisionOrchestrationResult {
   readonly candidates: readonly CandidateAction[];
   readonly selectedCandidate: CandidateAction | null;
   readonly blockedCandidates: readonly CandidateAction[];
   readonly reason: string;
+  readonly governance: ReturnType<typeof resolveIntentGovernance>;
 }
 
 /**
@@ -22,9 +24,23 @@ export class DecisionOrchestrator {
     incidents: readonly Incident[],
     context: RuntimeContext,
   ): Promise<DecisionOrchestrationResult> {
-    const candidates = await this.decisionProvider.decide(incidents, context);
-    const allowed = candidates.filter((candidate) => this.isEligible(candidate, context));
-    const blocked = candidates.filter((candidate) => !this.isEligible(candidate, context));
+    const compiledIntents =
+      context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
+    const governance = resolveIntentGovernance(compiledIntents, context);
+    const governedContext =
+      governance.selectedIntent && governance.selectedIntent !== context.compiledIntent
+        ? Object.freeze({
+            ...context,
+            compiledIntent: governance.selectedIntent,
+          })
+        : context;
+    const candidates = await this.decisionProvider.decide(incidents, governedContext);
+    const allowed = candidates
+      .map((candidate) => this.applyGovernance(candidate, governance))
+      .filter((candidate) => this.isEligible(candidate, context));
+    const blocked = candidates
+      .map((candidate) => this.applyGovernance(candidate, governance))
+      .filter((candidate) => !this.isEligible(candidate, context));
     const ranked = [...allowed].sort(compareCandidates);
     const selectedCandidate = ranked[0] ?? null;
 
@@ -33,9 +49,35 @@ export class DecisionOrchestrator {
       selectedCandidate,
       blockedCandidates: blocked,
       reason: selectedCandidate
-        ? 'selected highest-confidence eligible candidate using deterministic ordering'
-        : 'no candidate satisfied policy, capability and security constraints',
+        ? governance.reasons.length
+          ? `selected highest-confidence eligible candidate after intent governance: ${governance.reasons.join('; ')}`
+          : 'selected highest-confidence eligible candidate using deterministic ordering'
+        : governance.admission === 'REQUIRE_APPROVAL'
+          ? 'no candidate admitted because intent governance requires approval'
+          : governance.admission === 'DENY'
+            ? 'no candidate admitted because intent governance denied the intent'
+            : 'no candidate satisfied policy, capability and security constraints',
+      governance,
     };
+  }
+
+  private applyGovernance(
+    candidate: CandidateAction,
+    governance: ReturnType<typeof resolveIntentGovernance>,
+  ): CandidateAction {
+    const reasons = [...candidate.rejectionReasons];
+    if (candidate.intent !== 'noop') {
+      if (
+        !governance.mutationAllowed &&
+        context.mode === 'live'
+      )
+        reasons.push(...governance.reasons);
+      if (candidate.risk > governance.maxRisk)
+        reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
+    }
+    return reasons.length === candidate.rejectionReasons.length
+      ? candidate
+      : Object.freeze({ ...candidate, rejectionReasons: reasons });
   }
 
   private isEligible(candidate: CandidateAction, context: RuntimeContext): boolean {
