@@ -2,11 +2,7 @@ export type IntentStatus =
   'draft' | 'active' | 'completed' | 'superseded' | 'cancelled' | 'expired';
 export type IntentPriority = 'low' | 'normal' | 'high' | 'critical';
 export type IntentAutonomyLevel =
-  | 'OBSERVE_ONLY'
-  | 'ADVISORY'
-  | 'SAFE_AUTOMATION'
-  | 'AUTONOMOUS'
-  | 'HIGH_RISK_REQUIRES_APPROVAL';
+  'OBSERVE_ONLY' | 'ADVISORY' | 'SAFE_AUTOMATION' | 'AUTONOMOUS' | 'HIGH_RISK_REQUIRES_APPROVAL';
 export interface NetworkIntentSpec {
   readonly outcome: string;
   readonly constraints?: Readonly<Record<string, string | number | boolean>>;
@@ -64,7 +60,10 @@ export const createNetworkIntent = (
 ): NetworkIntent => {
   requireId(input.id, 'id');
   if (!input.spec.outcome.trim()) throw new TypeError('spec.outcome must not be empty');
-  if (input.confidence !== undefined && (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 1))
+  if (
+    input.confidence !== undefined &&
+    (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 1)
+  )
     throw new RangeError('confidence must be between 0 and 1');
   const createdAt = iso(input.createdAt, 'createdAt') ?? new Date().toISOString();
   const updatedAt = iso(input.updatedAt, 'updatedAt') ?? createdAt;

@@ -204,7 +204,7 @@ describe('Golden end-to-end scenarios (section 108)', () => {
           incidents: [],
           policyEvaluation: { allowed: true, reasons: [], requiredCapabilities: [] },
           candidates: [],
-          outcome: isHealthy ? 'success' as const : 'degraded' as const,
+          outcome: isHealthy ? ('success' as const) : ('degraded' as const),
           confidence: 1,
           durationMs: 1,
           explanation: [],

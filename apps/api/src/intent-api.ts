@@ -31,13 +31,15 @@ const createSchema = z
     expiresAt: timestamp.optional(),
     provenance: z.string().trim().min(1).max(512).optional(),
     confidence: z.number().min(0).max(1).optional(),
-    autonomy: z.enum([
-      'OBSERVE_ONLY',
-      'ADVISORY',
-      'SAFE_AUTOMATION',
-      'AUTONOMOUS',
-      'HIGH_RISK_REQUIRES_APPROVAL',
-    ]).optional(),
+    autonomy: z
+      .enum([
+        'OBSERVE_ONLY',
+        'ADVISORY',
+        'SAFE_AUTOMATION',
+        'AUTONOMOUS',
+        'HIGH_RISK_REQUIRES_APPROVAL',
+      ])
+      .optional(),
     metadata: z.record(z.string(), z.string().max(512)).optional(),
   })
   .strict();
