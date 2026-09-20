@@ -36,7 +36,7 @@ export class DecisionOrchestrator {
         : context;
     const candidates = await this.decisionProvider.decide(incidents, governedContext);
     const allowed = candidates
-      .map((candidate) => this.applyGovernance(candidate, governance))
+      .map((candidate) => this.applyGovernance(candidate, governance, context))
       .filter((candidate) => this.isEligible(candidate, context));
     const blocked = candidates
       .map((candidate) => this.applyGovernance(candidate, governance))
@@ -64,6 +64,7 @@ export class DecisionOrchestrator {
   private applyGovernance(
     candidate: CandidateAction,
     governance: ReturnType<typeof resolveIntentGovernance>,
+    context: RuntimeContext,
   ): CandidateAction {
     const reasons = [...candidate.rejectionReasons];
     if (candidate.intent !== 'noop') {
