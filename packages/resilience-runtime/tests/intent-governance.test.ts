@@ -40,6 +40,32 @@ const candidate = (intent: CandidateAction['intent'] = 'route_change'): Candidat
   rejectionReasons: [],
 });
 
+
+const trustedSimulationContext = (compiledIntent: ReturnType<typeof intent>, compiledIntents?: ReturnType<typeof intent>[]) => {
+  const base = createRuntimeContext({
+    mode: 'simulation',
+    securityContext: { trusted: true },
+    capabilitySnapshot: {
+      ...createRuntimeContext({ mode: 'simulation' }).capabilitySnapshot,
+      trusted: true,
+    },
+  });
+
+  return createRuntimeContext({
+    ...base,
+    policySnapshot: {
+      ...base.policySnapshot,
+      policy: {
+        ...base.policySnapshot.policy,
+        allowedActions: ['route_change'],
+        simulationOnly: true,
+      },
+    },
+    compiledIntent,
+    ...(compiledIntents ? { compiledIntents } : {}),
+  });
+};
+
 describe('intent governance', () => {
   it('arbitrates overlapping intents deterministically by priority', () => {
     const selected = arbitrateIntents([intent('low', 'normal'), intent('high', 'critical')]);
@@ -72,16 +98,10 @@ describe('intent governance', () => {
         return [candidate()];
       },
     };
-    const context = createRuntimeContext({
-      mode: 'simulation',
-      securityContext: { trusted: true },
-      capabilitySnapshot: {
-        ...createRuntimeContext({ mode: 'simulation' }).capabilitySnapshot,
-        trusted: true,
-      },
-      compiledIntent: intent('low', 'normal'),
-      compiledIntents: [intent('low', 'normal'), intent('high', 'critical')],
-    });
+    const context = trustedSimulationContext(
+      intent('low', 'normal'),
+      [intent('low', 'normal'), intent('high', 'critical')],
+    );
     const result = await new DecisionOrchestrator(provider).orchestrate([], context);
     expect(generatedFor).toBe('high');
     expect(result.selectedCandidate?.intent).toBe('route_change');
@@ -93,15 +113,7 @@ describe('intent governance', () => {
         return [candidate()];
       },
     };
-    const context = createRuntimeContext({
-      mode: 'simulation',
-      securityContext: { trusted: true },
-      capabilitySnapshot: {
-        ...createRuntimeContext({ mode: 'simulation' }).capabilitySnapshot,
-        trusted: true,
-      },
-      compiledIntent: intent('advisory', 'high', 'ADVISORY'),
-    });
+    const context = trustedSimulationContext(intent('advisory', 'high', 'ADVISORY'));
     const result = await new DecisionOrchestrator(provider).orchestrate([], context);
     expect(result.governance.admission).toBe('REQUIRE_APPROVAL');
     expect(result.candidates).toHaveLength(1);
