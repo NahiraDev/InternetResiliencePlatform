@@ -39,7 +39,7 @@ export class DecisionOrchestrator {
       .map((candidate) => this.applyGovernance(candidate, governance, context))
       .filter((candidate) => this.isEligible(candidate, context));
     const blocked = candidates
-      .map((candidate) => this.applyGovernance(candidate, governance))
+      .map((candidate) => this.applyGovernance(candidate, governance, context))
       .filter((candidate) => !this.isEligible(candidate, context));
     const ranked = [...allowed].sort(compareCandidates);
     const selectedCandidate = ranked[0] ?? null;
@@ -68,10 +68,7 @@ export class DecisionOrchestrator {
   ): CandidateAction {
     const reasons = [...candidate.rejectionReasons];
     if (candidate.intent !== 'noop') {
-      if (
-        !governance.mutationAllowed &&
-        context.mode === 'live'
-      )
+      if (!governance.mutationAllowed && context.mode === 'live')
         reasons.push(...governance.reasons);
       if (candidate.risk > governance.maxRisk)
         reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
