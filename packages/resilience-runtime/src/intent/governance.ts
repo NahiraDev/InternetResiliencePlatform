@@ -57,6 +57,8 @@ export const arbitrateIntents = (
   if (!candidates.length) return { candidates: [], rejectedIntents: [] };
 
   const selectedIntent = candidates[0];
+  if (!selectedIntent) return { candidates: [], rejectedIntents: [] };
+
   const rejectedIntents = candidates
     .slice(1)
     .filter((intent) => overlappingScope(selectedIntent, intent));
