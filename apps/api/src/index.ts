@@ -59,6 +59,11 @@ import {
   defaultSpeedInsightsConfig,
   type SpeedInsightsConfig,
 } from './speed-insights.js';
+import {
+  injectAnalyticsIntoHtml,
+  defaultAnalyticsConfig,
+  trackServerEvent,
+} from './analytics.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -406,16 +411,16 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     reply.type(prometheusContentType()).send(await renderPrometheusMetrics()),
   );
 
-  // Speed Insights Example Endpoint
-  // This demonstrates how Speed Insights can be integrated if this API serves HTML
-  // Note: Speed Insights measures client-side Web Vitals, so it's only useful for HTML responses
+  // Vercel Analytics & Speed Insights Example Endpoint
+  // This demonstrates how Web Analytics and Speed Insights can be integrated if this API serves HTML
+  // Note: These tools measure client-side metrics, so they're only useful for HTML responses
   app.get('/api/v1/speed-insights/example', async (_request, reply) => {
     const exampleHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Speed Insights Integration Example</title>
+  <title>Vercel Analytics & Speed Insights Integration</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -436,17 +441,43 @@ export const buildServer = async (): Promise<FastifyInstance> => {
       padding: 1rem;
       margin: 1rem 0;
     }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
   </style>
 </head>
 <body>
-  <h1>Vercel Speed Insights Integration</h1>
+  <h1>Vercel Analytics & Speed Insights Integration</h1>
+  <div class="success">
+    <strong>✓ Active:</strong> This page has both Web Analytics and Speed Insights enabled.
+    Open your browser's developer console to see debug information about tracked events.
+  </div>
   <div class="note">
-    <strong>Note:</strong> This page demonstrates Speed Insights integration. 
-    Speed Insights measures client-side Web Vitals (LCP, FID, CLS, etc.) in the browser.
+    <strong>Note:</strong> These integrations measure client-side metrics in the browser.
     For backend API monitoring, use OpenTelemetry and Prometheus metrics already configured in this project.
   </div>
-  <h2>What is Speed Insights?</h2>
-  <p>Vercel Speed Insights tracks real user performance metrics including:</p>
+  
+  <h2>Web Analytics</h2>
+  <p>Vercel Web Analytics tracks:</p>
+  <ul>
+    <li><strong>Page Views</strong> - Automatic tracking of page visits</li>
+    <li><strong>Custom Events</strong> - Track user interactions (Pro/Enterprise plans)</li>
+    <li><strong>Unique Visitors</strong> - User engagement metrics</li>
+    <li><strong>Geographic Distribution</strong> - Where your users are located</li>
+  </ul>
+  <pre><code>// Client-side page view tracking (automatic):
+import { injectAnalyticsIntoHtml } from './analytics.js';
+const withAnalytics = injectAnalyticsIntoHtml(html);
+
+// Server-side custom event tracking:
+import { trackServerEvent } from './analytics.js';
+await trackServerEvent('user_registered', { userId: '123' });</code></pre>
+
+  <h2>Speed Insights</h2>
+  <p>Vercel Speed Insights tracks real user performance metrics:</p>
   <ul>
     <li><strong>LCP</strong> (Largest Contentful Paint) - Loading performance</li>
     <li><strong>FID</strong> (First Input Delay) - Interactivity</li>
@@ -454,30 +485,33 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     <li><strong>TTFB</strong> (Time to First Byte) - Server response time</li>
     <li><strong>FCP</strong> (First Contentful Paint) - Initial render</li>
   </ul>
-  <h2>Integration Methods</h2>
-  <p>Speed Insights has been installed in this project. To use it:</p>
   <pre><code>// For programmatic HTML injection:
 import { injectSpeedInsightsIntoHtml } from './speed-insights.js';
-
-const html = '&lt;html&gt;&lt;body&gt;...&lt;/body&gt;&lt;/html&gt;';
 const withInsights = injectSpeedInsightsIntoHtml(html, {
   sampleRate: 1.0,
   debug: true
 });</code></pre>
+
   <h2>Backend API Monitoring</h2>
   <p>For monitoring this API's performance, use:</p>
   <ul>
     <li><strong>OpenTelemetry</strong> - Distributed tracing (already configured)</li>
     <li><strong>Prometheus Metrics</strong> - Available at <a href="/api/v1/metrics">/api/v1/metrics</a></li>
     <li><strong>Health Checks</strong> - Available at <a href="/api/v1/health">/api/v1/health</a></li>
+    <li><strong>Server-Side Events</strong> - Custom event tracking via Vercel Analytics</li>
   </ul>
 </body>
 </html>`;
 
-    // Inject Speed Insights into the example page
-    const htmlWithInsights = injectSpeedInsightsIntoHtml(exampleHtml, {
+    // Inject Speed Insights and Web Analytics into the example page
+    let htmlWithInsights = injectSpeedInsightsIntoHtml(exampleHtml, {
       ...defaultSpeedInsightsConfig,
       route: '/api/v1/speed-insights/example',
+    });
+    
+    // Also inject Web Analytics for page view tracking
+    htmlWithInsights = injectAnalyticsIntoHtml(htmlWithInsights, {
+      ...defaultAnalyticsConfig,
     });
 
     return reply.type('text/html').send(htmlWithInsights);
@@ -955,6 +989,13 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       updatedAt: now(),
     });
     await events.publish(createDomainEvent('user.registered', user.id, { email: user.email }));
+    
+    // Track user registration in Vercel Analytics
+    await trackServerEvent('user_registered', {
+      userId: user.id,
+      status: user.status,
+    });
+    
     return reply.code(201).send(created(publicUser(user) as never));
   });
   app.post('/api/v1/auth/login', async (request) => {
@@ -977,6 +1018,13 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       type: 'access',
       ttlSeconds: 900,
     });
+    
+    // Track successful login in Vercel Analytics
+    await trackServerEvent('user_login', {
+      userId: user.id,
+      method: 'password',
+    });
+    
     const refreshToken = jwt.sign({
       sub: user.id,
       roles: user.roles,
