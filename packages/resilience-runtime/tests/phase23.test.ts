@@ -158,12 +158,14 @@ describe('Phase 23 live control plane integration', () => {
     await scheduler.runOnce();
     expect(scheduler.status().skippedTotal).toBe(1);
   });
-  it('scheduler enforces the execution budget and contains cycle rejection', async () => {
+  it('scheduler conveys the execution budget to the canonical runtime without abandoning it', async () => {
     const runtime = new ResilienceRuntime();
     const original = runtime.cycle.bind(runtime);
-    runtime.cycle = (async () => {
+    let receivedInput: Parameters<typeof runtime.cycle>[0] | undefined;
+    runtime.cycle = (async (input) => {
+      receivedInput = input;
       await new Promise((resolve) => setTimeout(resolve, 50));
-      return original({ mode: 'simulation', securityContext: { trusted: true } });
+      return original({ ...input, securityContext: { trusted: true } });
     }) as typeof runtime.cycle;
     const scheduler = new RuntimeScheduler(runtime, {
       enabled: false,
@@ -174,7 +176,9 @@ describe('Phase 23 live control plane integration', () => {
       executionBudgetMs: 5,
     });
     await scheduler.runOnce();
-    expect(scheduler.status().skippedTotal).toBe(1);
+    expect(Date.parse(receivedInput?.deadline ?? '')).toBeGreaterThan(Date.now() - 100);
+    expect(scheduler.status().skippedTotal).toBe(0);
+    expect(scheduler.status().failedTotal).toBe(0);
     expect(scheduler.status().active).toBe(0);
   });
   for (const [name, status] of [
