@@ -53,6 +53,12 @@ import {
   type ObservationProvider,
 } from '@irp/resilience-runtime';
 import { registerIntentRoutes } from './intent-api.js';
+import {
+  generateSpeedInsightsScript,
+  injectSpeedInsightsIntoHtml,
+  defaultSpeedInsightsConfig,
+  type SpeedInsightsConfig,
+} from './speed-insights.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -399,6 +405,84 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   app.get('/api/v1/metrics', async (_r, reply) =>
     reply.type(prometheusContentType()).send(await renderPrometheusMetrics()),
   );
+
+  // Speed Insights Example Endpoint
+  // This demonstrates how Speed Insights can be integrated if this API serves HTML
+  // Note: Speed Insights measures client-side Web Vitals, so it's only useful for HTML responses
+  app.get('/api/v1/speed-insights/example', async (_request, reply) => {
+    const exampleHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Insights Integration Example</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.6;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vercel Speed Insights Integration</h1>
+  <div class="note">
+    <strong>Note:</strong> This page demonstrates Speed Insights integration. 
+    Speed Insights measures client-side Web Vitals (LCP, FID, CLS, etc.) in the browser.
+    For backend API monitoring, use OpenTelemetry and Prometheus metrics already configured in this project.
+  </div>
+  <h2>What is Speed Insights?</h2>
+  <p>Vercel Speed Insights tracks real user performance metrics including:</p>
+  <ul>
+    <li><strong>LCP</strong> (Largest Contentful Paint) - Loading performance</li>
+    <li><strong>FID</strong> (First Input Delay) - Interactivity</li>
+    <li><strong>CLS</strong> (Cumulative Layout Shift) - Visual stability</li>
+    <li><strong>TTFB</strong> (Time to First Byte) - Server response time</li>
+    <li><strong>FCP</strong> (First Contentful Paint) - Initial render</li>
+  </ul>
+  <h2>Integration Methods</h2>
+  <p>Speed Insights has been installed in this project. To use it:</p>
+  <pre><code>// For programmatic HTML injection:
+import { injectSpeedInsightsIntoHtml } from './speed-insights.js';
+
+const html = '&lt;html&gt;&lt;body&gt;...&lt;/body&gt;&lt;/html&gt;';
+const withInsights = injectSpeedInsightsIntoHtml(html, {
+  sampleRate: 1.0,
+  debug: true
+});</code></pre>
+  <h2>Backend API Monitoring</h2>
+  <p>For monitoring this API's performance, use:</p>
+  <ul>
+    <li><strong>OpenTelemetry</strong> - Distributed tracing (already configured)</li>
+    <li><strong>Prometheus Metrics</strong> - Available at <a href="/api/v1/metrics">/api/v1/metrics</a></li>
+    <li><strong>Health Checks</strong> - Available at <a href="/api/v1/health">/api/v1/health</a></li>
+  </ul>
+</body>
+</html>`;
+
+    // Inject Speed Insights into the example page
+    const htmlWithInsights = injectSpeedInsightsIntoHtml(exampleHtml, {
+      ...defaultSpeedInsightsConfig,
+      route: '/api/v1/speed-insights/example',
+    });
+
+    return reply.type('text/html').send(htmlWithInsights);
+  });
+
   const recordNetworkTelemetry = (
     snapshot: Awaited<ReturnType<NetworkMonitoringService['runOnce']>>,
   ) => {
@@ -1068,6 +1152,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   });
   return app;
 };
+
+// Export Speed Insights utilities for use in other modules
+export {
+  generateSpeedInsightsScript,
+  injectSpeedInsightsIntoHtml,
+  defaultSpeedInsightsConfig,
+  type SpeedInsightsConfig,
+};
+
 if (process.argv[1]?.endsWith('index.js')) {
   const config = loadConfig();
   const server = await buildServer();
