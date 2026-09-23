@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLIENT_DIR="$ROOT_DIR/packages/linux-client"
-VERSION="${IRP_LINUX_VERSION:-0.1.0}"
+VERSION="${IRP_LINUX_VERSION:-0.1.1}"
 ARCH="${IRP_LINUX_ARCH:-amd64}"
 OUT_DIR="${IRP_LINUX_OUT_DIR:-$ROOT_DIR/dist/linux}"
 PKG_ROOT="$OUT_DIR/package"
@@ -17,6 +17,7 @@ mkdir -p "$PKG_ROOT/DEBIAN" \
 pnpm --dir "$ROOT_DIR" --filter @irp/linux-client build
 
 cp -R "$CLIENT_DIR/dist/." "$PKG_ROOT/usr/lib/irp/linux-client/dist/"
+cp "$CLIENT_DIR/package.json" "$PKG_ROOT/usr/lib/irp/linux-client/package.json"
 cp "$CLIENT_DIR/systemd/irp-linux-client.service" \
   "$PKG_ROOT/usr/lib/systemd/system/irp-linux-client.service"
 
