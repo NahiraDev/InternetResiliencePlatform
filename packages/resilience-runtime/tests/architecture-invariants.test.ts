@@ -31,11 +31,25 @@ describe('Architecture invariants (section 109)', () => {
     expect(cli).toContain('cannot be bypassed by CLI');
   });
 
+  it('daemon and Linux client use the same canonical composition boundary', () => {
+    const daemon = read('apps/daemon/src/index.ts');
+    const linux = read('packages/linux-client/src/index.ts');
+    for (const host of [daemon, linux]) {
+      expect(host).toContain('createCanonicalRuntime');
+      expect(host).not.toMatch(/new\s+ResilienceRuntime/);
+    }
+    const composition = read('packages/resilience-runtime/src/canonical-runtime-composition.ts');
+    expect(composition).toContain('new ResilienceRuntime');
+    expect(read('packages/resilience-runtime/src/runtime.ts')).toContain(
+      'SafetyRollbackRecoveryKernel',
+    );
+  });
+
   it('daemon handles shutdown and injects canonical control plane', () => {
     const daemon = read('apps/daemon/src/index.ts');
     expect(daemon).toContain('SIGTERM');
     expect(daemon).toContain('networkControlPlane');
-    expect(daemon).toContain('ResilienceRuntime');
+    expect(daemon).toContain('createCanonicalRuntime');
   });
 
   it('legacy NetworkAutopilot remains deprecated and not instantiated in prod', () => {

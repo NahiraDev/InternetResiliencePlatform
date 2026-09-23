@@ -15,7 +15,7 @@ import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
-  ResilienceRuntime,
+  createCanonicalRuntime,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
   type Observation,
@@ -256,7 +256,9 @@ export class RuntimeDaemonHost {
       evaluate: async (context) => this.evaluatePathEvidence(context),
     },
   });
-  readonly runtime = new ResilienceRuntime([this.observer], {
+  readonly composition = createCanonicalRuntime({
+    executionMode: 'real',
+    observationProviders: [this.observer],
     runtimeId: 'daemon-runtime',
     decisionProvider: this.decisionProvider,
     networkControlPlane: {
@@ -298,6 +300,7 @@ export class RuntimeDaemonHost {
       },
     },
   });
+  readonly runtime = this.composition.runtime;
   readonly plugins = new PluginHost([]);
   // Advisory-only: recommendations cannot execute through this host. Any
   // mutation must enter ResilienceRuntime's canonical safety/transaction path.
