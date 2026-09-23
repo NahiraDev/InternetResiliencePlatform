@@ -103,26 +103,26 @@ jobs:
       - name: Build Debian package
         run: |
           bash scripts/build-linux-deb.sh
-          test -s dist/linux/irp-linux-client_0.1.0_amd64.deb
-          test -s dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+          test -s dist/linux/irp-linux-client_0.1.1_amd64.deb
+          test -s dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Verify Debian package metadata and contents
         run: |
           set -euo pipefail
-          package="dist/linux/irp-linux-client_0.1.0_amd64.deb"
+          package="dist/linux/irp-linux-client_0.1.1_amd64.deb"
           contents="$(mktemp)"
           trap 'rm -f "$contents"' EXIT
           dpkg-deb --info "$package"
           dpkg-deb --contents "$package" > "$contents"
           grep -Fq './usr/lib/irp/linux-client/dist/index.js' "$contents"
           grep -Fq './usr/lib/systemd/system/irp-linux-client.service' "$contents"
-          sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+          sha256sum -c dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Smoke test packaged Linux client
         run: |
           rm -rf /tmp/irp-linux-package
           mkdir -p /tmp/irp-linux-package
-          dpkg-deb --extract dist/linux/irp-linux-client_0.1.0_amd64.deb /tmp/irp-linux-package
+          dpkg-deb --extract dist/linux/irp-linux-client_0.1.1_amd64.deb /tmp/irp-linux-package
           node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/index.js
           test -f /tmp/irp-linux-package/usr/lib/systemd/system/irp-linux-client.service
 

@@ -75,23 +75,23 @@ jobs:
       - name: Build Debian package
         run: |
           pnpm linux:package
-          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb
-          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+          test -f dist/linux/irp-linux-client_0.1.1_amd64.deb
+          test -f dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Verify Debian package metadata
         run: |
-          dpkg-deb --info dist/linux/irp-linux-client_0.1.0_amd64.deb
-          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Package | grep -Fx 'irp-linux-client'
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Architecture | grep -Fx 'amd64'
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Depends | grep -F 'nodejs'
+          dpkg-deb --info dist/linux/irp-linux-client_0.1.1_amd64.deb
+          dpkg-deb --contents dist/linux/irp-linux-client_0.1.1_amd64.deb
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Package | grep -Fx 'irp-linux-client'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Architecture | grep -Fx 'amd64'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Depends | grep -F 'nodejs'
 
       - name: Verify checksum
-        run: sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+        run: sha256sum -c dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Install Debian package
         run: |
-          dpkg -i dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg -i dist/linux/irp-linux-client_0.1.1_amd64.deb
           dpkg-query -W -f='${Status}\n' irp-linux-client | grep -Fx 'install ok installed'
           test -f /usr/lib/irp/linux-client/dist/index.js
           test -f /usr/lib/systemd/system/irp-linux-client.service
@@ -152,7 +152,7 @@ jobs:
         with:
           name: irp-linux-debian-primary-device-${{ github.sha }}
           path: |
-            dist/linux/irp-linux-client_0.1.0_amd64.deb
-            dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+            dist/linux/irp-linux-client_0.1.1_amd64.deb
+            dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
           if-no-files-found: error
           retention-days: 14
