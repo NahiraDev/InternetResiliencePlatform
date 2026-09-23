@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "verdict": "PASS",
-  "generatedAt": "2026-09-12T23:42:19.015Z",
-  "startedAt": "2026-09-12T23:41:55.135Z",
+  "generatedAt": "2026-09-23T10:48:48.694Z",
+  "startedAt": "2026-09-23T10:48:29.882Z",
   "commitSha": "unknown",
   "contractSha256": "ec26a137445be3faa4b70da389012946f008bedc2bf29b697ad0888c944d3787",
   "checks": [
@@ -40,17 +40,43 @@
         "scenarios": [
           {
             "name": "healthy",
-            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-            "decisionIds": ["decision-000014"],
-            "outcomes": ["blocked"],
-            "incidents": ["dns_health"]
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000014"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_health"
+            ]
           },
           {
             "name": "dns-degradation",
-            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-            "decisionIds": ["decision-000026"],
-            "outcomes": ["blocked"],
-            "incidents": ["dns_failure"]
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000026"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_failure"
+            ]
           },
           {
             "name": "provider-recovery",
@@ -65,18 +91,38 @@
               "verify",
               "recover"
             ],
-            "decisionIds": ["decision-000039"],
-            "outcomes": ["success"],
-            "incidents": ["persistent_degradation"],
+            "decisionIds": [
+              "decision-000039"
+            ],
+            "outcomes": [
+              "success"
+            ],
+            "incidents": [
+              "persistent_degradation"
+            ],
             "verificationStatus": "failed",
             "recoveryStatus": "success"
           },
           {
             "name": "destination-specific",
-            "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-            "decisionIds": ["decision-000059"],
-            "outcomes": ["blocked"],
-            "incidents": ["dns_health", "provider_health"]
+            "stages": [
+              "observe",
+              "measure",
+              "detect",
+              "diagnose",
+              "decide",
+              "policy"
+            ],
+            "decisionIds": [
+              "decision-000059"
+            ],
+            "outcomes": [
+              "blocked"
+            ],
+            "incidents": [
+              "dns_health",
+              "provider_health"
+            ]
           }
         ],
         "acceptance": {
@@ -95,14 +141,14 @@
     {
       "id": "runtime-artifact-integrity",
       "status": "pass",
-      "detail": "hashed 168 runtime artifact files",
-      "sha256": "879c63a4a95c4b82189647a82a0e6592b4ffaac31531c6e1565c468552079bb5",
-      "files": 168
+      "detail": "hashed 176 runtime artifact files",
+      "sha256": "dc7fc08298c9d7e150ac89a8935e8ca1aee1a205990d14ee493a15ad18d789e6",
+      "files": 176
     }
   ],
   "artifact": {
-    "sha256": "879c63a4a95c4b82189647a82a0e6592b4ffaac31531c6e1565c468552079bb5",
-    "files": 168
+    "sha256": "dc7fc08298c9d7e150ac89a8935e8ca1aee1a205990d14ee493a15ad18d789e6",
+    "files": 176
   },
   "validation": {
     "schemaVersion": 1,
@@ -111,17 +157,43 @@
     "scenarios": [
       {
         "name": "healthy",
-        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-        "decisionIds": ["decision-000014"],
-        "outcomes": ["blocked"],
-        "incidents": ["dns_health"]
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000014"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_health"
+        ]
       },
       {
         "name": "dns-degradation",
-        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-        "decisionIds": ["decision-000026"],
-        "outcomes": ["blocked"],
-        "incidents": ["dns_failure"]
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000026"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_failure"
+        ]
       },
       {
         "name": "provider-recovery",
@@ -136,18 +208,38 @@
           "verify",
           "recover"
         ],
-        "decisionIds": ["decision-000039"],
-        "outcomes": ["success"],
-        "incidents": ["persistent_degradation"],
+        "decisionIds": [
+          "decision-000039"
+        ],
+        "outcomes": [
+          "success"
+        ],
+        "incidents": [
+          "persistent_degradation"
+        ],
         "verificationStatus": "failed",
         "recoveryStatus": "success"
       },
       {
         "name": "destination-specific",
-        "stages": ["observe", "measure", "detect", "diagnose", "decide", "policy"],
-        "decisionIds": ["decision-000059"],
-        "outcomes": ["blocked"],
-        "incidents": ["dns_health", "provider_health"]
+        "stages": [
+          "observe",
+          "measure",
+          "detect",
+          "diagnose",
+          "decide",
+          "policy"
+        ],
+        "decisionIds": [
+          "decision-000059"
+        ],
+        "outcomes": [
+          "blocked"
+        ],
+        "incidents": [
+          "dns_health",
+          "provider_health"
+        ]
       }
     ],
     "acceptance": {
