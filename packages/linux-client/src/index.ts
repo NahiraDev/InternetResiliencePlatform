@@ -3,6 +3,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
 import {
+  createCanonicalRuntime,
+  type CanonicalRuntimeComposition,
   ResilienceRuntime,
   type Observation,
   type ObservationProvider,
@@ -114,20 +116,29 @@ export class LinuxClientRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
 
-  constructor(system: Pick<LinuxSystemAdapter, 'snapshot'>, runtime?: ResilienceRuntime) {
-    this.runtime = runtime ?? new ResilienceRuntime([new LinuxSnapshotObservationProvider(system)], {
-      runtimeId: 'linux-client-runtime',
-    });
+  private readonly composition: CanonicalRuntimeComposition;
+
+  constructor(
+    system: Pick<LinuxSystemAdapter, 'snapshot'>,
+    composition?: CanonicalRuntimeComposition,
+  ) {
+    this.composition =
+      composition ??
+      createCanonicalRuntime({
+        executionMode: 'simulation',
+        observationProviders: [new LinuxSnapshotObservationProvider(system)],
+        runtimeId: 'linux-client-runtime',
+      });
+    this.runtime = this.composition.runtime;
   }
 
   async start(): Promise<void> {
     if (this.started) return;
     // Simulation observes and evaluates the complete canonical runtime path
     // without mutating host networking during client startup.
-    await this.runtime.runCycle({
+    await this.composition.runCycle({
       correlationId: 'linux-client-startup',
       idempotencyKey: 'linux-client-startup',
-      mode: 'simulation',
     });
     this.started = true;
   }
