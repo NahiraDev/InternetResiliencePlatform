@@ -27,7 +27,7 @@ Version: $VERSION
 Section: net
 Priority: optional
 Architecture: $ARCH
-Depends: nodejs
+Depends: nodejs (>= 24.0.0)
 Maintainer: Internet Resilience Platform contributors
 Description: Internet Resilience Platform Linux Full Client
  IRP Linux Full Client provides the device-side network resilience runtime
