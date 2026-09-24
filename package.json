@@ -35,7 +35,8 @@
     "regional:online": "node scripts/regional-online-test.mjs",
     "runtime:integration": "node tools/runtime-lab/package-integration.mjs",
     "runtime:integration:strict": "node tools/runtime-lab/package-integration.mjs --strict",
-    "runtime:lab": "docker compose -f ops/observability/docker-compose.yml up --build"
+    "runtime:lab": "docker compose -f ops/observability/docker-compose.yml up --build",
+    "architecture:check": "node scripts/architecture/validate-architecture.mjs"
   },
   "dependencies": {
     "pg": "8.23.0"
