@@ -89,6 +89,7 @@ jobs:
           grep -Fq 'Group=irp' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'dist/main.js' packages/linux-client/systemd/irp-linux-client.service
 
       - name: Build Debian package
         run: |
@@ -105,6 +106,7 @@ jobs:
           dpkg-deb --info "$package"
           dpkg-deb --contents "$package" > "$contents"
           grep -Fq './usr/lib/irp/linux-client/dist/index.js' "$contents"
+          grep -Fq './usr/lib/irp/linux-client/dist/main.js' "$contents"
           grep -Fq './usr/lib/systemd/system/irp-linux-client.service' "$contents"
           sha256sum -c dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
@@ -114,6 +116,7 @@ jobs:
           mkdir -p /tmp/irp-linux-package
           dpkg-deb --extract dist/linux/irp-linux-client_0.1.1_amd64.deb /tmp/irp-linux-package
           node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/index.js
+          node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/main.js
           test -f /tmp/irp-linux-package/usr/lib/systemd/system/irp-linux-client.service
 
   architecture:
