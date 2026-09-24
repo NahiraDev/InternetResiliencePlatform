@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
+import { pathToFileURL } from 'node:url';
 import {
   createCanonicalRuntime,
   type CanonicalRuntimeComposition,
@@ -165,10 +166,10 @@ const html = (
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll('&', '&')
+    .replaceAll('<', '<')
+    .replaceAll('>', '>')
+    .replaceAll('"', '"');
 }
 
 export class LinuxClientServer {
@@ -235,6 +236,12 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   return server;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Robust direct-run detection for both source and packaged (Debian) entrypoints.
+// pathToFileURL normalizes process.argv[1] so the comparison works after dpkg install.
+const isDirectRun =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
   await runLinuxClient();
 }
