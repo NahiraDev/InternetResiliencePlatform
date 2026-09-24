@@ -263,6 +263,15 @@ for (const required of [
   }
 }
 
+const architecture = spawnSync('node', ['scripts/architecture/validate-architecture.mjs'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+
+if (architecture.status !== 0) {
+  errors.push(`architecture contract validation failed: ${architecture.stderr || architecture.stdout}`);
+}
+
 const turbo = spawnSync('pnpm', ['exec', 'turbo', 'run', 'build', '--dry=json'], {
   cwd: root,
   encoding: 'utf8',
