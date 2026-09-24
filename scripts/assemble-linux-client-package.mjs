@@ -3,8 +3,8 @@
  * Assemble a self-contained production tree for the IRP Linux Full Client.
  *
  * Copies the linux-client dist plus every production dependency (workspace and
- * external, recursively) so the installed Debian package can resolve modules
- * without the monorepo or a fragile pnpm deploy step.
+ * external, recursively including nested package roots from the pnpm store)
+ * so the installed Debian package can resolve modules without the monorepo.
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -37,31 +37,62 @@ const requireCandidates = [
   ...[...workspacePackages.values()].map((dir) => createRequire(join(dir, 'package.json'))),
 ];
 
-function resolveExternalRoot(name) {
-  for (const req of requireCandidates) {
+/** @type {Map<string, string>} */
+const externalRoots = new Map();
+
+function resolveExternalRoot(name, fromRequire = null) {
+  if (externalRoots.has(name)) return externalRoots.get(name);
+
+  const tryReq = (req) => {
     try {
       return dirname(req.resolve(join(name, 'package.json')));
     } catch {
-      // try next
-    }
-    try {
-      const main = req.resolve(name);
-      let dir = dirname(main);
-      while (dir !== '/' && !existsSync(join(dir, 'package.json'))) {
-        dir = dirname(dir);
+      try {
+        const main = req.resolve(name);
+        let dir = dirname(main);
+        while (dir !== '/' && !existsSync(join(dir, 'package.json'))) {
+          dir = dirname(dir);
+        }
+        if (existsSync(join(dir, 'package.json'))) return dir;
+      } catch {
+        return null;
       }
-      if (existsSync(join(dir, 'package.json'))) return dir;
-    } catch {
-      // try next
+    }
+    return null;
+  };
+
+  if (fromRequire) {
+    const hit = tryReq(fromRequire);
+    if (hit) {
+      externalRoots.set(name, hit);
+      return hit;
     }
   }
+
+  for (const req of requireCandidates) {
+    const hit = tryReq(req);
+    if (hit) {
+      externalRoots.set(name, hit);
+      return hit;
+    }
+  }
+
+  // Last resort: search already-resolved external package roots for nested installs.
+  for (const root of externalRoots.values()) {
+    const nested = join(root, 'node_modules', ...name.split('/'));
+    if (existsSync(join(nested, 'package.json'))) {
+      externalRoots.set(name, nested);
+      return nested;
+    }
+  }
+
   return null;
 }
 
 const visitedWorkspace = new Set();
 const visitedExternal = new Set();
 
-function collect(name) {
+function collect(name, fromRequire = null) {
   if (workspacePackages.has(name)) {
     if (visitedWorkspace.has(name)) return;
     visitedWorkspace.add(name);
@@ -72,13 +103,16 @@ function collect(name) {
 
   if (visitedExternal.has(name)) return;
   visitedExternal.add(name);
-  const root = resolveExternalRoot(name);
+  const root = resolveExternalRoot(name, fromRequire);
   if (!root) {
     console.warn(`warning: could not resolve external package ${name}`);
     return;
   }
   const pkg = readJson(join(root, 'package.json'));
-  for (const dep of Object.keys(pkg.dependencies ?? {})) collect(dep);
+  const nestedRequire = createRequire(join(root, 'package.json'));
+  for (const dep of Object.keys(pkg.dependencies ?? {})) {
+    collect(dep, nestedRequire);
+  }
 }
 
 collect('@irp/linux-client');
@@ -108,7 +142,7 @@ for (const name of visitedWorkspace) {
 }
 
 for (const name of visitedExternal) {
-  const srcRoot = resolveExternalRoot(name);
+  const srcRoot = externalRoots.get(name) ?? resolveExternalRoot(name);
   if (!srcRoot) continue;
   const dest = join(nm, ...name.split('/'));
   if (existsSync(dest)) continue;
@@ -119,6 +153,7 @@ for (const name of visitedExternal) {
       const base = relative(srcRoot, src);
       if (!base) return true;
       const top = base.split(/[\\/]/)[0];
+      // Nested node_modules are flattened into the top-level package tree instead.
       if (top === 'node_modules') return false;
       if (/^(?:\.git|docs|test|tests|__tests__|example|examples)(?:$|[\\/])/i.test(base)) {
         return false;
