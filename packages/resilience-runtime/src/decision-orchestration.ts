@@ -78,18 +78,13 @@ export class DecisionOrchestrator {
       : Object.freeze({ ...candidate, rejectionReasons: reasons });
   }
 
-  private isEligible(candidate: CandidateAction, context: RuntimeContext): boolean {
-    const policy = context.policySnapshot.policy;
-    if (candidate.rejectionReasons.length > 0) return false;
-    if (!policy.allowedActions.includes(candidate.intent)) return false;
-    if (policy.deniedActions.includes(candidate.intent)) return false;
-    if (candidate.confidence < policy.confidenceThreshold) return false;
-    if (!context.capabilitySnapshot.trusted || !context.securityContext.trusted) return false;
-
-    const requiredByPolicy = policy.capabilityRequirements[candidate.intent] ?? [];
-    const required = new Set([...candidate.requiredCapabilities, ...requiredByPolicy]);
-    const available = new Set(context.capabilitySnapshot.capabilities);
-    return [...required].every((capability) => available.has(capability));
+  private isEligible(candidate: CandidateAction, _context: RuntimeContext): boolean {
+    // DECIDE must not silently become a second POLICY gate. Policy, capability,
+    // authorization and safety constraints are evaluated canonically by the
+    // planner/validator after a candidate has been selected. Keeping rejected
+    // candidates here would also erase the concrete policy reasons required for
+    // explainability and recovery.
+    return candidate.rejectionReasons.length === 0;
   }
 }
 
