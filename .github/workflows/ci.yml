@@ -90,6 +90,7 @@ jobs:
           grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service
           grep -Fq 'dist/main.js' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'WorkingDirectory=/usr/lib/irp/linux-client' packages/linux-client/systemd/irp-linux-client.service
 
       - name: Build Debian package
         run: |
@@ -200,10 +201,10 @@ jobs:
 
       - name: Validate repository integrity
         run: pnpm validate
- 
+
       - name: Enforce IRP architecture contract
         run: pnpm architecture:check
- 
+
       - name: Test architecture enforcement
         run: pnpm architecture:test
 
