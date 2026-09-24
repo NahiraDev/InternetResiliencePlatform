@@ -76,13 +76,12 @@ for (const file of sourceFiles) {
   const rel = relative(root, file).replaceAll('\\', '/');
   const text = readFileSync(file, 'utf8');
 
-  // Textual references to the deprecated compatibility model are allowed in
-  // documentation/comments and inside the runtime package. What is forbidden
-  // is importing, constructing, extending, or exporting it from a production
-  // host/domain package.
-  const usesLegacyAutopilot =
-    /(?:import\\s+(?:type\\s+)?(?:\\{[^}]*\\b)?NetworkAutopilot\\b|from\\s+['"][^'"]+['"])|\\bnew\\s+NetworkAutopilot\\s*\\(|\\bextends\\s+NetworkAutopilot\\b|\\bexport\\s+(?:class|const|function)\\s+NetworkAutopilot\\b/.test(text);
-  if (usesLegacyAutopilot && !rel.startsWith('packages/resilience-runtime/')) {
+  // Textual references in comments/docs are allowed. Production code may not
+  // import, construct, extend, or re-export the deprecated compatibility model.
+  const legacyImport = /(?:^|\\n)\\s*import\\s+(?:type\\s+)?[^;\\n]*\\bNetworkAutopilot\\b[^;\\n]*;|(?:^|\\n)\\s*export\\s+(?:type\\s+)?[^;\\n]*\\bNetworkAutopilot\\b[^;\\n]*;/m.test(text);
+  const legacyConstruction = /\\bnew\\s+NetworkAutopilot\\s*\\(/.test(text);
+  const legacyInheritance = /\\bextends\\s+NetworkAutopilot\\b/.test(text);
+  if ((legacyImport || legacyConstruction || legacyInheritance) && !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: production source imports or instantiates deprecated NetworkAutopilot`);
   }
 
