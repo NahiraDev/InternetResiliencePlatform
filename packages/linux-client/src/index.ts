@@ -166,10 +166,10 @@ const html = (
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', '&')
-    .replaceAll('<', '<')
-    .replaceAll('>', '>')
-    .replaceAll('"', '"');
+    .replaceAll('\u0026', '\u0026amp;')
+    .replaceAll('\u003c', '\u0026lt;')
+    .replaceAll('\u003e', '\u0026gt;')
+    .replaceAll('\u0022', '\u0026quot;');
 }
 
 export class LinuxClientServer {
