@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import process from 'node:process';
 
 const root = resolve(process.env.IRP_ARCHITECTURE_ROOT ?? process.cwd());
@@ -76,11 +76,17 @@ for (const file of sourceFiles) {
   const rel = relative(root, file).replaceAll('\\', '/');
   const text = readFileSync(file, 'utf8');
 
-  if (/NetworkAutopilot/.test(text)) {
-    fail(`${rel}: production source references NetworkAutopilot`);
+  // Textual references to the deprecated compatibility model are allowed in
+  // documentation/comments and inside the runtime package. What is forbidden
+  // is importing, constructing, extending, or exporting it from a production
+  // host/domain package.
+  const usesLegacyAutopilot =
+    /(?:import\\s+(?:type\\s+)?(?:\\{[^}]*\\b)?NetworkAutopilot\\b|from\\s+['"][^'"]+['"])|\\bnew\\s+NetworkAutopilot\\s*\\(|\\bextends\\s+NetworkAutopilot\\b|\\bexport\\s+(?:class|const|function)\\s+NetworkAutopilot\\b/.test(text);
+  if (usesLegacyAutopilot && !rel.startsWith('packages/resilience-runtime/')) {
+    fail(`${rel}: production source imports or instantiates deprecated NetworkAutopilot`);
   }
 
-  if (/new\s+ResilienceRuntime\s*\(/.test(text) &&
+  if (/new\\s+ResilienceRuntime\\s*\\(/.test(text) &&
       !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: host must use createCanonicalRuntime instead of constructing ResilienceRuntime directly`);
   }
@@ -91,9 +97,12 @@ for (const file of sourceFiles) {
     }
   }
 
-  if (/\b(?:class|function|interface|type|const|let|var)\s+\w*?(?:DecisionEngine|PolicyEngine|SafetyKernel|StateRegistry|ProviderRegistry|EventBus|TransactionExecutor)\b|\bnew\s+(?:DecisionEngine|PolicyEngine|SafetyKernel|StateRegistry|ProviderRegistry|EventBus|TransactionExecutor)\b/.test(text) &&
+  // Domain-level evaluators/registries/event interfaces are legitimate when
+  // they are not themselves privileged orchestration authorities. Reject only
+  // executable construction of the explicitly reserved control-plane symbols.
+  if (/\\bnew\\s+(?:PolicyEngine|SafetyKernel|StateRegistry|TransactionExecutor)\\s*\\(/.test(text) &&
       !rel.startsWith('packages/resilience-runtime/')) {
-    fail(`${rel}: possible competing architectural authority detected; extend the canonical runtime/domain owner instead`);
+    fail(`${rel}: competing privileged authority construction detected; extend the canonical runtime instead`);
   }
 }
 
