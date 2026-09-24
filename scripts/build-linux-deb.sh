@@ -7,26 +7,43 @@ VERSION="${IRP_LINUX_VERSION:-0.1.1}"
 ARCH="${IRP_LINUX_ARCH:-amd64}"
 OUT_DIR="${IRP_LINUX_OUT_DIR:-$ROOT_DIR/dist/linux}"
 PKG_ROOT="$OUT_DIR/package"
+CLIENT_ROOT="$PKG_ROOT/usr/lib/irp/linux-client"
 PKG_NAME="irp-linux-client_${VERSION}_${ARCH}.deb"
 
 rm -rf "$OUT_DIR"
 mkdir -p "$PKG_ROOT/DEBIAN" \
-  "$PKG_ROOT/usr/lib/irp/linux-client/dist" \
   "$PKG_ROOT/usr/lib/systemd/system"
 
+# Build the client and its workspace dependency graph.
 pnpm --dir "$ROOT_DIR" --filter @irp/linux-client build
 
-# Deploy the production workspace dependency graph into the package so the
-# installed client is self-contained; a workspace dependency cannot resolve
-# from the monorepo after installation.
-rm -rf "$PKG_ROOT/usr/lib/irp/linux-client"
-mkdir -p "$PKG_ROOT/usr/lib/irp/linux-client"
-pnpm --dir "$ROOT_DIR" --filter @irp/linux-client deploy --prod --legacy "$PKG_ROOT/usr/lib/irp/linux-client"
-rm -rf "$PKG_ROOT/usr/lib/irp/linux-client/dist"
-mkdir -p "$PKG_ROOT/usr/lib/irp/linux-client/dist"
-cp -R "$CLIENT_DIR/dist/." "$PKG_ROOT/usr/lib/irp/linux-client/dist/"
+# Assemble a self-contained install tree (workspace + external production deps).
+node "$ROOT_DIR/scripts/assemble-linux-client-package.mjs" "$CLIENT_ROOT"
+
 cp "$CLIENT_DIR/systemd/irp-linux-client.service" \
   "$PKG_ROOT/usr/lib/systemd/system/irp-linux-client.service"
+
+# Fail closed: the packaged tree must actually boot the HTTP surface.
+(
+  cd "$CLIENT_ROOT"
+  node --check dist/index.js
+  node --check dist/main.js
+  node --input-type=module <<'VERIFY'
+  import { runLinuxClient } from './dist/index.js';
+  const server = await runLinuxClient();
+  try {
+    const response = await fetch('http://127.0.0.1:17861/');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const body = await response.text();
+    if (!body.includes('IRP Linux Client') || !body.includes('Linux Full Client')) {
+      throw new Error('packaged client response missing expected contract markers');
+    }
+    console.log('packaged-linux-client-runtime-ok');
+  } finally {
+    await server.stop();
+  }
+  VERIFY
+)
 
 cat > "$PKG_ROOT/DEBIAN/control" <<EOF
 Package: irp-linux-client
@@ -55,8 +72,9 @@ fi
 install -d -o irp -g irp -m 0750 /var/lib/irp
 if [ -d /run/systemd/system ]; then
   systemctl daemon-reload
-  systemctl enable irp-linux-client.service
-  systemctl restart irp-linux-client.service
+  systemctl enable irp-linux-client.service || true
+  # Do not restart during package install in constrained CI containers;
+  # operators (or the acceptance smoke) start the unit when ready.
 fi
 exit 0
 EOF
@@ -65,8 +83,8 @@ cat > "$PKG_ROOT/DEBIAN/prerm" <<'EOF'
 #!/bin/sh
 set -eu
 if [ -d /run/systemd/system ]; then
-  systemctl stop irp-linux-client.service
-  systemctl disable irp-linux-client.service
+  systemctl stop irp-linux-client.service 2>/dev/null || true
+  systemctl disable irp-linux-client.service 2>/dev/null || true
 fi
 exit 0
 EOF
