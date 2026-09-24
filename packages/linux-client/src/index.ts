@@ -2,7 +2,6 @@ import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   createCanonicalRuntime,
   type CanonicalRuntimeComposition,
@@ -112,7 +111,7 @@ export type LinuxRuntimeStatus = {
   capabilities: readonly RuntimeAdapterDescriptor[];
 };
 
-/** The Linux client entrypoint for the canonical, safe-by-default runtime. */
+/** The Linux client runtime for the canonical, safe-by-default composition. */
 export class LinuxClientRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
@@ -234,35 +233,4 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   const server = new LinuxClientServer(new LinuxSystem());
   await server.start();
   return server;
-}
-
-/**
- * Start the client when this file is the process entrypoint.
- * Covers:
- * - local: node dist/index.js / node src/index.ts
- * - Debian package: /usr/bin/node /usr/lib/irp/linux-client/dist/index.js
- * Avoids starting when the module is imported by vitest or other libraries
- * (argv points at the test runner, not index.js).
- */
-function shouldStartAsMain(): boolean {
-  const entry = process.argv[1];
-  if (typeof entry !== 'string') return false;
-  const normalized = entry.replace(/\\/g, '/');
-  if (normalized.endsWith('/index.js') || normalized.endsWith('/index.ts')) {
-    return true;
-  }
-  try {
-    if (import.meta.url === pathToFileURL(entry).href) return true;
-    if (fileURLToPath(import.meta.url) === entry) return true;
-  } catch {
-    // ignore
-  }
-  return false;
-}
-
-if (shouldStartAsMain()) {
-  await runLinuxClient().catch((error) => {
-    console.error('IRP Linux client failed to start:', error);
-    process.exitCode = 1;
-  });
 }
