@@ -18,6 +18,7 @@ const writeFixture = (root, source = '') => {
   mkdirSync(join(root, 'packages/security'), { recursive: true });
   mkdirSync(join(root, 'packages/telemetry'), { recursive: true });
   mkdirSync(join(root, 'apps/daemon/src'), { recursive: true });
+  mkdirSync(join(root, 'docs/architecture'), { recursive: true });
   writeFileSync(join(root, 'AGENTS.md'), '');
   writeFileSync(join(root, 'docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md'), '');
   writeFileSync(join(root, 'packages/resilience-runtime/src/index.ts'), '');
