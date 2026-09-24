@@ -29,20 +29,20 @@ cp "$CLIENT_DIR/systemd/irp-linux-client.service" \
   node --check dist/index.js
   node --check dist/main.js
   node --input-type=module <<'VERIFY'
-  import { runLinuxClient } from './dist/index.js';
-  const server = await runLinuxClient();
-  try {
-    const response = await fetch('http://127.0.0.1:17861/');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const body = await response.text();
-    if (!body.includes('IRP Linux Client') || !body.includes('Linux Full Client')) {
-      throw new Error('packaged client response missing expected contract markers');
-    }
-    console.log('packaged-linux-client-runtime-ok');
-  } finally {
-    await server.stop();
+import { runLinuxClient } from './dist/index.js';
+const server = await runLinuxClient();
+try {
+  const response = await fetch('http://127.0.0.1:17861/');
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const body = await response.text();
+  if (!body.includes('IRP Linux Client') || !body.includes('Linux Full Client')) {
+    throw new Error('packaged client response missing expected contract markers');
   }
-  VERIFY
+  console.log('packaged-linux-client-runtime-ok');
+} finally {
+  await server.stop();
+}
+VERIFY
 )
 
 cat > "$PKG_ROOT/DEBIAN/control" <<EOF
