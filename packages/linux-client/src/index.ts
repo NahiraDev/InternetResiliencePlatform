@@ -236,23 +236,33 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   return server;
 }
 
-// Detect direct execution for both development (tsx/node src) and packaged
-// Debian installs (/usr/lib/irp/linux-client/dist/index.js).
-// Use both pathToFileURL and fileURLToPath so symlink / realpath differences
-// after dpkg install do not prevent the server from starting.
-function isDirectRun(): boolean {
-  if (typeof process.argv[1] !== 'string') return false;
+/**
+ * Start the client when this file is the process entrypoint.
+ * Covers:
+ * - local: node dist/index.js / node src/index.ts
+ * - Debian package: /usr/bin/node /usr/lib/irp/linux-client/dist/index.js
+ * Avoids starting when the module is imported by vitest or other libraries
+ * (argv points at the test runner, not index.js).
+ */
+function shouldStartAsMain(): boolean {
+  const entry = process.argv[1];
+  if (typeof entry !== 'string') return false;
+  const normalized = entry.replace(/\\/g, '/');
+  if (normalized.endsWith('/index.js') || normalized.endsWith('/index.ts')) {
+    return true;
+  }
   try {
-    const argvUrl = pathToFileURL(process.argv[1]).href;
-    if (import.meta.url === argvUrl) return true;
-    const thisPath = fileURLToPath(import.meta.url);
-    if (thisPath === process.argv[1]) return true;
+    if (import.meta.url === pathToFileURL(entry).href) return true;
+    if (fileURLToPath(import.meta.url) === entry) return true;
   } catch {
-    // ignore resolution errors
+    // ignore
   }
   return false;
 }
 
-if (isDirectRun()) {
-  await runLinuxClient();
+if (shouldStartAsMain()) {
+  await runLinuxClient().catch((error) => {
+    console.error('IRP Linux client failed to start:', error);
+    process.exitCode = 1;
+  });
 }
