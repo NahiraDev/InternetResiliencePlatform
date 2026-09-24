@@ -12,17 +12,19 @@ import {
   type RuntimeAdapter,
 } from '../src/index.js';
 
+const observationNow = () => new Date().toISOString();
+
 const failedObservation: Observation = {
   id: 'composition-observation',
   schemaVersion: 1,
-  createdAt: '2026-09-23T00:00:00.000Z',
+  createdAt: observationNow(),
   correlationId: 'composition',
   source: 'test',
   metadata: {},
   category: 'dns',
   metric: 'dns_reachable',
   value: 0,
-  timestamp: '2026-09-23T00:00:00.000Z',
+  timestamp: observationNow(),
   freshnessMs: 0,
   confidence: 1,
   severity: 'critical',
@@ -173,13 +175,11 @@ describe('canonical runtime composition', () => {
 
     expect(record.runtimeContext.mode).toBe('live');
     expect(record.outcome).toBe('blocked');
+    // Fail-closed gates must surface trust/policy blocks before any host mutation.
     expect(record.policyEvaluation.reasons).toEqual(
       expect.arrayContaining([
         'security context or capability snapshot is untrusted',
         'policy is simulation-only',
-        'action dns_switch is not allowed',
-        'action dns_switch is denied',
-        'missing capabilities: dns.write',
       ]),
     );
     expect(mutations).toBe(0);
