@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 
-const root = resolve(process.cwd());
+const root = resolve(process.env.IRP_ARCHITECTURE_ROOT ?? process.cwd());
 const manifestPath = join(root, 'docs/architecture/IRP-ARCHITECTURE-CONTRACT.json');
 const errors = [];
 
