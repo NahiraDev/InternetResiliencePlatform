@@ -111,6 +111,7 @@ jobs:
           # failing scheme orchestration path.
           xcodebuild \
             -project "$XCODE_PROJECT" \
+            -scheme IRP \
             -target IRPPacketTunnel \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
@@ -121,6 +122,7 @@ jobs:
             build
           xcodebuild \
             -project "$XCODE_PROJECT" \
+            -scheme IRP \
             -target IRP \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
