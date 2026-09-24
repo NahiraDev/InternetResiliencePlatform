@@ -57,7 +57,7 @@ describe('architecture contract gate', () => {
 
   it('blocks a production NetworkAutopilot reference', () => {
     const root = mkdtempSync(join(tmpdir(), 'irp-architecture-'));
-    writeFixture(root, 'export const runtime = NetworkAutopilot;');
+    writeFixture(root, "import { NetworkAutopilot } from './legacy.js';\nexport const runtime = NetworkAutopilot;");
     expect(() => execFileSync(process.execPath, [validator], {
       cwd: process.cwd(),
       env: { ...process.env, IRP_ARCHITECTURE_ROOT: root }
