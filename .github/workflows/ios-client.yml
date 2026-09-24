@@ -103,22 +103,14 @@ jobs:
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
-          # Build each concrete target independently. These remain mandatory source
-          # compilation steps; no target or test is skipped on failure.
+          # Build the canonical IRP scheme. The scheme owns the application
+          # dependency graph, including the embedded packet-tunnel extension.
+          # This is a mandatory source build; no target is skipped.
           xcodebuild \
             -project "$XCODE_PROJECT" \
-            -target IRPPacketTunnel \
-            -sdk iphoneos \
+            -scheme IRP \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
-            -jobs 1 \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            build
-          xcodebuild \
-            -project "$XCODE_PROJECT" \
-            -target IRP \
-            -configuration Debug \
-            -sdk iphoneos \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
