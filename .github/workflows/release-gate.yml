@@ -8,6 +8,13 @@ on:
       - Linux Primary Device
       - Runtime Lab
       - CodeQL Advanced
+      - Repository Deep Audit
+      - Public Runtime Lab
+      - Android Client
+      - iOS Full Client
+      - iOS Network Integration
+      - macOS Full Client
+      - Windows Full Client
     types:
       - completed
   workflow_dispatch:
@@ -83,6 +90,13 @@ jobs:
             "linux-primary-device.yml"
             "runtime-lab.yml"
             "codeql.yml"
+            "repository-deep-audit.yml"
+            "public-runtime-lab.yml"
+            "android-client.yml"
+            "ios-client.yml"
+            "ios-network-integration.yml"
+            "macos-client.yml"
+            "windows-client.yml"
           )
 
           deadline=$((SECONDS + 5400))
