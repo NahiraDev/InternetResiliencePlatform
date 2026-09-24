@@ -126,8 +126,17 @@ jobs:
           client_html=/tmp/irp-linux-client.html
           ready=0
 
-          # Run from the package root so Node resolves node_modules the same way
-          # the systemd unit does via WorkingDirectory.
+          # postinst may have started the unit; stop it so the smoke owns the port.
+          if command -v systemctl >/dev/null 2>&1; then
+            systemctl stop irp-linux-client.service 2>/dev/null || true
+            systemctl reset-failed irp-linux-client.service 2>/dev/null || true
+          fi
+          # Best-effort free of the client port if anything still holds it.
+          if command -v fuser >/dev/null 2>&1; then
+            fuser -k 17861/tcp 2>/dev/null || true
+          fi
+          sleep 0.5
+
           cd /usr/lib/irp/linux-client
           echo '=== package layout ===' >&2
           ls -la >&2 || true
