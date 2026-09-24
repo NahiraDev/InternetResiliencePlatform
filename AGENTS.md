@@ -49,3 +49,18 @@ Agents MUST extend that architecture rather than invent a competing control plan
 Parallel execution is allowed only when file/package ownership is disjoint. Contract changes always require integration review.
 
 For Phase 72–150 work, extend the existing canonical owners after inspecting the reference architecture and current runtime evidence. Do not design a second architecture because an existing integration is incomplete.
+
+
+## Architecture enforcement gate
+
+The reference architecture is a repository contract enforced by the architecture check and repository validation.
+
+When implementing any issue or feature:
+
+- Do not redesign IRP or introduce a competing product architecture.
+- Find and extend the canonical owner before adding an abstraction.
+- A new authority is prohibited unless the architecture contract is explicitly changed and the validator is changed in the same reviewed change.
+- Treat architecture-check failures as blocking failures; never weaken, skip, or bypass them.
+- Do not change the architecture contract merely to make an implementation pass. First prove the implementation is consistent with the existing contract.
+- If a capability appears to require a new authority, reconcile ownership against the reference architecture and machine-readable contract before coding.
+- Any intentional architecture evolution must update the canonical architecture document, machine-readable contract, validator, tests, and CI gate together.
