@@ -98,6 +98,7 @@ jobs:
           test -f /usr/lib/irp/linux-client/dist/index.js
           test -f /usr/lib/irp/linux-client/dist/main.js
           test -f /usr/lib/systemd/system/irp-linux-client.service
+          test -d /usr/lib/irp/linux-client/node_modules
           id irp
           getent group irp
 
@@ -116,6 +117,7 @@ jobs:
           grep -Fx 'ProtectSystem=strict' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'ProtectHome=true' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fq 'dist/main.js' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fq 'WorkingDirectory=/usr/lib/irp/linux-client' /usr/lib/systemd/system/irp-linux-client.service
 
       - name: Run installed Linux client smoke test
         run: |
@@ -123,18 +125,30 @@ jobs:
           client_log=/tmp/irp-linux-client.log
           client_html=/tmp/irp-linux-client.html
           ready=0
-          /usr/bin/node /usr/lib/irp/linux-client/dist/main.js >"$client_log" 2>&1 &
+
+          # Run from the package root so Node resolves node_modules the same way
+          # the systemd unit does via WorkingDirectory.
+          cd /usr/lib/irp/linux-client
+          echo '=== package layout ===' >&2
+          ls -la >&2 || true
+          echo '=== @irp modules ===' >&2
+          ls -la node_modules/@irp 2>&1 >&2 || true
+          echo '=== node --check main ===' >&2
+          /usr/bin/node --check dist/main.js
+
+          /usr/bin/node dist/main.js >"$client_log" 2>&1 &
           client_pid=$!
           cleanup_client() { kill "$client_pid" 2>/dev/null || true; wait "$client_pid" 2>/dev/null || true; }
           trap cleanup_client EXIT
 
-          for attempt in $(seq 1 20); do
+          for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error http://127.0.0.1:17861/ >"$client_html"; then
               ready=1
               break
             fi
             if ! kill -0 "$client_pid" 2>/dev/null; then
               echo 'IRP Linux client exited before becoming ready.' >&2
+              echo '=== client log ===' >&2
               cat "$client_log" >&2 || true
               exit 1
             fi
@@ -143,6 +157,7 @@ jobs:
 
           if [ "$ready" -ne 1 ]; then
             echo 'IRP Linux client did not become ready within the startup deadline.' >&2
+            echo '=== client log ===' >&2
             cat "$client_log" >&2 || true
             exit 1
           fi
