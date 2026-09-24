@@ -103,8 +103,6 @@ jobs:
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
-          derived_data="$RUNNER_TEMP/irp-derived-data"
-          rm -rf "$derived_data"
           # Build the two concrete targets independently. The previous scheme-level
           # invocation caused xcodebuild 16.4 itself to segfault before compilation;
           # target-level builds preserve real source compilation while avoiding the
@@ -112,7 +110,7 @@ jobs:
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -target IRPPacketTunnel \
-            -destination 'generic/platform=iOS' \
+            -sdk iphoneos \
             -configuration Debug \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
@@ -123,7 +121,7 @@ jobs:
             -target IRP \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
-            -derivedDataPath "$derived_data" \
+            -sdk iphoneos \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
