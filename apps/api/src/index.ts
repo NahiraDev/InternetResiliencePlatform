@@ -47,7 +47,7 @@ import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
 import {
-  ResilienceRuntime,
+  createCanonicalRuntime,
   runtimeEnvelope,
   type Observation,
   type ObservationProvider,
@@ -744,7 +744,11 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       };
     },
   };
-  const resilienceRuntime = new ResilienceRuntime([runtimeObservationProvider]);
+  const resilienceRuntime = createCanonicalRuntime({
+    executionMode: 'simulation',
+    observationProviders: [runtimeObservationProvider],
+    runtimeId: 'api-runtime',
+  }).runtime;
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
 

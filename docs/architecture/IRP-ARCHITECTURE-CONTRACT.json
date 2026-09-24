@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "binding",
+  "productIdentity": "Autonomous Internet Superplatform / Network Operating System / Programmable Connectivity Fabric",
+  "canonicalRuntime": {
+    "package": "@irp/resilience-runtime",
+    "symbol": "ResilienceRuntime",
+    "composition": "createCanonicalRuntime",
+    "productionAuthorityCount": 1
+  },
+  "authorities": {
+    "runtime": "@irp/resilience-runtime",
+    "decision": "@irp/resilience-runtime",
+    "policy": "@irp/resilience-runtime",
+    "safety": "@irp/resilience-runtime",
+    "planning": "@irp/resilience-runtime",
+    "transaction": "@irp/resilience-runtime",
+    "verification": "@irp/resilience-runtime",
+    "recovery": "@irp/resilience-runtime"
+  },
+  "domainOwners": {
+    "connectivity": "@irp/connectivity",
+    "routing": "@irp/routing",
+    "dns": "@irp/dns",
+    "gateway": "@irp/gateway-registry",
+    "tunnel": "@irp/tunnel",
+    "intelligence": "@irp/network-intelligence",
+    "historicalAnalysis": "@irp/historical-analysis",
+    "security": "@irp/security",
+    "telemetry": "@irp/telemetry",
+    "federation": "@irp/network-intelligence"
+  },
+  "hostEntrypoints": [
+    "apps/daemon/src/index.ts",
+    "packages/linux-client/src/index.ts"
+  ],
+  "forbiddenProductionAuthoritySymbols": [
+    "NetworkAutopilot",
+    "DecisionEngine",
+    "PolicyEngine",
+    "SafetyKernel",
+    "StateRegistry",
+    "ProviderRegistry",
+    "EventBus",
+    "Planner",
+    "TransactionExecutor"
+  ],
+  "allowedLegacyNetworkAutopilotPaths": [
+    "packages/resilience-runtime/tests/",
+    "packages/resilience-runtime/src/legacy/",
+    "docs/",
+    "artifacts/"
+  ],
+  "invariants": [
+    "Exactly one production ResilienceRuntime authority exists.",
+    "Production hosts compose through createCanonicalRuntime.",
+    "AI is advisory and cannot directly perform privileged network mutation.",
+    "Experience hosts are not alternate privileged control planes.",
+    "NetworkAutopilot cannot be a production authority.",
+    "Privileged mutation is governed by policy, security, safety, transaction and outcome verification.",
+    "Architecture violations are blocking validation failures."
+  ]
+}

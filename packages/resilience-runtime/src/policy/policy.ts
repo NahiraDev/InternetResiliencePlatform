@@ -20,10 +20,10 @@ export class RuntimePolicyArbitrator {
     if (p.deniedActions.includes(action.intent)) reasons.push(`action ${action.intent} is denied`);
     if (action.confidence < p.confidenceThreshold)
       reasons.push('candidate confidence is below threshold');
-    const required = [
+    const required = [...new Set([
       ...(p.capabilityRequirements[action.intent] ?? []),
       ...action.requiredCapabilities,
-    ].sort();
+    ])].sort();
     const missing = required.filter((c) => !context.capabilitySnapshot.capabilities.includes(c));
     if (missing.length) reasons.push(`missing capabilities: ${missing.join(',')}`);
     return { allowed: reasons.length === 0, reasons, requiredCapabilities: required };

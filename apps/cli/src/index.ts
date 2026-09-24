@@ -5,7 +5,7 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import { ResilienceRuntime } from '@irp/resilience-runtime';
+import { createCanonicalRuntime } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -73,7 +73,7 @@ export const createProgram = (): Command => {
       });
     });
   const runtime = program.command('runtime').description('Resilience runtime commands');
-  const runtimeInstance = () => new ResilienceRuntime();
+  const runtimeInstance = () => createCanonicalRuntime({ executionMode: 'simulation' }).runtime;
   runtime
     .command('status')
     .option('--json', 'print JSON output')
@@ -132,7 +132,7 @@ export const createProgram = (): Command => {
   const autopilot = program
     .command('autopilot')
     .description('Canonical resilience-runtime compatibility commands');
-  const autopilotRuntime = () => new ResilienceRuntime();
+  const autopilotRuntime = () => createCanonicalRuntime({ executionMode: 'simulation' }).runtime;
   autopilot
     .command('status')
     .description('Show canonical runtime status')

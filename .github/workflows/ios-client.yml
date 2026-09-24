@@ -22,7 +22,6 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 jobs:
   ios-client:
@@ -37,7 +36,18 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          test -d "$DEVELOPER_DIR"
+          # Prefer a concrete Xcode when present; otherwise use the runner default.
+          for candidate in \
+            /Applications/Xcode_16.4.app/Contents/Developer \
+            /Applications/Xcode_16.3.app/Contents/Developer \
+            /Applications/Xcode_16.2.app/Contents/Developer \
+            /Applications/Xcode_16.app/Contents/Developer \
+            /Applications/Xcode.app/Contents/Developer; do
+            if [ -d "$candidate" ]; then
+              sudo xcode-select -s "$candidate"
+              break
+            fi
+          done
           xcodebuild -version
           swift --version
 
@@ -100,17 +110,21 @@ jobs:
           test -f clients/ios/PacketTunnel/PacketTunnel.entitlements
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
 
-      - name: Build iOS app and packet tunnel
+      - name: Build iOS app and packet tunnel (simulator, unsigned)
         run: |
           set -euo pipefail
+          # Match clients/ios/README.md: simulator SDK, no Apple signing assets.
+          # generic/platform=iOS (device) fails closed without provisioning profiles.
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
-            -destination 'generic/platform=iOS' \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=- \
             build
 
       - name: Collect Xcode crash diagnostics
@@ -118,6 +132,7 @@ jobs:
         run: |
           set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100
-          xcrun simctl list devices
-          xcodebuild -version
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100 || true
+          xcrun simctl list devices || true
+          xcodebuild -version || true
+          ls /Applications | grep -i xcode || true

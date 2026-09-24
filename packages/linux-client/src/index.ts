@@ -111,7 +111,7 @@ export type LinuxRuntimeStatus = {
   capabilities: readonly RuntimeAdapterDescriptor[];
 };
 
-/** The Linux client entrypoint for the canonical, safe-by-default runtime. */
+/** The Linux client runtime for the canonical, safe-by-default composition. */
 export class LinuxClientRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
@@ -165,10 +165,10 @@ const html = (
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll(String.fromCharCode(38), String.fromCharCode(38) + "amp;")
+    .replaceAll(String.fromCharCode(60), String.fromCharCode(38) + "lt;")
+    .replaceAll(String.fromCharCode(62), String.fromCharCode(38) + "gt;")
+    .replaceAll(String.fromCharCode(34), String.fromCharCode(38) + "quot;");
 }
 
 export class LinuxClientServer {
@@ -233,8 +233,4 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   const server = new LinuxClientServer(new LinuxSystem());
   await server.start();
   return server;
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  await runLinuxClient();
 }
