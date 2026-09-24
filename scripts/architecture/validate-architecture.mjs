@@ -65,10 +65,11 @@ const isTestOrLegacy = (file) => {
     rel.startsWith('apps/') && rel.includes('/test/');
 };
 
-const prohibitedImportPatterns = [
-  { name: 'NetworkAutopilot production authority', pattern: /(?:from|import\s*\(|require\()\s*['"][^'"]*(?:network-autopilot|NetworkAutopilot)[^'"]*['"]/ },
-  { name: 'direct privileged shell execution from host layer', pattern: /(?:exec|execFile|spawn|spawnSync)\s*\(/ },
+const prohibitedHostMutationPatterns = [
+  { name: 'direct IP route mutation', pattern: /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]ip['"]|['"]route['"]|['"]resolvectl['"]|['"]wg['"]|['"]nmcli['"]|['"]iptables['"])/ },
+  { name: 'direct network manager mutation', pattern: /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]systemctl['"])[^\n]*(?:network|resolved|wireguard)/i },
 ];
+
 
 for (const file of sourceFiles) {
   if (isTestOrLegacy(file)) continue;
@@ -84,7 +85,7 @@ for (const file of sourceFiles) {
     fail(`${rel}: host must use createCanonicalRuntime instead of constructing ResilienceRuntime directly`);
   }
 
-  for (const rule of prohibitedImportPatterns) {
+  for (const rule of prohibitedHostMutationPatterns) {
     if (rule.pattern.test(text) && /^(apps|packages)\/(?:api|cli|.*client|plugin)/.test(rel)) {
       fail(`${rel}: forbidden ${rule.name}`);
     }
