@@ -111,18 +111,15 @@ jobs:
           # failing scheme orchestration path.
           xcodebuild \
             -project "$XCODE_PROJECT" \
-            -scheme IRP \
             -target IRPPacketTunnel \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
-            -derivedDataPath "$derived_data" \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
           xcodebuild \
             -project "$XCODE_PROJECT" \
-            -scheme IRP \
             -target IRP \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
