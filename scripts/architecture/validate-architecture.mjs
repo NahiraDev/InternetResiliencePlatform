@@ -91,7 +91,7 @@ for (const file of sourceFiles) {
     }
   }
 
-  if (/\b(?:DecisionEngine|PolicyEngine|SafetyKernel|StateRegistry|ProviderRegistry|EventBus|TransactionExecutor)\b/.test(text) &&
+  if (/\b(?:class|function|interface|type|const|let|var)\s+\w*?(?:DecisionEngine|PolicyEngine|SafetyKernel|StateRegistry|ProviderRegistry|EventBus|TransactionExecutor)\b|\bnew\s+(?:DecisionEngine|PolicyEngine|SafetyKernel|StateRegistry|ProviderRegistry|EventBus|TransactionExecutor)\b/.test(text) &&
       !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: possible competing architectural authority detected; extend the canonical runtime/domain owner instead`);
   }
