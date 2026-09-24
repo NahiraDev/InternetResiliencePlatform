@@ -96,6 +96,7 @@ jobs:
           dpkg -i dist/linux/irp-linux-client_0.1.1_amd64.deb
           dpkg-query -W -f='${Status}\n' irp-linux-client | grep -Fx 'install ok installed'
           test -f /usr/lib/irp/linux-client/dist/index.js
+          test -f /usr/lib/irp/linux-client/dist/main.js
           test -f /usr/lib/systemd/system/irp-linux-client.service
           id irp
           getent group irp
@@ -114,6 +115,7 @@ jobs:
           grep -Fx 'NoNewPrivileges=true' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'ProtectSystem=strict' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'ProtectHome=true' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fq 'dist/main.js' /usr/lib/systemd/system/irp-linux-client.service
 
       - name: Run installed Linux client smoke test
         run: |
@@ -121,7 +123,7 @@ jobs:
           client_log=/tmp/irp-linux-client.log
           client_html=/tmp/irp-linux-client.html
           ready=0
-          /usr/bin/node /usr/lib/irp/linux-client/dist/index.js >"$client_log" 2>&1 &
+          /usr/bin/node /usr/lib/irp/linux-client/dist/main.js >"$client_log" 2>&1 &
           client_pid=$!
           cleanup_client() { kill "$client_pid" 2>/dev/null || true; wait "$client_pid" 2>/dev/null || true; }
           trap cleanup_client EXIT
