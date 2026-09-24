@@ -1,10 +1,16 @@
-# Architecture and CI guardrails require repository-owner review.
-# Codex/agents may implement within the contract, but may not silently redefine it.
+# Default ownership for repository changes.
+* @NahiraDev
+
+# High-risk CI/CD and security controls require maintainer review.
+.github/workflows/* @NahiraDev
+SECURITY.md @NahiraDev
+Dockerfile @NahiraDev
+compose.yaml @NahiraDev
+scripts/validate-repository.mjs @NahiraDev
+
+# Architecture guardrails additionally require repository-owner review.
 docs/architecture/IRP-ARCHITECTURE-CONTRACT.json @nimarahimloo
 docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md @nimarahimloo
 AGENTS.md @nimarahimloo
 scripts/architecture/validate-architecture.mjs @nimarahimloo
 scripts/architecture/validate-architecture.test.mjs @nimarahimloo
-.github/workflows/ci.yml @nimarahimloo
-.github/workflows/linux-primary-device.yml @nimarahimloo
-.github/workflows/ios-client.yml @nimarahimloo
