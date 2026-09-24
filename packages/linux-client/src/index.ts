@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   createCanonicalRuntime,
   type CanonicalRuntimeComposition,
@@ -236,12 +236,23 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   return server;
 }
 
-// Robust direct-run detection for both source and packaged (Debian) entrypoints.
-// pathToFileURL normalizes process.argv[1] so the comparison works after dpkg install.
-const isDirectRun =
-  typeof process.argv[1] === 'string' &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+// Detect direct execution for both development (tsx/node src) and packaged
+// Debian installs (/usr/lib/irp/linux-client/dist/index.js).
+// Use both pathToFileURL and fileURLToPath so symlink / realpath differences
+// after dpkg install do not prevent the server from starting.
+function isDirectRun(): boolean {
+  if (typeof process.argv[1] !== 'string') return false;
+  try {
+    const argvUrl = pathToFileURL(process.argv[1]).href;
+    if (import.meta.url === argvUrl) return true;
+    const thisPath = fileURLToPath(import.meta.url);
+    if (thisPath === process.argv[1]) return true;
+  } catch {
+    // ignore resolution errors
+  }
+  return false;
+}
 
-if (isDirectRun) {
+if (isDirectRun()) {
   await runLinuxClient();
 }
