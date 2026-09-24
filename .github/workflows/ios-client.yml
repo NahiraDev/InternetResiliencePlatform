@@ -36,10 +36,14 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          # Prefer Xcode 16.3 on macOS 15. Xcode 16.4 has produced a reproducible
-          # xcodebuild SIGSEGV on the simulator build; pinning the runner toolchain
-          # removes that external compiler crash without weakening the build.
+          # Prefer the current stable Xcode toolchains on macOS 15. The 16.x
+          # toolchains have produced xcodebuild SIGSEGVs on this simulator build.
+          # Keep the full build mandatory; selecting another installed toolchain is
+          # a compatibility fix, not a bypass.
           for candidate in \
+            /Applications/Xcode_26.2.app/Contents/Developer \
+            /Applications/Xcode_26.1.app/Contents/Developer \
+            /Applications/Xcode_26.0.app/Contents/Developer \
             /Applications/Xcode_16.3.app/Contents/Developer \
             /Applications/Xcode_16.2.app/Contents/Developer \
             /Applications/Xcode_16.4.app/Contents/Developer \
