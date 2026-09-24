@@ -36,11 +36,17 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          # Prefer a concrete Xcode when present; otherwise use the runner default.
+          # Prefer the current stable Xcode toolchains on macOS 15. The 16.x
+          # toolchains have produced xcodebuild SIGSEGVs on this simulator build.
+          # Keep the full build mandatory; selecting another installed toolchain is
+          # a compatibility fix, not a bypass.
           for candidate in \
-            /Applications/Xcode_16.4.app/Contents/Developer \
+            /Applications/Xcode_26.2.app/Contents/Developer \
+            /Applications/Xcode_26.1.app/Contents/Developer \
+            /Applications/Xcode_26.0.app/Contents/Developer \
             /Applications/Xcode_16.3.app/Contents/Developer \
             /Applications/Xcode_16.2.app/Contents/Developer \
+            /Applications/Xcode_16.4.app/Contents/Developer \
             /Applications/Xcode_16.app/Contents/Developer \
             /Applications/Xcode.app/Contents/Developer; do
             if [ -d "$candidate" ]; then
@@ -48,6 +54,7 @@ jobs:
               break
             fi
           done
+          test -x "$(xcode-select -p)/usr/bin/xcodebuild"
           xcodebuild -version
           swift --version
 
