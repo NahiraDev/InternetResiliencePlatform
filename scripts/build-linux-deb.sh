@@ -16,12 +16,14 @@ mkdir -p "$PKG_ROOT/DEBIAN" \
 
 pnpm --dir "$ROOT_DIR" --filter @irp/linux-client build
 
-cp -R "$CLIENT_DIR/dist/." "$PKG_ROOT/usr/lib/irp/linux-client/dist/"
 # Deploy the production workspace dependency graph into the package so the
 # installed client is self-contained; a workspace dependency cannot resolve
 # from the monorepo after installation.
+rm -rf "$PKG_ROOT/usr/lib/irp/linux-client"
+mkdir -p "$PKG_ROOT/usr/lib/irp/linux-client"
 pnpm --dir "$ROOT_DIR" --filter @irp/linux-client deploy --prod "$PKG_ROOT/usr/lib/irp/linux-client"
 rm -rf "$PKG_ROOT/usr/lib/irp/linux-client/dist"
+mkdir -p "$PKG_ROOT/usr/lib/irp/linux-client/dist"
 cp -R "$CLIENT_DIR/dist/." "$PKG_ROOT/usr/lib/irp/linux-client/dist/"
 cp "$CLIENT_DIR/systemd/irp-linux-client.service" \
   "$PKG_ROOT/usr/lib/systemd/system/irp-linux-client.service"
