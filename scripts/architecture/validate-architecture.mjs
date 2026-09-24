@@ -78,14 +78,14 @@ for (const file of sourceFiles) {
 
   // Textual references in comments/docs are allowed. Production code may not
   // import, construct, extend, or re-export the deprecated compatibility model.
-  const legacyImport = /(?:^|\\n)\s*import\s+(?:type\s+)?[^;\\n]*\bNetworkAutopilot\b[^;\\n]*;|(?:^|\\n)\s*export\s+(?:type\s+)?[^;\\n]*\bNetworkAutopilot\b[^;\\n]*;/m.test(text);
-  const legacyConstruction = /\bnew\s+NetworkAutopilot\s*\\(/.test(text);
+  const legacyImport = /(?:^|\n)\s*import\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;|(?:^|\n)\s*export\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;/m.test(text);
+  const legacyConstruction = /\bnew\s+NetworkAutopilot\s*\(/.test(text);
   const legacyInheritance = /\bextends\s+NetworkAutopilot\b/.test(text);
   if ((legacyImport || legacyConstruction || legacyInheritance) && !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: production source imports or instantiates deprecated NetworkAutopilot`);
   }
 
-  if (/new\s+ResilienceRuntime\s*\\(/.test(text) &&
+  if (/new\s+ResilienceRuntime\s*\(/.test(text) &&
       !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: host must use createCanonicalRuntime instead of constructing ResilienceRuntime directly`);
   }
@@ -99,7 +99,7 @@ for (const file of sourceFiles) {
   // Domain-level evaluators/registries/event interfaces are legitimate when
   // they are not themselves privileged orchestration authorities. Reject only
   // executable construction of the explicitly reserved control-plane symbols.
-  if (/\bnew\s+(?:PolicyEngine|SafetyKernel|StateRegistry|TransactionExecutor)\s*\\(/.test(text) &&
+  if (/\bnew\s+(?:PolicyEngine|SafetyKernel|StateRegistry|TransactionExecutor)\s*\(/.test(text) &&
       !rel.startsWith('packages/resilience-runtime/')) {
     fail(`${rel}: competing privileged authority construction detected; extend the canonical runtime instead`);
   }
