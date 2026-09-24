@@ -14,7 +14,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const CLIENT = join(ROOT, 'packages/linux-client');
-const requireFromRoot = createRequire(join(ROOT, 'package.json'));
 
 const target = process.argv[2];
 if (!target) {
@@ -32,26 +31,35 @@ for (const entry of readdirSync(join(ROOT, 'packages'))) {
   if (pkg.name) workspacePackages.set(pkg.name, join(ROOT, 'packages', entry));
 }
 
-const visitedWorkspace = new Set();
-const visitedExternal = new Set();
+const requireCandidates = [
+  createRequire(join(ROOT, 'package.json')),
+  createRequire(join(CLIENT, 'package.json')),
+  ...[...workspacePackages.values()].map((dir) => createRequire(join(dir, 'package.json'))),
+];
 
 function resolveExternalRoot(name) {
-  try {
-    return dirname(requireFromRoot.resolve(join(name, 'package.json')));
-  } catch {
+  for (const req of requireCandidates) {
     try {
-      const main = requireFromRoot.resolve(name);
+      return dirname(req.resolve(join(name, 'package.json')));
+    } catch {
+      // try next
+    }
+    try {
+      const main = req.resolve(name);
       let dir = dirname(main);
       while (dir !== '/' && !existsSync(join(dir, 'package.json'))) {
         dir = dirname(dir);
       }
       if (existsSync(join(dir, 'package.json'))) return dir;
     } catch {
-      // fall through
+      // try next
     }
   }
   return null;
 }
+
+const visitedWorkspace = new Set();
+const visitedExternal = new Set();
 
 function collect(name) {
   if (workspacePackages.has(name)) {
@@ -71,7 +79,6 @@ function collect(name) {
   }
   const pkg = readJson(join(root, 'package.json'));
   for (const dep of Object.keys(pkg.dependencies ?? {})) collect(dep);
-  // Optional peers are ignored; production deps only.
 }
 
 collect('@irp/linux-client');
