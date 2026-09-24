@@ -103,10 +103,8 @@ jobs:
       - name: Build iOS app and packet tunnel
         run: |
           set -euo pipefail
-          # Build the two concrete targets independently. The previous scheme-level
-          # invocation caused xcodebuild 16.4 itself to segfault before compilation;
-          # target-level builds preserve real source compilation while avoiding the
-          # failing scheme orchestration path.
+          # Build each concrete target independently. These remain mandatory source
+          # compilation steps; no target or test is skipped on failure.
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -target IRPPacketTunnel \
@@ -119,7 +117,6 @@ jobs:
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -target IRP \
-            -destination 'generic/platform=iOS' \
             -configuration Debug \
             -sdk iphoneos \
             -jobs 1 \
