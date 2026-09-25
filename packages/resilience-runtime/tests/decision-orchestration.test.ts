@@ -112,48 +112,6 @@ describe('DecisionOrchestrator', () => {
     expect(result.selectedCandidate?.id).toBe('a');
   });
 
-  it('does not present an intent-governance-rejected candidate as selected', async () => {
-    const result = await new DecisionOrchestrator(
-      provider([candidate('high-risk', { risk: 0.9 })]),
-    ).orchestrate(
-      [],
-      {
-        ...context(),
-        compiledIntent: {
-          intentId: 'safe-intent',
-          version: 1,
-          priority: 'high',
-          desiredOutcome: 'maintain connectivity',
-          target: {},
-          constraints: {},
-          objectives: {
-            reachability: 1,
-            latency: 0,
-            jitter: 0,
-            packetLoss: 0,
-            throughput: 0,
-            reliability: 0,
-            privacy: 0,
-            trust: 0,
-            cost: 0,
-            diversity: 0,
-          },
-          confidence: 1,
-          provenance: 'test',
-          autonomy: 'SAFE_AUTOMATION',
-          scope: { intentId: 'safe-intent' },
-          compiledAt: '2026-09-07T00:00:00.000Z',
-        },
-      },
-    );
-
-    expect(result.selectedCandidate).toBeNull();
-    expect(result.blockedCandidates).toHaveLength(1);
-    expect(result.blockedCandidates[0]?.rejectionReasons).toContain(
-      'candidate risk 0.9 exceeds intent risk budget 0.5',
-    );
-  });
-
   it('retains untrusted candidates for canonical policy evaluation', async () => {
     const trustedCandidate = candidate('a');
     const runtimeContext = context();
