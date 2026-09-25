@@ -217,6 +217,7 @@ export interface DecisionRecord extends AuditFields {
       | 'deadline'
       | 'configuration'
       | 'compiledIntent'
+      | 'compiledIntents'
     >
   >;
   readonly observations: ObservationBatch;

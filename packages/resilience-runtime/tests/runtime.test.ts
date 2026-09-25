@@ -632,6 +632,9 @@ describe('Phase 22 resilience runtime', () => {
 
     expect(result.runtimeContext.compiledIntent?.intentId).toBe('intent-runtime');
     expect(result.runtimeContext.compiledIntent?.target.destination).toBe('github.com');
+    expect(result.runtimeContext.compiledIntents?.map((intent) => intent.intentId)).toEqual([
+      'intent-runtime',
+    ]);
     expect(result.candidates[0]?.metadata.intent).toMatchObject({ id: 'intent-runtime' });
   });
   it('runtime records incidents', async () => {

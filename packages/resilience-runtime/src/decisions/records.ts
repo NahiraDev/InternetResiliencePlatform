@@ -67,6 +67,10 @@ export const createDecisionRecord = (input: {
         deadline: input.context.deadline,
         configuration: input.context.configuration,
         compiledIntent: input.context.compiledIntent,
+        // Preserve all submitted intents, not only the arbitrated winner, so
+        // replay and audit consumers can reconstruct priority, scope, and
+        // lifecycle conflict handling from the canonical decision record.
+        compiledIntents: input.context.compiledIntents,
       },
       observations: input.observations,
       incidents: input.incidents,
