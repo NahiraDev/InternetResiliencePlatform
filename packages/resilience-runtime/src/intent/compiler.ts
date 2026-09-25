@@ -24,6 +24,10 @@ export interface CompiledIntent {
   readonly provenance: string;
   readonly autonomy: NetworkIntent['autonomy'];
   readonly scope: Readonly<Record<string, string>>;
+  /** Original lifecycle window, retained so compiled work cannot outlive its intent. */
+  readonly effectiveFrom?: string | undefined;
+  /** Original lifecycle window, retained so compiled work cannot outlive its intent. */
+  readonly expiresAt?: string | undefined;
   readonly compiledAt: string;
 }
 
@@ -129,6 +133,21 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
       ...intent.spec.target,
       intentId: intent.id,
     }),
+    ...(intent.effectiveFrom ? { effectiveFrom: intent.effectiveFrom } : {}),
+    ...(intent.expiresAt ? { expiresAt: intent.expiresAt } : {}),
     compiledAt: at.toISOString(),
   });
+};
+
+/**
+ * Revalidates a compiled intent at the point it is consumed. Compilation and
+ * execution may be separated by a scheduler/queue, so checking only the
+ * source NetworkIntent at compilation time would allow an expired intent to
+ * remain executable.
+ */
+export const isCompiledIntentEffective = (intent: CompiledIntent, at = new Date()): boolean => {
+  const timestamp = at.getTime();
+  const from = intent.effectiveFrom ? Date.parse(intent.effectiveFrom) : Number.NEGATIVE_INFINITY;
+  const expires = intent.expiresAt ? Date.parse(intent.expiresAt) : Number.POSITIVE_INFINITY;
+  return Number.isFinite(timestamp) && timestamp >= from && timestamp < expires;
 };

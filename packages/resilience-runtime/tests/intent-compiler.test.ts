@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileNetworkIntent } from '../src/intent/compiler.js';
+import { compileNetworkIntent, isCompiledIntentEffective } from '../src/intent/compiler.js';
 import { createNetworkIntent } from '@irp/core';
 
 const activeIntent = (overrides: Record<string, unknown> = {}) =>
@@ -57,5 +57,25 @@ describe('compileNetworkIntent', () => {
     expect(() => compileNetworkIntent(expired, new Date('2026-09-13T00:00:00Z'))).toThrow(
       'not active',
     );
+  });
+
+  it('retains lifecycle bounds and rejects queued compiled work after expiration', () => {
+    const compiled = compileNetworkIntent(
+      {
+        ...activeIntent({
+          effectiveFrom: '2026-09-11T00:00:00Z',
+          expiresAt: '2026-09-12T00:00:00Z',
+        }),
+        status: 'active' as const,
+      },
+      new Date('2026-09-11T01:00:00Z'),
+    );
+
+    expect(compiled).toMatchObject({
+      effectiveFrom: '2026-09-11T00:00:00.000Z',
+      expiresAt: '2026-09-12T00:00:00.000Z',
+    });
+    expect(isCompiledIntentEffective(compiled, new Date('2026-09-11T23:59:59Z'))).toBe(true);
+    expect(isCompiledIntentEffective(compiled, new Date('2026-09-12T00:00:00Z'))).toBe(false);
   });
 });

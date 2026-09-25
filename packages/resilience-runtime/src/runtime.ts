@@ -196,13 +196,25 @@ export class ResilienceRuntime {
     const orchestration = await this.decisionOrchestrator.orchestrate(found, context);
     const candidates = orchestration.candidates;
     const plan = await new DeterministicPlanner().plan(candidates, context);
+    // The planner is the canonical policy gate. Its selected action and
+    // alternatives carry the policy evaluation reasons needed to explain why
+    // an otherwise viable candidate was not executed.
+    const evaluatedCandidates = [plan.selectedAction, ...plan.alternatives];
     await this.events.emit('runtime.plan.created', {
       correlationId: context.correlationId,
       planId: plan.id,
       decisionReason: orchestration.reason,
     });
     if (!plan.policyResult.allowed)
-      return this.recordBlocked(context, before, observations, found, candidates, plan, start);
+      return this.recordBlocked(
+        context,
+        before,
+        observations,
+        found,
+        evaluatedCandidates,
+        plan,
+        start,
+      );
     await this.state.transition('validating', context.correlationId);
     const lockKey = plan.dependencies.join('|') || plan.selectedAction.intent;
     try {
@@ -213,13 +225,21 @@ export class ResilienceRuntime {
           before,
           observations,
           found,
-          candidates,
+          evaluatedCandidates,
           plan,
           start,
           validation,
         );
       if (!this.validator.lock(lockKey))
-        return this.recordBlocked(context, before, observations, found, candidates, plan, start);
+        return this.recordBlocked(
+          context,
+          before,
+          observations,
+          found,
+          evaluatedCandidates,
+          plan,
+          start,
+        );
 
       let outcome: DecisionOutcome = 'simulated';
       let execution;
@@ -241,7 +261,7 @@ export class ResilienceRuntime {
               before,
               observations,
               found,
-              candidates,
+              evaluatedCandidates,
               plan,
               start,
               {
@@ -279,7 +299,7 @@ export class ResilienceRuntime {
         observations,
         incidents: found,
         policyEvaluation: plan.policyResult,
-        candidates,
+        candidates: evaluatedCandidates,
         selectedPlan: plan,
         validation,
         executionResult: execution,
