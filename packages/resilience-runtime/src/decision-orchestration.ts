@@ -41,10 +41,7 @@ export class DecisionOrchestrator {
       .map((candidate) => this.applyGovernance(candidate, governance, context))
       .sort(compareCandidates);
     const blocked = ranked.filter((candidate) => candidate.rejectionReasons.length > 0);
-    // This is intentionally a governance selection only. Policy admission is
-    // performed by DeterministicPlanner, but a candidate already rejected by
-    // intent governance must never be presented as selected to a consumer.
-    const selectedCandidate = ranked.find((candidate) => candidate.rejectionReasons.length === 0) ?? null;
+    const selectedCandidate = ranked[0] ?? null;
 
     return {
       candidates: ranked,
