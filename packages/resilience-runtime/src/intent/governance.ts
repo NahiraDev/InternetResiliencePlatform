@@ -1,4 +1,4 @@
-import type { CompiledIntent } from './compiler.js';
+import { isCompiledIntentEffective, type CompiledIntent } from './compiler.js';
 import type { RuntimeContext, RuntimeMode } from '../domain/types.js';
 
 export type IntentAdmission = 'ALLOW' | 'PLAN_ONLY' | 'REQUIRE_APPROVAL' | 'DENY';
@@ -70,8 +70,20 @@ export const resolveIntentGovernance = (
   intents: readonly CompiledIntent[],
   context: RuntimeContext,
 ): IntentGovernanceDecision => {
-  const arbitration = arbitrateIntents(intents);
+  const effectiveIntents = intents.filter((intent) => isCompiledIntentEffective(intent));
+  const staleIntents = intents.filter((intent) => !isCompiledIntentEffective(intent));
+  const arbitration = arbitrateIntents(effectiveIntents);
   if (!arbitration.selectedIntent) {
+    if (staleIntents.length) {
+      return {
+        admission: 'DENY',
+        candidates: [],
+        rejectedIntents: staleIntents,
+        reasons: ['all supplied compiled intents are outside their effective lifecycle window'],
+        mutationAllowed: false,
+        maxRisk: 0,
+      };
+    }
     return {
       admission: 'ALLOW',
       candidates: [],
@@ -131,12 +143,14 @@ export const resolveIntentGovernance = (
     reasons.push(
       `arbitrated ${arbitration.rejectedIntents.length} lower-priority overlapping intent(s)`,
     );
+  if (staleIntents.length)
+    reasons.push(`rejected ${staleIntents.length} intent(s) outside their effective lifecycle window`);
 
   return Object.freeze({
     admission,
     selectedIntent: selected,
     candidates: arbitration.candidates,
-    rejectedIntents: arbitration.rejectedIntents,
+    rejectedIntents: [...arbitration.rejectedIntents, ...staleIntents],
     reasons,
     mutationAllowed,
     maxRisk,
