@@ -11,8 +11,10 @@ export interface DecisionOrchestrationResult {
 }
 
 /**
- * Composes intelligence output with the runtime's policy, capability and
- * security constraints without becoming a second decision engine.
+ * Composes intelligence output with intent governance without becoming a
+ * second decision engine. Policy evaluation intentionally remains in the
+ * canonical planner gate so a rejected candidate and its reason are retained
+ * in the decision record rather than disappearing before planning.
  *
  * Ordering is deterministic and mutation-free. The downstream planner remains
  * responsible for turning the selected candidate into an executable plan.
@@ -35,13 +37,10 @@ export class DecisionOrchestrator {
           })
         : context;
     const candidates = await this.decisionProvider.decide(incidents, governedContext);
-    const allowed = candidates
+    const ranked = candidates
       .map((candidate) => this.applyGovernance(candidate, governance, context))
-      .filter((candidate) => this.isEligible(candidate, context));
-    const blocked = candidates
-      .map((candidate) => this.applyGovernance(candidate, governance, context))
-      .filter((candidate) => !this.isEligible(candidate, context));
-    const ranked = [...allowed].sort(compareCandidates);
+      .sort(compareCandidates);
+    const blocked = ranked.filter((candidate) => candidate.rejectionReasons.length > 0);
     const selectedCandidate = ranked[0] ?? null;
 
     return {
@@ -56,7 +55,7 @@ export class DecisionOrchestrator {
           ? 'no candidate admitted because intent governance requires approval'
           : governance.admission === 'DENY'
             ? 'no candidate admitted because intent governance denied the intent'
-            : 'no candidate satisfied policy, capability and security constraints',
+            : 'no candidate was admitted by intent governance',
       governance,
     };
   }
@@ -78,19 +77,6 @@ export class DecisionOrchestrator {
       : Object.freeze({ ...candidate, rejectionReasons: reasons });
   }
 
-  private isEligible(candidate: CandidateAction, context: RuntimeContext): boolean {
-    const policy = context.policySnapshot.policy;
-    if (candidate.rejectionReasons.length > 0) return false;
-    if (!policy.allowedActions.includes(candidate.intent)) return false;
-    if (policy.deniedActions.includes(candidate.intent)) return false;
-    if (candidate.confidence < policy.confidenceThreshold) return false;
-    if (!context.capabilitySnapshot.trusted || !context.securityContext.trusted) return false;
-
-    const requiredByPolicy = policy.capabilityRequirements[candidate.intent] ?? [];
-    const required = new Set([...candidate.requiredCapabilities, ...requiredByPolicy]);
-    const available = new Set(context.capabilitySnapshot.capabilities);
-    return [...required].every((capability) => available.has(capability));
-  }
 }
 
 const compareCandidates = (a: CandidateAction, b: CandidateAction): number =>
