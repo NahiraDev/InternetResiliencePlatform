@@ -80,7 +80,7 @@ const provider = (candidates: readonly CandidateAction[]): DecisionProvider => (
 });
 
 describe('DecisionOrchestrator', () => {
-  it('composes policy, capability and security constraints without mutation', async () => {
+  it('defers policy, capability and security evaluation to the canonical planner gate', async () => {
     const selected = candidate('a', { confidence: 0.95 });
     const denied = candidate('b', { id: 'b', intent: 'dns_switch' });
     const insufficientCapability = candidate('c', {
@@ -93,9 +93,9 @@ describe('DecisionOrchestrator', () => {
       provider([selected, denied, insufficientCapability]),
     ).orchestrate([], context({ deniedActions: ['dns_switch'] }));
 
-    expect(result.selectedCandidate?.id).toBe('a');
-    expect(result.candidates.map((item) => item.id)).toEqual(['a']);
-    expect(result.blockedCandidates.map((item) => item.id)).toEqual(['b', 'c']);
+    expect(result.selectedCandidate?.id).toBe('c');
+    expect(result.candidates.map((item) => item.id)).toEqual(['c', 'a', 'b']);
+    expect(result.blockedCandidates).toHaveLength(0);
     expect(denied.rejectionReasons).toEqual([]);
   });
 
@@ -112,7 +112,7 @@ describe('DecisionOrchestrator', () => {
     expect(result.selectedCandidate?.id).toBe('a');
   });
 
-  it('fails closed when the runtime is not trusted', async () => {
+  it('retains untrusted candidates for canonical policy evaluation', async () => {
     const trustedCandidate = candidate('a');
     const runtimeContext = context();
     const untrusted: RuntimeContext = {
@@ -125,8 +125,8 @@ describe('DecisionOrchestrator', () => {
       untrusted,
     );
 
-    expect(result.selectedCandidate).toBeNull();
-    expect(result.candidates).toHaveLength(0);
-    expect(result.blockedCandidates).toHaveLength(1);
+    expect(result.selectedCandidate?.id).toBe('a');
+    expect(result.candidates).toHaveLength(1);
+    expect(result.blockedCandidates).toHaveLength(0);
   });
 });

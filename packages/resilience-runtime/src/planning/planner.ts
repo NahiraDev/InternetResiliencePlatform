@@ -14,9 +14,38 @@ export class DeterministicPlanner {
   constructor(private readonly policy = new RuntimePolicyArbitrator()) {}
   async plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan> {
     const ranked = rankCandidates(candidates);
-    const selected =
-      ranked.find((c) => !c.rejectionReasons.length) ?? ranked[0] ?? noopCandidate(context);
-    const policyResult = await this.policy.evaluate(selected, context);
+    // Policy is evaluated here, at the canonical planning gate.  Retain the
+    // evaluated candidates so policy-denied alternatives remain explainable in
+    // the plan and final DecisionRecord instead of being filtered upstream.
+    const evaluated = await Promise.all(
+      ranked.map(async (candidate) => {
+        const policyResult = await this.policy.evaluate(candidate, context);
+        const rejectionReasons = [...candidate.rejectionReasons, ...policyResult.reasons];
+        return {
+          candidate:
+            rejectionReasons.length === candidate.rejectionReasons.length
+              ? candidate
+              : deepFreeze({ ...candidate, rejectionReasons }),
+          policyResult,
+        };
+      }),
+    );
+    const fallback = noopCandidate(context);
+    const fallbackPolicy = await this.policy.evaluate(fallback, context);
+    const selectedEvaluation =
+      evaluated.find(
+        ({ candidate, policyResult }) =>
+          candidate.rejectionReasons.length === 0 && policyResult.allowed,
+      ) ??
+      evaluated[0] ?? {
+        candidate:
+          fallbackPolicy.reasons.length === 0
+            ? fallback
+            : deepFreeze({ ...fallback, rejectionReasons: fallbackPolicy.reasons }),
+        policyResult: fallbackPolicy,
+      };
+    const selected = selectedEvaluation.candidate;
+    const policyResult = selectedEvaluation.policyResult;
     return deepFreeze({
       id: nextId('plan'),
       schemaVersion: 1,
@@ -25,8 +54,10 @@ export class DeterministicPlanner {
       source: 'resilience-runtime',
       metadata: {},
       selectedAction: selected,
-      alternatives: ranked.filter((c) => c.id !== selected.id),
-      rejectionReasons: [...selected.rejectionReasons, ...policyResult.reasons],
+      alternatives: evaluated
+        .map(({ candidate }) => candidate)
+        .filter((candidate) => candidate.id !== selected.id),
+      rejectionReasons: selected.rejectionReasons,
       expectedBenefit: selected.expectedBenefit,
       risk: selected.risk,
       confidence: selected.confidence,
