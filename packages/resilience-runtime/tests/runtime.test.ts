@@ -267,6 +267,22 @@ describe('Phase 22 resilience runtime', () => {
         )
       ).alternatives,
     ).toHaveLength(1));
+  it('retains policy-denied candidates while selecting the next policy-allowed strategy', async () => {
+    const context = trusted();
+    const plan = await new DeterministicPlanner().plan(
+      [
+        candidate('route_change', 0.99, ['route.write']),
+        candidate('dns_switch', 0.9, ['dns.write']),
+      ],
+      context,
+    );
+
+    expect(plan.selectedAction.intent).toBe('dns_switch');
+    expect(plan.policyResult.allowed).toBe(true);
+    expect(plan.alternatives).toHaveLength(1);
+    expect(plan.alternatives[0]?.intent).toBe('route_change');
+    expect(plan.alternatives[0]?.rejectionReasons).toContain('action route_change is not allowed');
+  });
   it('records rejection reasons', async () =>
     expect(
       (
@@ -479,6 +495,26 @@ describe('Phase 22 resilience runtime', () => {
     const r = await rt.cycle({ mode: 'simulation' });
     expect(r.outcome).toBe('blocked');
   });
+  it('records the canonical policy rejection while selecting an allowed alternative', async () => {
+    const rt = new ResilienceRuntime([], {
+      decisionProvider: {
+        async decide() {
+          return [
+            candidate('route_change', 0.99, ['route.write']),
+            candidate('dns_switch', 0.9, ['dns.write']),
+          ];
+        },
+      },
+    });
+
+    const record = await rt.cycle(trusted());
+
+    expect(record.outcome).toBe('simulated');
+    expect(record.selectedPlan?.selectedAction.intent).toBe('dns_switch');
+    expect(record.candidates.find((item) => item.intent === 'route_change')?.rejectionReasons).toContain(
+      'action route_change is not allowed',
+    );
+  });
   it('produces snapshot', async () => {
     const rt = new ResilienceRuntime();
     expect((await rt.getRuntimeSnapshot()).health.status).toBe('unknown');
@@ -596,6 +632,9 @@ describe('Phase 22 resilience runtime', () => {
 
     expect(result.runtimeContext.compiledIntent?.intentId).toBe('intent-runtime');
     expect(result.runtimeContext.compiledIntent?.target.destination).toBe('github.com');
+    expect(result.runtimeContext.compiledIntents?.map((intent) => intent.intentId)).toEqual([
+      'intent-runtime',
+    ]);
     expect(result.candidates[0]?.metadata.intent).toMatchObject({ id: 'intent-runtime' });
   });
   it('runtime records incidents', async () => {

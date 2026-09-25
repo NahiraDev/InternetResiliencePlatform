@@ -138,4 +138,19 @@ describe('intent governance', () => {
     expect(denied.admission).toBe('DENY');
     expect(denied.mutationAllowed).toBe(false);
   });
+
+  it('rejects stale compiled intents at the governance boundary', () => {
+    const compiled = {
+      ...intent('expired', 'critical'),
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    };
+    const decision = resolveIntentGovernance([compiled], trustedSimulationContext(compiled));
+
+    expect(decision.admission).toBe('DENY');
+    expect(decision.mutationAllowed).toBe(false);
+    expect(decision.rejectedIntents.map((item) => item.intentId)).toEqual(['expired']);
+    expect(decision.reasons).toContain(
+      'all supplied compiled intents are outside their effective lifecycle window',
+    );
+  });
 });
