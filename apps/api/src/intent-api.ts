@@ -148,7 +148,7 @@ const fromRow = (row: IntentRecordRow): NetworkIntent =>
     ...(row.effectiveFrom ? { effectiveFrom: new Date(row.effectiveFrom).toISOString() } : {}),
     ...(row.expiresAt ? { expiresAt: new Date(row.expiresAt).toISOString() } : {}),
     ...(row.supersedes ? { supersedes: row.supersedes } : {}),
-    metadata: row.metadata as NetworkIntent['metadata'],
+    ...(row.metadata ? { metadata: row.metadata as NetworkIntent['metadata'] } : {}),
     ...(row.provenance ? { provenance: row.provenance } : {}),
     ...(row.confidence !== null && row.confidence !== undefined ? { confidence: row.confidence } : {}),
     ...(row.autonomy ? { autonomy: row.autonomy as NetworkIntent['autonomy'] } : {}),
@@ -195,7 +195,11 @@ export class DatabaseIntentStore implements IntentApiStore {
     return rows.map(fromRow);
   }
 
-  async put(intent: NetworkIntent, ownership: IntentOwnership, options = {}) {
+  async put(
+    intent: NetworkIntent,
+    ownership: IntentOwnership,
+    options: { idempotencyKey?: string; idempotencyFingerprint?: string; expectedVersion?: number } = {},
+  ) {
     await this.repository.put(toRow(intent, ownership, options), options.expectedVersion);
   }
 
@@ -267,10 +271,15 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       return reply.code(200).send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
     }
 
+    const spec = {
+      outcome: input.spec.outcome,
+      ...(input.spec.constraints !== undefined ? { constraints: input.spec.constraints } : {}),
+      ...(input.spec.target !== undefined ? { target: input.spec.target } : {}),
+    };
     const intentInput = {
       id: input.id,
       priority: input.priority,
-      spec: input.spec,
+      spec,
       ...(input.effectiveFrom !== undefined ? { effectiveFrom: input.effectiveFrom } : {}),
       ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt } : {}),
       ...(input.provenance !== undefined ? { provenance: input.provenance } : {}),
