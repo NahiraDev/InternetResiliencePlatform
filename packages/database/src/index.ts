@@ -73,7 +73,7 @@ const jsonValue = (value: unknown): string => JSON.stringify(value ?? {});
 export interface IntentRepository {
   get(id: string, principalId: string, organizationId?: string): Promise<IntentRecordRow | undefined>;
   list(status: string | undefined, principalId: string, organizationId?: string, limit?: number): Promise<readonly IntentRecordRow[]>;
-  put(row: IntentRecordRow): Promise<void>;
+  put(row: IntentRecordRow, expectedVersion?: number): Promise<void>;
   findByIdempotency(principalId: string, key: string): Promise<IntentRecordRow | undefined>;
 }
 
