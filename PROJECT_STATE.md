@@ -4,13 +4,15 @@
 
 ## Current implementation gate
 
-- **Current gate:** Phase 78 — Closed-Loop Control Foundation.
-- **Phase 77 status:** implementation is complete and merged on `main` in PR #237; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
-- **Phase 78 status:** implementation has started on `phase/78-closed-loop-control` from main commit `164c9793ac8819492939d9d59b6c3b529cc506cd`.
-- **Current main baseline reviewed:** `164c9793ac8819492939d9d59b6c3b529cc506cd` (`Merge pull request #239 from NahiraDev/fix/phase-77-ios-actions-main`).
+- **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
+- **Current execution gate:** GitHub issue #272 and workstreams #273–#284, plus Linux runtime gate #254. These are the active post-Phase-78 integration/evidence workstreams.
+- **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
+- **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
+- **Current main baseline reviewed:** `6dd19a7936932c23c4b4115bb298991dabfa7cc2`.
+- **Latest implementation merge observed on this baseline:** PR #303.
 - **Release state:** Phase 71 external release certification remains open because the required real tagged GitHub Release, published platform artifact inspection and checksum evidence are not yet satisfied.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` is the current planning authority for Phases 72–150.
+- **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` remains architectural reference material for Phases 72–150. It does not authorize starting Phase 79+ independently of the active issue/workstream tracker.
 
 ## Phase 78 objective
 
@@ -50,7 +52,7 @@ Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
 → Apply → Verify → Monitor → Failover/Recover → Learn → Explain
 ```
 
-The immediate architectural objective is not to create a second control plane. The repository already contains substantial control-plane/runtime primitives. Phase 72–78 must consolidate and formalize their ownership before adding broader autonomy.
+The immediate architectural objective is not to create a second control plane. The repository already contains substantial control-plane/runtime primitives. The current work must consolidate and prove their ownership and end-to-end execution before adding broader autonomy.
 
 ### Existing ownership boundaries
 
@@ -63,9 +65,9 @@ The immediate architectural objective is not to create a second control plane. T
 
 These are architecture directions to be verified and refined by Phase 72; they are not a claim that every cross-package boundary is already fully normalized.
 
-## Phase 72–150 execution governance
+## Post-Phase-78 execution governance
 
-The current post-v1 roadmap is grouped as:
+The historical/current roadmap is grouped as:
 
 - 72–78 — Unified Control Plane
 - 79–85 — Intent & Policy
@@ -130,9 +132,9 @@ For networking automation, every mutation must be policy-checked, bounded, obser
 - Engineering governance: `docs/architecture/engineering-governance.md`.
 - Parallel-agent protocol: `docs/architecture/parallel-agent-protocol.md`, `.github/AGENT_PROTOCOL.md` and `.github/ACTIVE_WORK.md`.
 
-## Known architectural findings entering Phase 78
+## Known architectural findings entering the current integration backlog
 
-The repository already contains observation, state, planning, policy, decision, execution, verification, telemetry and recovery primitives. Phase 78 must formalize bounded end-to-end control around these existing components rather than duplicating them.
+The repository already contains observation, state, planning, policy, decision, execution, verification, telemetry and recovery primitives. The current backlog must connect and prove these existing components rather than duplicating them.
 
 The remaining architectural risks are ownership fragmentation and contract duplication, especially around:
 
