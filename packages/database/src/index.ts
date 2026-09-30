@@ -80,25 +80,25 @@ export interface IntentRepository {
 export const createIntentRepository = (client: Pick<DatabaseClient, '$queryRaw'>): IntentRepository => ({
   async get(id, principalId, organizationId) {
     const rows = organizationId
-      ? await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "id" = \${id} AND "organizationId" = \${organizationId} LIMIT 1\`
-      : await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "id" = \${id} AND "ownerPrincipalId" = \${principalId} AND "organizationId" IS NULL LIMIT 1\`;
+      ? await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "id" = ${id} AND "organizationId" = ${organizationId} LIMIT 1`
+      : await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "id" = ${id} AND "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL LIMIT 1`;
     return (rows as IntentRecordRow[])[0];
   },
   async list(status, principalId, organizationId, limit = 100) {
     const bounded = Math.min(100, Math.max(1, limit));
     if (organizationId && status)
-      return (await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = \${organizationId} AND "status" = \${status} ORDER BY "updatedAt" DESC LIMIT \${bounded}\`) as IntentRecordRow[];
+      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = ${organizationId} AND "status" = ${status} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
     if (organizationId)
-      return (await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = \${organizationId} ORDER BY "updatedAt" DESC LIMIT \${bounded}\`) as IntentRecordRow[];
+      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = ${organizationId} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
     if (status)
-      return (await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = \${principalId} AND "organizationId" IS NULL AND "status" = \${status} ORDER BY "updatedAt" DESC LIMIT \${bounded}\`) as IntentRecordRow[];
-    return (await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = \${principalId} AND "organizationId" IS NULL ORDER BY "updatedAt" DESC LIMIT \${bounded}\`) as IntentRecordRow[];
+      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL AND "status" = ${status} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
+    return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
   },
   async put(row) {
-    await client.$queryRaw\`INSERT INTO "NetworkIntentRecord" ("id","version","status","priority","spec","createdAt","updatedAt","effectiveFrom","expiresAt","supersedes","metadata","provenance","confidence","autonomy","ownerPrincipalId","organizationId","idempotencyKey","idempotencyFingerprint") VALUES (\${row.id},\${row.version},\${row.status},\${row.priority},\${jsonValue(row.spec)}::jsonb,\${row.createdAt},\${row.updatedAt},\${row.effectiveFrom ?? null},\${row.expiresAt ?? null},\${row.supersedes ?? null},\${jsonValue(row.metadata)}::jsonb,\${row.provenance ?? null},\${row.confidence ?? null},\${row.autonomy ?? null},\${row.ownerPrincipalId},\${row.organizationId ?? null},\${row.idempotencyKey ?? null},\${row.idempotencyFingerprint ?? null}) ON CONFLICT ("id") DO UPDATE SET "version"=EXCLUDED."version","status"=EXCLUDED."status","priority"=EXCLUDED."priority","spec"=EXCLUDED."spec","updatedAt"=EXCLUDED."updatedAt","effectiveFrom"=EXCLUDED."effectiveFrom","expiresAt"=EXCLUDED."expiresAt","supersedes"=EXCLUDED."supersedes","metadata"=EXCLUDED."metadata","provenance"=EXCLUDED."provenance","confidence"=EXCLUDED."confidence","autonomy"=EXCLUDED."autonomy"\`;
+    await client.$queryRaw`INSERT INTO "NetworkIntentRecord" ("id","version","status","priority","spec","createdAt","updatedAt","effectiveFrom","expiresAt","supersedes","metadata","provenance","confidence","autonomy","ownerPrincipalId","organizationId","idempotencyKey","idempotencyFingerprint") VALUES (${row.id},${row.version},${row.status},${row.priority},${jsonValue(row.spec)}::jsonb,${row.createdAt},${row.updatedAt},${row.effectiveFrom ?? null},${row.expiresAt ?? null},${row.supersedes ?? null},${jsonValue(row.metadata)}::jsonb,${row.provenance ?? null},${row.confidence ?? null},${row.autonomy ?? null},${row.ownerPrincipalId},${row.organizationId ?? null},${row.idempotencyKey ?? null},${row.idempotencyFingerprint ?? null}) ON CONFLICT ("id") DO UPDATE SET "version"=EXCLUDED."version","status"=EXCLUDED."status","priority"=EXCLUDED."priority","spec"=EXCLUDED."spec","updatedAt"=EXCLUDED."updatedAt","effectiveFrom"=EXCLUDED."effectiveFrom","expiresAt"=EXCLUDED."expiresAt","supersedes"=EXCLUDED."supersedes","metadata"=EXCLUDED."metadata","provenance"=EXCLUDED."provenance","confidence"=EXCLUDED."confidence","autonomy"=EXCLUDED."autonomy"`;
   },
   async findByIdempotency(principalId, key) {
-    const rows = await client.$queryRaw\`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = \${principalId} AND "idempotencyKey" = \${key} LIMIT 1\`;
+    const rows = await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "idempotencyKey" = ${key} LIMIT 1`;
     return (rows as IntentRecordRow[])[0];
   },
 });
