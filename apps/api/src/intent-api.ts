@@ -148,10 +148,10 @@ const fromRow = (row: IntentRecordRow): NetworkIntent =>
     ...(row.effectiveFrom ? { effectiveFrom: new Date(row.effectiveFrom).toISOString() } : {}),
     ...(row.expiresAt ? { expiresAt: new Date(row.expiresAt).toISOString() } : {}),
     ...(row.supersedes ? { supersedes: row.supersedes } : {}),
-    ...(row.metadata ? { metadata: row.metadata as NetworkIntent['metadata'] } : {}),
+    ...(row.metadata ? { metadata: row.metadata as Readonly<Record<string, string>> } : {}),
     ...(row.provenance ? { provenance: row.provenance } : {}),
     ...(row.confidence !== null && row.confidence !== undefined ? { confidence: row.confidence } : {}),
-    ...(row.autonomy ? { autonomy: row.autonomy as NetworkIntent['autonomy'] } : {}),
+    ...(row.autonomy ? { autonomy: row.autonomy as NonNullable<NetworkIntent['autonomy']> } : {}),
   });
 
 const toRow = (
