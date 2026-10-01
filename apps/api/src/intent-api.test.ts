@@ -16,7 +16,7 @@ describe('intent API', () => {
     });
     registerIntentRoutes(app, {
       store: new InMemoryIntentStore(),
-      requirePermission: async (_request, _permission) => undefined,
+      requirePermission: async () => ({ id: 'test-principal', roles: ['admin'], scopes: ['*'] }),
     });
     return app;
   };
@@ -121,7 +121,7 @@ describe('intent API', () => {
       return reply.code(500).send({ success: false });
     });
     registerIntentRoutes(app, {
-      requirePermission: async () => undefined,
+      requirePermission: async () => ({ id: 'test-principal', roles: ['admin'], scopes: ['*'] }),
       onActivated: (intent) => activated.push(`${intent.id}@${intent.version}`),
     });
     await app.inject({

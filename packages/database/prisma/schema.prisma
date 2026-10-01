@@ -274,3 +274,30 @@ model Notification {
   @@index([readAt, createdAt])
   @@index([incidentId, createdAt])
 }
+
+
+model NetworkIntentRecord {
+  id String @id @db.VarChar(128)
+  version Int
+  status String @db.VarChar(32)
+  priority String @db.VarChar(16)
+  spec Json
+  createdAt DateTime
+  updatedAt DateTime
+  effectiveFrom DateTime?
+  expiresAt DateTime?
+  supersedes String? @db.VarChar(128)
+  metadata Json @default("{}")
+  provenance String? @db.VarChar(512)
+  confidence Float?
+  autonomy String? @db.VarChar(40)
+  ownerPrincipalId String @db.VarChar(255)
+  organizationId String? @db.VarChar(128)
+  ownerScopeKey String @db.VarChar(384)
+  idempotencyKey String? @db.VarChar(128)
+  idempotencyFingerprint String? @db.VarChar(64)
+  @@index([ownerPrincipalId, status, updatedAt])
+  @@index([organizationId, status, updatedAt])
+  @@index([ownerScopeKey, status, updatedAt])
+  @@unique([ownerScopeKey, idempotencyKey])
+}
