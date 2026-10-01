@@ -15,6 +15,7 @@ CREATE TABLE "NetworkIntentRecord" (
   "autonomy" VARCHAR(40),
   "ownerPrincipalId" VARCHAR(255) NOT NULL,
   "organizationId" VARCHAR(128),
+  "ownerScopeKey" VARCHAR(384) NOT NULL,
   "idempotencyKey" VARCHAR(128),
   "idempotencyFingerprint" VARCHAR(64),
   CONSTRAINT "NetworkIntentRecord_pkey" PRIMARY KEY ("id")
@@ -24,5 +25,7 @@ CREATE INDEX "NetworkIntentRecord_ownerPrincipalId_status_updatedAt_idx"
   ON "NetworkIntentRecord" ("ownerPrincipalId", "status", "updatedAt");
 CREATE INDEX "NetworkIntentRecord_organizationId_status_updatedAt_idx"
   ON "NetworkIntentRecord" ("organizationId", "status", "updatedAt");
-CREATE UNIQUE INDEX "NetworkIntentRecord_ownerPrincipalId_idempotencyKey_key"
-  ON "NetworkIntentRecord" ("ownerPrincipalId", "idempotencyKey");
+CREATE INDEX "NetworkIntentRecord_ownerScopeKey_status_updatedAt_idx"
+  ON "NetworkIntentRecord" ("ownerScopeKey", "status", "updatedAt");
+CREATE UNIQUE INDEX "NetworkIntentRecord_ownerScopeKey_idempotencyKey_key"
+  ON "NetworkIntentRecord" ("ownerScopeKey", "idempotencyKey");

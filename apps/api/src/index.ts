@@ -753,6 +753,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
 
   registerIntentRoutes(app, {
+    ...(process.env.DATABASE_URL ? { database: db } : {}),
     onActivated: (intent) =>
       resilienceRuntime.runIntent(intent, {
         mode: 'simulation',

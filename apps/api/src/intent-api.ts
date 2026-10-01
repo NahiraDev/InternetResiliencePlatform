@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import {
@@ -12,7 +13,12 @@ import {
   type NetworkIntent,
 } from '@irp/core';
 import type { Principal } from '@irp/auth';
-import { createIntentRepository, type DatabaseClient, type IntentRecordRow } from '@irp/database';
+import {
+  createIntentRepository,
+  IntentRepositoryConflictError,
+  type DatabaseClient,
+  type IntentRecordRow,
+} from '@irp/database';
 
 const timestamp = z.string().datetime({ offset: true });
 const primitive = z.union([z.string(), z.number().finite(), z.boolean()]);
@@ -81,6 +87,24 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const ownershipKey = (ownership: IntentOwnership): string =>
   ownership.organizationId ? `org:${ownership.organizationId}` : `principal:${ownership.principalId}`;
+
+const canonicalize = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(record)
+        .sort()
+        .map((key) => [key, canonicalize(record[key])]),
+    );
+  }
+  return value;
+};
+
+const idempotencyFingerprint = (value: unknown): string =>
+  createHash('sha256')
+    .update(JSON.stringify(canonicalize(value)))
+    .digest('hex');
 
 export class InMemoryIntentStore implements IntentApiStore {
   private readonly intents = new Map<string, { intent: NetworkIntent; ownership: IntentOwnership; idempotencyKey?: string; idempotencyFingerprint?: string }>();
@@ -177,6 +201,7 @@ const toRow = (
   organizationId: ownership.organizationId ?? null,
   idempotencyKey: options.idempotencyKey ?? null,
   idempotencyFingerprint: options.idempotencyFingerprint ?? null,
+  ownerScopeKey: ownershipKey(ownership),
 });
 
 export class DatabaseIntentStore implements IntentApiStore {
@@ -186,12 +211,12 @@ export class DatabaseIntentStore implements IntentApiStore {
   }
 
   async get(id: string, ownership: IntentOwnership) {
-    const row = await this.repository.get(id, ownership.principalId, ownership.organizationId);
+    const row = await this.repository.get(id, ownershipKey(ownership));
     return row ? fromRow(row) : undefined;
   }
 
   async list(status: NetworkIntent['status'] | undefined, ownership: IntentOwnership, limit: number) {
-    const rows = await this.repository.list(status, ownership.principalId, ownership.organizationId, limit);
+    const rows = await this.repository.list(status, ownershipKey(ownership), limit);
     return rows.map(fromRow);
   }
 
@@ -204,7 +229,7 @@ export class DatabaseIntentStore implements IntentApiStore {
   }
 
   async findByIdempotency(ownership: IntentOwnership, key: string) {
-    const row = await this.repository.findByIdempotency(ownership.principalId, key);
+    const row = await this.repository.findByIdempotency(ownershipKey(ownership), key);
     if (!row) return undefined;
     return row.idempotencyFingerprint
       ? { intent: fromRow(row), fingerprint: row.idempotencyFingerprint }
@@ -260,7 +285,7 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const owner = ownership(principal);
     const key = idempotencyKey(request);
     const input = createSchema.parse(request.body ?? {});
-    const fingerprint = JSON.stringify(input);
+    const fingerprint = idempotencyFingerprint(input);
     const previous = await store.findByIdempotency(owner, key);
     if (previous) {
       if (previous.fingerprint !== fingerprint)
@@ -289,7 +314,29 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     } satisfies Parameters<typeof createNetworkIntent>[0];
 
     const intent = createNetworkIntent(intentInput);
-    await store.put(intent, owner, { idempotencyKey: key, idempotencyFingerprint: fingerprint });
+    try {
+      await store.put(intent, owner, {
+        idempotencyKey: key,
+        idempotencyFingerprint: fingerprint,
+      });
+    } catch (error) {
+      if (!(error instanceof IntentRepositoryConflictError)) throw error;
+      const raced = await store.findByIdempotency(owner, key);
+      if (raced) {
+        if (raced.fingerprint !== fingerprint)
+          return reply.code(409).send({
+            success: false,
+            error: {
+              code: 'IDEMPOTENCY_KEY_REUSE',
+              message: 'Idempotency-Key was already used with a different request.',
+            },
+          });
+        return reply
+          .code(200)
+          .send({ success: true, data: raced.intent, meta: { idempotentReplay: true } });
+      }
+      throw new ConflictAppError('Intent id or idempotency key is already in use.');
+    }
     return reply.code(201).send({ success: true, data: intent });
   });
 
@@ -317,8 +364,8 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const command = commandSchema.parse(request.body ?? {}) as IntentCommand;
     try {
       const updated = transitionIntent(intent, command);
-      if (updated.status === 'active') await options.onActivated?.(updated);
       await store.put(updated, owner, { expectedVersion: intent.version });
+      if (updated.status === 'active') await options.onActivated?.(updated);
       return { success: true, data: updated };
     } catch (error) {
       if (error instanceof ConflictAppError) throw error;

@@ -64,41 +64,52 @@ export interface IntentRecordRow {
   autonomy?: string | null;
   ownerPrincipalId: string;
   organizationId?: string | null;
+  ownerScopeKey: string;
   idempotencyKey?: string | null;
   idempotencyFingerprint?: string | null;
 }
 
 const jsonValue = (value: unknown): string => JSON.stringify(value ?? {});
 
+export class IntentRepositoryConflictError extends Error {
+  readonly code = 'INTENT_REPOSITORY_CONFLICT';
+  constructor(message = 'Intent repository conflict') {
+    super(message);
+    this.name = 'IntentRepositoryConflictError';
+  }
+}
+
 export interface IntentRepository {
-  get(id: string, principalId: string, organizationId?: string): Promise<IntentRecordRow | undefined>;
-  list(status: string | undefined, principalId: string, organizationId?: string, limit?: number): Promise<readonly IntentRecordRow[]>;
+  get(id: string, ownerScopeKey: string): Promise<IntentRecordRow | undefined>;
+  list(status: string | undefined, ownerScopeKey: string, limit?: number): Promise<readonly IntentRecordRow[]>;
   put(row: IntentRecordRow, expectedVersion?: number): Promise<void>;
-  findByIdempotency(principalId: string, key: string): Promise<IntentRecordRow | undefined>;
+  findByIdempotency(ownerScopeKey: string, key: string): Promise<IntentRecordRow | undefined>;
 }
 
 export const createIntentRepository = (client: Pick<DatabaseClient, '$queryRaw'>): IntentRepository => ({
-  async get(id, principalId, organizationId) {
-    const rows = organizationId
-      ? await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "id" = ${id} AND "organizationId" = ${organizationId} LIMIT 1`
-      : await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "id" = ${id} AND "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL LIMIT 1`;
+  async get(id, ownerScopeKey) {
+    const rows = await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "id" = ${id} AND "ownerScopeKey" = ${ownerScopeKey} LIMIT 1`;
     return (rows as IntentRecordRow[])[0];
   },
-  async list(status, principalId, organizationId, limit = 100) {
+  async list(status, ownerScopeKey, limit = 100) {
     const bounded = Math.min(100, Math.max(1, limit));
-    if (organizationId && status)
-      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = ${organizationId} AND "status" = ${status} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
-    if (organizationId)
-      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "organizationId" = ${organizationId} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
     if (status)
-      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL AND "status" = ${status} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
-    return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "organizationId" IS NULL ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
+      return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} AND "status" = ${status} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
+    return (await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} ORDER BY "updatedAt" DESC LIMIT ${bounded}`) as IntentRecordRow[];
   },
-  async put(row) {
-    await client.$queryRaw`INSERT INTO "NetworkIntentRecord" ("id","version","status","priority","spec","createdAt","updatedAt","effectiveFrom","expiresAt","supersedes","metadata","provenance","confidence","autonomy","ownerPrincipalId","organizationId","idempotencyKey","idempotencyFingerprint") VALUES (${row.id},${row.version},${row.status},${row.priority},${jsonValue(row.spec)}::jsonb,${row.createdAt},${row.updatedAt},${row.effectiveFrom ?? null},${row.expiresAt ?? null},${row.supersedes ?? null},${jsonValue(row.metadata)}::jsonb,${row.provenance ?? null},${row.confidence ?? null},${row.autonomy ?? null},${row.ownerPrincipalId},${row.organizationId ?? null},${row.idempotencyKey ?? null},${row.idempotencyFingerprint ?? null}) ON CONFLICT ("id") DO UPDATE SET "version"=EXCLUDED."version","status"=EXCLUDED."status","priority"=EXCLUDED."priority","spec"=EXCLUDED."spec","updatedAt"=EXCLUDED."updatedAt","effectiveFrom"=EXCLUDED."effectiveFrom","expiresAt"=EXCLUDED."expiresAt","supersedes"=EXCLUDED."supersedes","metadata"=EXCLUDED."metadata","provenance"=EXCLUDED."provenance","confidence"=EXCLUDED."confidence","autonomy"=EXCLUDED."autonomy"`;
+  async put(row, expectedVersion) {
+    if (expectedVersion === undefined) {
+      const inserted = await client.$queryRaw`INSERT INTO "NetworkIntentRecord" ("id","version","status","priority","spec","createdAt","updatedAt","effectiveFrom","expiresAt","supersedes","metadata","provenance","confidence","autonomy","ownerPrincipalId","organizationId","ownerScopeKey","idempotencyKey","idempotencyFingerprint") VALUES (${row.id},${row.version},${row.status},${row.priority},${jsonValue(row.spec)}::jsonb,${row.createdAt},${row.updatedAt},${row.effectiveFrom ?? null},${row.expiresAt ?? null},${row.supersedes ?? null},${jsonValue(row.metadata)}::jsonb,${row.provenance ?? null},${row.confidence ?? null},${row.autonomy ?? null},${row.ownerPrincipalId},${row.organizationId ?? null},${row.ownerScopeKey},${row.idempotencyKey ?? null},${row.idempotencyFingerprint ?? null}) ON CONFLICT DO NOTHING RETURNING "id"`;
+      if (!Array.isArray(inserted) || inserted.length === 0)
+        throw new IntentRepositoryConflictError('Intent id or idempotency key is already in use.');
+      return;
+    }
+    const updated = await client.$queryRaw`UPDATE "NetworkIntentRecord" SET "version"=${row.version},"status"=${row.status},"priority"=${row.priority},"spec"=${jsonValue(row.spec)}::jsonb,"updatedAt"=${row.updatedAt},"effectiveFrom"=${row.effectiveFrom ?? null},"expiresAt"=${row.expiresAt ?? null},"supersedes"=${row.supersedes ?? null},"metadata"=${jsonValue(row.metadata)}::jsonb,"provenance"=${row.provenance ?? null},"confidence"=${row.confidence ?? null},"autonomy"=${row.autonomy ?? null} WHERE "id"=${row.id} AND "ownerScopeKey"=${row.ownerScopeKey} AND "version"=${expectedVersion} RETURNING "id"`;
+    if (!Array.isArray(updated) || updated.length === 0)
+      throw new IntentRepositoryConflictError('Intent version or ownership conflict.');
   },
-  async findByIdempotency(principalId, key) {
-    const rows = await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerPrincipalId" = ${principalId} AND "idempotencyKey" = ${key} LIMIT 1`;
+  async findByIdempotency(ownerScopeKey, key) {
+    const rows = await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} AND "idempotencyKey" = ${key} LIMIT 1`;
     return (rows as IntentRecordRow[])[0];
   },
 });

@@ -293,9 +293,11 @@ model NetworkIntentRecord {
   autonomy String? @db.VarChar(40)
   ownerPrincipalId String @db.VarChar(255)
   organizationId String? @db.VarChar(128)
+  ownerScopeKey String @db.VarChar(384)
   idempotencyKey String? @db.VarChar(128)
   idempotencyFingerprint String? @db.VarChar(64)
   @@index([ownerPrincipalId, status, updatedAt])
   @@index([organizationId, status, updatedAt])
-  @@unique([ownerPrincipalId, idempotencyKey])
+  @@index([ownerScopeKey, status, updatedAt])
+  @@unique([ownerScopeKey, idempotencyKey])
 }
