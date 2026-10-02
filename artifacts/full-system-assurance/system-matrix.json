@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-02T22:51:57.103Z",
+  "generatedAt": "2026-10-02T23:06:49.489Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -14,7 +14,7 @@
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
   "componentCount": 222,
-  "sourceFileCount": 322,
+  "sourceFileCount": 331,
   "components": [
     {
       "componentId": "packages::auth",
@@ -767,7 +767,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 86,
+      "sourceFiles": 95,
       "upstreamDependencies": [
         "@irp/core",
         "@irp/connectivity",
@@ -5100,5 +5100,5 @@
       "fail"
     ]
   },
-  "reportSha256": "5675049cd2db62930f82b2e7d7cabf97c24c21b239b4696b86720cb2f9d5da38"
+  "reportSha256": "b445f6d62c4ff50034196b267bccb77517ee2030b4f3af254bb0f95eb98f7a94"
 }

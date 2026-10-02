@@ -26,6 +26,8 @@ export * from './adapter-registry.js';
 export * from './observation-providers.js';
 export * from './scheduler.js';
 export * from './resilience/index.js';
+export * from './scenario-lab/index.js';
+export * from './platform/index.js';
 export * from './e2e-validation.js';
 export * from './federation/probe-federation.js';
 export * from './federation/federated-advisory.js';
