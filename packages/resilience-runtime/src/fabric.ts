@@ -22,6 +22,28 @@ export interface FabricCapability {
   readonly safety: 'read-only' | 'safe' | 'governed';
   readonly platforms: readonly string[];
 }
+export class FabricCapabilityRegistry {
+  private readonly capabilities = new Map<string, FabricCapability>();
+
+  register(capability: FabricCapability): void {
+    if (!capability.id.trim() || !capability.scope.trim()) {
+      throw new Error('fabric capability id and scope are required');
+    }
+    if (this.capabilities.has(capability.id)) {
+      throw new Error(`fabric capability already registered: ${capability.id}`);
+    }
+    this.capabilities.set(capability.id, capability);
+  }
+
+  get(id: string): FabricCapability | undefined {
+    return this.capabilities.get(id);
+  }
+
+  list(): readonly FabricCapability[] {
+    return [...this.capabilities.values()];
+  }
+}
+
 export interface FabricHealth {
   readonly status: 'healthy' | 'degraded' | 'failed' | 'unknown';
   readonly score: number;
@@ -113,24 +135,41 @@ export class ProgrammableConnectivityFabric {
     const context: FabricDiscoveryContext = {
       signal, limit, now: nowIso(), ...(options.since ? { since: options.since } : {}),
     };
-    const resources = new Map<string, FabricResource>();
-    const owners = new Map<string, string>();
+    const resources = new Map<string, FabricResource>(
+      options.since
+        ? this.snapshot.resources.map((resource) => [resource.id, resource])
+        : [],
+    );
+    const owners = new Map<string, string>(
+      options.since
+        ? this.snapshot.resources.map((resource) => [resource.id, resource.owner])
+        : [],
+    );
     for (const provider of this.providers.values()) {
       if (signal.aborted) throw new DOMException('Fabric discovery aborted', 'AbortError');
       const discovered = await provider.discover(context);
+      if (signal.aborted) {
+        throw new DOMException('Fabric discovery aborted', 'AbortError');
+      }
       for (const resource of discovered.slice(0, limit)) {
         const existingOwner = owners.get(resource.id);
         if (existingOwner && existingOwner !== resource.owner)
           throw new Error(`duplicate fabric ownership for resource ${resource.id}`);
         owners.set(resource.id, resource.owner);
         resources.set(resource.id, resource);
-        if (resources.size >= limit) break;
+        if (!options.since && resources.size >= limit) break;
       }
-      if (resources.size >= limit) break;
+      if (!options.since && resources.size >= limit) break;
     }
+
+    const boundedResources = options.since
+      ? [...resources.values()].sort((a, b) => a.id.localeCompare(b.id))
+      : [...resources.values()].slice(0, limit).sort((a, b) => a.id.localeCompare(b.id));
+
     this.snapshot = Object.freeze({
-      version: this.snapshot.version + 1, discoveredAt: context.now,
-      resources: Object.freeze([...resources.values()].sort((a,b) => a.id.localeCompare(b.id))),
+      version: this.snapshot.version + 1,
+      discoveredAt: context.now,
+      resources: Object.freeze(boundedResources),
       edges: this.snapshot.edges,
     });
     return this.snapshot;
@@ -177,26 +216,67 @@ export class ProgrammableConnectivityFabric {
   }
 
   reconcileRoutingGraph(graph: NetworkPathGraph): FabricSnapshot {
-    const resources = new Map(this.snapshot.resources);
-    for (const node of graph.nodes)
-      resources.set(resourceIdFromPathNode(node), resourceFromPathNode(node));
+    const resources = new Map<string, FabricResource>(
+      this.snapshot.resources.map((resource) => [resource.id, resource]),
+    );
+    const graphNodeIds = new Map(
+      graph.nodes.map((node) => [node.id, fabricResourceIdFromPathNode(node)] as const),
+    );
+
+    for (const node of graph.nodes) {
+      const resource = resourceFromPathNode(node);
+      resources.set(resource.id, resource);
+    }
+
+    const edges = graph.edges.map((edge) => ({
+      from: graphNodeIds.get(edge.from) ?? edge.from,
+      to: graphNodeIds.get(edge.to) ?? edge.to,
+      relation: edge.kind,
+    }));
+
     this.snapshot = Object.freeze({
-      ...this.snapshot, version: this.snapshot.version + 1, discoveredAt: nowIso(),
-      resources: Object.freeze([...resources.values()].sort((a,b) => a.id.localeCompare(b.id))),
-      edges: Object.freeze(graph.edges.map(edge => ({ from: edge.from, to: edge.to, relation: edge.kind }))),
+      ...this.snapshot,
+      version: this.snapshot.version + 1,
+      discoveredAt: nowIso(),
+      resources: Object.freeze(
+        [...resources.values()].sort((a, b) => a.id.localeCompare(b.id)),
+      ),
+      edges: Object.freeze(edges),
     });
     return this.snapshot;
   }
 }
 
-const kindForNode = (node: PathGraphNode): FabricResourceKind => ({
-  interface:'Interface', route:'Route', gateway:'Gateway', provider:'Provider', tunnel:'Tunnel',
-  transport:'Transport', egress:'Egress', region:'Region', destination:'Destination',
-  path:'ApplicationPath',
-}[node.kind] ?? 'ApplicationPath');
+const kindForNode = (node: PathGraphNode): FabricResourceKind => {
+  switch (node.kind) {
+    case 'interface':
+      return 'Interface';
+    case 'route':
+      return 'Route';
+    case 'gateway':
+      return 'Gateway';
+    case 'provider':
+      return 'Provider';
+    case 'tunnel':
+      return 'Tunnel';
+    case 'transport':
+      return 'Transport';
+    case 'egress':
+      return 'Egress';
+    case 'region':
+      return 'Region';
+    case 'destination':
+      return 'Destination';
+    case 'path':
+      return 'ApplicationPath';
+  }
+};
 
-const resourceIdFromPathNode = (node: PathGraphNode) =>
+const resourceIdFromPathNode = (node: PathGraphNode): string =>
   node.id.includes(':') ? node.id.slice(node.id.indexOf(':') + 1) : node.id;
+
+const fabricResourceIdFromPathNode = (node: PathGraphNode): string =>
+  `fabric:${kindForNode(node).toLowerCase()}:${resourceIdFromPathNode(node)}`;
 
 const resourceFromPathNode = (node: PathGraphNode): FabricResource => {
   const kind = kindForNode(node);

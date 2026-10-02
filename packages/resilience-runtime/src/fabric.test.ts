@@ -26,6 +26,88 @@ describe('ProgrammableConnectivityFabric', () => {
     expect(fabric.select({ requiredCapabilities: ['route.select'] }).selected?.id).toBe('gw-b');
   });
 
+  it('rejects stale resources and conflicting ownership', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    fabric.registerProvider({
+      id: 'provider-a',
+      owner: 'owner-a',
+      async discover() {
+        return [
+          {
+            ...resource('gw-stale', 80, 'isp-a'),
+            expiresAt: new Date(Date.now() - 1_000).toISOString(),
+          },
+        ];
+      },
+    });
+
+    await fabric.discover();
+    expect(fabric.select().rejected).toEqual([
+      { id: 'gw-stale', reason: 'stale-resource' },
+    ]);
+
+    const conflicting = new ProgrammableConnectivityFabric();
+    conflicting.registerProvider({
+      id: 'provider-a',
+      owner: 'owner-a',
+      async discover() {
+        return [resource('same', 90, 'isp-a')];
+      },
+    });
+    conflicting.registerProvider({
+      id: 'provider-b',
+      owner: 'owner-b',
+      async discover() {
+        return [resource('same', 90, 'isp-b')];
+      },
+    });
+
+    await expect(conflicting.discover({ limit: 2 })).rejects.toThrow(
+      'duplicate fabric ownership for resource same',
+    );
+  });
+
+  it('supports cancellation and incremental discovery', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    let calls = 0;
+    fabric.registerProvider({
+      id: 'incremental',
+      owner: 'owner-a',
+      async discover(context) {
+        calls += 1;
+        return context.since
+          ? [resource('gw-b', 90, 'isp-b')]
+          : [resource('gw-a', 80, 'isp-a')];
+      },
+    });
+
+    await fabric.discover();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(fabric.discover({ signal: controller.signal })).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    await fabric.discover({ since: new Date().toISOString(), limit: 1 });
+    expect(calls).toBe(2);
+    expect(fabric.snapshotState().resources.map((entry) => entry.id)).toEqual(['gw-a', 'gw-b']);
+  });
+
+  it('registers capabilities in the unified fabric registry', () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    fabric.capabilities.register({
+      id: 'route.select',
+      scope: 'gateway',
+      authority: 'adapter',
+      trust: 0.9,
+      safety: 'governed',
+      platforms: ['linux', 'macos'],
+    });
+
+    expect(fabric.capabilities.get('route.select')?.scope).toBe('gateway');
+    expect(fabric.capabilities.list()).toHaveLength(1);
+  });
+
   it('reconciles NetworkPathGraph into the same fabric identity space', () => {
     const path: NetworkPath = {
       id: 'path-a', type: 'direct', hops: ['gw-a'],
@@ -39,5 +121,8 @@ describe('ProgrammableConnectivityFabric', () => {
     expect(snapshot.resources.some(entry => entry.kind === 'Route')).toBe(true);
     expect(snapshot.resources.some(entry => entry.kind === 'Interface')).toBe(true);
     expect(snapshot.edges.some(edge => edge.relation === 'uses_gateway')).toBe(true);
+    const routeResource = snapshot.resources.find((entry) => entry.kind === 'Route');
+    expect(routeResource).toBeDefined();
+    expect(snapshot.edges.some((edge) => edge.from === routeResource?.id)).toBe(true);
   });
 });
