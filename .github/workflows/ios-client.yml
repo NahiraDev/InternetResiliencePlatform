@@ -36,18 +36,19 @@ jobs:
       - name: Select and verify Xcode
         run: |
           set -euo pipefail
-          # Prefer the current stable Xcode toolchains on macOS 15. The 16.x
-          # toolchains have produced xcodebuild SIGSEGVs on this simulator build.
-          # Keep the full build mandatory; selecting another installed toolchain is
-          # a compatibility fix, not a bypass.
+          # This simulator build has a reproducible xcodebuild SIGSEGV on the
+          # newer 26.x toolchains available on macOS 15. Prefer the known-good
+          # Xcode 16.3 toolchain first; keep the full build mandatory.
+          # Selecting an installed compatible toolchain is a compatibility fix,
+          # not a validation bypass.
           for candidate in \
-            /Applications/Xcode_26.2.app/Contents/Developer \
-            /Applications/Xcode_26.1.app/Contents/Developer \
-            /Applications/Xcode_26.0.app/Contents/Developer \
             /Applications/Xcode_16.3.app/Contents/Developer \
             /Applications/Xcode_16.2.app/Contents/Developer \
             /Applications/Xcode_16.4.app/Contents/Developer \
             /Applications/Xcode_16.app/Contents/Developer \
+            /Applications/Xcode_26.2.app/Contents/Developer \
+            /Applications/Xcode_26.1.app/Contents/Developer \
+            /Applications/Xcode_26.0.app/Contents/Developer \
             /Applications/Xcode.app/Contents/Developer; do
             if [ -d "$candidate" ]; then
               sudo xcode-select -s "$candidate"
@@ -126,7 +127,7 @@ jobs:
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
             -configuration Debug \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
