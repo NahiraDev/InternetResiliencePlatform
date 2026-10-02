@@ -80,6 +80,18 @@ describe('LinuxClientRuntime', () => {
     expect(status.runtime.counters.cyclesTotal).toBe(1);
     expect(status.runtime.health.status).toBe('degraded');
     expect(status.capabilities).toEqual(expect.any(Array));
+    expect(status.capabilityStatus).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subsystem: 'network-intelligence' }),
+        expect.objectContaining({ subsystem: 'connectivity' }),
+        expect.objectContaining({ subsystem: 'dns' }),
+        expect.objectContaining({ subsystem: 'routing' }),
+        expect.objectContaining({ subsystem: 'tunnel' }),
+        expect.objectContaining({ subsystem: 'failover' }),
+        expect.objectContaining({ subsystem: 'kernel' }),
+        expect.objectContaining({ subsystem: 'plugin' }),
+      ]),
+    );
   });
 });
 
@@ -103,6 +115,16 @@ describe('LinuxClientServer', () => {
     await expect(response.json()).resolves.toMatchObject({
       runtime: { mode: 'simulation', counters: { cyclesTotal: 1 } },
       capabilities: expect.any(Array),
+      capabilityStatus: expect.arrayContaining([
+        expect.objectContaining({ subsystem: 'network-intelligence', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'connectivity', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'dns', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'routing', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'tunnel', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'failover', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'kernel', status: 'simulation-only' }),
+        expect.objectContaining({ subsystem: 'plugin', status: 'simulation-only' }),
+      ]),
     });
   });
 });
