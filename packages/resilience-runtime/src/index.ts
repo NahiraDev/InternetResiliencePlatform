@@ -39,5 +39,6 @@ export * from './intent/compiler.js';
 export * from './intent/governance.js';
 export * from './gateway/gateway-registry-plane.js';
 export * from './tunnel/tunnel-control-plane.js';
+export * from './fabric.js';
 
 export * from './autopilot/autopilot.js';
