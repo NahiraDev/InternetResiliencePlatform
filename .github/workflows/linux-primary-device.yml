@@ -157,7 +157,35 @@ jobs:
             if (!body.includes('Linux Full Client')) {
               throw new Error('response missing Linux Full Client');
             }
-            console.log('linux-client-smoke-ok');
+
+            const health = await fetch('http://127.0.0.1:17861/health');
+            if (!health.ok) {
+              throw new Error(`health HTTP ${health.status}`);
+            }
+            const status = await health.json();
+            const requiredSubsystems = [
+              'network-intelligence',
+              'connectivity',
+              'dns',
+              'routing',
+              'tunnel',
+              'failover',
+              'kernel',
+              'plugin',
+            ];
+            const observed = new Set(
+              status.capabilityStatus?.map((entry) => entry.subsystem) ?? [],
+            );
+            for (const subsystem of requiredSubsystems) {
+              if (!observed.has(subsystem)) {
+                throw new Error(`missing Linux capability status evidence: ${subsystem}`);
+              }
+            }
+            if (status.runtime?.mode !== 'simulation') {
+              throw new Error(`unexpected smoke mode: ${status.runtime?.mode}`);
+            }
+            console.log('linux-client-runtime-integration-ok');
+            console.log(JSON.stringify(status, null, 2));
           } finally {
             await server.stop();
           }
