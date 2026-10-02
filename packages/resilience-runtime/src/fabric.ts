@@ -113,6 +113,7 @@ const healthRank = (resource: FabricResource) =>
   resource.trust * 100 * 0.2 - numericCost(resource) * 0.1;
 
 export class ProgrammableConnectivityFabric {
+  readonly capabilities = new FabricCapabilityRegistry();
   private readonly providers = new Map<string, FabricDiscoveryProvider>();
   private snapshot: FabricSnapshot = Object.freeze({
     version: 0, discoveredAt: new Date(0).toISOString(),
