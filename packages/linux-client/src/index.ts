@@ -106,9 +106,20 @@ export class LinuxSnapshotObservationProvider implements ObservationProvider {
   }
 }
 
+export type LinuxCapabilityStatus = {
+  adapterId: string;
+  subsystem: RuntimeAdapterDescriptor['subsystem'];
+  status: 'registered' | 'live' | 'simulation-only';
+  supportsSafe: boolean;
+  supportsLive: boolean;
+  verificationSupport: boolean;
+  recoverySupport: boolean;
+};
+
 export type LinuxRuntimeStatus = {
   runtime: RuntimeSnapshot;
   capabilities: readonly RuntimeAdapterDescriptor[];
+  capabilityStatus: readonly LinuxCapabilityStatus[];
 };
 
 /** The Linux client runtime for the canonical, safe-by-default composition. */
@@ -144,9 +155,19 @@ export class LinuxClientRuntime {
   }
 
   async status(): Promise<LinuxRuntimeStatus> {
+    const capabilities = this.runtime.capabilities();
     return {
       runtime: await this.runtime.getRuntimeSnapshot(),
-      capabilities: this.runtime.capabilities(),
+      capabilities,
+      capabilityStatus: capabilities.map((descriptor) => ({
+        adapterId: descriptor.adapterId,
+        subsystem: descriptor.subsystem,
+        status: descriptor.supportsLive ? 'live' : 'simulation-only',
+        supportsSafe: descriptor.supportsSafe,
+        supportsLive: descriptor.supportsLive,
+        verificationSupport: descriptor.verificationSupport,
+        recoverySupport: descriptor.recoverySupport,
+      })),
     };
   }
 }
