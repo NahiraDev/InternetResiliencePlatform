@@ -53,8 +53,9 @@ export interface AnalyticsConfig {
  * This can be injected into HTML responses for client-side page view tracking
  */
 export function generateAnalyticsScript(config?: AnalyticsConfig): string {
-  const debug = config?.debug ?? (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test');
-  
+  const debug =
+    config?.debug ?? (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test');
+
   // Use debug script in development, production script otherwise
   const scriptPath = debug ? 'script.debug.js' : 'script.js';
   const scriptSrc = config?.scriptSrc ?? `https://cdn.vercel-insights.com/v1/${scriptPath}`;
@@ -71,12 +72,13 @@ export function generateAnalyticsScript(config?: AnalyticsConfig): string {
     configParts.push(`beforeSend: ${config.beforeSend.toString()}`);
   }
 
-  const configScript = configParts.length > 0
-    ? `\n<script>
+  const configScript =
+    configParts.length > 0
+      ? `\n<script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   window.va('config', { ${configParts.join(', ')} });
 </script>`
-    : '';
+      : '';
 
   return `<!-- Vercel Web Analytics -->${configScript}
 <script defer src="${scriptSrc}"></script>`;
@@ -113,21 +115,21 @@ export const defaultAnalyticsConfig: AnalyticsConfig = {
 
 /**
  * Server-side custom event tracking
- * 
+ *
  * This is a wrapper around the @vercel/analytics/server track() function
  * with error handling and logging.
- * 
+ *
  * Note: Custom events are only available on Vercel Pro and Enterprise plans.
  * In development/test environments or when tracking fails, this will log
  * the event instead of throwing an error.
- * 
+ *
  * @param event - Event name (max 255 characters)
  * @param properties - Optional event properties (strings, numbers, booleans, null only)
  * @returns Promise that resolves when tracking completes
- * 
+ *
  * @example
  * ```typescript
- * await trackServerEvent('api_request', { 
+ * await trackServerEvent('api_request', {
  *   endpoint: '/api/v1/users',
  *   method: 'POST',
  *   status: 201

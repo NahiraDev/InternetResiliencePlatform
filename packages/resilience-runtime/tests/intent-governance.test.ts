@@ -40,8 +40,10 @@ const candidate = (intent: CandidateAction['intent'] = 'route_change'): Candidat
   rejectionReasons: [],
 });
 
-
-const trustedSimulationContext = (compiledIntent: ReturnType<typeof intent>, compiledIntents?: ReturnType<typeof intent>[]) => {
+const trustedSimulationContext = (
+  compiledIntent: ReturnType<typeof intent>,
+  compiledIntents?: ReturnType<typeof intent>[],
+) => {
   const base = createRuntimeContext({
     mode: 'simulation',
     securityContext: { trusted: true },
@@ -98,10 +100,10 @@ describe('intent governance', () => {
         return [candidate()];
       },
     };
-    const context = trustedSimulationContext(
+    const context = trustedSimulationContext(intent('low', 'normal'), [
       intent('low', 'normal'),
-      [intent('low', 'normal'), intent('high', 'critical')],
-    );
+      intent('high', 'critical'),
+    ]);
     const result = await new DecisionOrchestrator(provider).orchestrate([], context);
     expect(generatedFor).toBe('high');
     expect(result.selectedCandidate?.intent).toBe('route_change');

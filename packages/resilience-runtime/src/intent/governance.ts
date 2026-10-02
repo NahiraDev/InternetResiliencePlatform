@@ -144,7 +144,9 @@ export const resolveIntentGovernance = (
       `arbitrated ${arbitration.rejectedIntents.length} lower-priority overlapping intent(s)`,
     );
   if (staleIntents.length)
-    reasons.push(`rejected ${staleIntents.length} intent(s) outside their effective lifecycle window`);
+    reasons.push(
+      `rejected ${staleIntents.length} intent(s) outside their effective lifecycle window`,
+    );
 
   return Object.freeze({
     admission,

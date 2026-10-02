@@ -511,9 +511,9 @@ describe('Phase 22 resilience runtime', () => {
 
     expect(record.outcome).toBe('simulated');
     expect(record.selectedPlan?.selectedAction.intent).toBe('dns_switch');
-    expect(record.candidates.find((item) => item.intent === 'route_change')?.rejectionReasons).toContain(
-      'action route_change is not allowed',
-    );
+    expect(
+      record.candidates.find((item) => item.intent === 'route_change')?.rejectionReasons,
+    ).toContain('action route_change is not allowed');
   });
   it('produces snapshot', async () => {
     const rt = new ResilienceRuntime();

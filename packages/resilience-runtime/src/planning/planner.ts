@@ -32,11 +32,10 @@ export class DeterministicPlanner {
     );
     const fallback = noopCandidate(context);
     const fallbackPolicy = await this.policy.evaluate(fallback, context);
-    const selectedEvaluation =
-      evaluated.find(
-        ({ candidate, policyResult }) =>
-          candidate.rejectionReasons.length === 0 && policyResult.allowed,
-      ) ??
+    const selectedEvaluation = evaluated.find(
+      ({ candidate, policyResult }) =>
+        candidate.rejectionReasons.length === 0 && policyResult.allowed,
+    ) ??
       evaluated[0] ?? {
         candidate:
           fallbackPolicy.reasons.length === 0

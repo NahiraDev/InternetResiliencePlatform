@@ -71,10 +71,7 @@ export function generateSpeedInsightsScript(config?: SpeedInsightsConfig): strin
  * Middleware-style function to inject Speed Insights into HTML responses
  * Usage: Call this with HTML content to get HTML with Speed Insights injected
  */
-export function injectSpeedInsightsIntoHtml(
-  html: string,
-  config?: SpeedInsightsConfig,
-): string {
+export function injectSpeedInsightsIntoHtml(html: string, config?: SpeedInsightsConfig): string {
   const script = generateSpeedInsightsScript(config);
 
   // Try to inject before closing </head> tag

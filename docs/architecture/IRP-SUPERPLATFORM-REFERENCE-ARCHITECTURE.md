@@ -1,4 +1,5 @@
 # IRP Superplatform Reference Architecture
+
 ## Canonical Architecture Contract — Single Source of Truth
 
 > **Status:** Canonical architectural contract
@@ -93,32 +94,40 @@ Healthy operation is intentionally quiet and low overhead. Degraded operation in
 ### The planes
 
 **Experience plane**
+
 - API, CLI, Desktop, Mobile and OS clients.
 - Never becomes a second privileged control plane.
 
 **Intent plane**
+
 - Represents desired outcomes, constraints, priorities, scope, provenance, confidence, expiration and autonomy level.
 - Compiles intent into executable objectives and constraints.
 
 **Governance plane**
+
 - Policy, authorization, trust, privacy, security, safety and autonomy admission.
 - Governance is a gate, not a second executor.
 
 **Knowledge plane**
+
 - Current observations, measurements, topology, resource state, history, failure memory, remote evidence, predictions and provenance.
 
 **Intelligence plane**
+
 - Deterministic reasoning, correlation, historical intelligence, predictive analysis, optimization and advisory AI.
 - AI remains advisory and cannot bypass governance or execution safety.
 
 **Control plane**
+
 - Canonical orchestration authority centered on `@irp/resilience-runtime`.
 - Owns decision lifecycle, planning, transaction boundaries, verification, recovery and learning orchestration.
 
 **Connectivity fabric**
+
 - Programmable model of actual connectivity resources and paths.
 
 **Data plane**
+
 - Actual traffic/connectivity outcomes. Control-plane decisions must be verified against real outcomes rather than command return codes.
 
 ---
@@ -956,29 +965,29 @@ CI and architecture tests should enforce:
 
 ## 28. Architecture ownership map
 
-| Concern | Canonical owner |
-|---|---|
-| Runtime orchestration | `@irp/resilience-runtime` |
-| Host runtime composition | `createCanonicalRuntime` |
-| Network domain contracts | `@irp/network`, `@irp/connectivity`, `@irp/routing` |
-| Gateway lifecycle/selection | `@irp/gateway-registry` |
-| Tunnel lifecycle | `@irp/tunnel` |
-| DNS domain/catalog | `@irp/dns` |
-| Intelligence/measurements | `@irp/network-intelligence` |
-| Historical evidence | `@irp/historical-analysis` through runtime advisory boundary |
-| Federation evidence | runtime advisory/federation boundary |
-| Security/trust | `@irp/security` + runtime security gates |
-| Plugins | plugin packages behind capability/sandbox/policy boundaries |
-| Telemetry | `@irp/telemetry` |
-| Persistence | `@irp/database` and domain persistence owners |
-| Host execution | OS/client adapters |
-| API | management/interface boundary |
-| CLI | operator/interface boundary |
-| Desktop/Mobile | experience/adaptation boundary |
-| Safety | canonical runtime safety kernel |
-| Transaction | canonical runtime transaction engine |
-| Verification | canonical runtime verifier |
-| Recovery | canonical runtime recovery authority |
+| Concern                     | Canonical owner                                              |
+| --------------------------- | ------------------------------------------------------------ |
+| Runtime orchestration       | `@irp/resilience-runtime`                                    |
+| Host runtime composition    | `createCanonicalRuntime`                                     |
+| Network domain contracts    | `@irp/network`, `@irp/connectivity`, `@irp/routing`          |
+| Gateway lifecycle/selection | `@irp/gateway-registry`                                      |
+| Tunnel lifecycle            | `@irp/tunnel`                                                |
+| DNS domain/catalog          | `@irp/dns`                                                   |
+| Intelligence/measurements   | `@irp/network-intelligence`                                  |
+| Historical evidence         | `@irp/historical-analysis` through runtime advisory boundary |
+| Federation evidence         | runtime advisory/federation boundary                         |
+| Security/trust              | `@irp/security` + runtime security gates                     |
+| Plugins                     | plugin packages behind capability/sandbox/policy boundaries  |
+| Telemetry                   | `@irp/telemetry`                                             |
+| Persistence                 | `@irp/database` and domain persistence owners                |
+| Host execution              | OS/client adapters                                           |
+| API                         | management/interface boundary                                |
+| CLI                         | operator/interface boundary                                  |
+| Desktop/Mobile              | experience/adaptation boundary                               |
+| Safety                      | canonical runtime safety kernel                              |
+| Transaction                 | canonical runtime transaction engine                         |
+| Verification                | canonical runtime verifier                                   |
+| Recovery                    | canonical runtime recovery authority                         |
 
 This table is an ownership contract, not a statement that every row is fully mature today.
 

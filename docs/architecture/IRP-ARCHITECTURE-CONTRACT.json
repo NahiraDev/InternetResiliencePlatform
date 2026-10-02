@@ -30,10 +30,7 @@
     "telemetry": "@irp/telemetry",
     "federation": "@irp/network-intelligence"
   },
-  "hostEntrypoints": [
-    "apps/daemon/src/index.ts",
-    "packages/linux-client/src/index.ts"
-  ],
+  "hostEntrypoints": ["apps/daemon/src/index.ts", "packages/linux-client/src/index.ts"],
   "forbiddenProductionAuthoritySymbols": [
     "NetworkAutopilot",
     "DecisionEngine",

@@ -9,8 +9,12 @@ const errors = [];
 
 const fail = (message) => errors.push(message);
 const readJson = (path) => {
-  try { return JSON.parse(readFileSync(path, 'utf8')); }
-  catch (error) { fail(`${relative(root, path)}: invalid JSON: ${error.message}`); return null; }
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    fail(`${relative(root, path)}: invalid JSON: ${error.message}`);
+    return null;
+  }
 };
 
 if (!existsSync(manifestPath)) {
@@ -19,10 +23,14 @@ if (!existsSync(manifestPath)) {
   const manifest = readJson(manifestPath);
   if (manifest) {
     if (manifest.status !== 'binding') fail('architecture contract must have status=binding');
-    if (manifest.canonicalRuntime?.package !== '@irp/resilience-runtime') fail('canonical runtime package is not @irp/resilience-runtime');
-    if (manifest.canonicalRuntime?.symbol !== 'ResilienceRuntime') fail('canonical runtime symbol is not ResilienceRuntime');
-    if (manifest.canonicalRuntime?.composition !== 'createCanonicalRuntime') fail('canonical runtime composition is not createCanonicalRuntime');
-    if (manifest.canonicalRuntime?.productionAuthorityCount !== 1) fail('canonical runtime productionAuthorityCount must equal 1');
+    if (manifest.canonicalRuntime?.package !== '@irp/resilience-runtime')
+      fail('canonical runtime package is not @irp/resilience-runtime');
+    if (manifest.canonicalRuntime?.symbol !== 'ResilienceRuntime')
+      fail('canonical runtime symbol is not ResilienceRuntime');
+    if (manifest.canonicalRuntime?.composition !== 'createCanonicalRuntime')
+      fail('canonical runtime composition is not createCanonicalRuntime');
+    if (manifest.canonicalRuntime?.productionAuthorityCount !== 1)
+      fail('canonical runtime productionAuthorityCount must equal 1');
 
     const requiredPaths = [
       'AGENTS.md',
@@ -30,7 +38,8 @@ if (!existsSync(manifestPath)) {
       'packages/resilience-runtime/src/index.ts',
       'packages/resilience-runtime/src/canonical-runtime-composition.ts',
     ];
-    for (const path of requiredPaths) if (!existsSync(join(root, path))) fail(`required architecture path missing: ${path}`);
+    for (const path of requiredPaths)
+      if (!existsSync(join(root, path))) fail(`required architecture path missing: ${path}`);
 
     for (const entry of manifest.hostEntrypoints ?? []) {
       if (!existsSync(join(root, entry))) fail(`declared host entrypoint missing: ${entry}`);
@@ -43,7 +52,14 @@ if (!existsSync(manifestPath)) {
   }
 }
 
-const skipDirectories = new Set(['.git', 'node_modules', 'dist', '.turbo', 'coverage', 'artifacts']);
+const skipDirectories = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  '.turbo',
+  'coverage',
+  'artifacts',
+]);
 const productionRoots = ['apps', 'packages'];
 const sourceFiles = [];
 
@@ -60,16 +76,25 @@ for (const rootName of productionRoots) walk(join(root, rootName));
 
 const isTestOrLegacy = (file) => {
   const rel = relative(root, file).replaceAll('\\', '/');
-  return /(^|\/)(test|tests|__tests__)\//.test(rel) ||
+  return (
+    /(^|\/)(test|tests|__tests__)\//.test(rel) ||
     rel.includes('/src/legacy/') ||
-    rel.startsWith('apps/') && rel.includes('/test/');
+    (rel.startsWith('apps/') && rel.includes('/test/'))
+  );
 };
 
 const prohibitedHostMutationPatterns = [
-  { name: 'direct IP route mutation', pattern: /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]ip['"]|['"]route['"]|['"]resolvectl['"]|['"]wg['"]|['"]nmcli['"]|['"]iptables['"])/ },
-  { name: 'direct network manager mutation', pattern: /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]systemctl['"])[^\n]*(?:network|resolved|wireguard)/i },
+  {
+    name: 'direct IP route mutation',
+    pattern:
+      /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]ip['"]|['"]route['"]|['"]resolvectl['"]|['"]wg['"]|['"]nmcli['"]|['"]iptables['"])/,
+  },
+  {
+    name: 'direct network manager mutation',
+    pattern:
+      /(?:spawn|spawnSync|exec|execFile)\s*\([^\n]*(?:['"]systemctl['"])[^\n]*(?:network|resolved|wireguard)/i,
+  },
 ];
-
 
 for (const file of sourceFiles) {
   if (isTestOrLegacy(file)) continue;
@@ -78,16 +103,26 @@ for (const file of sourceFiles) {
 
   // Textual references in comments/docs are allowed. Production code may not
   // import, construct, extend, or re-export the deprecated compatibility model.
-  const legacyImport = /(?:^|\n)\s*import\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;|(?:^|\n)\s*export\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;/m.test(text);
+  const legacyImport =
+    /(?:^|\n)\s*import\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;|(?:^|\n)\s*export\s+(?:type\s+)?[^;\n]*\bNetworkAutopilot\b[^;\n]*;/m.test(
+      text,
+    );
   const legacyConstruction = /\bnew\s+NetworkAutopilot\s*\(/.test(text);
   const legacyInheritance = /\bextends\s+NetworkAutopilot\b/.test(text);
-  if ((legacyImport || legacyConstruction || legacyInheritance) && !rel.startsWith('packages/resilience-runtime/')) {
+  if (
+    (legacyImport || legacyConstruction || legacyInheritance) &&
+    !rel.startsWith('packages/resilience-runtime/')
+  ) {
     fail(`${rel}: production source imports or instantiates deprecated NetworkAutopilot`);
   }
 
-  if (/new\s+ResilienceRuntime\s*\(/.test(text) &&
-      !rel.startsWith('packages/resilience-runtime/')) {
-    fail(`${rel}: host must use createCanonicalRuntime instead of constructing ResilienceRuntime directly`);
+  if (
+    /new\s+ResilienceRuntime\s*\(/.test(text) &&
+    !rel.startsWith('packages/resilience-runtime/')
+  ) {
+    fail(
+      `${rel}: host must use createCanonicalRuntime instead of constructing ResilienceRuntime directly`,
+    );
   }
 
   for (const rule of prohibitedHostMutationPatterns) {
@@ -99,16 +134,23 @@ for (const file of sourceFiles) {
   // Domain-level evaluators/registries/event interfaces are legitimate when
   // they are not themselves privileged orchestration authorities. Reject only
   // executable construction of the explicitly reserved control-plane symbols.
-  if (/\bnew\s+(?:PolicyEngine|SafetyKernel|StateRegistry|TransactionExecutor)\s*\(/.test(text) &&
-      !rel.startsWith('packages/resilience-runtime/')) {
-    fail(`${rel}: competing privileged authority construction detected; extend the canonical runtime instead`);
+  if (
+    /\bnew\s+(?:PolicyEngine|SafetyKernel|StateRegistry|TransactionExecutor)\s*\(/.test(text) &&
+    !rel.startsWith('packages/resilience-runtime/')
+  ) {
+    fail(
+      `${rel}: competing privileged authority construction detected; extend the canonical runtime instead`,
+    );
   }
 }
 
 const packageJsonPath = join(root, 'package.json');
 if (existsSync(packageJsonPath)) {
   const packageJson = readJson(packageJsonPath);
-  if (packageJson?.scripts?.['architecture:check'] !== 'node scripts/architecture/validate-architecture.mjs') {
+  if (
+    packageJson?.scripts?.['architecture:check'] !==
+    'node scripts/architecture/validate-architecture.mjs'
+  ) {
     fail('package.json must expose architecture:check');
   }
 }

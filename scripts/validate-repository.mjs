@@ -269,7 +269,9 @@ const architecture = spawnSync('node', ['scripts/architecture/validate-architect
 });
 
 if (architecture.status !== 0) {
-  errors.push(`architecture contract validation failed: ${architecture.stderr || architecture.stdout}`);
+  errors.push(
+    `architecture contract validation failed: ${architecture.stderr || architecture.stdout}`,
+  );
 }
 
 const turbo = spawnSync('pnpm', ['exec', 'turbo', 'run', 'build', '--dry=json'], {

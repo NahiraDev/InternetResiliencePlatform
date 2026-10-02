@@ -59,11 +59,7 @@ import {
   defaultSpeedInsightsConfig,
   type SpeedInsightsConfig,
 } from './speed-insights.js';
-import {
-  injectAnalyticsIntoHtml,
-  defaultAnalyticsConfig,
-  trackServerEvent,
-} from './analytics.js';
+import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } from './analytics.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -508,7 +504,7 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
       ...defaultSpeedInsightsConfig,
       route: '/api/v1/speed-insights/example',
     });
-    
+
     // Also inject Web Analytics for page view tracking
     htmlWithInsights = injectAnalyticsIntoHtml(htmlWithInsights, {
       ...defaultAnalyticsConfig,
@@ -994,13 +990,13 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       updatedAt: now(),
     });
     await events.publish(createDomainEvent('user.registered', user.id, { email: user.email }));
-    
+
     // Track user registration in Vercel Analytics
     await trackServerEvent('user_registered', {
       userId: user.id,
       status: user.status,
     });
-    
+
     return reply.code(201).send(created(publicUser(user) as never));
   });
   app.post('/api/v1/auth/login', async (request) => {
@@ -1023,13 +1019,13 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       type: 'access',
       ttlSeconds: 900,
     });
-    
+
     // Track successful login in Vercel Analytics
     await trackServerEvent('user_login', {
       userId: user.id,
       method: 'password',
     });
-    
+
     const refreshToken = jwt.sign({
       sub: user.id,
       roles: user.roles,

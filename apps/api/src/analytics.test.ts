@@ -135,7 +135,7 @@ describe('Analytics Module', () => {
     it('should log in development mode when debug is enabled', async () => {
       process.env.NODE_ENV = 'development';
       process.env.VERCEL_ANALYTICS_DEBUG = 'true';
-      
+
       const logs: unknown[] = [];
       const originalLog = console.log;
       console.log = (...args: unknown[]) => logs.push(args);
@@ -149,7 +149,7 @@ describe('Analytics Module', () => {
     it('should not log when debug is disabled', async () => {
       process.env.NODE_ENV = 'development';
       process.env.VERCEL_ANALYTICS_DEBUG = 'false';
-      
+
       const logs: unknown[] = [];
       const originalLog = console.log;
       console.log = (...args: unknown[]) => logs.push(args);

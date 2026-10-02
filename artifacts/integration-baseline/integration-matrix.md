@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-09-12T23:47:40.279Z
+Generated: 2026-09-25T11:33:37.183Z
 Commit: unknown
 
 ## Component status
@@ -67,6 +67,7 @@ Commit: unknown
 | @irp/core                | @irp/dns                         | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/events              | @irp/shared                      | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/historical-analysis | @irp/database                    | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/linux-client        | @irp/resilience-runtime          | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-api          | @irp/plugin-sdk                  | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-api          | @irp/security                    | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-config       | @irp/plugin-sdk                  | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
@@ -91,6 +92,7 @@ Commit: unknown
 | @irp/plugin-sandbox      | @irp/security                    | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-sandbox      | @irp/plugin-samples              | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/queue               | @irp/shared                      | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/resilience-runtime  | @irp/core                        | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime  | @irp/connectivity                | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime  | @irp/events                      | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime  | @irp/failover                    | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
