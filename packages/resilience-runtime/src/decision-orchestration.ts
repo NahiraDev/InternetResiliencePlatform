@@ -70,13 +70,14 @@ export class DecisionOrchestrator {
       if (!governance.mutationAllowed && context.mode === 'live')
         reasons.push(...governance.reasons);
       if (candidate.risk > governance.maxRisk)
-        reasons.push(`candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`);
+        reasons.push(
+          `candidate risk ${candidate.risk} exceeds intent risk budget ${governance.maxRisk}`,
+        );
     }
     return reasons.length === candidate.rejectionReasons.length
       ? candidate
       : Object.freeze({ ...candidate, rejectionReasons: reasons });
   }
-
 }
 
 const compareCandidates = (a: CandidateAction, b: CandidateAction): number =>

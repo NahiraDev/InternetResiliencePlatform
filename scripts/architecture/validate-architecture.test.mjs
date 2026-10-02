@@ -24,44 +24,57 @@ const writeFixture = (root, source = '') => {
   writeFileSync(join(root, 'packages/resilience-runtime/src/index.ts'), '');
   writeFileSync(join(root, 'packages/resilience-runtime/src/canonical-runtime-composition.ts'), '');
   writeFileSync(join(root, 'apps/daemon/src/index.ts'), source);
-  writeFileSync(join(root, 'package.json'), JSON.stringify({
-    scripts: { 'architecture:check': 'node scripts/architecture/validate-architecture.mjs' }
-  }));
-  writeFileSync(join(root, 'docs/architecture/IRP-ARCHITECTURE-CONTRACT.json'), JSON.stringify({
-    schemaVersion: 1,
-    status: 'binding',
-    canonicalRuntime: {
-      package: '@irp/resilience-runtime',
-      symbol: 'ResilienceRuntime',
-      composition: 'createCanonicalRuntime',
-      productionAuthorityCount: 1
-    },
-    hostEntrypoints: ['apps/daemon/src/index.ts'],
-    domainOwners: {
-      connectivity: '@irp/connectivity',
-      routing: '@irp/routing',
-      dns: '@irp/dns',
-      gateway: '@irp/gateway-registry',
-      tunnel: '@irp/tunnel',
-      intelligence: '@irp/network-intelligence',
-      historicalAnalysis: '@irp/historical-analysis',
-      security: '@irp/security',
-      telemetry: '@irp/telemetry'
-    }
-  }));
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify({
+      scripts: { 'architecture:check': 'node scripts/architecture/validate-architecture.mjs' },
+    }),
+  );
+  writeFileSync(
+    join(root, 'docs/architecture/IRP-ARCHITECTURE-CONTRACT.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      status: 'binding',
+      canonicalRuntime: {
+        package: '@irp/resilience-runtime',
+        symbol: 'ResilienceRuntime',
+        composition: 'createCanonicalRuntime',
+        productionAuthorityCount: 1,
+      },
+      hostEntrypoints: ['apps/daemon/src/index.ts'],
+      domainOwners: {
+        connectivity: '@irp/connectivity',
+        routing: '@irp/routing',
+        dns: '@irp/dns',
+        gateway: '@irp/gateway-registry',
+        tunnel: '@irp/tunnel',
+        intelligence: '@irp/network-intelligence',
+        historicalAnalysis: '@irp/historical-analysis',
+        security: '@irp/security',
+        telemetry: '@irp/telemetry',
+      },
+    }),
+  );
 };
 
 describe('architecture contract gate', () => {
   it('passes for the repository baseline', () => {
-    expect(() => execFileSync(process.execPath, [validator], { cwd: process.cwd(), stdio: 'pipe' })).not.toThrow();
+    expect(() =>
+      execFileSync(process.execPath, [validator], { cwd: process.cwd(), stdio: 'pipe' }),
+    ).not.toThrow();
   });
 
   it('blocks a production NetworkAutopilot reference', () => {
     const root = mkdtempSync(join(tmpdir(), 'irp-architecture-'));
-    writeFixture(root, "import { NetworkAutopilot } from './legacy.js';\nexport const runtime = NetworkAutopilot;");
-    expect(() => execFileSync(process.execPath, [validator], {
-      cwd: process.cwd(),
-      env: { ...process.env, IRP_ARCHITECTURE_ROOT: root }
-    })).toThrow();
+    writeFixture(
+      root,
+      "import { NetworkAutopilot } from './legacy.js';\nexport const runtime = NetworkAutopilot;",
+    );
+    expect(() =>
+      execFileSync(process.execPath, [validator], {
+        cwd: process.cwd(),
+        env: { ...process.env, IRP_ARCHITECTURE_ROOT: root },
+      }),
+    ).toThrow();
   });
 });
