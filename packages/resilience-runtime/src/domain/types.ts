@@ -83,6 +83,28 @@ export interface CapabilitySnapshot extends AuditFields {
   readonly capabilities: readonly string[];
   readonly trusted: boolean;
 }
+export interface CompiledIntent {
+  readonly intentId: string;
+  readonly version: number;
+  readonly priority: 'low' | 'normal' | 'high' | 'critical';
+  readonly desiredOutcome: string;
+  readonly target: Readonly<Record<string, string>>;
+  readonly constraints: Readonly<Record<string, string | number | boolean>>;
+  readonly objectives: Readonly<Record<string, number>>;
+  readonly confidence: number;
+  readonly provenance: string;
+  readonly autonomy: 'OBSERVE_ONLY' | 'ADVISORY' | 'SAFE_AUTOMATION' | 'AUTONOMOUS' | 'HIGH_RISK_REQUIRES_APPROVAL';
+  readonly scope: Readonly<Record<string, string>>;
+  readonly effectiveFrom?: string | undefined;
+  readonly expiresAt?: string | undefined;
+  readonly compiledAt: string;
+}
+export interface IntentConflict {
+  readonly intentA: CompiledIntent;
+  readonly intentB: CompiledIntent;
+  readonly reason: string;
+  readonly resolution: 'supersede-a' | 'supersede-b' | 'queue-b' | 'merge';
+}
 export interface RuntimeConfiguration {
   readonly enabled: boolean;
   readonly mode: RuntimeMode;
@@ -107,8 +129,8 @@ export interface RuntimeContext {
   readonly cancelled: boolean;
   readonly securityContext: Readonly<{ trusted: boolean; principal?: string }>;
   readonly configuration: RuntimeConfiguration;
-  readonly compiledIntent?: import('../intent/compiler.js').CompiledIntent | undefined;
-  readonly compiledIntents?: readonly import('../intent/compiler.js').CompiledIntent[] | undefined;
+  readonly compiledIntent?: CompiledIntent | undefined;
+  readonly compiledIntents?: readonly CompiledIntent[] | undefined;
 }
 export interface Observation extends AuditFields {
   readonly category: string;

@@ -1,35 +1,7 @@
-import { isIntentEffective, type NetworkIntent } from '@irp/core';
+import { isIntentEffective, type IntentObjective, type NetworkIntent, type IntentAutonomyLevel } from '@irp/core';
+import type { CompiledIntent } from '../domain/types.js';
 
-export type IntentObjective =
-  | 'reachability'
-  | 'latency'
-  | 'jitter'
-  | 'packetLoss'
-  | 'throughput'
-  | 'reliability'
-  | 'privacy'
-  | 'trust'
-  | 'cost'
-  | 'diversity';
-
-export interface CompiledIntent {
-  readonly intentId: string;
-  readonly version: number;
-  readonly priority: NetworkIntent['priority'];
-  readonly desiredOutcome: string;
-  readonly target: Readonly<Record<string, string>>;
-  readonly constraints: Readonly<Record<string, string | number | boolean>>;
-  readonly objectives: Readonly<Record<IntentObjective, number>>;
-  readonly confidence: number;
-  readonly provenance: string;
-  readonly autonomy: NetworkIntent['autonomy'];
-  readonly scope: Readonly<Record<string, string>>;
-  /** Original lifecycle window, retained so compiled work cannot outlive its intent. */
-  readonly effectiveFrom?: string | undefined;
-  /** Original lifecycle window, retained so compiled work cannot outlive its intent. */
-  readonly expiresAt?: string | undefined;
-  readonly compiledAt: string;
-}
+export type { IntentObjective };
 
 const OBJECTIVES: readonly IntentObjective[] = [
   'reachability',
@@ -71,23 +43,23 @@ const defaultsFor = (outcome: string): Record<IntentObjective, number> => {
     cost: 0.05,
     diversity: 0.05,
   };
-  if (/low latency|latency|responsive|ssh/.test(text)) result.latency += 0.2;
+  if (/low latency|latency|responsive|ssh/.test(text)) result.latency = (result.latency ?? 0) + 0.2;
   if (/video|conference|jitter|real.?time/.test(text)) {
-    result.jitter += 0.2;
-    result.packetLoss += 0.15;
+    result.jitter = (result.jitter ?? 0) + 0.2;
+    result.packetLoss = (result.packetLoss ?? 0) + 0.15;
   }
-  if (/download|throughput|bandwidth/.test(text)) result.throughput += 0.25;
+  if (/download|throughput|bandwidth/.test(text)) result.throughput = (result.throughput ?? 0) + 0.25;
   if (/private|privacy|sensitive|trusted/.test(text)) {
-    result.privacy += 0.2;
-    result.trust += 0.2;
+    result.privacy = (result.privacy ?? 0) + 0.2;
+    result.trust = (result.trust ?? 0) + 0.2;
   }
   if (/diverse|independent|restricted|reach/.test(text)) {
-    result.reachability += 0.15;
-    result.diversity += 0.15;
+    result.reachability = (result.reachability ?? 0) + 0.15;
+    result.diversity = (result.diversity ?? 0) + 0.15;
   }
   const total = Object.values(result).reduce((sum, value) => sum + value, 0);
   return Object.fromEntries(
-    OBJECTIVES.map((objective) => [objective, clamp(result[objective] / total)]),
+    OBJECTIVES.map((objective) => [objective, clamp((result[objective] ?? 0) / total)]),
   ) as Record<IntentObjective, number>;
 };
 
@@ -99,7 +71,7 @@ const explicitObjective = (constraints: Readonly<Record<string, string | number 
   }
   const total = Object.values(objectives).reduce((sum, value) => sum + value, 0);
   return Object.fromEntries(
-    OBJECTIVES.map((objective) => [objective, clamp(objectives[objective] / total)]),
+    OBJECTIVES.map((objective) => [objective, clamp((objectives[objective] ?? 0) / total)]),
   ) as Record<IntentObjective, number>;
 };
 
@@ -112,6 +84,7 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
   if (!isIntentEffective(intent, at))
     throw new Error(`Network intent ${intent.id} is not active in the requested time window`);
   const constraints = normalizedRecord(intent.spec.constraints);
+  const explicitObjectives = intent.spec.objectives;
   return Object.freeze({
     intentId: intent.id,
     version: intent.version,
@@ -120,10 +93,15 @@ export const compileNetworkIntent = (intent: NetworkIntent, at = new Date()): Co
     target: normalizedRecord<string>(intent.spec.target),
     constraints,
     objectives: Object.freeze(
-      Object.keys(constraints).some(
-        (key) => key.startsWith('objective.') || OBJECTIVES.includes(key as IntentObjective),
-      )
-        ? explicitObjective(constraints)
+      explicitObjectives
+        ? Object.freeze(
+            Object.fromEntries(
+              (Object.entries(explicitObjectives) as [IntentObjective, number][]).map(([k, v]) => [
+                k,
+                Math.max(0, Math.min(1, v)),
+              ]),
+            ) as Record<IntentObjective, number>,
+          )
         : defaultsFor(intent.spec.outcome),
     ),
     confidence: intent.confidence ?? 1,

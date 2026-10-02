@@ -1,4 +1,5 @@
-import { isCompiledIntentEffective, type CompiledIntent } from './compiler.js';
+import { isCompiledIntentEffective } from './compiler.js';
+import type { CompiledIntent } from '../domain/types.js';
 import type { RuntimeContext, RuntimeMode } from '../domain/types.js';
 
 export type IntentAdmission = 'ALLOW' | 'PLAN_ONLY' | 'REQUIRE_APPROVAL' | 'DENY';

@@ -20,7 +20,7 @@ import type {
   PathStrategyEvidence,
 } from './ports/ports.js';
 import type { FederatedEvidenceProvider, HistoricalEvidenceProvider } from './ports/ports.js';
-import type { CompiledIntent } from './intent/compiler.js';
+import type { CompiledIntent } from './domain/types.js';
 
 /**
  * Production decision boundary for the resilience runtime.

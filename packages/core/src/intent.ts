@@ -3,8 +3,22 @@ export type IntentStatus =
 export type IntentPriority = 'low' | 'normal' | 'high' | 'critical';
 export type IntentAutonomyLevel =
   'OBSERVE_ONLY' | 'ADVISORY' | 'SAFE_AUTOMATION' | 'AUTONOMOUS' | 'HIGH_RISK_REQUIRES_APPROVAL';
+
+export type IntentObjective =
+  | 'reachability'
+  | 'latency'
+  | 'jitter'
+  | 'packetLoss'
+  | 'throughput'
+  | 'reliability'
+  | 'privacy'
+  | 'trust'
+  | 'cost'
+  | 'diversity';
+
 export interface NetworkIntentSpec {
   readonly outcome: string;
+  readonly objectives?: Readonly<Record<IntentObjective, number>>;
   readonly constraints?: Readonly<Record<string, string | number | boolean>>;
   readonly target?: Readonly<Record<string, string>>;
 }
@@ -60,6 +74,13 @@ export const createNetworkIntent = (
 ): NetworkIntent => {
   requireId(input.id, 'id');
   if (!input.spec.outcome.trim()) throw new TypeError('spec.outcome must not be empty');
+  if (input.spec.objectives !== undefined) {
+    for (const [obj, value] of Object.entries(input.spec.objectives)) {
+      if (!Number.isFinite(value) || value < 0 || value > 1) {
+        throw new RangeError(`spec.objectives.${obj} must be between 0 and 1`);
+      }
+    }
+  }
   if (
     input.confidence !== undefined &&
     (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 1)
@@ -113,4 +134,22 @@ export const isIntentEffective = (intent: NetworkIntent, at = new Date()): boole
   const from = intent.effectiveFrom ? Date.parse(intent.effectiveFrom) : Number.NEGATIVE_INFINITY;
   const expires = intent.expiresAt ? Date.parse(intent.expiresAt) : Number.POSITIVE_INFINITY;
   return timestamp >= from && timestamp < expires;
+};
+
+/** Checks whether the intent's autonomy level permits the given action class. */
+export const isAutonomyPermitted = (
+  intent: { autonomy?: IntentAutonomyLevel },
+  actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk',
+): boolean => {
+  const level = intent.autonomy ?? 'ADVISORY';
+  const order: IntentAutonomyLevel[] = [
+    'OBSERVE_ONLY',
+    'ADVISORY',
+    'SAFE_AUTOMATION',
+    'AUTONOMOUS',
+    'HIGH_RISK_REQUIRES_APPROVAL',
+  ];
+  const required = order.indexOf(level);
+  const allowed = order.indexOf(actionClass as IntentAutonomyLevel);
+  return allowed <= required;
 };

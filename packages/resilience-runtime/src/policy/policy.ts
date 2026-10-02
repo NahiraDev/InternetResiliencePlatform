@@ -3,8 +3,24 @@ import type {
   CandidateAction,
   PolicyEvaluation,
   RuntimeContext,
+  CompiledIntent,
+  PolicySnapshot,
 } from '../domain/types.js';
+import type { IntentConflict } from '../intent/arbitration.js';
+import {
+  arbitrateIntents,
+  resolvePolicyConflict,
+  enforceAutonomy,
+  InMemoryIntentStore,
+  type IntentStore,
+  type PolicyConflict,
+} from '../intent/arbitration.js';
+
 export class RuntimePolicyArbitrator {
+  constructor(
+    private readonly intentStore: IntentStore = new InMemoryIntentStore(),
+  ) {}
+
   async evaluate(
     target: ActionPlan | CandidateAction,
     context: RuntimeContext,
@@ -29,5 +45,27 @@ export class RuntimePolicyArbitrator {
     const missing = required.filter((c) => !context.capabilitySnapshot.capabilities.includes(c));
     if (missing.length) reasons.push(`missing capabilities: ${missing.join(',')}`);
     return { allowed: reasons.length === 0, reasons, requiredCapabilities: required };
+  }
+
+  /** Resolves intent conflicts for the current context. */
+  async resolveIntentConflicts(
+    context: RuntimeContext,
+  ): Promise<{ readonly ordered: readonly CompiledIntent[]; readonly conflicts: readonly IntentConflict[] }> {
+    const activeIntents = await this.intentStore.getActive();
+    return arbitrateIntents(activeIntents, new Date());
+  }
+
+  /** Resolves policy conflicts between two snapshots. */
+  resolvePolicyConflicts(
+    policyA: PolicySnapshot,
+    policyB: PolicySnapshot,
+    strategy: 'union' | 'intersection' | 'hierarchical' = 'hierarchical',
+  ): { readonly merged: PolicySnapshot; readonly conflicts: readonly PolicyConflict[] } {
+    return resolvePolicyConflict(policyA, policyB, strategy);
+  }
+
+  /** Enforces autonomy at the mutation boundary. */
+  enforceIntentAutonomy(intent: CompiledIntent, actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'): void {
+    enforceAutonomy(intent, actionClass);
   }
 }

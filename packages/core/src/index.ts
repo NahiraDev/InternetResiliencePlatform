@@ -22,6 +22,7 @@ export {
   isIntentEffective,
   isIntentTerminal,
   transitionIntent,
+  isAutonomyPermitted,
 } from './intent.js';
 export type {
   IntentCommand,
@@ -29,6 +30,8 @@ export type {
   IntentStatus,
   NetworkIntent,
   NetworkIntentSpec,
+  IntentAutonomyLevel,
+  IntentObjective,
 } from './intent.js';
 
 export interface Lifecycle {
