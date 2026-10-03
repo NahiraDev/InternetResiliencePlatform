@@ -581,9 +581,125 @@ async function buildOrphans() {
 }
 
 // ---------------------------------------------------------------------------
+// Task 8: reconcile architecture graphs with source evidence
+// ---------------------------------------------------------------------------
+const ARCHITECTURE_GRAPHS = [
+  'docs/architecture/system-integration-map.json',
+  'docs/architecture/runtime-execution-graph.json',
+  'docs/architecture/failure-recovery-graph.json',
+  'docs/architecture/security-boundary-graph.json',
+];
+
+/**
+ * Verifies that every owner/path referenced by an architecture graph resolves to
+ * something that actually exists in source, and that declared entrypoints and
+ * stages are real. A graph that drifts from source is worse than no graph.
+ */
+async function buildGraphReconciliation(inventory, paths) {
+  const graphs = [];
+  const unreferenced = [];
+
+  const resolveOwner = (owner) => {
+    if (!owner) return [];
+    const matches = [];
+    // Owners are written as `@irp/pkg ...` or `apps/thing` or `clients/*`.
+    for (const m of owner.matchAll(/@irp\/([a-z0-9-]+)/g)) {
+      matches.push(`packages/${m[1]}`);
+    }
+    for (const m of owner.matchAll(/\b(apps|clients)\/([a-z0-9*-]+)/g)) {
+      matches.push(`${m[1]}/${m[2]}`);
+    }
+    return [...new Set(matches)];
+  };
+
+  for (const graphPath of ARCHITECTURE_GRAPHS) {
+    const file = join(root, graphPath);
+    if (!existsSync(file)) {
+      unreferenced.push({ graph: graphPath, reason: 'missing' });
+      continue;
+    }
+    const graph = await readJson(file);
+    const nodes = graph.nodes ?? [];
+    const checked = [];
+
+    for (const node of nodes) {
+      const owners = resolveOwner(node.owner);
+      const resolved = owners.filter((candidate) => {
+        const wildcard = candidate.includes('*');
+        if (wildcard) {
+          const [group] = candidate.split('/');
+          return existsSync(join(root, group));
+        }
+        return existsSync(join(root, candidate, 'package.json')) || existsSync(join(root, candidate));
+      });
+      const evidence = {
+        node: node.id ?? node.kind ?? 'unknown',
+        declaredOwner: node.owner ?? null,
+        declaredStatus: node.status ?? null,
+        resolvedPaths: owners,
+        resolvable: owners.length === 0 ? resolved.length === 0 : resolved.length > 0,
+      };
+      checked.push(evidence);
+      if (!evidence.resolvable) {
+        unreferenced.push({
+          graph: graphPath,
+          node: evidence.node,
+          declaredOwner: node.owner ?? null,
+          reason: owners.length === 0 ? 'owner-not-parsable' : 'owner-path-missing',
+        });
+      }
+    }
+
+    // Entrypoint claims in the execution graph must match the contract + source.
+    // Graph entries may be descriptive labels such as
+    // "apps/daemon/src/index.ts RuntimeScheduler", so only the leading
+    // path-like token is treated as a filesystem path.
+    let entrypointDrift = [];
+    if (Array.isArray(graph.entrypoints)) {
+      for (const declared of graph.entrypoints) {
+        const raw = typeof declared === 'string' ? declared : declared?.path;
+        if (!raw) continue;
+        const path = /^[^\s]*\.(?:ts|tsx|mts|js|mjs|cjs)$/.exec(raw.trim())?.[0];
+        if (!path) continue; // descriptive-only entry (e.g. a class name)
+        if (path.includes('/')) {
+          const onDisk = existsSync(join(root, path));
+          const traced = paths.traces.find((t) => t.entrypoint === path);
+          if (!onDisk || (traced && !traced.composesCanonicalRuntime)) {
+            entrypointDrift.push({ graph: graphPath, entrypoint: path, exists: onDisk, traced: Boolean(traced) });
+          }
+        }
+      }
+    }
+
+    graphs.push({
+      graph: graphPath,
+      schemaVersion: graph.schemaVersion ?? null,
+      nodeCount: nodes.length,
+      nodesChecked: checked.length,
+      unreferencedNodes: checked.filter((n) => !n.resolvable).length,
+      entrypointDrift,
+      nodes: checked,
+    });
+  }
+
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    graphs,
+    unreferenced,
+    summary: {
+      graphs: graphs.length,
+      nodesChecked: graphs.reduce((sum, g) => sum + g.nodesChecked, 0),
+      unreferencedNodes: unreferenced.length,
+      entrypointDrift: graphs.reduce((sum, g) => sum + g.entrypointDrift.length, 0),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Task 9: architecture drift register
 // ---------------------------------------------------------------------------
-async function buildDriftRegister(inventory, paths, matrix, authority, phases, orphans) {
+async function buildDriftRegister(inventory, paths, matrix, authority, phases, orphans, graphs) {
   const findings = [];
   const add = (finding) => findings.push({ ...finding, registeredAt: new Date().toISOString() });
 
@@ -614,16 +730,57 @@ async function buildDriftRegister(inventory, paths, matrix, authority, phases, o
     }
   }
 
-  for (const violation of authority.violations) {
+  for (const contract of authority.violations) {
     add({
-      id: `forbidden-authority:${violation.symbol}:${violation.path}`,
+      id: `forbidden-authority:${contract.symbol}:${contract.path}`,
       severity: 'CRITICAL',
       area: 'authority',
-      evidence: [violation.path],
-      impact: `Production source constructs or extends forbidden authority ${violation.symbol}.`,
+      evidence: [contract.path],
+      impact: `Production source constructs or extends forbidden authority ${contract.symbol}.`,
       owner: '@irp/resilience-runtime',
-      fix: `Remove the competing ${violation.symbol} authority and extend the canonical owner.`,
-      verification: 'node scripts/architecture-guards.cjs',
+      fix: `Remove the competing ${contract.symbol} authority and extend the canonical owner.`,
+      verification: 'pnpm run architecture:guards',
+    });
+  }
+
+  for (const drift of graphs.unreferenced) {
+    add({
+      id: `graph-owner-unresolvable:${drift.graph}:${drift.node ?? 'unknown'}`,
+      severity: 'MAJOR',
+      area: 'architecture-graph',
+      evidence: [drift.graph, ...(drift.declaredOwner ? [drift.declaredOwner] : [])],
+      impact: `Architecture graph node "${drift.node ?? 'unknown'}" declares owner "${drift.declaredOwner}" which does not resolve to source (${drift.reason}).`,
+      owner: 'docs-owner',
+      fix: 'Update the graph to the real owner path, or restore the referenced source.',
+      verification: 'pnpm run architecture:archaeology',
+    });
+  }
+
+  for (const drift of graphs.graphs) {
+    for (const entry of drift.entrypointDrift) {
+      add({
+        id: `graph-entrypoint-drift:${drift.graph}:${entry.entrypoint}`,
+        severity: 'CRITICAL',
+        area: 'architecture-graph',
+        evidence: [drift.graph, entry.entrypoint],
+        impact: 'Architecture graph declares an entrypoint that is missing or does not compose canonically.',
+        owner: '@irp/resilience-runtime',
+        fix: 'Reconcile the execution graph with the binding architecture contract and source.',
+        verification: 'pnpm run architecture:check',
+      });
+    }
+  }
+
+  for (const duplicate of orphans.duplicateContracts) {
+    add({
+      id: `duplicate-contract:${duplicate.name}`,
+      severity: 'MINOR',
+      area: 'contract-duplication',
+      evidence: duplicate.declaredIn,
+      impact: `Symbol ${duplicate.name} is declared in ${duplicate.declaredIn.length} modules, risking divergent semantics.`,
+      owner: duplicate.declaredIn[0]?.split('/').slice(0, 2).join('/') ?? 'unassigned',
+      fix: 'Re-export a single canonical declaration instead of redefining the symbol.',
+      verification: 'pnpm run architecture:archaeology',
     });
   }
 
@@ -711,7 +868,8 @@ async function main() {
   const authority = await buildAuthorityMap();
   const phases = await buildPhaseAudit();
   const orphans = await buildOrphans();
-  const drift = await buildDriftRegister(inventory, paths, matrix, authority, phases, orphans);
+  const graphs = await buildGraphReconciliation(inventory, paths);
+  const drift = await buildDriftRegister(inventory, paths, matrix, authority, phases, orphans, graphs);
 
   const artifacts = {
     'inventory.json': inventory,
@@ -720,6 +878,7 @@ async function main() {
     'authority-map.json': authority,
     'phase-audit.json': phases,
     'orphans.json': orphans,
+    'graph-reconciliation.json': graphs,
     'drift-register.json': drift,
   };
   for (const [name, value] of Object.entries(artifacts)) {
@@ -745,6 +904,7 @@ async function main() {
   console.log(`  orphaned tests            : ${orphans.summary.orphanTests}`);
   console.log(`  orphaned modules          : ${orphans.summary.orphanModules}`);
   console.log(`  duplicate contracts       : ${orphans.summary.duplicateContracts}`);
+  console.log(`  graph nodes reconciled    : ${graphs.summary.nodesChecked} (unreferenced ${graphs.summary.unreferencedNodes})`);
   console.log(`  drift findings            : ${drift.summary.total} (critical ${drift.summary.critical}, major ${drift.summary.major}, minor ${drift.summary.minor})`);
   console.log(`  artifacts                 : ${relative(root, outDir)}`);
 

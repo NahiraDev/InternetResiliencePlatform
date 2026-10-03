@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { compileNetworkIntent } from '../src/intent/compiler.js';
-import { arbitrateIntents, resolveIntentGovernance } from '../src/intent/governance.js';
+import { selectGovernedIntents, resolveIntentGovernance } from '../src/intent/governance.js';
 import { createRuntimeContext } from '../src/context/context.js';
 import { createNetworkIntent, type IntentAutonomyLevel } from '@irp/core';
 import { DecisionOrchestrator } from '../src/decision-orchestration.js';
@@ -70,7 +70,7 @@ const trustedSimulationContext = (
 
 describe('intent governance', () => {
   it('arbitrates overlapping intents deterministically by priority', () => {
-    const selected = arbitrateIntents([intent('low', 'normal'), intent('high', 'critical')]);
+    const selected = selectGovernedIntents([intent('low', 'normal'), intent('high', 'critical')]);
     expect(selected.selectedIntent?.intentId).toBe('high');
     expect(selected.rejectedIntents.map((i) => i.intentId)).toEqual(['low']);
   });

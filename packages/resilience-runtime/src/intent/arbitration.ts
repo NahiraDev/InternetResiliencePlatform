@@ -4,15 +4,12 @@
  * No new authority — pure functions consumed by the canonical runtime.
  */
 
-import type { PolicySnapshot, CompiledIntent } from '../domain/types.js';
+import type { PolicySnapshot, CompiledIntent, IntentConflict } from '../domain/types.js';
 import { isAutonomyPermitted } from '@irp/core';
 
-export interface IntentConflict {
-  readonly intentA: CompiledIntent;
-  readonly intentB: CompiledIntent;
-  readonly reason: string;
-  readonly resolution: 'supersede-a' | 'supersede-b' | 'queue-b' | 'merge';
-}
+// `IntentConflict` is declared once, in domain/types.ts, and re-exported here
+// so existing importers keep working without a second competing definition.
+export type { IntentConflict };
 
 export interface PolicyConflict {
   readonly policyA: PolicySnapshot;

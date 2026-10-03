@@ -37,6 +37,8 @@
     "runtime:integration:strict": "node tools/runtime-lab/package-integration.mjs --strict",
     "runtime:lab": "docker compose -f ops/observability/docker-compose.yml up --build",
     "architecture:check": "node scripts/architecture/validate-architecture.mjs",
+    "architecture:guards": "node scripts/architecture-guards.cjs",
+    "architecture:archaeology": "node scripts/archaeology.mjs",
     "architecture:test": "vitest run scripts/architecture/validate-architecture.test.mjs"
   },
   "dependencies": {

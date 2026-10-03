@@ -5,7 +5,7 @@ import {
   assertFabricStateTransition,
   isLegalFabricTransition,
   IllegalFabricStateTransitionError,
-  evaluateFabricFreshness,
+
   partitionByFreshness,
   sharesFailureDomain,
   selectDiverseResources,

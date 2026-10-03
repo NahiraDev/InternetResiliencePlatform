@@ -132,8 +132,6 @@ export interface FabricSelectionResult {
 }
 
 const nowIso = () => new Date().toISOString();
-const fresh = (resource: FabricResource, now: string) =>
-  !resource.expiresAt || Date.parse(resource.expiresAt) > Date.parse(now);
 const numericCost = (resource: FabricResource) =>
   Object.values(resource.cost).reduce((sum, value) => sum + Math.max(0, value), 0);
 const healthRank = (resource: FabricResource) =>

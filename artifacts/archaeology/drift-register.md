@@ -1,5 +1,28 @@
 | Severity | Finding | Area | Owner | Verification |
 | --- | --- | --- | --- | --- |
+| MINOR | duplicate-contract:AddressFamily | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:AgentRecommendation | contract-duplication | packages/internet-intelligence-agent | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:CircuitBreakerState | contract-duplication | packages/dns | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:DecisionEvaluator | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:DomainEvent | contract-duplication | packages/core | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:EndpointRegistry | contract-duplication | packages/security | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:EventHandler | contract-duplication | packages/core | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:FailureEvidence | contract-duplication | packages/failover | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:GLOBAL_PROVIDER_METADATA | contract-duplication | packages/dns | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:HealthState | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:InternetEvidence | contract-duplication | packages/internet-intelligence-agent | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:IRANIAN_PROVIDER_METADATA | contract-duplication | packages/dns | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:ManualOverrideMode | contract-duplication | packages/connectivity | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:NetworkSnapshot | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:nowIso | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:PolicySnapshot | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:Principal | contract-duplication | packages/auth | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:ProviderHealth | contract-duplication | packages/dns | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:RecoveryPlan | contract-duplication | packages/failover | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:RegistryRecord | contract-duplication | packages/kernel | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:RuntimeContext | contract-duplication | packages/core | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:RuntimeState | contract-duplication | packages/core | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:Scheduler | contract-duplication | packages/core | pnpm run architecture:archaeology |
 | MINOR | unsubstantiated-phase-claim:docs/phases/phase-46.md | documentation | docs-owner | pnpm run validate:docs |
 | MINOR | unsubstantiated-phase-claim:docs/phases/phase-54.md | documentation | docs-owner | pnpm run validate:docs |
 | MINOR | unsubstantiated-phase-claim:docs/phases/phase-66.md | documentation | docs-owner | pnpm run validate:docs |

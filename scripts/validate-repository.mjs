@@ -283,6 +283,19 @@ if (turbo.status !== 0) {
   errors.push(`turbo graph validation failed: ${turbo.stderr || turbo.stdout}`);
 }
 
+// Issue #273 task 10: gate CI on the architecture archaeology/drift register.
+// CRITICAL findings (missing or bypassed canonical authority) fail validation.
+const archaeology = spawnSync('node', ['scripts/archaeology.mjs'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+
+if (archaeology.status !== 0) {
+  errors.push(
+    `architecture archaeology found CRITICAL drift: ${archaeology.stderr || archaeology.stdout}`,
+  );
+}
+
 if (errors.length) {
   console.error(`Repository validation failed with ${errors.length} issue(s):`);
   for (const error of errors) console.error(`- ${error}`);

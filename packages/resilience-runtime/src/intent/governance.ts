@@ -48,7 +48,16 @@ const overlappingScope = (a: CompiledIntent, b: CompiledIntent): boolean => {
 
 const modeAllowsMutation = (mode: RuntimeMode): boolean => mode === 'live';
 
-export const arbitrateIntents = (
+/**
+ * Governance-specific intent selection.
+ *
+ * Distinct from `arbitrateIntents` in ./arbitration.js, which orders intents and
+ * reports conflicts for the canonical runtime cycle. This helper applies the
+ * governance admission ordering (priority, confidence, autonomy, specificity)
+ * and drops overlapping losers. The two were previously both exported as
+ * `arbitrateIntents`, which created an ambiguous duplicate contract.
+ */
+export const selectGovernedIntents = (
   intents: readonly CompiledIntent[],
 ): {
   selectedIntent?: CompiledIntent;
@@ -74,7 +83,7 @@ export const resolveIntentGovernance = (
 ): IntentGovernanceDecision => {
   const effectiveIntents = intents.filter((intent) => isCompiledIntentEffective(intent));
   const staleIntents = intents.filter((intent) => !isCompiledIntentEffective(intent));
-  const arbitration = arbitrateIntents(effectiveIntents);
+  const arbitration = selectGovernedIntents(effectiveIntents);
   if (!arbitration.selectedIntent) {
     if (staleIntents.length) {
       return {

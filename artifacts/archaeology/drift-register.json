@@ -1,7 +1,331 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T12:07:43.574Z",
+  "generatedAt": "2026-10-03T12:25:39.793Z",
   "findings": [
+    {
+      "id": "duplicate-contract:AddressFamily",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/network-intelligence/src/identity/IdentityAssurance.ts",
+        "packages/routing/src/index.ts",
+        "packages/tunnel/src/index.ts"
+      ],
+      "impact": "Symbol AddressFamily is declared in 3 modules, risking divergent semantics.",
+      "owner": "packages/network-intelligence",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:AgentRecommendation",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/internet-intelligence-agent/src/types.ts",
+        "packages/network-intelligence/src/decision/InternetIntelligenceBridge.ts"
+      ],
+      "impact": "Symbol AgentRecommendation is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/internet-intelligence-agent",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:CircuitBreakerState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/dns/src/index.ts",
+        "packages/resilience-runtime/src/autopilot/autopilot.ts"
+      ],
+      "impact": "Symbol CircuitBreakerState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/dns",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:DecisionEvaluator",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/network-intelligence/src/decision/DecisionEvaluator.ts",
+        "packages/network-intelligence/src/decision/NetworkDecisionEngine.ts"
+      ],
+      "impact": "Symbol DecisionEvaluator is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/network-intelligence",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:DomainEvent",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/core/src/index.ts",
+        "packages/shared/src/index.ts"
+      ],
+      "impact": "Symbol DomainEvent is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/core",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:EndpointRegistry",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/security/src/index.ts",
+        "packages/telemetry/src/endpoint-registry.ts"
+      ],
+      "impact": "Symbol EndpointRegistry is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/security",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:EventHandler",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/core/src/index.ts",
+        "packages/events/src/index.ts"
+      ],
+      "impact": "Symbol EventHandler is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/core",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:FailureEvidence",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/resilience/failure-classifier.ts"
+      ],
+      "impact": "Symbol FailureEvidence is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/failover",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:GLOBAL_PROVIDER_METADATA",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/dns/src/provider-catalog.ts",
+        "packages/dns/src/provider-registry.ts"
+      ],
+      "impact": "Symbol GLOBAL_PROVIDER_METADATA is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/dns",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:HealthState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/network-intelligence/src/decision/NetworkDecisionEngine.ts",
+        "packages/types/src/index.ts"
+      ],
+      "impact": "Symbol HealthState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/network-intelligence",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:InternetEvidence",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/internet-intelligence-agent/src/types.ts",
+        "packages/network-intelligence/src/decision/InternetIntelligenceBridge.ts"
+      ],
+      "impact": "Symbol InternetEvidence is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/internet-intelligence-agent",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:IRANIAN_PROVIDER_METADATA",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/dns/src/provider-catalog.ts",
+        "packages/dns/src/provider-registry.ts"
+      ],
+      "impact": "Symbol IRANIAN_PROVIDER_METADATA is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/dns",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:ManualOverrideMode",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/connectivity/src/index.ts",
+        "packages/failover/src/index.ts"
+      ],
+      "impact": "Symbol ManualOverrideMode is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/connectivity",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:NetworkSnapshot",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/linux-client/src/index.ts",
+        "packages/network-intelligence/src/models/NetworkSnapshot.ts"
+      ],
+      "impact": "Symbol NetworkSnapshot is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/linux-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:nowIso",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/resilience-runtime/src/domain/ids.ts",
+        "packages/utils/src/index.ts"
+      ],
+      "impact": "Symbol nowIso is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/resilience-runtime",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:PolicySnapshot",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/resilience-runtime/src/domain/types.ts",
+        "packages/security/src/index.ts"
+      ],
+      "impact": "Symbol PolicySnapshot is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/resilience-runtime",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:Principal",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/auth/src/index.ts",
+        "packages/kernel/src/index.ts",
+        "packages/security/src/index.ts"
+      ],
+      "impact": "Symbol Principal is declared in 3 modules, risking divergent semantics.",
+      "owner": "packages/auth",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:ProviderHealth",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/dns/src/index.ts",
+        "packages/tunnel/src/index.ts"
+      ],
+      "impact": "Symbol ProviderHealth is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/dns",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:RecoveryPlan",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ],
+      "impact": "Symbol RecoveryPlan is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/failover",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:RegistryRecord",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/kernel/src/index.ts",
+        "packages/plugin-registry/src/index.ts"
+      ],
+      "impact": "Symbol RegistryRecord is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/kernel",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:RuntimeContext",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/core/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ],
+      "impact": "Symbol RuntimeContext is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/core",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:RuntimeState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/core/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ],
+      "impact": "Symbol RuntimeState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/core",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
+    {
+      "id": "duplicate-contract:Scheduler",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/core/src/index.ts",
+        "packages/network-intelligence/src/core/Scheduler.ts"
+      ],
+      "impact": "Symbol Scheduler is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/core",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "2026-10-03T12:25:39.793Z"
+    },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-46.md",
       "severity": "MINOR",
@@ -13,7 +337,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-54.md",
@@ -26,7 +350,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-66.md",
@@ -39,7 +363,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-75.md",
@@ -52,7 +376,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-76.md",
@@ -65,7 +389,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-80.md",
@@ -78,13 +402,13 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-03T12:07:43.574Z"
+      "registeredAt": "2026-10-03T12:25:39.793Z"
     }
   ],
   "summary": {
-    "total": 6,
+    "total": 29,
     "critical": 0,
     "major": 0,
-    "minor": 6
+    "minor": 29
   }
 }
