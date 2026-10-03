@@ -52,7 +52,10 @@ export class RuntimePolicyArbitrator {
     context: RuntimeContext,
   ): Promise<{ readonly ordered: readonly CompiledIntent[]; readonly conflicts: readonly IntentConflict[] }> {
     const activeIntents = await this.intentStore.getActive();
-    return arbitrateIntents(activeIntents, new Date());
+    // Prefer compiledIntents (plural) which already includes compiledIntent, avoid duplication
+    const contextIntents = context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
+    const allIntents = [...activeIntents, ...contextIntents];
+    return arbitrateIntents(allIntents, new Date());
   }
 
   /** Resolves policy conflicts between two snapshots. */

@@ -240,6 +240,22 @@ export const enforceAutonomy = (
 };
 
 /**
+ * Maps action intents to autonomy action classes for enforcement.
+ */
+export const ACTION_CLASS: Readonly<Record<string, 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'>> = Object.freeze({
+  noop: 'read',
+  health_reprobe: 'advise',
+  dns_switch: 'safe_mutate',
+  provider_switch: 'safe_mutate',
+  route_change: 'autonomous',
+  tunnel_switch: 'autonomous',
+  connectivity_failover: 'autonomous',
+  recovery: 'high_risk',
+  rollback: 'high_risk',
+  degraded_mode: 'autonomous',
+});
+
+/**
  * Canonical intent store interface — for durable persistence of intents.
  * Implementations provide the actual storage (DB, etcd, etc.).
  */

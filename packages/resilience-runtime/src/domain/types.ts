@@ -3,6 +3,7 @@ export type RuntimeState =
   | 'idle'
   | 'observing'
   | 'analyzing'
+  | 'arbitrating'
   | 'planning'
   | 'validating'
   | 'executing'

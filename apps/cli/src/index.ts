@@ -73,13 +73,13 @@ export const createProgram = (): Command => {
       });
     });
   const runtime = program.command('runtime').description('Resilience runtime commands');
-  const runtimeInstance = () => createCanonicalRuntime({ executionMode: 'simulation' }).runtime;
+  const getRuntimeInstance = async () => (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   runtime
     .command('status')
     .option('--json', 'print JSON output')
     .description('Show resilience runtime status')
     .action(async () => {
-      const rt = runtimeInstance();
+      const rt = await getRuntimeInstance();
       const snapshot = await rt.getRuntimeSnapshot();
       printJson({
         runtimeId: rt.runtimeId,
@@ -93,22 +93,34 @@ export const createProgram = (): Command => {
     .command('capabilities')
     .option('--json', 'print JSON output')
     .description('List resilience runtime capabilities')
-    .action(async () => printJson(runtimeInstance().capabilities()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(rt.capabilities());
+    });
   runtime
     .command('snapshot')
     .option('--json', 'print JSON output')
     .description('Show resilience runtime snapshot')
-    .action(async () => printJson(await runtimeInstance().getRuntimeSnapshot()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.getRuntimeSnapshot());
+    });
   runtime
     .command('decisions')
     .option('--json', 'print JSON output')
     .description('List resilience runtime decisions')
-    .action(async () => printJson(await runtimeInstance().decisions.list()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.decisions.list());
+    });
   runtime
     .command('incidents')
     .option('--json', 'print JSON output')
     .description('List resilience runtime incidents')
-    .action(async () => printJson(await runtimeInstance().incidents.list()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.incidents.list());
+    });
   runtime
     .command('cycle')
     .description('Run a resilience runtime cycle')
@@ -124,7 +136,7 @@ export const createProgram = (): Command => {
         throw new Error(
           'live runtime cycle requires API authorization and cannot be bypassed by CLI',
         );
-      const rt = runtimeInstance();
+      const rt = await getRuntimeInstance();
       const record = await rt.cycle({ mode: opts.safe ? 'safe' : 'simulation' });
       printJson(record);
     });
@@ -132,20 +144,23 @@ export const createProgram = (): Command => {
   const autopilot = program
     .command('autopilot')
     .description('Canonical resilience-runtime compatibility commands');
-  const autopilotRuntime = () => createCanonicalRuntime({ executionMode: 'simulation' }).runtime;
+  const getAutopilotRuntime = async () => (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   autopilot
     .command('status')
     .description('Show canonical runtime status')
-    .action(async () => printJson(await autopilotRuntime().getRuntimeSnapshot()));
+    .action(async () => {
+      const rt = await getAutopilotRuntime();
+      printJson(await rt.getRuntimeSnapshot());
+    });
   autopilot
     .command('runs')
     .description('List canonical runtime decision records')
-    .action(async () => printJson(await autopilotRuntime().decisions.list()));
+    .action(async () => printJson(await (await getAutopilotRuntime()).decisions.list()));
   autopilot
     .command('run <id>')
     .description('Show canonical runtime decision record by id')
     .action(async (id: string) => {
-      const run = (await autopilotRuntime().decisions.list()).find(
+      const run = (await (await getAutopilotRuntime()).decisions.list()).find(
         (decision) => decision.decisionId === id,
       );
       printJson(run ?? { error: 'not found', id });
@@ -155,7 +170,7 @@ export const createProgram = (): Command => {
     .description('List actions selected by canonical runtime decisions')
     .action(async () =>
       printJson(
-        (await autopilotRuntime().decisions.list()).flatMap((decision) =>
+        (await (await getAutopilotRuntime()).decisions.list()).flatMap((decision) =>
           decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
         ),
       ),
@@ -163,7 +178,7 @@ export const createProgram = (): Command => {
   autopilot
     .command('policy')
     .description('Show canonical runtime policy snapshot')
-    .action(async () => printJson((await autopilotRuntime().getRuntimeSnapshot()).policySnapshot));
+    .action(async () => printJson((await (await getAutopilotRuntime()).getRuntimeSnapshot()).policySnapshot));
   autopilot
     .command('approve <action>')
     .description('Approve pending autopilot action through API workflow')

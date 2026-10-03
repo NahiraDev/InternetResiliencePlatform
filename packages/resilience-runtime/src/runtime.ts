@@ -39,6 +39,9 @@ import {
 } from './safety/safety-kernel.js';
 import { MetricsRegistry } from '@irp/telemetry';
 import { compileNetworkIntent } from './intent/compiler.js';
+import { RuntimePolicyArbitrator } from './policy/policy.js';
+import { ACTION_CLASS } from './intent/arbitration.js';
+import type { IntentStore } from './intent/arbitration.js';
 import type { NetworkIntent } from '@irp/core';
 
 const MAX_IDEMPOTENCY_ENTRIES = 1_000;
@@ -53,6 +56,7 @@ export interface ResilienceRuntimeOptions {
   telemetryRegistry?: MetricsRegistry;
   telemetrySink?: TelemetrySink;
   safetyKernel?: SafetyKernelOptions;
+  intentStore?: IntentStore;
 }
 
 export class ResilienceRuntime {
@@ -84,6 +88,7 @@ export class ResilienceRuntime {
   private readonly transactionEngine: ActionTransactionEngine;
   private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
+  private readonly policyArbitrator: RuntimePolicyArbitrator;
   private inFlight: Promise<Awaited<ReturnType<typeof createDecisionRecord>>> | undefined;
   private idempotency = new Map<string, Awaited<ReturnType<typeof createDecisionRecord>>>();
   private last?: Awaited<ReturnType<typeof createDecisionRecord>>;
@@ -111,6 +116,7 @@ export class ResilienceRuntime {
       new FailoverRecoveryProvider(this.adapters, this.networkControlPlane),
       options.safetyKernel,
     );
+    this.policyArbitrator = new RuntimePolicyArbitrator(options.intentStore);
   }
   capabilities() {
     return this.adapters.list();
@@ -192,6 +198,21 @@ export class ResilienceRuntime {
         incidentId: i.id,
       });
     }
+    await this.state.transition('arbitrating', context.correlationId);
+    const { ordered, conflicts } = await this.policyArbitrator.resolveIntentConflicts(context);
+    if (conflicts.length > 0) {
+      await this.events.emit('runtime.arbitration.conflict', {
+        correlationId: context.correlationId,
+        conflicts: conflicts.map((c) => ({
+          intentA: c.intentA.intentId,
+          intentB: c.intentB.intentId,
+          reason: c.reason,
+          resolution: c.resolution,
+        })),
+      });
+    }
+    const orderedIntents = ordered;
+    context = createRuntimeContext({ ...context, compiledIntents: orderedIntents });
     await this.state.transition('planning', context.correlationId);
     const orchestration = await this.decisionOrchestrator.orchestrate(found, context);
     const candidates = orchestration.candidates;
@@ -241,6 +262,44 @@ export class ResilienceRuntime {
           start,
         );
 
+      // Enforce autonomy: the selected action must be permitted by the intent's autonomy level
+      const actionClass = (plan.selectedAction.intent in ACTION_CLASS
+        ? ACTION_CLASS[plan.selectedAction.intent as keyof typeof ACTION_CLASS]
+        : 'safe_mutate') as 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk';
+      const intent = context.compiledIntents?.[0] ?? context.compiledIntent;
+      if (intent) {
+        try {
+          this.policyArbitrator.enforceIntentAutonomy(intent, actionClass);
+        } catch (error) {
+          await this.events.emit('runtime.autonomy.violation', {
+            correlationId: context.correlationId,
+            intentId: intent.intentId,
+            actionClass,
+            error: error instanceof Error ? error.message : 'unknown',
+          });
+return this.recordBlocked(
+          context,
+          before,
+          observations,
+          found,
+          evaluatedCandidates,
+          plan,
+          start,
+          {
+            id: `validation-${Date.now()}`,
+            schemaVersion: 1,
+            createdAt: new Date().toISOString(),
+            correlationId: context.correlationId,
+            source: 'resilience-runtime',
+            metadata: {},
+            valid: false,
+            reasons: [error instanceof Error ? error.message : 'autonomy violation'],
+            policy: { allowed: false, reasons: [error instanceof Error ? error.message : 'autonomy violation'], requiredCapabilities: [] },
+          },
+        );
+        }
+      }
+
       let outcome: DecisionOutcome = 'simulated';
       let execution;
       let verification;
@@ -250,7 +309,6 @@ export class ResilienceRuntime {
       if (context.mode === 'simulation') {
         outcome = 'simulated';
       } else {
-        await this.state.transition('executing', context.correlationId);
         try {
           execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey))
             .execution;

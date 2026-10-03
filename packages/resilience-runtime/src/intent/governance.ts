@@ -1,6 +1,7 @@
 import { isCompiledIntentEffective } from './compiler.js';
 import type { CompiledIntent } from '../domain/types.js';
 import type { RuntimeContext, RuntimeMode } from '../domain/types.js';
+import { enforceAutonomy } from './arbitration.js';
 
 export type IntentAdmission = 'ALLOW' | 'PLAN_ONLY' | 'REQUIRE_APPROVAL' | 'DENY';
 
@@ -138,6 +139,15 @@ export const resolveIntentGovernance = (
     mutationAllowed = false;
     if (admission === 'ALLOW') admission = 'PLAN_ONLY';
     reasons.push(`runtime mode ${context.mode} does not permit live mutation`);
+  }
+
+  // Enforce autonomy at governance level using canonical enforcement
+  try {
+    enforceAutonomy(selected, 'safe_mutate');
+  } catch (error) {
+    mutationAllowed = false;
+    admission = 'DENY';
+    reasons.push(error instanceof Error ? error.message : 'autonomy violation');
   }
 
   if (arbitration.rejectedIntents.length)

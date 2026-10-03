@@ -114,9 +114,9 @@ const mutationAdapter = (onExecute: () => void): RuntimeAdapter => ({
 });
 
 describe('canonical runtime composition', () => {
-  it('uses one ResilienceRuntime contract for simulation and real compositions', () => {
-    const simulation = createCanonicalRuntime({ executionMode: 'simulation' });
-    const real = createCanonicalRuntime({ executionMode: 'real' });
+  it('uses one ResilienceRuntime contract for simulation and real compositions', async () => {
+    const simulation = await createCanonicalRuntime({ executionMode: 'simulation' });
+    const real = await createCanonicalRuntime({ executionMode: 'real' });
 
     expect(simulation.runtime.constructor).toBe(real.runtime.constructor);
     expect(simulation.runtime.runtimeId).toBe('runtime-default');
@@ -127,7 +127,7 @@ describe('canonical runtime composition', () => {
     let mutations = 0;
     const adapters = new RuntimeAdapterRegistry();
     adapters.register(mutationAdapter(() => mutations++));
-    const composition = createCanonicalRuntime({
+    const composition = await createCanonicalRuntime({
       executionMode: 'simulation',
       observationProviders: [provider],
       decisionProvider,
@@ -154,7 +154,7 @@ describe('canonical runtime composition', () => {
     let mutations = 0;
     const adapters = new RuntimeAdapterRegistry();
     adapters.register(mutationAdapter(() => mutations++));
-    const composition = createCanonicalRuntime({
+    const composition = await createCanonicalRuntime({
       executionMode: 'real',
       observationProviders: [provider],
       decisionProvider,
