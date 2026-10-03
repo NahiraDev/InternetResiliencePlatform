@@ -1,6 +1,17 @@
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { ActionPlan, CandidateAction, RuntimeContext } from '../domain/types.js';
+import type { ActionPlan, CandidateAction, CompiledIntent, RuntimeContext } from '../domain/types.js';
 import { RuntimePolicyArbitrator } from '../policy/policy.js';
+import {
+  type ObjectiveEvidence,
+  type ObjectiveVector,
+  type ScoredCandidate,
+  objectivesFromIntent,
+  rankByObjectives,
+  uniformObjectives,
+} from './objectives.js';
+/** @deprecated Prefer `rankByObjectives`, which scores against intent-derived
+ * objectives. Retained for the legacy fixed ordering and for explainable
+ * comparison in decision records. */
 export const rankCandidates = (c: readonly CandidateAction[]) =>
   [...c].sort(
     (a, b) =>
@@ -12,8 +23,46 @@ export const rankCandidates = (c: readonly CandidateAction[]) =>
   );
 export class DeterministicPlanner {
   constructor(private readonly policy = new RuntimePolicyArbitrator()) {}
+  /**
+   * Builds a plan against intent-derived objectives (issue #277 Section F).
+   * When no compiled intent is supplied, uniform weighting is used so
+   * behaviour stays deterministic and explainable.
+   */
+  async planAgainstObjectives(
+    candidates: readonly CandidateAction[],
+    context: RuntimeContext,
+    options: {
+      readonly intent?: CompiledIntent;
+      readonly objectives?: ObjectiveVector;
+      readonly evidenceFor?: (candidate: CandidateAction) => ObjectiveEvidence;
+    } = {},
+  ): Promise<{ readonly plan: ActionPlan; readonly scored: readonly ScoredCandidate[]; readonly objectives: ObjectiveVector }> {
+    const objectives = options.objectives ?? objectivesFromIntent(options.intent, uniformObjectives());
+    const scored = rankByObjectives(candidates, objectives, options.evidenceFor);
+    const plan = await this.planFromRanked(scored.map((entry) => entry.candidate), context);
+    const selectedScore = scored.find((entry) => entry.candidate.id === plan.selectedAction.id);
+    return {
+      plan: deepFreeze({
+        ...plan,
+        metadata: {
+          ...plan.metadata,
+          optimization: {
+            objectiveScore: selectedScore?.score ?? 0,
+            objectives,
+          },
+        },
+      }),
+      scored,
+      objectives,
+    };
+  }
   async plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan> {
-    const ranked = rankCandidates(candidates);
+    return this.planFromRanked(rankCandidates(candidates), context);
+  }
+  private async planFromRanked(
+    ranked: readonly CandidateAction[],
+    context: RuntimeContext,
+  ): Promise<ActionPlan> {
     // Policy is evaluated here, at the canonical planning gate.  Retain the
     // evaluated candidates so policy-denied alternatives remain explainable in
     // the plan and final DecisionRecord instead of being filtered upstream.
