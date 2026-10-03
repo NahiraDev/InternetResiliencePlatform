@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import type { KernelRuntime, Principal } from '@irp/kernel';
 import type { MonitoringSnapshot, NetworkHealthScore } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import type { DomainEvent } from '@irp/shared';
 
 export type ConnectivityProviderType =
   | 'ethernet'
