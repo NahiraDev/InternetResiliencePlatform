@@ -62,7 +62,31 @@ export const createPostgresIntentStore = async (): Promise<IntentStore | undefin
   return store;
 };
 
-export const createCanonicalRuntime = async (
+export const createCanonicalRuntime = (
+  options: CanonicalRuntimeCompositionOptions,
+): CanonicalRuntimeComposition => {
+  const { executionMode, observationProviders = [], fabric, fabricDiscoveryProviders = [], intentStore, ...runtimeOptions } = options;
+  
+  const runtime = new ResilienceRuntime(observationProviders, { ...runtimeOptions, ...(intentStore !== undefined ? { intentStore } : {}) });
+  const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
+  for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
+
+  return Object.freeze({
+    executionMode,
+    runtime,
+    fabric: connectivityFabric,
+    discoverFabricResources: (discoveryOptions = {}) => connectivityFabric.discover(discoveryOptions),
+    selectFabricResource: (request = {}) => connectivityFabric.select(request),
+    runCycle: (input: CanonicalRuntimeCycleInput = {}) =>
+      runtime.runCycle({ ...input, mode: runtimeModeFor(executionMode) }),
+  });
+};
+
+/**
+ * Async version that auto-creates PostgresIntentStore from environment variables.
+ * Use this when you need durable intent persistence.
+ */
+export const createCanonicalRuntimeWithPostgres = async (
   options: CanonicalRuntimeCompositionOptions,
 ): Promise<CanonicalRuntimeComposition> => {
   const { executionMode, observationProviders = [], fabric, fabricDiscoveryProviders = [], intentStore, ...runtimeOptions } = options;
