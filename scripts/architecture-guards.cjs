@@ -220,6 +220,61 @@ if (contract?.authorities?.transaction !== '@irp/resilience-runtime') fail('cano
 if (contract?.authorities?.verification !== '@irp/resilience-runtime') fail('canonical verification authority must be @irp/resilience-runtime');
 if (contract?.authorities?.recovery !== '@irp/resilience-runtime') fail('canonical recovery authority must be @irp/resilience-runtime');
 
+// Check 13: No direct privileged execution bypass (issue #278 task 10).
+// A privileged network mutation may only be applied through
+// PrivilegedMutationBoundary in @irp/resilience-runtime. Constructing an
+// ActionExecutor-shaped object, or calling an executor's execute() directly,
+// outside that boundary is an architectural bypass.
+const CANONICAL_BOUNDARY = 'packages/resilience-runtime/src/transactions/privileged-boundary.ts';
+const bypassPatterns = [
+  {
+    name: 'constructs a privileged ActionExecutor outside the canonical boundary',
+    pattern: /\bnew\s+ActionExecutor\s*\(/,
+  },
+  {
+    name: 'declares a privileged execute(plan, context) implementation outside the canonical boundary',
+    pattern: /execute\s*:\s*(?:async\s*)?\(\s*plan\s*:\s*ActionPlan\s*,\s*context\s*:\s*RuntimeContext\s*\)/,
+  },
+  {
+    name: 'bypasses the phase machine by calling a transaction execute() directly',
+    pattern: /\b(?:ActionTransactionEngine|PrivilegedMutationBoundary)\b[\s\S]{0,80}?\.execute\s*\(/,
+  },
+  {
+    name: 'constructs the privileged mutation boundary outside the canonical package',
+    pattern: /\bnew\s+PrivilegedMutationBoundary\s*\(/,
+  },
+];
+
+for (const file of sourceFiles) {
+  const rel = path.relative(root, file).replaceAll('\\', '/');
+  if (isTestOrLegacy(file)) continue;
+  const text = fs.readFileSync(file, 'utf8');
+  for (const { name, pattern } of bypassPatterns) {
+    if (!pattern.test(text)) continue;
+    // The canonical boundary itself necessarily contains these shapes.
+    if (rel === CANONICAL_BOUNDARY) continue;
+    fail(`${rel}: ${name}`);
+  }
+}
+
+// The canonical boundary must exist and expose only the gated entry point.
+const boundaryPath = path.join(root, CANONICAL_BOUNDARY);
+if (!fs.existsSync(boundaryPath)) {
+  fail(`${CANONICAL_BOUNDARY}: canonical privileged mutation boundary is missing`);
+} else {
+  const boundaryText = fs.readFileSync(boundaryPath, 'utf8');
+  for (const phase of ['prepare', 'snapshot', 'validate', 'policy', 'security', 'safety', 'apply', 'verify', 'commit']) {
+    if (!boundaryText.includes(`'${phase}'`)) {
+      fail(`${CANONICAL_BOUNDARY}: canonical phase '${phase}' is missing`);
+    }
+  }
+  for (const phase of ['rollback', 'verifyRollback', 'recover']) {
+    if (!boundaryText.includes(`'${phase}'`)) {
+      fail(`${CANONICAL_BOUNDARY}: recovery phase '${phase}' is missing`);
+    }
+  }
+}
+
 // Check 12: Run architecture validation script
 const archCheck = require('child_process').spawnSync('node', ['scripts/architecture/validate-architecture.mjs'], {
   cwd: root,
