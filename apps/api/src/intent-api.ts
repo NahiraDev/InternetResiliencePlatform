@@ -64,24 +64,6 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
 }).strict();
 
-const conflictResolution = z.enum(['supersede-a', 'supersede-b', 'queue-b', 'merge']);
-const conflictSchema = z.object({
-  intentA: z.object({
-    intentId: z.string(),
-    desiredOutcome: z.string(),
-    priority: z.enum(['low', 'normal', 'high', 'critical']),
-    version: z.number().int().positive(),
-  }),
-  intentB: z.object({
-    intentId: z.string(),
-    desiredOutcome: z.string(),
-    priority: z.enum(['low', 'normal', 'high', 'critical']),
-    version: z.number().int().positive(),
-  }),
-  reason: z.string(),
-  resolution: conflictResolution,
-});
-
 const conflictListQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
   since: z.string().datetime({ offset: true }).optional(),
@@ -145,12 +127,11 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
   private readonly intents = new Map<string, { intent: NetworkIntent; ownership: IntentOwnership; idempotencyKey?: string; idempotencyFingerprint?: string }>();
   private readonly conflicts: ArbitrationConflict[] = [];
 
-  recordConflict(conflict: ArbitrationConflict): void {
-    this.conflicts.push(conflict);
+  recordConflict(_conflict: ArbitrationConflict): void {
+    this.conflicts.push(_conflict);
   }
 
   async listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]> {
-    const key = ownershipKey(ownership);
     let conflicts = this.conflicts;
     if (since) {
       conflicts = conflicts.filter((c) => new Date(c.timestamp) > since);
@@ -261,13 +242,13 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     this.repository = createIntentRepository(client);
   }
 
-  recordConflict(conflict: ArbitrationConflict): void {
+  recordConflict(_conflict: ArbitrationConflict): void {
     // In a real implementation, this would persist to the database
     // For now, we'll log a warning
     console.warn('DatabaseIntentStore.recordConflict not implemented for database');
   }
 
-  async listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]> {
+  async listConflicts(_ownership: IntentOwnership, _limit: number, _since?: Date): Promise<readonly ArbitrationConflict[]> {
     // In a real implementation, this would query the database
     return Object.freeze([]);
   }
@@ -445,8 +426,8 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
   });
 
   app.get('/api/v1/intents/conflicts/:id', async (request) => {
-    const principal = await authorize(request, 'runtime.inspect');
-    const { id } = idParams.parse(request.params ?? {});
+    await authorize(request, 'runtime.inspect');
+    idParams.parse(request.params ?? {});
     // In a real implementation, this would look up a specific conflict by ID
     // For now, return not found as conflicts don't have individual IDs in this impl
     throw new NotFoundAppError('conflict');

@@ -126,10 +126,7 @@ export const createProgram = (): Command => {
     .option('--json', 'print JSON output')
     .option('--limit <number>', 'maximum number of conflicts to show', '25')
     .description('List arbitration conflicts')
-    .action(async (opts: { limit?: string }) => {
-      const rt = await getRuntimeInstance();
-      // Note: conflicts are emitted as events but not stored in the runtime by default
-      // This would require a conflict store integration
+    .action(async () => {
       printJson({ conflicts: [], message: 'Conflict listing requires a ConflictApiStore implementation' });
     });
   runtime
