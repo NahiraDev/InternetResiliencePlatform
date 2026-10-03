@@ -77,7 +77,6 @@ describe('routing runtime integration guards', () => {
   });
 
   it('reports recovery failure when verification prevents route activation', async () => {
-    let failed = false;
     const engine = new RoutingEngine({
       kernel: runtimeKernel(),
       principal: { id: 'operator', capabilities: ['network.route'] },

@@ -1074,7 +1074,7 @@ export class RoutingEngine {
       recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2
     );
   }
-  private async emit(type: string, payload: unknown): Promise<void> {
+  private async emit(_type: string, _payload: unknown): Promise<void> {
     // Events are handled by the canonical runtime; routing does not maintain its own event bus.
   }
   private metric(name: string, value: number): void {
