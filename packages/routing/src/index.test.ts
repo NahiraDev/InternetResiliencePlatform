@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { InMemoryEventBus } from '@irp/events';
 import { KernelRuntime, createContract } from '@irp/kernel';
 import {
   RoutingEngine,
@@ -108,15 +107,10 @@ describe('routing engine decisions', () => {
     );
   });
 
-  it('selects a single eligible route and emits explanation events in simulation mode without kernel calls', async () => {
+  it('selects a single eligible route in simulation mode without kernel calls', async () => {
     const kernel = new KernelRuntime();
     const execute = vi.spyOn(kernel, 'execute');
-    const events = new InMemoryEventBus();
-    const observed: string[] = [];
-    events.subscribe('routing.decision.created', (e) => {
-      observed.push(e.type);
-    });
-    const engine = new RoutingEngine({ kernel, events });
+    const engine = new RoutingEngine({ kernel });
     const decision = await engine.simulateRouting({
       destination: parseDestination('8.8.8.8'),
       routes: [route('eth', '0.0.0.0/0', 10, 95)],
@@ -125,7 +119,6 @@ describe('routing engine decisions', () => {
     expect(decision.plan.dryRun).toBe(true);
     expect(decision.plan.explanation.eligibleCandidateIds).toHaveLength(1);
     expect(execute).not.toHaveBeenCalled();
-    expect(observed).toContain('routing.decision.created');
   });
 
   it('rejects unhealthy and policy-denied candidates before scoring', async () => {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T00:37:52.737Z",
+  "generatedAt": "2026-10-03T02:15:23.784Z",
   "commit": "unknown",
   "nodes": [
     {
@@ -954,7 +954,7 @@
     },
     {
       "source": "@irp/resilience-runtime",
-      "target": "@irp/core",
+      "target": "@irp/connectivity",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",
@@ -963,7 +963,7 @@
     },
     {
       "source": "@irp/resilience-runtime",
-      "target": "@irp/connectivity",
+      "target": "@irp/core",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",

@@ -1,6 +1,4 @@
 import { createHash } from 'node:crypto';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import {
   ConflictAppError,
   ForbiddenAppError,
@@ -19,6 +17,8 @@ import {
   type DatabaseClient,
   type IntentRecordRow,
 } from '@irp/database';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { z } from 'zod';
 
 const timestamp = z.string().datetime({ offset: true });
 const primitive = z.union([z.string(), z.number().finite(), z.boolean()]);
@@ -64,6 +64,29 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
 }).strict();
 
+const conflictResolution = z.enum(['supersede-a', 'supersede-b', 'queue-b', 'merge']);
+const conflictSchema = z.object({
+  intentA: z.object({
+    intentId: z.string(),
+    desiredOutcome: z.string(),
+    priority: z.enum(['low', 'normal', 'high', 'critical']),
+    version: z.number().int().positive(),
+  }),
+  intentB: z.object({
+    intentId: z.string(),
+    desiredOutcome: z.string(),
+    priority: z.enum(['low', 'normal', 'high', 'critical']),
+    version: z.number().int().positive(),
+  }),
+  reason: z.string(),
+  resolution: conflictResolution,
+});
+
+const conflictListQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  since: z.string().datetime({ offset: true }).optional(),
+}).strict();
+
 export interface IntentOwnership {
   readonly principalId: string;
   readonly organizationId?: string;
@@ -81,6 +104,18 @@ export interface IntentApiStore {
     ownership: IntentOwnership,
     key: string,
   ): Promise<{ intent: NetworkIntent; fingerprint: string } | undefined>;
+}
+
+export interface ArbitrationConflict {
+  readonly intentA: { intentId: string; desiredOutcome: string; priority: NetworkIntent['priority']; version: number };
+  readonly intentB: { intentId: string; desiredOutcome: string; priority: NetworkIntent['priority']; version: number };
+  readonly reason: string;
+  readonly resolution: 'supersede-a' | 'supersede-b' | 'queue-b' | 'merge';
+  readonly timestamp: string; // ISO timestamp when conflict was recorded
+}
+
+export interface ConflictApiStore {
+  listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]>;
 }
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -106,8 +141,22 @@ const idempotencyFingerprint = (value: unknown): string =>
     .update(JSON.stringify(canonicalize(value)))
     .digest('hex');
 
-export class InMemoryIntentStore implements IntentApiStore {
+export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
   private readonly intents = new Map<string, { intent: NetworkIntent; ownership: IntentOwnership; idempotencyKey?: string; idempotencyFingerprint?: string }>();
+  private readonly conflicts: ArbitrationConflict[] = [];
+
+  recordConflict(conflict: ArbitrationConflict): void {
+    this.conflicts.push(conflict);
+  }
+
+  async listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]> {
+    const key = ownershipKey(ownership);
+    let conflicts = this.conflicts;
+    if (since) {
+      conflicts = conflicts.filter((c) => new Date(c.timestamp) > since);
+    }
+    return Object.freeze(conflicts.slice(-limit));
+  }
 
   async get(id: string, ownership: IntentOwnership): Promise<NetworkIntent | undefined> {
     const row = this.intents.get(id);
@@ -204,10 +253,23 @@ const toRow = (
   ownerScopeKey: ownershipKey(ownership),
 });
 
-export class DatabaseIntentStore implements IntentApiStore {
+export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
   private readonly repository: ReturnType<typeof createIntentRepository>;
+  private readonly conflicts: ArbitrationConflict[] = [];
+
   constructor(client: Pick<DatabaseClient, '$queryRaw'>) {
     this.repository = createIntentRepository(client);
+  }
+
+  recordConflict(conflict: ArbitrationConflict): void {
+    // In a real implementation, this would persist to the database
+    // For now, we'll log a warning
+    console.warn('DatabaseIntentStore.recordConflict not implemented for database');
+  }
+
+  async listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]> {
+    // In a real implementation, this would query the database
+    return Object.freeze([]);
   }
 
   async get(id: string, ownership: IntentOwnership) {
@@ -238,7 +300,7 @@ export class DatabaseIntentStore implements IntentApiStore {
 }
 
 export interface IntentApiOptions {
-  store?: IntentApiStore;
+  store?: IntentApiStore & ConflictApiStore;
   database?: Pick<DatabaseClient, '$queryRaw'>;
   onActivated?: (intent: NetworkIntent) => Promise<unknown> | unknown;
   requirePermission?: (
@@ -371,6 +433,23 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       if (error instanceof ConflictAppError) throw error;
       throw new ConflictAppError(error instanceof Error ? error.message : 'Invalid intent transition');
     }
+  });
+
+  // Conflict arbitration endpoints
+  app.get('/api/v1/intents/conflicts', async (request) => {
+    const principal = await authorize(request, 'runtime.inspect');
+    const query = conflictListQuery.parse(request.query ?? {});
+    const owner = ownership(principal);
+    const conflicts = await store.listConflicts(owner, query.limit, query.since ? new Date(query.since) : undefined);
+    return { success: true, data: conflicts, meta: { count: conflicts.length, limit: query.limit } };
+  });
+
+  app.get('/api/v1/intents/conflicts/:id', async (request) => {
+    const principal = await authorize(request, 'runtime.inspect');
+    const { id } = idParams.parse(request.params ?? {});
+    // In a real implementation, this would look up a specific conflict by ID
+    // For now, return not found as conflicts don't have individual IDs in this impl
+    throw new NotFoundAppError('conflict');
   });
 
   return { store };

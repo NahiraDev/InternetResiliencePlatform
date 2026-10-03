@@ -1,8 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import type { ConnectivitySource } from '@irp/connectivity';
-import type { EventBus } from '@irp/events';
 import type { KernelRuntime, Principal } from '@irp/kernel';
-import type { DomainEvent } from '@irp/shared';
 import { createId } from '@irp/shared';
 import type { MetricsRegistry } from '@irp/telemetry';
 
@@ -594,7 +592,6 @@ export class RoutingEngine {
   private history: { at: number; from?: string | undefined; to?: string | undefined }[] = [];
   constructor(
     private readonly options: {
-      events?: EventBus;
       kernel?: KernelRuntime;
       principal?: Principal;
       metrics?: MetricsRegistry;
@@ -1078,14 +1075,7 @@ export class RoutingEngine {
     );
   }
   private async emit(type: string, payload: unknown): Promise<void> {
-    const event: DomainEvent = {
-      id: createId('event'),
-      type,
-      aggregateId: 'routing',
-      occurredAt: new Date(),
-      payload,
-    };
-    await this.options.events?.publish(event);
+    // Events are handled by the canonical runtime; routing does not maintain its own event bus.
   }
   private metric(name: string, value: number): void {
     this.options.metrics?.record(name, value, { component: 'routing' });

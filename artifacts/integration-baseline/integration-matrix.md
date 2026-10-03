@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-10-03T00:37:52.737Z
+Generated: 2026-10-03T02:15:23.784Z
 Commit: unknown
 
 ## Component status
@@ -92,8 +92,8 @@ Commit: unknown
 | @irp/plugin-sandbox | @irp/security | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-sandbox | @irp/plugin-samples | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/queue | @irp/shared | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
-| @irp/resilience-runtime | @irp/core | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/connectivity | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/resilience-runtime | @irp/core | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/events | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/failover | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/resilience-runtime | @irp/gateway-registry | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |

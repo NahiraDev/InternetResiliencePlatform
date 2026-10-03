@@ -5,7 +5,7 @@ export * from './state/network-state.js';
 export * from './ports/ports.js';
 export * from './observations/observations.js';
 export * from './incidents/incidents.js';
-export * from './policy/policy.js';
+export * from './policy/index.js';
 export * from './planning/planner.js';
 export * from './validation/validation.js';
 export * from './execution/execution.js';

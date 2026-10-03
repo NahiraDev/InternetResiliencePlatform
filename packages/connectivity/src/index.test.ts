@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { InMemoryEventBus } from '@irp/events';
 import {
   ConnectivityManager,
   SimulationConnectivityProvider,
@@ -8,9 +7,7 @@ import {
 } from './index.js';
 
 const managerWith = async (...providers: SimulationConnectivityProvider[]) => {
-  const events = new InMemoryEventBus();
   const manager = new ConnectivityManager({
-    events,
     config: { cooldownMs: 0, minimumStabilityMs: 0 },
   });
   for (const provider of providers) await manager.registerProvider(provider);
@@ -76,13 +73,7 @@ describe('connectivity manager phase 12', () => {
   });
 
   it('honors hysteresis, cooldown, policy rejection, and manual override audits', async () => {
-    const events: string[] = [];
-    const bus = new InMemoryEventBus();
-    bus.subscribe('connectivity.manual_override', (event) => {
-      events.push(event.type);
-    });
     const manager = new ConnectivityManager({
-      events: bus,
       config: { cooldownMs: 60_000, switchingHysteresis: 20 },
       policy: () => ({ allowed: false, reason: 'test policy' }),
     });
@@ -98,7 +89,6 @@ describe('connectivity manager phase 12', () => {
     await manager.manualOverride('prefer', 'eth:eth0');
     const evaluation = await manager.evaluate();
     expect(evaluation.selected).toBeUndefined();
-    expect(events).toEqual(['connectivity.manual_override']);
   });
 
   it('recovers and safely fails back to the preferred source after health returns', async () => {

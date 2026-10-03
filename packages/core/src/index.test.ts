@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Application, EventBus, HealthScorer, Scheduler } from './index.js';
+import { Application, HealthScorer, Scheduler } from './index.js';
 import type { AppConfig } from '@irp/config';
 import { Logger } from '@irp/logger';
 const config: AppConfig = {
@@ -26,15 +26,6 @@ const config: AppConfig = {
 };
 const logger = new Logger([], 'debug');
 describe('core runtime', () => {
-  it('publishes asynchronous events', async () => {
-    const bus = new EventBus();
-    const seen: string[] = [];
-    bus.subscribe('BenchmarkCompleted', (e) => {
-      seen.push(e.type);
-    });
-    await bus.publish('BenchmarkCompleted', { ok: true });
-    expect(seen).toEqual(['BenchmarkCompleted']);
-  });
   it('scores providers from benchmark samples', () => {
     const app = new Application(config, logger);
     app.benchmark.record({

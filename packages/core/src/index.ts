@@ -48,7 +48,7 @@ export interface RuntimeContext {
   config: AppConfig;
   logger: Logger;
   container: Container;
-  events: EventBus;
+  events: InternalEventBus;
 }
 export type RuntimeState = 'created' | 'starting' | 'running' | 'stopping' | 'stopped';
 export type EventType =
@@ -151,7 +151,7 @@ export class Container {
     return this.services.has(token);
   }
 }
-export class EventBus {
+class InternalEventBus {
   private readonly handlers = new Map<string, Set<EventHandler>>();
   private readonly history: DomainEvent[] = [];
   constructor(private readonly maxHistory = 500) {}
@@ -256,7 +256,7 @@ export interface RollingStats {
 export class BenchmarkEngine {
   private readonly samples = new Map<string, BenchmarkSample[]>();
   constructor(
-    private readonly events?: EventBus,
+    private readonly events?: InternalEventBus,
     private readonly maxSamples = 200,
   ) {}
   async run(
@@ -356,7 +356,7 @@ export class Cache<T = unknown> {
 }
 export class Application implements Lifecycle {
   private readonly plugins: Plugin[] = [];
-  public readonly events = new EventBus();
+  public readonly events = new InternalEventBus();
   public readonly scheduler: Scheduler;
   public readonly providers = createAllBuiltinProviders();
   public readonly benchmark = new BenchmarkEngine(this.events);
