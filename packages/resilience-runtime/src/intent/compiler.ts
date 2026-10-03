@@ -48,7 +48,8 @@ const defaultsFor = (outcome: string): Record<IntentObjective, number> => {
     result.jitter = (result.jitter ?? 0) + 0.2;
     result.packetLoss = (result.packetLoss ?? 0) + 0.15;
   }
-  if (/download|throughput|bandwidth/.test(text)) result.throughput = (result.throughput ?? 0) + 0.25;
+  if (/download|throughput|bandwidth/.test(text))
+    result.throughput = (result.throughput ?? 0) + 0.25;
   if (/private|privacy|sensitive|trusted/.test(text)) {
     result.privacy = (result.privacy ?? 0) + 0.2;
     result.trust = (result.trust ?? 0) + 0.2;

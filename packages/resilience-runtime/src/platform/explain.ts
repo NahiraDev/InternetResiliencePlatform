@@ -49,9 +49,7 @@ export const explainDecision = (record: DecisionRecord): DecisionExplanation => 
       allowedActions: Object.freeze([
         ...record.runtimeContext.policySnapshot.policy.allowedActions,
       ]),
-      deniedActions: Object.freeze([
-        ...record.runtimeContext.policySnapshot.policy.deniedActions,
-      ]),
+      deniedActions: Object.freeze([...record.runtimeContext.policySnapshot.policy.deniedActions]),
       requiredCapabilities: Object.freeze([...record.policyEvaluation.requiredCapabilities]),
       policyReasons: Object.freeze([...record.policyEvaluation.reasons]),
     },

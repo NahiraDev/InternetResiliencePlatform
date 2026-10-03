@@ -81,14 +81,46 @@ export interface CapabilityRule {
  * capability that only a platform adapter should have.
  */
 export const DEFAULT_CAPABILITY_RULES: readonly CapabilityRule[] = Object.freeze([
-  Object.freeze({ capability: 'observe.read', minimumBoundary: 'external-client', description: 'Read observations and runtime state.' }),
-  Object.freeze({ capability: 'plan.propose', minimumBoundary: 'external-client', description: 'Propose candidate actions.' }),
-  Object.freeze({ capability: 'intent.compile', minimumBoundary: 'plugin', description: 'Compile intents from advisory input.' }),
-  Object.freeze({ capability: 'knowledge.contribute', minimumBoundary: 'plugin', description: 'Contribute scoped advisory knowledge.' }),
-  Object.freeze({ capability: 'probe.remote', minimumBoundary: 'remote-node', description: 'Submit signed remote probe evidence.' }),
-  Object.freeze({ capability: 'network.mutate', minimumBoundary: 'canonical-runtime', description: 'Apply a privileged network mutation.' }),
-  Object.freeze({ capability: 'fabric.mutate', minimumBoundary: 'platform-adapter', description: 'Mutate programmable fabric resources.' }),
-  Object.freeze({ capability: 'tunnel.mutate', minimumBoundary: 'platform-adapter', description: 'Create, switch or tear down tunnels.' }),
+  Object.freeze({
+    capability: 'observe.read',
+    minimumBoundary: 'external-client',
+    description: 'Read observations and runtime state.',
+  }),
+  Object.freeze({
+    capability: 'plan.propose',
+    minimumBoundary: 'external-client',
+    description: 'Propose candidate actions.',
+  }),
+  Object.freeze({
+    capability: 'intent.compile',
+    minimumBoundary: 'plugin',
+    description: 'Compile intents from advisory input.',
+  }),
+  Object.freeze({
+    capability: 'knowledge.contribute',
+    minimumBoundary: 'plugin',
+    description: 'Contribute scoped advisory knowledge.',
+  }),
+  Object.freeze({
+    capability: 'probe.remote',
+    minimumBoundary: 'remote-node',
+    description: 'Submit signed remote probe evidence.',
+  }),
+  Object.freeze({
+    capability: 'network.mutate',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Apply a privileged network mutation.',
+  }),
+  Object.freeze({
+    capability: 'fabric.mutate',
+    minimumBoundary: 'platform-adapter',
+    description: 'Mutate programmable fabric resources.',
+  }),
+  Object.freeze({
+    capability: 'tunnel.mutate',
+    minimumBoundary: 'platform-adapter',
+    description: 'Create, switch or tear down tunnels.',
+  }),
 ]);
 
 export const ruleFor = (
@@ -205,7 +237,8 @@ export class TrustBoundaryAuthorizer {
       this.rules
         .filter(
           (rule) =>
-            TRUST_RANK[actor.boundary] >= TRUST_RANK[rule.minimumBoundary] && !denied.has(rule.capability),
+            TRUST_RANK[actor.boundary] >= TRUST_RANK[rule.minimumBoundary] &&
+            !denied.has(rule.capability),
         )
         .map((rule) => rule.capability),
     );

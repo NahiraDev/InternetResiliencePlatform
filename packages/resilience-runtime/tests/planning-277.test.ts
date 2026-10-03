@@ -28,7 +28,12 @@ const context = (): RuntimeContext =>
       source: 'test',
       metadata: {},
       policy: {
-        allowedActions: ['connectivity_failover', 'provider_switch', 'degraded_mode', 'health_reprobe'],
+        allowedActions: [
+          'connectivity_failover',
+          'provider_switch',
+          'degraded_mode',
+          'health_reprobe',
+        ],
         deniedActions: [],
         capabilityRequirements: {},
         securityConstraints: [],
@@ -111,7 +116,21 @@ describe('#277 objective-driven optimization', () => {
     for (const expressed of [
       { latency: 1 },
       { latency: 0.5, cost: 0.25 },
-      { reachability: 1, latency: 1, jitter: 1, packetLoss: 1, throughput: 1, stability: 1, privacy: 1, trust: 1, security: 1, cost: 1, resourceUsage: 1, diversity: 1, recoveryProbability: 1 },
+      {
+        reachability: 1,
+        latency: 1,
+        jitter: 1,
+        packetLoss: 1,
+        throughput: 1,
+        stability: 1,
+        privacy: 1,
+        trust: 1,
+        security: 1,
+        cost: 1,
+        resourceUsage: 1,
+        diversity: 1,
+        recoveryProbability: 1,
+      },
     ]) {
       const objectives = objectivesFromIntent(compiledIntent(expressed));
       const total = STRATEGY_OBJECTIVES.reduce((sum, o) => sum + objectives[o], 0);
@@ -185,11 +204,9 @@ describe('#277 objective-driven optimization', () => {
 
   it('produces a plan with optimization evidence via planAgainstObjectives', async () => {
     const planner = new DeterministicPlanner();
-    const result = await planner.planAgainstObjectives(
-      [candidate({ id: 'x' })],
-      context(),
-      { intent: compiledIntent({ latency: 1 }) },
-    );
+    const result = await planner.planAgainstObjectives([candidate({ id: 'x' })], context(), {
+      intent: compiledIntent({ latency: 1 }),
+    });
     expect(result.scored).toHaveLength(1);
     const optimization = result.plan.metadata.optimization as {
       objectiveScore: number;
@@ -299,21 +316,23 @@ describe('#277 resource reservation and concurrency control', () => {
     const epoch = new DecisionEpoch();
     const table = new ResourceReservationTable(epoch);
     table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 10, now: 1000 });
-    expect(table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 10, now: 2000 }).granted).toBe(
-      true,
-    );
+    expect(
+      table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 10, now: 2000 }).granted,
+    ).toBe(true);
   });
 
   it('rejects a non-positive ttl', () => {
     const epoch = new DecisionEpoch();
     const table = new ResourceReservationTable(epoch);
-    expect(() =>
-      table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 0 }),
-    ).toThrow(RangeError);
+    expect(() => table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 0 })).toThrow(
+      RangeError,
+    );
   });
 
   it('rejects an invalid configured capacity', () => {
-    expect(() => new ResourceReservationTable(new DecisionEpoch(), { 'gw-1': 0 })).toThrow(RangeError);
+    expect(() => new ResourceReservationTable(new DecisionEpoch(), { 'gw-1': 0 })).toThrow(
+      RangeError,
+    );
   });
 
   it('reports reserved resources', () => {
@@ -398,7 +417,12 @@ describe('#277 stale-decision protection', () => {
   it('invalidates an in-flight decision after the ttl expires', () => {
     const epoch = new DecisionEpoch();
     const table = new ResourceReservationTable(epoch);
-    const granted = table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), ttlMs: 10, now: 1000 });
+    const granted = table.reserve({
+      resourceId: 'gw-1',
+      epoch: epoch.current(),
+      ttlMs: 10,
+      now: 1000,
+    });
     expect(
       table.validateForExecution(granted.reservation!.reservationId, {
         epoch: epoch.current(),
@@ -444,7 +468,12 @@ describe('#277 stale-decision protection', () => {
     const epoch = new DecisionEpoch();
     const table = new ResourceReservationTable(epoch);
     table.observeResourceVersion('gw-1', 'v1');
-    table.reserve({ resourceId: 'gw-1', epoch: epoch.current(), resourceVersion: 'v1', ttlMs: 5000 });
+    table.reserve({
+      resourceId: 'gw-1',
+      epoch: epoch.current(),
+      resourceVersion: 'v1',
+      ttlMs: 5000,
+    });
     const snapshot = table.snapshot();
     expect(snapshot.epoch).toBe(1);
     expect(snapshot.reservations).toHaveLength(1);

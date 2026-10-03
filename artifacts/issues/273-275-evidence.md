@@ -29,19 +29,19 @@ discovery arguments, ownership conflict detection, capability registry class, an
 
 ### Real gaps found and closed
 
-| # | Gap found | Fix |
-|---|---|---|
-| 1 | `FabricCapabilityRegistry` was **never read by `select()`** — task 5's registry was decorative; selection trusted resource-local claims | New `FabricCapabilityAuthority` (`fabric-authority.ts`) with `authorize`/`authorizeAll`; `select()` now consults it |
-| 2 | No legal-transition rules for the 11 states — a resource could jump `FAILED -> HEALTHY` | `FABRIC_STATE_TRANSITIONS` + `assertFabricStateTransition` + `IllegalFabricStateTransitionError` (`fabric-lifecycle.ts`) |
-| 3 | Discovery was not freshness-aware; stale evidence accumulated forever | `evaluateFabricFreshness`, `partitionByFreshness`, `freshnessReport()`, explicit `pruneExpired()` |
-| 4 | "Failure-domain diversity" was a boolean *"has one preferred domain"* — cannot distinguish independent paths from two paths through one carrier | `sharesFailureDomain`, `selectDiverseResources` (greedy maximal-disjoint), `countDistinctFailureDomains`; `select()` returns `diversity` evidence |
-| 5 | No ownership index/query | `ownershipIndex()`, `resourcesOwnedBy()` |
-| 6 | Platform compatibility declared on capabilities but never enforced | `platform` on `FabricSelectionRequest`, enforced via registry |
-| 7 | Safety ceiling and runtime-authority requirement absent | `maximumSafety`, `requireRuntimeAuthority` enforced via registry |
+| #   | Gap found                                                                                                                                       | Fix                                                                                                                                               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `FabricCapabilityRegistry` was **never read by `select()`** — task 5's registry was decorative; selection trusted resource-local claims         | New `FabricCapabilityAuthority` (`fabric-authority.ts`) with `authorize`/`authorizeAll`; `select()` now consults it                               |
+| 2   | No legal-transition rules for the 11 states — a resource could jump `FAILED -> HEALTHY`                                                         | `FABRIC_STATE_TRANSITIONS` + `assertFabricStateTransition` + `IllegalFabricStateTransitionError` (`fabric-lifecycle.ts`)                          |
+| 3   | Discovery was not freshness-aware; stale evidence accumulated forever                                                                           | `evaluateFabricFreshness`, `partitionByFreshness`, `freshnessReport()`, explicit `pruneExpired()`                                                 |
+| 4   | "Failure-domain diversity" was a boolean _"has one preferred domain"_ — cannot distinguish independent paths from two paths through one carrier | `sharesFailureDomain`, `selectDiverseResources` (greedy maximal-disjoint), `countDistinctFailureDomains`; `select()` returns `diversity` evidence |
+| 5   | No ownership index/query                                                                                                                        | `ownershipIndex()`, `resourcesOwnedBy()`                                                                                                          |
+| 6   | Platform compatibility declared on capabilities but never enforced                                                                              | `platform` on `FabricSelectionRequest`, enforced via registry                                                                                     |
+| 7   | Safety ceiling and runtime-authority requirement absent                                                                                         | `maximumSafety`, `requireRuntimeAuthority` enforced via registry                                                                                  |
 
 ### Deliberate non-change
 
-An earlier iteration pruned expired resources *inside* `discover()`. That was
+An earlier iteration pruned expired resources _inside_ `discover()`. That was
 reverted: pruning deletes evidence. Staleness is now surfaced
 (`freshnessReport`) and honoured by `select()`, while compaction stays an
 explicit `pruneExpired()` operation.
@@ -67,16 +67,16 @@ explicit `pruneExpired()` operation.
 New engine: `scripts/archaeology.mjs` (`pnpm run architecture:archaeology`).
 Produces evidence-backed artifacts in `artifacts/archaeology/`:
 
-| Artifact | Task |
-|---|---|
-| `inventory.json` | 1 — packages/apps/clients/infra/ops/config/docs/scripts/tools/CI/deployment/tests/entrypoints |
-| `runtime-paths.json` | 2 — entrypoint -> privileged mutation -> verification traces |
-| `capability-matrix.json` | 3 — capability -> implementation -> owner -> consumer -> runtime path |
-| `authority-map.json` | 4 — decision/mutation authority map |
-| `phase-audit.json` | 5 — all phase docs audited incl. artifacts beyond Phase 78 |
-| `orphans.json` | 6/7 — orphaned tests/modules, duplicate contracts, unreferenced persistence models |
-| `graph-reconciliation.json` | 8 — the 4 architecture graphs reconciled against source |
-| `drift-register.json` / `.md` | 9 — severity, evidence, impact, owner, fix, verification |
+| Artifact                      | Task                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| `inventory.json`              | 1 — packages/apps/clients/infra/ops/config/docs/scripts/tools/CI/deployment/tests/entrypoints |
+| `runtime-paths.json`          | 2 — entrypoint -> privileged mutation -> verification traces                                  |
+| `capability-matrix.json`      | 3 — capability -> implementation -> owner -> consumer -> runtime path                         |
+| `authority-map.json`          | 4 — decision/mutation authority map                                                           |
+| `phase-audit.json`            | 5 — all phase docs audited incl. artifacts beyond Phase 78                                    |
+| `orphans.json`                | 6/7 — orphaned tests/modules, duplicate contracts, unreferenced persistence models            |
+| `graph-reconciliation.json`   | 8 — the 4 architecture graphs reconciled against source                                       |
+| `drift-register.json` / `.md` | 9 — severity, evidence, impact, owner, fix, verification                                      |
 
 ### Methodological corrections made during the work
 
@@ -86,7 +86,7 @@ than shipped, because a noisy archaeology report is worse than none:
 1. **Capability extraction** matched bare dotted identifiers, sweeping in
    `dns.he.net` (hostname), `dns.length` (array length) and
    `gateway.failover.started` (event name) → 121 bogus findings.
-   Replaced with **ground truth**: capabilities are read from the *executed*
+   Replaced with **ground truth**: capabilities are read from the _executed_
    canonical adapter registry (`dist/adapter-registry.js`), and consumers are
    located by exact literal search. Result: 11 real capabilities.
 2. **Orphan module detection** did not follow barrel re-export chains, so every
@@ -138,6 +138,7 @@ than shipped, because a noisy archaeology report is worse than none:
 ## Acceptance criteria status
 
 #273:
+
 - "No major capability lacks a known owner/consumer/runtime path" — **met**:
   capability matrix is 0 without implementation, 0 without owner, 0 without consumer.
 - "No undocumented production mutation authority remains" — **met**: 0 authority violations; both entrypoints compose canonically; no direct `ResilienceRuntime` construction.
@@ -145,6 +146,7 @@ than shipped, because a noisy archaeology report is worse than none:
 - "Findings are linked to concrete source/tests/runtime evidence" — **met**: every drift finding carries evidence paths, owner, fix and verification command.
 
 #275:
+
 - "The runtime can discover, reason about and select real resources through stable contracts without domain packages becoming competing control planes" — **met** for the fabric contract surface; capability authorization is now enforced through the canonical runtime's registry, and domain packages hold no authority (verified by `architecture:guards`).
 
 ---

@@ -25,7 +25,13 @@ const root = process.cwd();
 const outDir = join(root, 'artifacts/archaeology');
 
 const SKIP_DIRS = new Set([
-  'node_modules', 'dist', '.git', '.turbo', 'coverage', 'artifacts', 'build',
+  'node_modules',
+  'dist',
+  '.git',
+  '.turbo',
+  'coverage',
+  'artifacts',
+  'build',
 ]);
 const SOURCE_EXT = /\.(ts|tsx|mts|cts|mjs|cjs|js|jsx)$/;
 
@@ -65,8 +71,8 @@ async function buildInventory() {
       const manifest = existsSync(manifestPath) ? await readJson(manifestPath) : {};
       const srcRoot = join(base, entry.name, 'src');
       const sources = existsSync(srcRoot) ? await walk(srcRoot, isSource) : [];
-      const tests = (await walk(join(base, entry.name), isSource)).filter((f) =>
-        /(^|\/)(test|tests|__tests__)\//.test(rel(f)) || /\.test\.|\.spec\./.test(f),
+      const tests = (await walk(join(base, entry.name), isSource)).filter(
+        (f) => /(^|\/)(test|tests|__tests__)\//.test(rel(f)) || /\.test\.|\.spec\./.test(f),
       );
       packages.push({
         group,
@@ -91,12 +97,11 @@ async function buildInventory() {
     ops: existsSync(join(root, 'ops'))
       ? (await walk(join(root, 'ops'), (f) => /\.(ya?ml|json|sh|mjs|cjs)$/.test(f))).map(rel)
       : [],
-    config: existsSync(join(root, 'config'))
-      ? (await readdir(join(root, 'config'))).sort()
-      : [],
+    config: existsSync(join(root, 'config')) ? (await readdir(join(root, 'config'))).sort() : [],
     deployment: [
-      ...['Dockerfile', 'Dockerfile.dev', 'compose.yaml', 'compose.dev.yaml', 'fly.toml']
-        .filter((f) => existsSync(join(root, f))),
+      ...['Dockerfile', 'Dockerfile.dev', 'compose.yaml', 'compose.dev.yaml', 'fly.toml'].filter(
+        (f) => existsSync(join(root, f)),
+      ),
       ...(existsSync(join(root, '.github/workflows'))
         ? (await readdir(join(root, '.github/workflows'))).filter((f) => /release|publish/.test(f))
         : []),
@@ -132,7 +137,8 @@ async function buildInventory() {
       packages: packages.length,
       workspacePackages: packages.filter((p) => p.kind === 'workspace-package').length,
       nativeClients: packages.filter((p) => p.kind === 'native-client').length,
-      packagesWithoutTests: packages.filter((p) => !p.hasTests && p.kind === 'workspace-package').length,
+      packagesWithoutTests: packages.filter((p) => !p.hasTests && p.kind === 'workspace-package')
+        .length,
       workflows: infra.workflows.length,
       docs: infra.docs.length,
       phaseDocs: infra.phaseDocs.length,
@@ -149,7 +155,10 @@ const MUTATION_MARKERS = [
   { name: 'safety-kernel-execute', pattern: /safetyKernel\.execute\(/ },
   { name: 'transaction-engine', pattern: /new\s+ActionTransactionEngine\(/ },
   { name: 'coordinated-executor', pattern: /new\s+CoordinatedActionExecutor\(/ },
-  { name: 'direct-route-mutation', pattern: /(?:spawn|exec|execFile)[^\n]*['"](?:ip|route|resolvectl|wg|nmcli|iptables)['"]/ },
+  {
+    name: 'direct-route-mutation',
+    pattern: /(?:spawn|exec|execFile)[^\n]*['"](?:ip|route|resolvectl|wg|nmcli|iptables)['"]/,
+  },
 ];
 const VERIFICATION_MARKERS = [
   { name: 'runtime-action-verifier', pattern: /RuntimeActionVerifier/ },
@@ -190,7 +199,9 @@ async function buildRuntimePaths() {
       entrypoint: declared,
       composesCanonicalRuntime: text.includes('createCanonicalRuntime'),
       constructsRuntimeDirectly: /\bnew\s+ResilienceRuntime\s*\(/.test(text),
-      reachesSafetyKernel: /safetyKernel|ActionTransactionEngine|CoordinatedActionExecutor/.test(text),
+      reachesSafetyKernel: /safetyKernel|ActionTransactionEngine|CoordinatedActionExecutor/.test(
+        text,
+      ),
       reachesVerification: /verifyDestination|verification/.test(text),
     });
   }
@@ -230,10 +241,7 @@ const CAPABILITY_DOMAINS =
  * by searching for those exact capability literals.
  */
 async function buildCapabilityMatrix() {
-  const registryModule = join(
-    root,
-    'packages/resilience-runtime/dist/adapter-registry.js',
-  );
+  const registryModule = join(root, 'packages/resilience-runtime/dist/adapter-registry.js');
   const registry = {
     available: false,
     adapters: [],
@@ -351,7 +359,9 @@ async function buildCapabilityMatrix() {
     capabilities,
     summary: {
       total: capabilities.length,
-      withoutImplementation: capabilities.filter((c) => !c.hasImplementation).map((c) => c.capability),
+      withoutImplementation: capabilities
+        .filter((c) => !c.hasImplementation)
+        .map((c) => c.capability),
       withoutOwner: capabilities.filter((c) => !c.hasOwner).map((c) => c.capability),
       withoutConsumer: capabilities.filter((c) => !c.hasConsumer).map((c) => c.capability),
     },
@@ -362,8 +372,15 @@ async function buildCapabilityMatrix() {
 // Task 4: decision / mutation authority map
 // ---------------------------------------------------------------------------
 const FORBIDDEN_AUTHORITIES = [
-  'NetworkAutopilot', 'DecisionEngine', 'PolicyEngine', 'SafetyKernel',
-  'StateRegistry', 'TransactionExecutor', 'EventBus', 'ProviderRegistry', 'Planner',
+  'NetworkAutopilot',
+  'DecisionEngine',
+  'PolicyEngine',
+  'SafetyKernel',
+  'StateRegistry',
+  'TransactionExecutor',
+  'EventBus',
+  'ProviderRegistry',
+  'Planner',
 ];
 
 async function buildAuthorityMap() {
@@ -413,8 +430,7 @@ async function buildAuthorityMap() {
     summary: {
       hosts: authorities.length,
       violations: violations.length,
-      singleProductionAuthority:
-        contract.canonicalRuntime?.productionAuthorityCount === 1,
+      singleProductionAuthority: contract.canonicalRuntime?.productionAuthorityCount === 1,
     },
   };
 }
@@ -424,7 +440,8 @@ async function buildAuthorityMap() {
 // ---------------------------------------------------------------------------
 async function buildPhaseAudit() {
   const dir = join(root, 'docs/phases');
-  if (!existsSync(dir)) return { schemaVersion: 1, generatedAt: new Date().toISOString(), phases: [] };
+  if (!existsSync(dir))
+    return { schemaVersion: 1, generatedAt: new Date().toISOString(), phases: [] };
   const files = (await readdir(dir)).filter((f) => f.endsWith('.md')).sort();
   const phases = [];
   for (const file of files) {
@@ -432,8 +449,7 @@ async function buildPhaseAudit() {
     const number = Number.parseInt(/phase-(\d+)/.exec(file)?.[1] ?? '', 10);
     const claimsImplementation = /\b(implemented|merged|complete[d]?)\b/i.test(text);
     const citesEvidence =
-      /\b(PR|commit|CI run|evidence|sha)\b/i.test(text) ||
-      /`[0-9a-f]{7,40}`/.test(text);
+      /\b(PR|commit|CI run|evidence|sha)\b/i.test(text) || /`[0-9a-f]{7,40}`/.test(text);
     const hasTestEvidence = /\.test\.|tests\/|vitest/i.test(text);
     phases.push({
       file: `docs/phases/${file}`,
@@ -459,7 +475,9 @@ async function buildPhaseAudit() {
     summary: {
       total: phases.length,
       beyondPhase78: phases.filter((p) => p.beyondPhase78).map((p) => p.file),
-      unsubstantiated: phases.filter((p) => p.evidenceClass === 'unsubstantiated-claim').map((p) => p.file),
+      unsubstantiated: phases
+        .filter((p) => p.evidenceClass === 'unsubstantiated-claim')
+        .map((p) => p.file),
       evidenceBacked: phases.filter((p) => p.evidenceClass === 'evidence-backed').length,
     },
   };
@@ -474,7 +492,9 @@ async function buildOrphans() {
   const testFiles = await walk(join(pkgRoot, 'tests'), isSource);
   const vitestInclude = await readText(join(root, 'vitest.config.ts'));
   const includeMatch = /include:\s*\[([^\]]+)\]/.exec(vitestInclude);
-  const includeGlobs = includeMatch ? [...includeMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+  const includeGlobs = includeMatch
+    ? [...includeMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+    : [];
 
   const allText = new Map();
   for (const file of [...srcFiles, ...testFiles]) allText.set(file, await readText(file));
@@ -482,7 +502,15 @@ async function buildOrphans() {
   // Orphaned tests: compiled by tsc but not matched by any vitest include glob.
   const orphanTests = srcFiles
     .filter((f) => /(^|\/)(test|tests|__tests__)\//.test(rel(f)) || /\.test\.|\.spec\./.test(f))
-    .filter((f) => !includeGlobs.some((glob) => glob.endsWith('tests/**/*.test.ts') && rel(f).includes('tests/') && rel(f).endsWith('.test.ts')))
+    .filter(
+      (f) =>
+        !includeGlobs.some(
+          (glob) =>
+            glob.endsWith('tests/**/*.test.ts') &&
+            rel(f).includes('tests/') &&
+            rel(f).endsWith('.test.ts'),
+        ),
+    )
     .map((f) => rel(f));
 
   // Orphaned modules: src files unreachable from the root barrel. Barrel
@@ -520,9 +548,7 @@ async function buildOrphans() {
       // still reachable if any test imports them.
       for (const [testFile, testText] of allText) {
         if (!/(^|\/)(test|tests|__tests__)\//.test(rel(testFile))) continue;
-        const base = r
-          .replace(/^packages\/resilience-runtime\/src\//, '')
-          .replace(/\.ts$/, '');
+        const base = r.replace(/^packages\/resilience-runtime\/src\//, '').replace(/\.ts$/, '');
         if (testText.includes(`../src/${base}.js`) || testText.includes(`./${base}.js`)) {
           return false;
         }
@@ -557,7 +583,10 @@ async function buildOrphans() {
       let used = false;
       for (const [other, otherText] of allText) {
         if (other === file) continue;
-        if (otherText.includes(table)) { used = true; break; }
+        if (otherText.includes(table)) {
+          used = true;
+          break;
+        }
       }
       persistenceModels.push({ table, declaredIn: rel(file), referenced: used });
     }
@@ -630,7 +659,9 @@ async function buildGraphReconciliation(inventory, paths) {
           const [group] = candidate.split('/');
           return existsSync(join(root, group));
         }
-        return existsSync(join(root, candidate, 'package.json')) || existsSync(join(root, candidate));
+        return (
+          existsSync(join(root, candidate, 'package.json')) || existsSync(join(root, candidate))
+        );
       });
       const evidence = {
         node: node.id ?? node.kind ?? 'unknown',
@@ -665,7 +696,12 @@ async function buildGraphReconciliation(inventory, paths) {
           const onDisk = existsSync(join(root, path));
           const traced = paths.traces.find((t) => t.entrypoint === path);
           if (!onDisk || (traced && !traced.composesCanonicalRuntime)) {
-            entrypointDrift.push({ graph: graphPath, entrypoint: path, exists: onDisk, traced: Boolean(traced) });
+            entrypointDrift.push({
+              graph: graphPath,
+              entrypoint: path,
+              exists: onDisk,
+              traced: Boolean(traced),
+            });
           }
         }
       }
@@ -763,7 +799,8 @@ async function buildDriftRegister(inventory, paths, matrix, authority, phases, o
         severity: 'CRITICAL',
         area: 'architecture-graph',
         evidence: [drift.graph, entry.entrypoint],
-        impact: 'Architecture graph declares an entrypoint that is missing or does not compose canonically.',
+        impact:
+          'Architecture graph declares an entrypoint that is missing or does not compose canonically.',
         owner: '@irp/resilience-runtime',
         fix: 'Reconcile the execution graph with the binding architecture contract and source.',
         verification: 'pnpm run architecture:check',
@@ -843,7 +880,7 @@ async function buildDriftRegister(inventory, paths, matrix, authority, phases, o
   }
 
   const order = { CRITICAL: 0, MAJOR: 1, MINOR: 2, INFO: 3 };
-  findings.sort((a, b) => (order[a.severity] - order[b.severity]) || a.id.localeCompare(b.id));
+  findings.sort((a, b) => order[a.severity] - order[b.severity] || a.id.localeCompare(b.id));
 
   return {
     schemaVersion: 1,
@@ -869,7 +906,15 @@ async function main() {
   const phases = await buildPhaseAudit();
   const orphans = await buildOrphans();
   const graphs = await buildGraphReconciliation(inventory, paths);
-  const drift = await buildDriftRegister(inventory, paths, matrix, authority, phases, orphans, graphs);
+  const drift = await buildDriftRegister(
+    inventory,
+    paths,
+    matrix,
+    authority,
+    phases,
+    orphans,
+    graphs,
+  );
 
   const artifacts = {
     'inventory.json': inventory,
@@ -904,8 +949,12 @@ async function main() {
   console.log(`  orphaned tests            : ${orphans.summary.orphanTests}`);
   console.log(`  orphaned modules          : ${orphans.summary.orphanModules}`);
   console.log(`  duplicate contracts       : ${orphans.summary.duplicateContracts}`);
-  console.log(`  graph nodes reconciled    : ${graphs.summary.nodesChecked} (unreferenced ${graphs.summary.unreferencedNodes})`);
-  console.log(`  drift findings            : ${drift.summary.total} (critical ${drift.summary.critical}, major ${drift.summary.major}, minor ${drift.summary.minor})`);
+  console.log(
+    `  graph nodes reconciled    : ${graphs.summary.nodesChecked} (unreferenced ${graphs.summary.unreferencedNodes})`,
+  );
+  console.log(
+    `  drift findings            : ${drift.summary.total} (critical ${drift.summary.critical}, major ${drift.summary.major}, minor ${drift.summary.minor})`,
+  );
   console.log(`  artifacts                 : ${relative(root, outDir)}`);
 
   if (drift.summary.critical > 0) {

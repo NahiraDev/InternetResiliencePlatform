@@ -90,7 +90,8 @@ const DECISIONS: Record<DegradationFault, DegradationDecision> = {
   },
 };
 
-export const evaluateDegradation = (fault: DegradationFault): DegradationDecision => DECISIONS[fault];
+export const evaluateDegradation = (fault: DegradationFault): DegradationDecision =>
+  DECISIONS[fault];
 
 export const degradationFaults: readonly DegradationFault[] = Object.freeze(
   Object.keys(DECISIONS) as DegradationFault[],

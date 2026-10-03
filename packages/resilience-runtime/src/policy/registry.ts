@@ -7,15 +7,8 @@ import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
 import type { PolicySnapshot, ResiliencePolicy } from '../domain/types.js';
 import { defaultPolicy } from '../context/context.js';
 
-export type PolicyDomain = 
-  | 'security'
-  | 'routing'
-  | 'dns'
-  | 'gateway'
-  | 'tunnel'
-  | 'connectivity'
-  | 'failover'
-  | 'global';
+export type PolicyDomain =
+  'security' | 'routing' | 'dns' | 'gateway' | 'tunnel' | 'connectivity' | 'failover' | 'global';
 
 export interface PolicyVersion {
   readonly version: string; // semver
@@ -60,8 +53,11 @@ export class PolicyRegistry {
     const v0 = this.createVersion('0.1.0', initial, 'system', 'Initial default policy');
     this.versions.set(v0.version, v0);
     this.currentVersion = v0.version;
-    
-    this.domainResolutions = { ...DOMAIN_RESOLUTIONS, ...options.domainResolutions } as Record<PolicyDomain, PolicyConflictResolution>;
+
+    this.domainResolutions = { ...DOMAIN_RESOLUTIONS, ...options.domainResolutions } as Record<
+      PolicyDomain,
+      PolicyConflictResolution
+    >;
   }
 
   private createVersion(
@@ -90,10 +86,14 @@ export class PolicyRegistry {
     const minor = Number(parts[1] ?? 0);
     const patch = Number(parts[2] ?? 0);
     switch (level) {
-      case 'major': return `${major + 1}.0.0`;
-      case 'minor': return `${major}.${minor + 1}.0`;
-      case 'patch': return `${major}.${minor}.${patch + 1}`;
-      default: return current; // exhaustive check
+      case 'major':
+        return `${major + 1}.0.0`;
+      case 'minor':
+        return `${major}.${minor + 1}.0`;
+      case 'patch':
+        return `${major}.${minor}.${patch + 1}`;
+      default:
+        return current; // exhaustive check
     }
   }
 
@@ -118,9 +118,11 @@ export class PolicyRegistry {
 
   /** List all versions in chronological order. */
   listVersions(): readonly PolicyVersion[] {
-    return Object.freeze([...this.versions.values()].sort((a, b) => 
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    ));
+    return Object.freeze(
+      [...this.versions.values()].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      ),
+    );
   }
 
   /** Get the current version string. */
@@ -139,7 +141,13 @@ export class PolicyRegistry {
     level: 'major' | 'minor' | 'patch' = 'minor',
   ): string {
     const newVersion = this.bumpVersion(this.currentVersion, level);
-    const version = this.createVersion(newVersion, policy, createdBy, description, this.currentVersion);
+    const version = this.createVersion(
+      newVersion,
+      policy,
+      createdBy,
+      description,
+      this.currentVersion,
+    );
     this.versions.set(newVersion, version);
     this.currentVersion = newVersion;
     return newVersion;
@@ -178,21 +186,36 @@ export class PolicyRegistry {
 
     // Compute merged values
     let mergedAllowedActions = policyA.allowedActions;
-    if (policyA.allowedActions.length !== policyB.allowedActions.length ||
-        !policyA.allowedActions.every((v, i) => v === policyB.allowedActions[i])) {
+    if (
+      policyA.allowedActions.length !== policyB.allowedActions.length ||
+      !policyA.allowedActions.every((v, i) => v === policyB.allowedActions[i])
+    ) {
       conflicts.push('allowedActions differ');
-      mergedAllowedActions = this.mergeArrays(policyA.allowedActions, policyB.allowedActions, strategy);
+      mergedAllowedActions = this.mergeArrays(
+        policyA.allowedActions,
+        policyB.allowedActions,
+        strategy,
+      );
     }
 
     let mergedDeniedActions = policyA.deniedActions;
-    if (policyA.deniedActions.length !== policyB.deniedActions.length ||
-        !policyA.deniedActions.every((v, i) => v === policyB.deniedActions[i])) {
+    if (
+      policyA.deniedActions.length !== policyB.deniedActions.length ||
+      !policyA.deniedActions.every((v, i) => v === policyB.deniedActions[i])
+    ) {
       conflicts.push('deniedActions differ');
-      mergedDeniedActions = this.mergeArrays(policyA.deniedActions, policyB.deniedActions, strategy);
+      mergedDeniedActions = this.mergeArrays(
+        policyA.deniedActions,
+        policyB.deniedActions,
+        strategy,
+      );
     }
 
     let mergedCapabilityRequirements = policyA.capabilityRequirements;
-    if (JSON.stringify(policyA.capabilityRequirements) !== JSON.stringify(policyB.capabilityRequirements)) {
+    if (
+      JSON.stringify(policyA.capabilityRequirements) !==
+      JSON.stringify(policyB.capabilityRequirements)
+    ) {
       conflicts.push('capabilityRequirements differ');
       mergedCapabilityRequirements = this.mergeCapabilityRequirements(
         policyA.capabilityRequirements,
@@ -202,41 +225,103 @@ export class PolicyRegistry {
     }
 
     // Merge scalar fields
-    const mergedConfidenceThreshold = policyA.confidenceThreshold === policyB.confidenceThreshold
-      ? policyA.confidenceThreshold
-      : this.mergeScalar(policyA.confidenceThreshold, policyB.confidenceThreshold, strategy);
-    const mergedActionBudget = policyA.actionBudget === policyB.actionBudget
-      ? policyA.actionBudget
-      : this.mergeScalar(policyA.actionBudget, policyB.actionBudget, strategy);
-    const mergedMaxConcurrentActions = policyA.maxConcurrentActions === policyB.maxConcurrentActions
-      ? policyA.maxConcurrentActions
-      : this.mergeScalar(policyA.maxConcurrentActions, policyB.maxConcurrentActions, strategy);
-    const mergedTelemetryFreshnessMs = policyA.telemetryFreshnessMs === policyB.telemetryFreshnessMs
-      ? policyA.telemetryFreshnessMs
-      : this.mergeScalar(policyA.telemetryFreshnessMs, policyB.telemetryFreshnessMs, strategy);
-    const mergedSimulationOnly = policyA.simulationOnly === policyB.simulationOnly
-      ? policyA.simulationOnly
-      : this.mergeScalar(policyA.simulationOnly, policyB.simulationOnly, strategy);
-    const mergedFailClosed = policyA.failClosed === policyB.failClosed
-      ? policyA.failClosed
-      : this.mergeScalar(policyA.failClosed, policyB.failClosed, strategy);
-    const mergedManualOverride = policyA.manualOverride === policyB.manualOverride
-      ? policyA.manualOverride
-      : this.mergeScalar(policyA.manualOverride, policyB.manualOverride, strategy);
+    const mergedConfidenceThreshold =
+      policyA.confidenceThreshold === policyB.confidenceThreshold
+        ? policyA.confidenceThreshold
+        : this.mergeScalar(policyA.confidenceThreshold, policyB.confidenceThreshold, strategy);
+    const mergedActionBudget =
+      policyA.actionBudget === policyB.actionBudget
+        ? policyA.actionBudget
+        : this.mergeScalar(policyA.actionBudget, policyB.actionBudget, strategy);
+    const mergedMaxConcurrentActions =
+      policyA.maxConcurrentActions === policyB.maxConcurrentActions
+        ? policyA.maxConcurrentActions
+        : this.mergeScalar(policyA.maxConcurrentActions, policyB.maxConcurrentActions, strategy);
+    const mergedTelemetryFreshnessMs =
+      policyA.telemetryFreshnessMs === policyB.telemetryFreshnessMs
+        ? policyA.telemetryFreshnessMs
+        : this.mergeScalar(policyA.telemetryFreshnessMs, policyB.telemetryFreshnessMs, strategy);
+    const mergedSimulationOnly =
+      policyA.simulationOnly === policyB.simulationOnly
+        ? policyA.simulationOnly
+        : this.mergeScalar(policyA.simulationOnly, policyB.simulationOnly, strategy);
+    const mergedFailClosed =
+      policyA.failClosed === policyB.failClosed
+        ? policyA.failClosed
+        : this.mergeScalar(policyA.failClosed, policyB.failClosed, strategy);
+    const mergedManualOverride =
+      policyA.manualOverride === policyB.manualOverride
+        ? policyA.manualOverride
+        : this.mergeScalar(policyA.manualOverride, policyB.manualOverride, strategy);
 
     const merged = (() => {
       const obj = Object.create(null) as ResiliencePolicy;
-      Object.defineProperty(obj, 'allowedActions', { value: mergedAllowedActions, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'deniedActions', { value: mergedDeniedActions, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'capabilityRequirements', { value: mergedCapabilityRequirements as Readonly<Record<string, readonly string[]>>, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'securityConstraints', { value: policyA.securityConstraints, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'actionBudget', { value: mergedActionBudget, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'maxConcurrentActions', { value: mergedMaxConcurrentActions, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'confidenceThreshold', { value: mergedConfidenceThreshold, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'telemetryFreshnessMs', { value: mergedTelemetryFreshnessMs, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'simulationOnly', { value: mergedSimulationOnly as boolean, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'failClosed', { value: mergedFailClosed as boolean, writable: false, enumerable: true, configurable: false });
-      Object.defineProperty(obj, 'manualOverride', { value: mergedManualOverride as boolean | undefined, writable: false, enumerable: true, configurable: false });
+      Object.defineProperty(obj, 'allowedActions', {
+        value: mergedAllowedActions,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'deniedActions', {
+        value: mergedDeniedActions,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'capabilityRequirements', {
+        value: mergedCapabilityRequirements as Readonly<Record<string, readonly string[]>>,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'securityConstraints', {
+        value: policyA.securityConstraints,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'actionBudget', {
+        value: mergedActionBudget,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'maxConcurrentActions', {
+        value: mergedMaxConcurrentActions,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'confidenceThreshold', {
+        value: mergedConfidenceThreshold,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'telemetryFreshnessMs', {
+        value: mergedTelemetryFreshnessMs,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'simulationOnly', {
+        value: mergedSimulationOnly as boolean,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'failClosed', {
+        value: mergedFailClosed as boolean,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
+      Object.defineProperty(obj, 'manualOverride', {
+        value: mergedManualOverride as boolean | undefined,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+      });
       return Object.freeze(obj);
     })();
 
@@ -305,9 +390,9 @@ export const getPolicyRegistry = (options?: PolicyRegistryOptions): PolicyRegist
     globalPolicyRegistry = new PolicyRegistry(options);
   }
   return globalPolicyRegistry;
-}
+};
 
 /** Reset the global registry (for testing). */
 export const resetPolicyRegistry = (): void => {
   globalPolicyRegistry = null;
-}
+};

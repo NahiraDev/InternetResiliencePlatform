@@ -49,9 +49,7 @@ const trustedSim = (allowed: string[]) => ({
 
 describe('Golden scenarios, issue #284 batch 2 (gateway/tunnel/restricted/prediction)', () => {
   it('gateway failure: detected as gateway incident, answered with safe diagnostics only', async () => {
-    const rt = new ResilienceRuntime([
-      new StaticObservationProvider('p', [obs('gw', 'gateway')]),
-    ]);
+    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('gw', 'gateway')])]);
     const r = await rt.cycle(trustedSim(['noop', 'health_reprobe']));
     expect(r.incidents.length).toBeGreaterThan(0);
     expect(r.incidents[0]?.rootCause).toBe('gateway_health');
@@ -62,9 +60,7 @@ describe('Golden scenarios, issue #284 batch 2 (gateway/tunnel/restricted/predic
   });
 
   it('tunnel failure: detected as tunnel incident, answered with safe diagnostics only', async () => {
-    const rt = new ResilienceRuntime([
-      new StaticObservationProvider('p', [obs('tn', 'tunnel')]),
-    ]);
+    const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('tn', 'tunnel')])]);
     const r = await rt.cycle(trustedSim(['noop', 'health_reprobe']));
     expect(r.incidents.length).toBeGreaterThan(0);
     expect(r.incidents[0]?.rootCause).toBe('tunnel_health');

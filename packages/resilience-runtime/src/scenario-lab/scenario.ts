@@ -142,10 +142,7 @@ export const runScenario = async (scenario: ScenarioDefinition): Promise<Scenari
 export const projectRecord = (record: DecisionRecord): string =>
   JSON.stringify({
     outcome: record.outcome,
-    incidents: record.incidents.map((incident) => [
-      incident.rootCause,
-      incident.classification,
-    ]),
+    incidents: record.incidents.map((incident) => [incident.rootCause, incident.classification]),
     intent: record.selectedPlan?.selectedAction.intent ?? null,
     executed: record.executionResult !== undefined,
   });

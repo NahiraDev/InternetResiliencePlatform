@@ -177,7 +177,9 @@ export class PostgresIntentStore implements IntentStore {
       provenance: row.provenance as string,
       autonomy: row.autonomy as CompiledIntent['autonomy'],
       scope: row.scope as CompiledIntent['scope'],
-      effectiveFrom: row.effective_from ? new Date(row.effective_from as string).toISOString() : undefined,
+      effectiveFrom: row.effective_from
+        ? new Date(row.effective_from as string).toISOString()
+        : undefined,
       expiresAt: row.expires_at ? new Date(row.expires_at as string).toISOString() : undefined,
       compiledAt: row.compiled_at as string,
     });

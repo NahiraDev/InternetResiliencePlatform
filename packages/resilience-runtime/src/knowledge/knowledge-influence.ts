@@ -39,7 +39,9 @@ const clamp01 = (value: number): number =>
  */
 export const neutralEvidence = (): ObjectiveEvidence =>
   Object.freeze(
-    Object.fromEntries(STRATEGY_OBJECTIVES.map((objective) => [objective, 0.5])) as ObjectiveEvidence,
+    Object.fromEntries(
+      STRATEGY_OBJECTIVES.map((objective) => [objective, 0.5]),
+    ) as ObjectiveEvidence,
   );
 
 /**
@@ -93,7 +95,8 @@ export const knowledgeInfluenceFor = (input: {
     scoreMultiplier = clamp01(multiplier);
     if (scoreMultiplier < 1) {
       const state = input.failureMemory.quarantineFor(strategyId, input.scope ?? {}, input.nowMs);
-      quarantineNote = `; failureMemory ${state.quarantined ? 'quarantined' : 'penalised'} ` +
+      quarantineNote =
+        `; failureMemory ${state.quarantined ? 'quarantined' : 'penalised'} ` +
         `(weight=${state.decayedFailureWeight.toFixed(3)}, failures=${state.failureCount}, ` +
         `last=${state.lastFailureAt}) x${scoreMultiplier.toFixed(3)}`;
     }

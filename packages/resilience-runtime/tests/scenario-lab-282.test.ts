@@ -54,27 +54,15 @@ describe('Issue #282: Runtime Lab, Digital Twin, Failure Injection & Replay', ()
       expect(kinds.has(kind), `missing ${kind}`).toBe(true);
     }
     // Provider switching, path and failure-domain changes.
-    for (const kind of [
-      'provider-switch',
-      'path-change',
-      'failure-domain-change',
-    ] as const) {
+    for (const kind of ['provider-switch', 'path-change', 'failure-domain-change'] as const) {
       expect(kinds.has(kind), `missing ${kind}`).toBe(true);
     }
     // Federation loss, stale decisions, concurrent plans.
-    for (const kind of [
-      'federation-loss',
-      'stale-decision',
-      'concurrent-plans',
-    ] as const) {
+    for (const kind of ['federation-loss', 'stale-decision', 'concurrent-plans'] as const) {
       expect(kinds.has(kind), `missing ${kind}`).toBe(true);
     }
     // Policy changes, verification failure, rollback failure.
-    for (const kind of [
-      'policy-change',
-      'verification-failure',
-      'rollback-failure',
-    ] as const) {
+    for (const kind of ['policy-change', 'verification-failure', 'rollback-failure'] as const) {
       expect(kinds.has(kind), `missing ${kind}`).toBe(true);
     }
     expect(FAULT_CATALOG['dns-failure'].category).toBe('dns');
@@ -92,9 +80,7 @@ describe('Issue #282: Runtime Lab, Digital Twin, Failure Injection & Replay', ()
     const original = await runScenario(scenario('replay-seed'));
     const revived = JSON.parse(JSON.stringify(original.scenario)) as ScenarioDefinition;
     const replayed = await replayScenario({ scenario: revived, records: [] });
-    expect(replayed.records.map(projectRecord)).toEqual(
-      original.records.map(projectRecord),
-    );
+    expect(replayed.records.map(projectRecord)).toEqual(original.records.map(projectRecord));
   });
 
   it('replays a captured record through the canonical replay engine', async () => {
@@ -107,23 +93,15 @@ describe('Issue #282: Runtime Lab, Digital Twin, Failure Injection & Replay', ()
 
   it('compares strategies what-if style on the same scenario', async () => {
     const base = scenario('whatif-seed');
-    const same = await compareStrategies(
-      base,
-      'conservative',
-      ['noop'],
-      'conservative-copy',
-      ['noop'],
-    );
+    const same = await compareStrategies(base, 'conservative', ['noop'], 'conservative-copy', [
+      'noop',
+    ]);
     expect(same.identical).toBe(true);
     expect(same.outcomesA).toHaveLength(same.outcomesB.length);
 
-    const split = await compareStrategies(
-      base,
-      'active',
-      ['dns_switch', 'noop'],
-      'passive',
-      ['noop'],
-    );
+    const split = await compareStrategies(base, 'active', ['dns_switch', 'noop'], 'passive', [
+      'noop',
+    ]);
     expect(split.scenario).toBe(base.name);
     expect(split.outcomesA).toHaveLength(split.outcomesB.length);
     expect(split.identical).toBe(false);

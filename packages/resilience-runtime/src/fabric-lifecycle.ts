@@ -23,7 +23,15 @@ export const FABRIC_STATE_TRANSITIONS: Readonly<
   UNKNOWN: ['DISCOVERING', 'HEALTHY', 'DEGRADED', 'FAILED', 'UNAVAILABLE', 'BLOCKED'],
   DISCOVERING: ['HEALTHY', 'DEGRADED', 'FAILED', 'RESTRICTED', 'UNAVAILABLE', 'BLOCKED'],
   HEALTHY: ['DEGRADED', 'DRAINING', 'FAILED', 'BLOCKED', 'RESTRICTED', 'UNAVAILABLE'],
-  DEGRADED: ['HEALTHY', 'RECOVERING', 'DRAINING', 'FAILED', 'BLOCKED', 'QUARANTINED', 'UNAVAILABLE'],
+  DEGRADED: [
+    'HEALTHY',
+    'RECOVERING',
+    'DRAINING',
+    'FAILED',
+    'BLOCKED',
+    'QUARANTINED',
+    'UNAVAILABLE',
+  ],
   FAILED: ['RECOVERING', 'UNAVAILABLE', 'QUARANTINED'],
   BLOCKED: ['RECOVERING', 'UNAVAILABLE', 'RESTRICTED'],
   RESTRICTED: ['RECOVERING', 'UNAVAILABLE', 'BLOCKED'],
@@ -90,7 +98,9 @@ export const evaluateFabricFreshness = (
     });
   }
   const expires = Date.parse(resource.expiresAt);
-  const expiredForMs = Number.isFinite(expires) ? Math.max(0, now - expires) : Number.POSITIVE_INFINITY;
+  const expiredForMs = Number.isFinite(expires)
+    ? Math.max(0, now - expires)
+    : Number.POSITIVE_INFINITY;
   const fresh = Number.isFinite(expires) && now < expires;
   return Object.freeze({
     resourceId: resource.id,
@@ -122,10 +132,7 @@ export const partitionByFreshness = (
  * cannot distinguish genuinely independent paths from two paths through the
  * same upstream carrier.
  */
-export const sharesFailureDomain = (
-  a: FabricResource,
-  b: FabricResource,
-): boolean => {
+export const sharesFailureDomain = (a: FabricResource, b: FabricResource): boolean => {
   const domains = new Set(a.failureDomains);
   return b.failureDomains.some((domain) => domains.has(domain));
 };
@@ -171,7 +178,5 @@ export const selectDiverseResources = (
 };
 
 /** Count of distinct failure domains spanned by a candidate set. */
-export const countDistinctFailureDomains = (
-  resources: readonly FabricResource[],
-): number =>
+export const countDistinctFailureDomains = (resources: readonly FabricResource[]): number =>
   new Set(resources.flatMap((resource) => [...resource.failureDomains])).size;

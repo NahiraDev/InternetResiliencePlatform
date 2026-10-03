@@ -1,5 +1,10 @@
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { ActionPlan, CandidateAction, CompiledIntent, RuntimeContext } from '../domain/types.js';
+import type {
+  ActionPlan,
+  CandidateAction,
+  CompiledIntent,
+  RuntimeContext,
+} from '../domain/types.js';
 import { RuntimePolicyArbitrator } from '../policy/policy.js';
 import {
   type ObjectiveEvidence,
@@ -36,10 +41,18 @@ export class DeterministicPlanner {
       readonly objectives?: ObjectiveVector;
       readonly evidenceFor?: (candidate: CandidateAction) => ObjectiveEvidence;
     } = {},
-  ): Promise<{ readonly plan: ActionPlan; readonly scored: readonly ScoredCandidate[]; readonly objectives: ObjectiveVector }> {
-    const objectives = options.objectives ?? objectivesFromIntent(options.intent, uniformObjectives());
+  ): Promise<{
+    readonly plan: ActionPlan;
+    readonly scored: readonly ScoredCandidate[];
+    readonly objectives: ObjectiveVector;
+  }> {
+    const objectives =
+      options.objectives ?? objectivesFromIntent(options.intent, uniformObjectives());
     const scored = rankByObjectives(candidates, objectives, options.evidenceFor);
-    const plan = await this.planFromRanked(scored.map((entry) => entry.candidate), context);
+    const plan = await this.planFromRanked(
+      scored.map((entry) => entry.candidate),
+      context,
+    );
     const selectedScore = scored.find((entry) => entry.candidate.id === plan.selectedAction.id);
     return {
       plan: deepFreeze({

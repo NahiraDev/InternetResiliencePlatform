@@ -51,17 +51,17 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
 
 ## Tests (11 new, all pass)
 
-| Test | Coverage |
-|------|----------|
-| initializes schema on startup | Migration SQL execution |
-| upserts intent with correct fields | UPSERT SQL + parameter binding |
-| returns intent by id | Row mapping + field validation |
-| returns undefined for missing intent | Empty result handling |
-| returns active intents within time window | Time-window filtering |
-| deletes intent by id | DELETE execution |
-| closes pool on close | Pool cleanup |
-| filters by effective lifecycle window | Expired intent excluded |
-| upserts intent with correct fields (active) | Transition to active + compile |
+| Test                                                   | Coverage                          |
+| ------------------------------------------------------ | --------------------------------- |
+| initializes schema on startup                          | Migration SQL execution           |
+| upserts intent with correct fields                     | UPSERT SQL + parameter binding    |
+| returns intent by id                                   | Row mapping + field validation    |
+| returns undefined for missing intent                   | Empty result handling             |
+| returns active intents within time window              | Time-window filtering             |
+| deletes intent by id                                   | DELETE execution                  |
+| closes pool on close                                   | Pool cleanup                      |
+| filters by effective lifecycle window                  | Expired intent excluded           |
+| upserts intent with correct fields (active)            | Transition to active + compile    |
 | filters by effective lifecycle window (active+expired) | Dual mock with time-window filter |
 
 ## CI/runtime evidence

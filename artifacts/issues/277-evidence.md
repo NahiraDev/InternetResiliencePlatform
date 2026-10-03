@@ -28,16 +28,17 @@ orchestration authority. The planner remains the single planning gate and still
 performs the only policy evaluation. No new planner, scheduler, bus or policy
 engine was introduced.
 
-| File | Purpose |
-|---|---|
-| `src/planning/objectives.ts` | 13 Section F objectives, intent projection, weighted explainable scoring |
-| `src/planning/strategy-generator.ts` | deterministic primary/fallback/conservative/alternate ladder |
-| `src/planning/reservation.ts` | epoch, resource reservation, TTL/resource-version staleness, structured plan |
-| `src/planning/planner.ts` | `planAgainstObjectives()`; `plan()` delegates to shared `planFromRanked()` |
+| File                                 | Purpose                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `src/planning/objectives.ts`         | 13 Section F objectives, intent projection, weighted explainable scoring     |
+| `src/planning/strategy-generator.ts` | deterministic primary/fallback/conservative/alternate ladder                 |
+| `src/planning/reservation.ts`        | epoch, resource reservation, TTL/resource-version staleness, structured plan |
+| `src/planning/planner.ts`            | `planAgainstObjectives()`; `plan()` delegates to shared `planFromRanked()`   |
 
 ## Task coverage
 
 ### 1. Intent-aware decisions
+
 `objectivesFromIntent()` projects `CompiledIntent.objectives` onto the canonical
 objective set, with `reliability` aliased to `stability` and unmapped keys
 ignored. `DeterministicPlanner.planAgainstObjectives()` records the resulting
@@ -45,6 +46,7 @@ weights and score in `plan.metadata.optimization`, so a decision is justified
 against the intent rather than a black-box number.
 
 ### 2. Multiple candidate strategies
+
 `generateStrategies()` expands a deterministic ladder: `primary`
 (`connectivity_failover`), `fallback` (`provider_switch`), `conservative`
 (`degraded_mode`), `alternate` (`health_reprobe`). Each carries a rationale and
@@ -53,6 +55,7 @@ policy — policy evaluation stays at the canonical planning gate, so denied
 alternatives remain explainable in the plan.
 
 ### 3. Optimize against intent-derived objectives
+
 `scoreCandidate()` produces a normalized weighted score **plus a per-objective
 contribution map**, so every ranking decision is auditable. Unmeasured objectives
 (privacy, security, diversity) score a neutral `0.5` rather than being invented as
@@ -60,6 +63,7 @@ favourable. Ties fall back to the legacy deterministic ordering, so results stay
 reproducible.
 
 ### 4. Structured plans
+
 `buildStructuredPlan()` produces `preconditions`, ordered `steps` (primary first,
 then the ranked fallback ladder), `safetyBoundaries`
 (`no-mutation-without-policy`, `no-mutation-without-capability`,
@@ -67,19 +71,21 @@ then the ranked fallback ladder), `safetyBoundaries`
 `rollbackStrategy`, all stamped with the `epoch` the plan was computed against.
 
 ### 5. Resource reservation and concurrency control
+
 `ResourceReservationTable` grants exclusive per-resource reservations, supports
 configured capacity, rejects double-holds (`already-reserved`), frees on release
 and on TTL expiry, and exposes `reservedResourceIds()` plus `snapshot()`.
 
 ### 6. Stale-decision protection
+
 Four independent guards, each with a typed reason:
 
-| Guard | Reason |
-|---|---|
-| decision epoch superseded | `epoch-too-old` / `epoch-superseded` |
-| resource version moved | `resource-version-mismatch` / `resource-version-changed` |
-| reservation TTL elapsed | `ttl-expired` |
-| reservation issued for a different resource | `resource-version-changed` |
+| Guard                                       | Reason                                                   |
+| ------------------------------------------- | -------------------------------------------------------- |
+| decision epoch superseded                   | `epoch-too-old` / `epoch-superseded`                     |
+| resource version moved                      | `resource-version-mismatch` / `resource-version-changed` |
+| reservation TTL elapsed                     | `ttl-expired`                                            |
+| reservation issued for a different resource | `resource-version-changed`                               |
 
 `validateForExecution()` is the gate immediately before execution; a stale
 decision returns `{ stale: true }` and must not mutate.

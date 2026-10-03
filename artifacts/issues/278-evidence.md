@@ -37,15 +37,16 @@ All new code is inside `@irp/resilience-runtime`. The privileged executor port
 is `private readonly` on `PrivilegedMutationBoundary`, so it cannot be obtained
 and used to bypass the gates.
 
-| File | Purpose |
-|---|---|
-| `src/security/trust-boundaries.ts` | boundary classification, least-privilege authorization, AI advisory sanitiser |
-| `src/security/secrets.ts` | key/value-pattern secret redaction, sink-aware, AI allow-list |
-| `src/transactions/privileged-boundary.ts` | the canonical phase machine and recovery path |
+| File                                      | Purpose                                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------------------- |
+| `src/security/trust-boundaries.ts`        | boundary classification, least-privilege authorization, AI advisory sanitiser |
+| `src/security/secrets.ts`                 | key/value-pattern secret redaction, sink-aware, AI allow-list                 |
+| `src/transactions/privileged-boundary.ts` | the canonical phase machine and recovery path                                 |
 
 ## Task coverage
 
 ### 1. Least privilege and capability-based authorization
+
 `TrustBoundaryAuthorizer.authorize()` evaluates in a fixed fail-closed order:
 unverified actor → advisory-only boundary → explicit deny → unknown capability →
 insufficient trust rank → not-granted. `DEFAULT_CAPABILITY_RULES` binds each
@@ -56,6 +57,7 @@ Deliberately named `TrustBoundaryAuthorizer`, not `CapabilityAuthorizer` —
 see the duplicate-contract regression below.
 
 ### 2. Trust boundaries
+
 `TRUST_BOUNDARIES` = canonical-runtime (100) > platform-adapter (60) > plugin
 (30) > remote-node (20) > external-client (10) > ai (5). `network.mutate` is
 bound to `canonical-runtime`; `fabric.mutate`/`tunnel.mutate` to
@@ -63,6 +65,7 @@ bound to `canonical-runtime`; `fabric.mutate`/`tunnel.mutate` to
 `plan.propose`.
 
 ### 3. AI advisory-only boundary
+
 `isAdvisoryOnlyBoundary('ai')` is the single source of truth, consulted by the
 authorizer (every capability denied) **and** wired into the phase machine: at
 `security`, `enforceAiAdvisoryBoundary()` rebuilds the requirement set from the
@@ -72,24 +75,28 @@ AI-recommended intent that differs from the canonical one emits
 even when granted it.
 
 ### 4. prepare → snapshot → validate → policy → security → safety → apply → verify → commit
+
 `TRANSACTION_PHASES` declares exactly that order and the machine records every
 phase. Cancellation and timeout are re-checked before each gate. Tests assert
 `apply` is absent from the phase list when validate, policy, safety or security
 fails, and that `commit` is absent when verification fails.
 
 ### 5. rollback → verifyRollback → recover
+
 `failurePath()` runs compensation, then **verifies the compensation actually
 restored prior state**, and escalates to `recover` whenever compensation is
-incomplete *or* its verification fails. A failed apply or a thrown adapter both
+incomplete _or_ its verification fails. A failed apply or a thrown adapter both
 enter this path and are flagged `partialFailure: true`.
 
 ### 6. Idempotency, cancellation, timeout, compensation, partial failure
+
 Idempotent replay returns the original outcome with `idempotent-replay`;
 concurrent identical mutations collapse to one execution. Cancellation is
 observed at whichever gate is current. Timeout is a whole-transaction budget
 re-checked before each phase. Compensation and partial-failure handling as above.
 
 ### 7. Stale/concurrent mutation protection
+
 A mutation carrying an epoch older than the boundary's is rejected with
 `epoch-superseded`; `advanceEpoch()` invalidates every in-flight mutation. A
 snapshot whose `resourceVersion` differs from the request yields
@@ -97,12 +104,14 @@ snapshot whose `resourceVersion` differs from the request yields
 `concurrent-mutation`; different resources proceed concurrently.
 
 ### 8. Fail-closed behaviour
+
 Every gate returns a recorded `blocked` outcome rather than throwing, so a
 denial can never be mistaken for success. An unrecognised capability is rejected,
 never implicitly allowed. `mutate()` never throws for gate rejection.
-The one thing that *is* thrown (`authorizeOrThrow`) is opt-in.
+The one thing that _is_ thrown (`authorizeOrThrow`) is opt-in.
 
 ### 9. Secret protection
+
 The pre-existing `redact()` matched key names only. `SecretSentry` additionally
 redacts **values**: credentials in URIs, JWTs, PEM private-key blocks, bearer
 header values, provider key shapes and long hex key material — at any depth,
@@ -110,6 +119,7 @@ inside arrays, and through circular references. `aiContext()` narrows further
 with an explicit top-level allow-list, which is stronger than pattern matching.
 
 ### 10. Architectural regression tests
+
 Two layers:
 
 - **Unit** (`tests/security-278.test.ts`): asserts the executor is unreachable
@@ -142,7 +152,7 @@ canonical boundary` and a non-zero exit; removing it returned to passing.
 1. **The idempotency-rebind guard never fired.** `completed` stored the outcome
    but not the bound action id, and the rebind check tested
    `completed.phases.length === 0` — never true. Replaying a key against a
-   *different* action would have silently executed. Fixed by storing
+   _different_ action would have silently executed. Fixed by storing
    `{ actionId, outcome }` and comparing action ids, which is the actual
    fail-closed condition.
 2. **I introduced a duplicate contract with different semantics.** My

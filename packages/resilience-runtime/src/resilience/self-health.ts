@@ -4,7 +4,11 @@
  * so operators can distinguish daemon distress from network distress.
  */
 
-import { checkPerformanceBudgets, type PerformanceBudgets, type PerformanceSnapshot } from './performance-budgets.js';
+import {
+  checkPerformanceBudgets,
+  type PerformanceBudgets,
+  type PerformanceSnapshot,
+} from './performance-budgets.js';
 
 export type SelfHealthLevel = 'healthy' | 'degraded' | 'critical';
 

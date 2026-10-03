@@ -25,7 +25,10 @@ describe('Phase 4: Policy Composition & Versioning', () => {
     expect(registry.getCurrentVersion()).toBe('0.2.0');
 
     registry.propose(
-      { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'connectivity_failover', 'noop'] },
+      {
+        ...defaultPolicy('simulation'),
+        allowedActions: ['dns_switch', 'connectivity_failover', 'noop'],
+      },
       'test-user',
       'Add connectivity_failover',
       'patch',
@@ -43,14 +46,24 @@ describe('Phase 4: Policy Composition & Versioning', () => {
 
   it('rolls back to previous version', () => {
     const registry = new PolicyRegistry();
-    registry.propose({ ...defaultPolicy('simulation'), allowedActions: ['dns_switch'] }, 'u1', 'v1');
-    registry.propose({ ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] }, 'u1', 'v2');
+    registry.propose(
+      { ...defaultPolicy('simulation'), allowedActions: ['dns_switch'] },
+      'u1',
+      'v1',
+    );
+    registry.propose(
+      { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] },
+      'u1',
+      'v2',
+    );
     expect(registry.getCurrentVersion()).toBe('0.3.0');
 
     const rolledBack = registry.rollback('0.1.0', 'admin');
     expect(rolledBack).toBe(true);
     expect(registry.getCurrentVersion()).toBe('0.1.0');
-    expect(registry.getCurrent().policy.allowedActions).toEqual(defaultPolicy('safe').allowedActions);
+    expect(registry.getCurrent().policy.allowedActions).toEqual(
+      defaultPolicy('safe').allowedActions,
+    );
   });
 
   it('rejects rollback to non-existent version', () => {
@@ -61,9 +74,17 @@ describe('Phase 4: Policy Composition & Versioning', () => {
 
   it('lists all versions in chronological order', () => {
     const registry = new PolicyRegistry();
-    registry.propose({ ...defaultPolicy('simulation'), allowedActions: ['dns_switch'] }, 'u1', 'v1');
-    registry.propose({ ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] }, 'u1', 'v2');
-    
+    registry.propose(
+      { ...defaultPolicy('simulation'), allowedActions: ['dns_switch'] },
+      'u1',
+      'v1',
+    );
+    registry.propose(
+      { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] },
+      'u1',
+      'v2',
+    );
+
     const versions = registry.listVersions();
     expect(versions).toHaveLength(3);
     expect(versions[0].version).toBe('0.1.0');
@@ -73,14 +94,14 @@ describe('Phase 4: Policy Composition & Versioning', () => {
 
   it('resolves policy conflicts with domain-specific strategies', () => {
     const registry = new PolicyRegistry();
-    const policyA = { 
-      ...defaultPolicy('simulation'), 
+    const policyA = {
+      ...defaultPolicy('simulation'),
       allowedActions: ['dns_switch', 'noop'],
       deniedActions: [],
       confidenceThreshold: 0.5,
     };
-    const policyB = { 
-      ...defaultPolicy('simulation'), 
+    const policyB = {
+      ...defaultPolicy('simulation'),
       allowedActions: ['connectivity_failover', 'noop'],
       deniedActions: ['dns_switch'],
       confidenceThreshold: 0.7,
@@ -95,7 +116,9 @@ describe('Phase 4: Policy Composition & Versioning', () => {
 
     // DNS domain: union (more permissive)
     const dnsResult = registry.resolveConflict(policyA, policyB, 'dns');
-    expect(dnsResult.merged.allowedActions).toEqual(expect.arrayContaining(['dns_switch', 'connectivity_failover', 'noop']));
+    expect(dnsResult.merged.allowedActions).toEqual(
+      expect.arrayContaining(['dns_switch', 'connectivity_failover', 'noop']),
+    );
     expect(dnsResult.merged.confidenceThreshold).toBe(0.5); // union -> min
 
     // Global domain: hierarchical (first wins)
@@ -110,10 +133,13 @@ describe('Phase 4: Policy Composition & Versioning', () => {
         dns: { domain: 'dns', strategy: 'intersection' },
       },
     });
-    
+
     const policyA = { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] };
-    const policyB = { ...defaultPolicy('simulation'), allowedActions: ['connectivity_failover', 'noop'] };
-    
+    const policyB = {
+      ...defaultPolicy('simulation'),
+      allowedActions: ['connectivity_failover', 'noop'],
+    };
+
     const result = registry.resolveConflict(policyA, policyB, 'dns');
     expect(result.merged.allowedActions).toEqual(['noop']); // intersection due to custom config
   });

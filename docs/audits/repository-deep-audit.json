@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T20:31:56.848Z",
+  "generatedAt": "2026-10-03T21:00:49.978Z",
   "workspaceCount": 43,
   "workflowCount": 15,
   "findings": [],
@@ -414,8 +414,8 @@
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
-      "sourceFiles": 80,
-      "testFiles": 39,
+      "sourceFiles": 84,
+      "testFiles": 41,
       "scripts": [
         "build",
         "coverage",

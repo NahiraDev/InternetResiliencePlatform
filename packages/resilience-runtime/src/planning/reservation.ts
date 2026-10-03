@@ -132,9 +132,7 @@ export class ResourceReservationTable {
     ) {
       return { granted: false, reason: 'resource-version-mismatch' };
     }
-    const held = [...this.reservations.values()].filter(
-      (r) => r.resourceId === request.resourceId,
-    );
+    const held = [...this.reservations.values()].filter((r) => r.resourceId === request.resourceId);
     if (held.length > 0) {
       return { granted: false, reason: 'already-reserved' };
     }

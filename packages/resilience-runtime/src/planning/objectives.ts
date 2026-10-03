@@ -100,8 +100,7 @@ export const objectivesFromIntent = (
   // When the intent expresses every objective there is nothing to hold back for,
   // so the expressed weights take the whole budget instead of leaving a deficit.
   const expressedBudget = unexpressed.length > 0 ? 1 - RESIDUAL_SHARE : 1;
-  const unexpressedShare =
-    unexpressed.length > 0 ? RESIDUAL_SHARE / unexpressed.length : 0;
+  const unexpressedShare = unexpressed.length > 0 ? RESIDUAL_SHARE / unexpressed.length : 0;
   return Object.freeze(
     Object.fromEntries(
       STRATEGY_OBJECTIVES.map((objective) => {

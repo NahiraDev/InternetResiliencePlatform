@@ -19,9 +19,9 @@ describe('Issue #283: Performance, Backpressure & Platform Self-Resilience', () 
     expect(DEFAULT_PERFORMANCE_BUDGETS.maxQueueDepth).toBe(1_000);
     expect(DEFAULT_PERFORMANCE_BUDGETS.maxEventsPerSecond).toBe(500);
 
-    expect(
-      isWithinBudgets({ cycleLatencyMs: 100, queueDepth: 10, eventsPerSecond: 50 }),
-    ).toBe(true);
+    expect(isWithinBudgets({ cycleLatencyMs: 100, queueDepth: 10, eventsPerSecond: 50 })).toBe(
+      true,
+    );
 
     const violations = checkPerformanceBudgets({
       cycleLatencyMs: 5_000,

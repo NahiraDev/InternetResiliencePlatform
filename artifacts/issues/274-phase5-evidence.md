@@ -33,15 +33,15 @@ Non-goals: no new authorities, no CI workflow edits, no daemon/client changes, n
 
 3. **Host entrypoints use canonical composition** — `apps/daemon/src/index.ts` and `packages/linux-client/src/index.ts` must call `createCanonicalRuntime` and not construct `ResilienceRuntime` directly.
 
-3. **Architecture contract exists and is binding** — validates `IRP-ARCHITECTURE-CONTRACT.json` has `status=binding`, correct canonical runtime package/symbol/composition, and `productionAuthorityCount=1`.
+4. **Architecture contract exists and is binding** — validates `IRP-ARCHITECTURE-CONTRACT.json` has `status=binding`, correct canonical runtime package/symbol/composition, and `productionAuthorityCount=1`.
 
-4. **No `NetworkAutopilot` in production** — only allowed in `packages/resilience-runtime/tests/`, `packages/resilience-runtime/src/legacy/`, `docs/`, `artifacts/`.
+5. **No `NetworkAutopilot` in production** — only allowed in `packages/resilience-runtime/tests/`, `packages/resilience-runtime/src/legacy/`, `docs/`, `artifacts/`.
 
-5. **AI advisory only** — `canonical-decision-provider.ts` must reference `InternetIntelligenceBridge` and must not contain privileged mutation code (`execFile`, `resolvectl`, `iptables`).
+6. **AI advisory only** — `canonical-decision-provider.ts` must reference `InternetIntelligenceBridge` and must not contain privileged mutation code (`execFile`, `resolvectl`, `iptables`).
 
-6. **Bounded closed-loop is safe-by-default** — verifies `DEFAULT_MAX_CYCLES = 1`, `MAX_ALLOWED_CYCLES = 10`, and `signal?.aborted` check.
+7. **Bounded closed-loop is safe-by-default** — verifies `DEFAULT_MAX_CYCLES = 1`, `MAX_ALLOWED_CYCLES = 10`, and `signal?.aborted` check.
 
-6. **AGENTS.md is quick start** — must contain "Agent Quick Start" and be < 5000 chars.
+8. **AGENTS.md is quick start** — must contain "Agent Quick Start" and be < 5000 chars.
 
 9. **Federated evidence is advisory (fail-open)** — runtime must not require federation; decision provider must handle `federatedEvidence`.
 
@@ -66,6 +66,7 @@ Non-goals: no new authorities, no CI workflow edits, no daemon/client changes, n
 ## Tests
 
 All test suites pass:
+
 - `@irp/resilience-runtime`: 271 tests pass
 - `@irp/connectivity`: 11 tests pass
 - `@irp/routing`: 24 tests pass

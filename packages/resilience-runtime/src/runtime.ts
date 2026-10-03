@@ -22,12 +22,15 @@ import { RuntimeActionVerifier } from './verification/verification.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
 import { InMemoryDecisionStore, InMemoryIncidentStore } from './stores/memory.js';
-import { InMemoryEventSink } from './events/events.js';
+import {
+  EvidencePreservingEventSink,
+  type EvidenceExporter,
+} from './events/evidence-sink.js';
 import {
   createDefaultRuntimeAdapterRegistry,
   type RuntimeAdapterRegistry,
 } from './adapter-registry.js';
-import { ResilientTelemetrySink } from './telemetry/telemetry.js';
+import { ClassifiedTelemetrySink } from './events/evidence-sink.js';
 import type { DecisionProvider, ObservationProvider, TelemetrySink } from './ports/ports.js';
 import { CanonicalDecisionProvider } from './canonical-decision-provider.js';
 import { DecisionOrchestrator } from './decision-orchestration.js';
@@ -55,6 +58,11 @@ export interface ResilienceRuntimeOptions {
   networkControlPlane?: CanonicalNetworkControlPlane;
   telemetryRegistry?: MetricsRegistry;
   telemetrySink?: TelemetrySink;
+  /**
+   * Optional external evidence exporter. Failures never block local control;
+   * the canonical runtime retains evidence locally regardless.
+   */
+  eventExporter?: EvidenceExporter;
   safetyKernel?: SafetyKernelOptions;
   intentStore?: IntentStore;
 }
@@ -73,12 +81,21 @@ export class ResilienceRuntime {
     blockedTotal: 0,
     degradedTotal: 0,
   };
-  readonly events = new InMemoryEventSink();
+  /**
+   * Authoritative local evidence log. The optional external exporter is
+   * best-effort: a collector failure is counted and swallowed so it can never
+   * disable safe local control (issue #281).
+   */
+  readonly events: EvidencePreservingEventSink;
   readonly telemetry: TelemetrySink;
   readonly telemetryRegistry: MetricsRegistry;
   readonly decisions = new InMemoryDecisionStore();
   readonly incidents = new InMemoryIncidentStore();
-  readonly state = new RuntimeStateMachine('idle', this.events);
+  /**
+   * Assigned in the constructor: it depends on `events`, which itself depends
+   * on constructor options, so a field initializer would run too early.
+   */
+  readonly state: RuntimeStateMachine;
   readonly runtimeId: string;
   readonly instanceId: string;
   readonly adapters: RuntimeAdapterRegistry;
@@ -97,10 +114,15 @@ export class ResilienceRuntime {
     options: ResilienceRuntimeOptions = {},
   ) {
     this.runtimeId = options.runtimeId ?? 'runtime-default';
+    this.telemetry = new ClassifiedTelemetrySink(options.telemetrySink);
+    this.events = new EvidencePreservingEventSink({
+      ...(options.eventExporter !== undefined ? { external: options.eventExporter } : {}),
+      telemetry: this.telemetry,
+    });
     this.instanceId = options.instanceId ?? `instance-${Math.random().toString(36).slice(2)}`;
     this.networkControlPlane = options.networkControlPlane;
     this.telemetryRegistry = options.telemetryRegistry ?? new MetricsRegistry();
-    this.telemetry = new ResilientTelemetrySink(options.telemetrySink);
+    this.state = new RuntimeStateMachine('idle', this.events);
     this.adapters =
       options.adapters ?? createDefaultRuntimeAdapterRegistry(options.networkControlPlane);
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
@@ -263,9 +285,11 @@ export class ResilienceRuntime {
         );
 
       // Enforce autonomy: the selected action must be permitted by the intent's autonomy level
-      const actionClass = (plan.selectedAction.intent in ACTION_CLASS
-        ? ACTION_CLASS[plan.selectedAction.intent as keyof typeof ACTION_CLASS]
-        : 'safe_mutate') as 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk';
+      const actionClass = (
+        plan.selectedAction.intent in ACTION_CLASS
+          ? ACTION_CLASS[plan.selectedAction.intent as keyof typeof ACTION_CLASS]
+          : 'safe_mutate'
+      ) as 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk';
       const intent = context.compiledIntents?.[0] ?? context.compiledIntent;
       if (intent) {
         try {
@@ -277,26 +301,30 @@ export class ResilienceRuntime {
             actionClass,
             error: error instanceof Error ? error.message : 'unknown',
           });
-return this.recordBlocked(
-          context,
-          before,
-          observations,
-          found,
-          evaluatedCandidates,
-          plan,
-          start,
-          {
-            id: `validation-${Date.now()}`,
-            schemaVersion: 1,
-            createdAt: new Date().toISOString(),
-            correlationId: context.correlationId,
-            source: 'resilience-runtime',
-            metadata: {},
-            valid: false,
-            reasons: [error instanceof Error ? error.message : 'autonomy violation'],
-            policy: { allowed: false, reasons: [error instanceof Error ? error.message : 'autonomy violation'], requiredCapabilities: [] },
-          },
-        );
+          return this.recordBlocked(
+            context,
+            before,
+            observations,
+            found,
+            evaluatedCandidates,
+            plan,
+            start,
+            {
+              id: `validation-${Date.now()}`,
+              schemaVersion: 1,
+              createdAt: new Date().toISOString(),
+              correlationId: context.correlationId,
+              source: 'resilience-runtime',
+              metadata: {},
+              valid: false,
+              reasons: [error instanceof Error ? error.message : 'autonomy violation'],
+              policy: {
+                allowed: false,
+                reasons: [error instanceof Error ? error.message : 'autonomy violation'],
+                requiredCapabilities: [],
+              },
+            },
+          );
         }
       }
 

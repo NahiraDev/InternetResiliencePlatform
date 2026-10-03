@@ -22,52 +22,66 @@ import { z } from 'zod';
 
 const timestamp = z.string().datetime({ offset: true });
 const primitive = z.union([z.string(), z.number().finite(), z.boolean()]);
-const specSchema = z.object({
-  outcome: z.string().trim().min(1).max(2000),
-  constraints: z.record(z.string(), primitive).optional(),
-  target: z.record(z.string(), z.string().max(512)).optional(),
-}).strict();
+const specSchema = z
+  .object({
+    outcome: z.string().trim().min(1).max(2000),
+    constraints: z.record(z.string(), primitive).optional(),
+    target: z.record(z.string(), z.string().max(512)).optional(),
+  })
+  .strict();
 
-const createSchema = z.object({
-  id: z.string().trim().min(1).max(128),
-  priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
-  spec: specSchema,
-  effectiveFrom: timestamp.optional(),
-  expiresAt: timestamp.optional(),
-  provenance: z.string().trim().min(1).max(512).optional(),
-  confidence: z.number().min(0).max(1).optional(),
-  autonomy: z.enum([
-    'OBSERVE_ONLY',
-    'ADVISORY',
-    'SAFE_AUTOMATION',
-    'AUTONOMOUS',
-    'HIGH_RISK_REQUIRES_APPROVAL',
-  ]).optional(),
-  metadata: z.record(z.string(), z.string().max(512)).optional(),
-}).strict();
+const createSchema = z
+  .object({
+    id: z.string().trim().min(1).max(128),
+    priority: z.enum(['low', 'normal', 'high', 'critical']).default('normal'),
+    spec: specSchema,
+    effectiveFrom: timestamp.optional(),
+    expiresAt: timestamp.optional(),
+    provenance: z.string().trim().min(1).max(512).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    autonomy: z
+      .enum([
+        'OBSERVE_ONLY',
+        'ADVISORY',
+        'SAFE_AUTOMATION',
+        'AUTONOMOUS',
+        'HIGH_RISK_REQUIRES_APPROVAL',
+      ])
+      .optional(),
+    metadata: z.record(z.string(), z.string().max(512)).optional(),
+  })
+  .strict();
 
 const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('activate'), at: timestamp.optional() }).strict(),
   z.object({ type: z.literal('complete'), at: timestamp.optional() }).strict(),
-  z.object({
-    type: z.literal('supersede'),
-    at: timestamp.optional(),
-    replacementId: z.string().trim().min(1).max(128),
-  }).strict(),
+  z
+    .object({
+      type: z.literal('supersede'),
+      at: timestamp.optional(),
+      replacementId: z.string().trim().min(1).max(128),
+    })
+    .strict(),
   z.object({ type: z.literal('cancel'), at: timestamp.optional() }).strict(),
   z.object({ type: z.literal('expire'), at: timestamp.optional() }).strict(),
 ]);
 
 const idParams = z.object({ id: z.string().trim().min(1).max(128) }).strict();
-const listQuery = z.object({
-  status: z.enum(['draft', 'active', 'completed', 'superseded', 'cancelled', 'expired']).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
-}).strict();
+const listQuery = z
+  .object({
+    status: z
+      .enum(['draft', 'active', 'completed', 'superseded', 'cancelled', 'expired'])
+      .optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict();
 
-const conflictListQuery = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(25),
-  since: z.string().datetime({ offset: true }).optional(),
-}).strict();
+const conflictListQuery = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(25),
+    since: z.string().datetime({ offset: true }).optional(),
+  })
+  .strict();
 
 export interface IntentOwnership {
   readonly principalId: string;
@@ -76,11 +90,19 @@ export interface IntentOwnership {
 
 export interface IntentApiStore {
   get(id: string, ownership: IntentOwnership): Promise<NetworkIntent | undefined>;
-  list(status: NetworkIntent['status'] | undefined, ownership: IntentOwnership, limit: number): Promise<readonly NetworkIntent[]>;
+  list(
+    status: NetworkIntent['status'] | undefined,
+    ownership: IntentOwnership,
+    limit: number,
+  ): Promise<readonly NetworkIntent[]>;
   put(
     intent: NetworkIntent,
     ownership: IntentOwnership,
-    options?: { idempotencyKey?: string; idempotencyFingerprint?: string; expectedVersion?: number },
+    options?: {
+      idempotencyKey?: string;
+      idempotencyFingerprint?: string;
+      expectedVersion?: number;
+    },
   ): Promise<void>;
   findByIdempotency(
     ownership: IntentOwnership,
@@ -89,21 +111,37 @@ export interface IntentApiStore {
 }
 
 export interface ArbitrationConflict {
-  readonly intentA: { intentId: string; desiredOutcome: string; priority: NetworkIntent['priority']; version: number };
-  readonly intentB: { intentId: string; desiredOutcome: string; priority: NetworkIntent['priority']; version: number };
+  readonly intentA: {
+    intentId: string;
+    desiredOutcome: string;
+    priority: NetworkIntent['priority'];
+    version: number;
+  };
+  readonly intentB: {
+    intentId: string;
+    desiredOutcome: string;
+    priority: NetworkIntent['priority'];
+    version: number;
+  };
   readonly reason: string;
   readonly resolution: 'supersede-a' | 'supersede-b' | 'queue-b' | 'merge';
   readonly timestamp: string; // ISO timestamp when conflict was recorded
 }
 
 export interface ConflictApiStore {
-  listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]>;
+  listConflicts(
+    ownership: IntentOwnership,
+    limit: number,
+    since?: Date,
+  ): Promise<readonly ArbitrationConflict[]>;
 }
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 const ownershipKey = (ownership: IntentOwnership): string =>
-  ownership.organizationId ? `org:${ownership.organizationId}` : `principal:${ownership.principalId}`;
+  ownership.organizationId
+    ? `org:${ownership.organizationId}`
+    : `principal:${ownership.principalId}`;
 
 const canonicalize = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -124,14 +162,26 @@ const idempotencyFingerprint = (value: unknown): string =>
     .digest('hex');
 
 export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
-  private readonly intents = new Map<string, { intent: NetworkIntent; ownership: IntentOwnership; idempotencyKey?: string; idempotencyFingerprint?: string }>();
+  private readonly intents = new Map<
+    string,
+    {
+      intent: NetworkIntent;
+      ownership: IntentOwnership;
+      idempotencyKey?: string;
+      idempotencyFingerprint?: string;
+    }
+  >();
   private readonly conflicts: ArbitrationConflict[] = [];
 
   recordConflict(_conflict: ArbitrationConflict): void {
     this.conflicts.push(_conflict);
   }
 
-  async listConflicts(ownership: IntentOwnership, limit: number, since?: Date): Promise<readonly ArbitrationConflict[]> {
+  async listConflicts(
+    ownership: IntentOwnership,
+    limit: number,
+    since?: Date,
+  ): Promise<readonly ArbitrationConflict[]> {
     let conflicts = this.conflicts;
     if (since) {
       conflicts = conflicts.filter((c) => new Date(c.timestamp) > since);
@@ -145,7 +195,11 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
     return clone(row.intent);
   }
 
-  async list(status: NetworkIntent['status'] | undefined, ownership: IntentOwnership, limit: number): Promise<readonly NetworkIntent[]> {
+  async list(
+    status: NetworkIntent['status'] | undefined,
+    ownership: IntentOwnership,
+    limit: number,
+  ): Promise<readonly NetworkIntent[]> {
     return [...this.intents.values()]
       .filter((row) => ownershipKey(row.ownership) === ownershipKey(ownership))
       .filter((row) => status === undefined || row.intent.status === status)
@@ -157,11 +211,17 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
   async put(
     intent: NetworkIntent,
     ownership: IntentOwnership,
-    options: { idempotencyKey?: string; idempotencyFingerprint?: string; expectedVersion?: number } = {},
+    options: {
+      idempotencyKey?: string;
+      idempotencyFingerprint?: string;
+      expectedVersion?: number;
+    } = {},
   ): Promise<void> {
     const existing = this.intents.get(intent.id);
     if (existing && ownershipKey(existing.ownership) !== ownershipKey(ownership))
-      throw new ConflictAppError('Intent id is already owned by another principal or organization.');
+      throw new ConflictAppError(
+        'Intent id is already owned by another principal or organization.',
+      );
     if (options.expectedVersion !== undefined) {
       if (!existing || existing.intent.version !== options.expectedVersion)
         throw new ConflictAppError('Intent version conflict; refresh the intent before retrying.');
@@ -172,16 +232,15 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
       intent: clone(intent),
       ownership: { ...ownership },
       ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
-      ...(options.idempotencyFingerprint ? { idempotencyFingerprint: options.idempotencyFingerprint } : {}),
+      ...(options.idempotencyFingerprint
+        ? { idempotencyFingerprint: options.idempotencyFingerprint }
+        : {}),
     });
   }
 
   async findByIdempotency(ownership: IntentOwnership, key: string) {
     for (const row of this.intents.values()) {
-      if (
-        ownershipKey(row.ownership) === ownershipKey(ownership) &&
-        row.idempotencyKey === key
-      )
+      if (ownershipKey(row.ownership) === ownershipKey(ownership) && row.idempotencyKey === key)
         return row.idempotencyFingerprint
           ? { intent: clone(row.intent), fingerprint: row.idempotencyFingerprint }
           : undefined;
@@ -204,7 +263,9 @@ const fromRow = (row: IntentRecordRow): NetworkIntent =>
     ...(row.supersedes ? { supersedes: row.supersedes } : {}),
     ...(row.metadata ? { metadata: row.metadata as Readonly<Record<string, string>> } : {}),
     ...(row.provenance ? { provenance: row.provenance } : {}),
-    ...(row.confidence !== null && row.confidence !== undefined ? { confidence: row.confidence } : {}),
+    ...(row.confidence !== null && row.confidence !== undefined
+      ? { confidence: row.confidence }
+      : {}),
     ...(row.autonomy ? { autonomy: row.autonomy as NonNullable<NetworkIntent['autonomy']> } : {}),
   });
 
@@ -248,7 +309,11 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     console.warn('DatabaseIntentStore.recordConflict not implemented for database');
   }
 
-  async listConflicts(_ownership: IntentOwnership, _limit: number, _since?: Date): Promise<readonly ArbitrationConflict[]> {
+  async listConflicts(
+    _ownership: IntentOwnership,
+    _limit: number,
+    _since?: Date,
+  ): Promise<readonly ArbitrationConflict[]> {
     // In a real implementation, this would query the database
     return Object.freeze([]);
   }
@@ -258,7 +323,11 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     return row ? fromRow(row) : undefined;
   }
 
-  async list(status: NetworkIntent['status'] | undefined, ownership: IntentOwnership, limit: number) {
+  async list(
+    status: NetworkIntent['status'] | undefined,
+    ownership: IntentOwnership,
+    limit: number,
+  ) {
     const rows = await this.repository.list(status, ownershipKey(ownership), limit);
     return rows.map(fromRow);
   }
@@ -266,7 +335,11 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
   async put(
     intent: NetworkIntent,
     ownership: IntentOwnership,
-    options: { idempotencyKey?: string; idempotencyFingerprint?: string; expectedVersion?: number } = {},
+    options: {
+      idempotencyKey?: string;
+      idempotencyFingerprint?: string;
+      expectedVersion?: number;
+    } = {},
   ) {
     await this.repository.put(toRow(intent, ownership, options), options.expectedVersion);
   }
@@ -310,7 +383,8 @@ const idempotencyKey = (request: FastifyRequest): string => {
   const raw = request.headers['idempotency-key'];
   const value = Array.isArray(raw) ? raw[0] : raw;
   if (!value?.trim()) throw new ValidationAppError('Idempotency-Key header is required');
-  if (value.length > 128) throw new ValidationAppError('Idempotency-Key must be at most 128 characters');
+  if (value.length > 128)
+    throw new ValidationAppError('Idempotency-Key must be at most 128 characters');
   return value.trim();
 };
 
@@ -320,7 +394,9 @@ const ownership = (principal: Principal): IntentOwnership => ({
 });
 
 export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOptions = {}) => {
-  const store = options.store ?? (options.database ? new DatabaseIntentStore(options.database) : new InMemoryIntentStore());
+  const store =
+    options.store ??
+    (options.database ? new DatabaseIntentStore(options.database) : new InMemoryIntentStore());
   const authorize = options.requirePermission ?? defaultAuthorization;
 
   app.post('/api/v1/intents', async (request, reply) => {
@@ -334,9 +410,14 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       if (previous.fingerprint !== fingerprint)
         return reply.code(409).send({
           success: false,
-          error: { code: 'IDEMPOTENCY_KEY_REUSE', message: 'Idempotency-Key was already used with a different request.' },
+          error: {
+            code: 'IDEMPOTENCY_KEY_REUSE',
+            message: 'Idempotency-Key was already used with a different request.',
+          },
         });
-      return reply.code(200).send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
+      return reply
+        .code(200)
+        .send({ success: true, data: previous.intent, meta: { idempotentReplay: true } });
     }
 
     const spec = {
@@ -412,7 +493,9 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
       return { success: true, data: updated };
     } catch (error) {
       if (error instanceof ConflictAppError) throw error;
-      throw new ConflictAppError(error instanceof Error ? error.message : 'Invalid intent transition');
+      throw new ConflictAppError(
+        error instanceof Error ? error.message : 'Invalid intent transition',
+      );
     }
   });
 
@@ -421,8 +504,16 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
     const principal = await authorize(request, 'runtime.inspect');
     const query = conflictListQuery.parse(request.query ?? {});
     const owner = ownership(principal);
-    const conflicts = await store.listConflicts(owner, query.limit, query.since ? new Date(query.since) : undefined);
-    return { success: true, data: conflicts, meta: { count: conflicts.length, limit: query.limit } };
+    const conflicts = await store.listConflicts(
+      owner,
+      query.limit,
+      query.since ? new Date(query.since) : undefined,
+    );
+    return {
+      success: true,
+      data: conflicts,
+      meta: { count: conflicts.length, limit: query.limit },
+    };
   });
 
   app.get('/api/v1/intents/conflicts/:id', async (request) => {

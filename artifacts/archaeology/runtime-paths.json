@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T20:31:48.420Z",
+  "generatedAt": "2026-10-03T21:00:42.783Z",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
@@ -66,6 +66,10 @@
     },
     {
       "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/verification/outcome-verification.ts"
+    },
+    {
+      "marker": "postcondition-check",
       "path": "packages/resilience-runtime/src/verification/verification.ts"
     },
     {
@@ -84,7 +88,7 @@
   "summary": {
     "entrypoints": 2,
     "mutationSites": 4,
-    "verificationSites": 11,
+    "verificationSites": 12,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }

@@ -15,14 +15,38 @@ import {
 } from './fabric-lifecycle.js';
 
 export const FABRIC_RESOURCE_KINDS = [
-  'Device','Interface','Link','Provider','Gateway','Route','Resolver','Tunnel','Transport',
-  'Proxy','Egress','RemoteNode','Region','Destination','Service','Endpoint','ApplicationPath',
+  'Device',
+  'Interface',
+  'Link',
+  'Provider',
+  'Gateway',
+  'Route',
+  'Resolver',
+  'Tunnel',
+  'Transport',
+  'Proxy',
+  'Egress',
+  'RemoteNode',
+  'Region',
+  'Destination',
+  'Service',
+  'Endpoint',
+  'ApplicationPath',
 ] as const;
 export type FabricResourceKind = (typeof FABRIC_RESOURCE_KINDS)[number];
 
 export const FABRIC_RESOURCE_STATES = [
-  'UNKNOWN','DISCOVERING','HEALTHY','DEGRADED','FAILED','BLOCKED','RESTRICTED','RECOVERING',
-  'QUARANTINED','DRAINING','UNAVAILABLE',
+  'UNKNOWN',
+  'DISCOVERING',
+  'HEALTHY',
+  'DEGRADED',
+  'FAILED',
+  'BLOCKED',
+  'RESTRICTED',
+  'RECOVERING',
+  'QUARANTINED',
+  'DRAINING',
+  'UNAVAILABLE',
 ] as const;
 export type FabricResourceState = (typeof FABRIC_RESOURCE_STATES)[number];
 
@@ -135,8 +159,10 @@ const nowIso = () => new Date().toISOString();
 const numericCost = (resource: FabricResource) =>
   Object.values(resource.cost).reduce((sum, value) => sum + Math.max(0, value), 0);
 const healthRank = (resource: FabricResource) =>
-  resource.health.score * 0.45 + resource.confidence * 100 * 0.25 +
-  resource.trust * 100 * 0.2 - numericCost(resource) * 0.1;
+  resource.health.score * 0.45 +
+  resource.confidence * 100 * 0.25 +
+  resource.trust * 100 * 0.2 -
+  numericCost(resource) * 0.1;
 
 export class ProgrammableConnectivityFabric {
   readonly capabilities = new FabricCapabilityRegistry();
@@ -144,8 +170,10 @@ export class ProgrammableConnectivityFabric {
   readonly capabilityAuthority = new FabricCapabilityAuthority();
   private readonly providers = new Map<string, FabricDiscoveryProvider>();
   private snapshot: FabricSnapshot = Object.freeze({
-    version: 0, discoveredAt: new Date(0).toISOString(),
-    resources: Object.freeze([]), edges: Object.freeze([]),
+    version: 0,
+    discoveredAt: new Date(0).toISOString(),
+    resources: Object.freeze([]),
+    edges: Object.freeze([]),
   });
 
   registerProvider(provider: FabricDiscoveryProvider): void {
@@ -155,8 +183,12 @@ export class ProgrammableConnectivityFabric {
       throw new Error(`fabric provider already registered: ${provider.id}`);
     this.providers.set(provider.id, provider);
   }
-  providersList(): readonly FabricDiscoveryProvider[] { return [...this.providers.values()]; }
-  snapshotState(): FabricSnapshot { return this.snapshot; }
+  providersList(): readonly FabricDiscoveryProvider[] {
+    return [...this.providers.values()];
+  }
+  snapshotState(): FabricSnapshot {
+    return this.snapshot;
+  }
 
   /** Explicit ownership index: resource id -> owner (issue #275 task 8). */
   ownershipIndex(): Readonly<Record<string, string>> {
@@ -194,21 +226,22 @@ export class ProgrammableConnectivityFabric {
     return this.snapshot;
   }
 
-  async discover(options: { signal?: AbortSignal; limit?: number | undefined; since?: string } = {}) {
+  async discover(
+    options: { signal?: AbortSignal; limit?: number | undefined; since?: string } = {},
+  ) {
     const signal = options.signal ?? new AbortController().signal;
     const limit = Math.max(1, Math.min(options.limit ?? 256, 2_000));
     const context: FabricDiscoveryContext = {
-      signal, limit, now: nowIso(), ...(options.since ? { since: options.since } : {}),
+      signal,
+      limit,
+      now: nowIso(),
+      ...(options.since ? { since: options.since } : {}),
     };
     const resources = new Map<string, FabricResource>(
-      options.since
-        ? this.snapshot.resources.map((resource) => [resource.id, resource])
-        : [],
+      options.since ? this.snapshot.resources.map((resource) => [resource.id, resource]) : [],
     );
     const owners = new Map<string, string>(
-      options.since
-        ? this.snapshot.resources.map((resource) => [resource.id, resource.owner])
-        : [],
+      options.since ? this.snapshot.resources.map((resource) => [resource.id, resource.owner]) : [],
     );
     for (const provider of this.providers.values()) {
       if (signal.aborted) throw new DOMException('Fabric discovery aborted', 'AbortError');
@@ -314,14 +347,10 @@ export class ProgrammableConnectivityFabric {
     });
 
     const candidates = [...eligible].sort((a, b) => {
-      const diversityA = request.preferredFailureDomains?.some((d) =>
-        a.failureDomains.includes(d),
-      )
+      const diversityA = request.preferredFailureDomains?.some((d) => a.failureDomains.includes(d))
         ? 1
         : 0;
-      const diversityB = request.preferredFailureDomains?.some((d) =>
-        b.failureDomains.includes(d),
-      )
+      const diversityB = request.preferredFailureDomains?.some((d) => b.failureDomains.includes(d))
         ? 1
         : 0;
       return diversityB - diversityA || healthRank(b) - healthRank(a) || a.id.localeCompare(b.id);
@@ -338,9 +367,7 @@ export class ProgrammableConnectivityFabric {
       selected,
       candidates,
       rejected: Object.freeze(rejected),
-      reason: selected
-        ? diversity.reason
-        : 'no eligible fabric resource',
+      reason: selected ? diversity.reason : 'no eligible fabric resource',
       diversity,
       freshness: Object.freeze(freshness),
       capabilityDecisions: Object.freeze(capabilityDecisions),
@@ -370,9 +397,7 @@ export class ProgrammableConnectivityFabric {
       ...this.snapshot,
       version: this.snapshot.version + 1,
       discoveredAt: nowIso(),
-      resources: Object.freeze(
-        [...resources.values()].sort((a, b) => a.id.localeCompare(b.id)),
-      ),
+      resources: Object.freeze([...resources.values()].sort((a, b) => a.id.localeCompare(b.id))),
       edges: Object.freeze(edges),
     });
     return this.snapshot;
@@ -412,14 +437,32 @@ const fabricResourceIdFromPathNode = (node: PathGraphNode): string =>
 
 const resourceFromPathNode = (node: PathGraphNode): FabricResource => {
   const kind = kindForNode(node);
-  const failed = ['failed','disabled','expired'].includes(node.state);
-  const state: FabricResourceState = failed ? 'FAILED' : node.state === 'degraded' ? 'DEGRADED' : 'HEALTHY';
+  const failed = ['failed', 'disabled', 'expired'].includes(node.state);
+  const state: FabricResourceState = failed
+    ? 'FAILED'
+    : node.state === 'degraded'
+      ? 'DEGRADED'
+      : 'HEALTHY';
   return {
-    id: `fabric:${kind.toLowerCase()}:${resourceIdFromPathNode(node)}`, kind, state,
-    health: { status: failed ? 'failed' : state === 'DEGRADED' ? 'degraded' : 'healthy', score: failed ? 0 : 100, checkedAt: nowIso() },
-    confidence: 0.9, observedAt: nowIso(), trust: 0.9, capacity: {}, cost: {},
+    id: `fabric:${kind.toLowerCase()}:${resourceIdFromPathNode(node)}`,
+    kind,
+    state,
+    health: {
+      status: failed ? 'failed' : state === 'DEGRADED' ? 'degraded' : 'healthy',
+      score: failed ? 0 : 100,
+      checkedAt: nowIso(),
+    },
+    confidence: 0.9,
+    observedAt: nowIso(),
+    trust: 0.9,
+    capacity: {},
+    cost: {},
     owner: '@irp/routing:NetworkPathGraph',
-    failureDomains: [node.metadata.failureDomain].filter((value): value is string => typeof value === 'string'),
-    lifecycle: 'discovered', capabilities: [], metadata: node.metadata,
+    failureDomains: [node.metadata.failureDomain].filter(
+      (value): value is string => typeof value === 'string',
+    ),
+    lifecycle: 'discovered',
+    capabilities: [],
+    metadata: node.metadata,
   };
 };

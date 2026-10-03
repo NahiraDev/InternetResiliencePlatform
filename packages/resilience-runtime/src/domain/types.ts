@@ -94,7 +94,8 @@ export interface CompiledIntent {
   readonly objectives: Readonly<Record<string, number>>;
   readonly confidence: number;
   readonly provenance: string;
-  readonly autonomy: 'OBSERVE_ONLY' | 'ADVISORY' | 'SAFE_AUTOMATION' | 'AUTONOMOUS' | 'HIGH_RISK_REQUIRES_APPROVAL';
+  readonly autonomy:
+    'OBSERVE_ONLY' | 'ADVISORY' | 'SAFE_AUTOMATION' | 'AUTONOMOUS' | 'HIGH_RISK_REQUIRES_APPROVAL';
   readonly scope: Readonly<Record<string, string>>;
   readonly effectiveFrom?: string | undefined;
   readonly expiresAt?: string | undefined;

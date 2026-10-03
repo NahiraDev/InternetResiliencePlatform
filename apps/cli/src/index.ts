@@ -73,7 +73,8 @@ export const createProgram = (): Command => {
       });
     });
   const runtime = program.command('runtime').description('Resilience runtime commands');
-  const getRuntimeInstance = async () => (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
+  const getRuntimeInstance = async () =>
+    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   runtime
     .command('status')
     .option('--json', 'print JSON output')
@@ -127,7 +128,10 @@ export const createProgram = (): Command => {
     .option('--limit <number>', 'maximum number of conflicts to show', '25')
     .description('List arbitration conflicts')
     .action(async () => {
-      printJson({ conflicts: [], message: 'Conflict listing requires a ConflictApiStore implementation' });
+      printJson({
+        conflicts: [],
+        message: 'Conflict listing requires a ConflictApiStore implementation',
+      });
     });
   runtime
     .command('cycle')
@@ -152,7 +156,8 @@ export const createProgram = (): Command => {
   const autopilot = program
     .command('autopilot')
     .description('Canonical resilience-runtime compatibility commands');
-  const getAutopilotRuntime = async () => (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
+  const getAutopilotRuntime = async () =>
+    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   autopilot
     .command('status')
     .description('Show canonical runtime status')
@@ -186,7 +191,9 @@ export const createProgram = (): Command => {
   autopilot
     .command('policy')
     .description('Show canonical runtime policy snapshot')
-    .action(async () => printJson((await (await getAutopilotRuntime()).getRuntimeSnapshot()).policySnapshot));
+    .action(async () =>
+      printJson((await (await getAutopilotRuntime()).getRuntimeSnapshot()).policySnapshot),
+    );
   autopilot
     .command('approve <action>')
     .description('Approve pending autopilot action through API workflow')

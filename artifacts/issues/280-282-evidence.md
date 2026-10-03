@@ -63,8 +63,8 @@ mode; the platform helpers are pure functions.
   `createCanonicalRuntime`. Encoded as `client-authority-280.test.ts`, which
   scans `apps/*/src` + `*-client` TS sources for forbidden constructions
   (`new ResilienceRuntime/NetworkAutopilot/PolicyEngine/SafetyKernel/
-  StateRegistry/TransactionExecutor/DecisionEngine/EventBus/Planner/
-  ProviderRegistry`) — zero hits.
+StateRegistry/TransactionExecutor/DecisionEngine/EventBus/Planner/
+ProviderRegistry`) — zero hits.
 - Capability negotiation: `negotiatePlatformCapabilities` per-platform tables
   (linux full local set; macos/windows observe-only; ios/android
   tunnel-execute + observe). Anything unlisted is denied with a

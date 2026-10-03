@@ -9,13 +9,7 @@
 
 import type { FabricCapability } from './fabric.js';
 
-export type FabricPlatform =
-  | 'linux'
-  | 'macos'
-  | 'windows'
-  | 'ios'
-  | 'android'
-  | 'any';
+export type FabricPlatform = 'linux' | 'macos' | 'windows' | 'ios' | 'android' | 'any';
 
 export interface CapabilityRequest {
   readonly capabilityId: string;
@@ -67,7 +61,8 @@ export class FabricCapabilityAuthority {
 
   register(capability: FabricCapability): void {
     if (!capability.id.trim()) throw new Error('fabric capability id is required');
-    if (!capability.scope.trim()) throw new Error(`fabric capability ${capability.id} requires scope`);
+    if (!capability.scope.trim())
+      throw new Error(`fabric capability ${capability.id} requires scope`);
     if (!Number.isFinite(capability.trust) || capability.trust < 0 || capability.trust > 1) {
       throw new Error(`fabric capability ${capability.id} trust must be between 0 and 1`);
     }

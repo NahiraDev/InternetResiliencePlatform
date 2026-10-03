@@ -45,7 +45,8 @@ export const withOperationTimeout = async <T>(
     const aborted = new Promise<never>((_, reject) => {
       signal.addEventListener(
         'abort',
-        () => reject(signal.reason instanceof Error ? signal.reason : new Error('operation aborted')),
+        () =>
+          reject(signal.reason instanceof Error ? signal.reason : new Error('operation aborted')),
         { once: true },
       );
     });

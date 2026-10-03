@@ -18,7 +18,11 @@ import {
   createKnowledgeRecord,
   isExpired,
 } from './knowledge-record.js';
-import { arbitrateKnowledge, type ArbitrationOptions, type ArbitratedEvidence } from './arbitration.js';
+import {
+  arbitrateKnowledge,
+  type ArbitrationOptions,
+  type ArbitratedEvidence,
+} from './arbitration.js';
 
 export interface KnowledgeStoreOptions {
   /** Hard cap on retained records; oldest are evicted first. */
@@ -115,7 +119,10 @@ export class KnowledgeStore {
    * than throwing, so an absent evidence family degrades ranking confidence but
    * never blocks a decision.
    */
-  arbitrate(query: KnowledgeQuery = {}, options: Omit<ArbitrationOptions, 'scope' | 'nowMs'> = {}): ArbitratedEvidence {
+  arbitrate(
+    query: KnowledgeQuery = {},
+    options: Omit<ArbitrationOptions, 'scope' | 'nowMs'> = {},
+  ): ArbitratedEvidence {
     const nowMs = query.nowMs ?? this.clock();
     return arbitrateKnowledge(this.query({ ...query, nowMs }), {
       ...options,

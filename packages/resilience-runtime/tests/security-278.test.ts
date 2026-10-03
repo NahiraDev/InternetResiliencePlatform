@@ -87,9 +87,7 @@ const snapshot = (version = 'v1'): MutationSnapshot => ({
 });
 
 /** Ports whose every hook succeeds, so a test can break exactly one thing. */
-const okPorts = (
-  over: Partial<PrivilegedBoundaryPorts> = {},
-): PrivilegedBoundaryPorts => ({
+const okPorts = (over: Partial<PrivilegedBoundaryPorts> = {}): PrivilegedBoundaryPorts => ({
   executor: { execute: async () => successExecution() } as never,
   events: { emit: async () => undefined } as never,
   snapshot: async () => snapshot(),
@@ -145,7 +143,11 @@ describe('#278 t4: canonical phase order', () => {
 
   it('never reaches apply when validate fails', async () => {
     const outcome = await boundary().mutate(
-      request({ plan: plan({ selectedAction: { ...plan().selectedAction, rejectionReasons: ['bad'] } }) as never }),
+      request({
+        plan: plan({
+          selectedAction: { ...plan().selectedAction, rejectionReasons: ['bad'] },
+        }) as never,
+      }),
     );
     expect(outcome.status).toBe('blocked');
     expect(outcome.phaseReached).toBe('validate');
@@ -154,7 +156,13 @@ describe('#278 t4: canonical phase order', () => {
 
   it('never reaches apply when policy denies', async () => {
     const outcome = await boundary(
-      okPorts({ policy: async () => ({ allowed: false, reasons: ['denied-by-policy'], requiredCapabilities: [] }) }),
+      okPorts({
+        policy: async () => ({
+          allowed: false,
+          reasons: ['denied-by-policy'],
+          requiredCapabilities: [],
+        }),
+      }),
     ).mutate(request());
     expect(outcome.status).toBe('blocked');
     expect(outcome.phaseReached).toBe('policy');
@@ -214,7 +222,12 @@ describe('#278 t1,t8: capability authorization and fail-closed security', () => 
 
   it('denies a boundary below the required trust rank', () => {
     const decision = authorizer.authorize(
-      { actorId: 'plugin-1', boundary: 'plugin', grantedCapabilities: ['network.mutate'], verified: true },
+      {
+        actorId: 'plugin-1',
+        boundary: 'plugin',
+        grantedCapabilities: ['network.mutate'],
+        verified: true,
+      },
       ['network.mutate'],
     );
     expect(decision.reason).toBe('insufficient-trust-rank');
@@ -236,9 +249,9 @@ describe('#278 t1,t8: capability authorization and fail-closed security', () => 
   });
 
   it('throws from authorizeOrThrow', () => {
-    expect(() => authorizer.authorizeOrThrow(runtimeActor({ verified: false }), ['network.mutate'])).toThrow(
-      TrustBoundaryAuthorizationError,
-    );
+    expect(() =>
+      authorizer.authorizeOrThrow(runtimeActor({ verified: false }), ['network.mutate']),
+    ).toThrow(TrustBoundaryAuthorizationError);
   });
 
   it('reports a per-boundary capability ceiling', () => {
@@ -293,7 +306,14 @@ describe('#278 t1,t8: capability authorization and fail-closed security', () => 
 
 describe('#278 t2: trust boundaries', () => {
   it('classifies every actor kind', () => {
-    for (const boundaryName of ['canonical-runtime', 'platform-adapter', 'plugin', 'remote-node', 'external-client', 'ai']) {
+    for (const boundaryName of [
+      'canonical-runtime',
+      'platform-adapter',
+      'plugin',
+      'remote-node',
+      'external-client',
+      'ai',
+    ]) {
       expect(TRUST_BOUNDARIES).toContain(boundaryName as never);
     }
   });
@@ -313,9 +333,9 @@ describe('#278 t2: trust boundaries', () => {
 
   it('binds fabric and tunnel mutation to platform adapters', () => {
     for (const capability of ['fabric.mutate', 'tunnel.mutate']) {
-      expect(DEFAULT_CAPABILITY_RULES.find((r) => r.capability === capability)?.minimumBoundary).toBe(
-        'platform-adapter',
-      );
+      expect(
+        DEFAULT_CAPABILITY_RULES.find((r) => r.capability === capability)?.minimumBoundary,
+      ).toBe('platform-adapter');
     }
   });
 
@@ -406,9 +426,7 @@ describe('#278 t3: AI advisory-only boundary', () => {
           },
         } as never,
       }),
-    ).mutate(
-      request({ ai: { recommendedIntent: 'provider_switch', rationale: 'r' } }),
-    );
+    ).mutate(request({ ai: { recommendedIntent: 'provider_switch', rationale: 'r' } }));
     const ignored = emitted.find((e) => e.type === 'runtime.mutation.ai-intent-ignored');
     expect(ignored?.payload['aiRecommendedIntent']).toBe('provider_switch');
     expect(ignored?.payload['canonicalIntent']).toBe('connectivity_failover');
@@ -416,7 +434,8 @@ describe('#278 t3: AI advisory-only boundary', () => {
 
   it('reports no AI contribution honestly', () => {
     expect(
-      enforceAiAdvisoryBoundary({ canonicalIntent: 'rollback', canonicalCapabilities: [] }).rationale,
+      enforceAiAdvisoryBoundary({ canonicalIntent: 'rollback', canonicalCapabilities: [] })
+        .rationale,
     ).toBe('no-ai-contribution');
   });
 });
@@ -511,7 +530,9 @@ describe('#278 t6: idempotency, cancellation, timeout', () => {
   it('refuses to rebind an idempotency key', async () => {
     const b = boundary();
     await b.mutate(request());
-    const second = await b.mutate(request({ plan: plan({ selectedAction: { ...plan().selectedAction, id: 'act-2' } }) }));
+    const second = await b.mutate(
+      request({ plan: plan({ selectedAction: { ...plan().selectedAction, id: 'act-2' } }) }),
+    );
     expect(second.status).toBe('blocked');
     expect(second.reasons).toContain('idempotency-key-already-bound');
   });
@@ -556,7 +577,12 @@ describe('#278 t6: idempotency, cancellation, timeout', () => {
   it('times out mid-mutation after the snapshot', async () => {
     let now = 1_000;
     const outcome = await boundary(
-      okPorts({ snapshot: async () => { now += 100; return snapshot(); } }),
+      okPorts({
+        snapshot: async () => {
+          now += 100;
+          return snapshot();
+        },
+      }),
       { mutationTimeoutMs: 10, nowMs: () => now },
     ).mutate(request());
     expect(outcome.status).toBe('timed-out');
@@ -569,7 +595,9 @@ describe('#278 t7: stale and concurrent mutation protection', () => {
     const b = boundary();
     const outcome = await b.mutate(request({ epoch: 1 }));
     b.advanceEpoch();
-    const stale = await b.mutate(request({ mutationId: 'mut-2', idempotencyKey: 'idem-2', epoch: 1 }));
+    const stale = await b.mutate(
+      request({ mutationId: 'mut-2', idempotencyKey: 'idem-2', epoch: 1 }),
+    );
     expect(outcome.status).toBe('committed');
     expect(stale.status).toBe('blocked');
     expect(stale.reasons).toContain('epoch-superseded');
@@ -593,7 +621,14 @@ describe('#278 t7: stale and concurrent mutation protection', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const b = boundary(okPorts({ snapshot: async () => { await gate; return snapshot(); } }));
+    const b = boundary(
+      okPorts({
+        snapshot: async () => {
+          await gate;
+          return snapshot();
+        },
+      }),
+    );
     const first = b.mutate(request({ mutationId: 'mut-a', idempotencyKey: 'idem-a' }));
     await new Promise((resolve) => setTimeout(resolve, 5));
     const second = await b.mutate(
@@ -621,7 +656,14 @@ describe('#278 t9: secret protection', () => {
   const sentry = new SecretSentry();
 
   it('recognises secret-looking keys', () => {
-    for (const key of ['password', 'apiKey', 'privateKey', 'accessToken', 'credential', 'authorization']) {
+    for (const key of [
+      'password',
+      'apiKey',
+      'privateKey',
+      'accessToken',
+      'credential',
+      'authorization',
+    ]) {
       expect(isSecretKey(key)).toBe(true);
     }
     expect(isSecretKey('routeName')).toBe(false);
@@ -642,7 +684,8 @@ describe('#278 t9: secret protection', () => {
   });
 
   it('redacts a JWT found in a plain string', () => {
-    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+    const jwt =
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk';
     expect(redactString(`token is ${jwt}`)).not.toContain(jwt);
   });
 
@@ -749,8 +792,8 @@ describe('#278 t10: architectural regression guards', () => {
     const surface = Object.getOwnPropertyNames(Object.getPrototypeOf(b));
     expect(surface).toContain('mutate');
     // There must be no public method that reaches apply without the machine.
-    expect(surface.filter((name) => /^apply|^run[A-Z]?Phase|^executeRaw|^mutateDirect/.test(name))).toEqual(
-      [],
-    );
+    expect(
+      surface.filter((name) => /^apply|^run[A-Z]?Phase|^executeRaw|^mutateDirect/.test(name)),
+    ).toEqual([]);
   });
 });

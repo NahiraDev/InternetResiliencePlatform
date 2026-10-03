@@ -5,6 +5,7 @@ Parent tracker: #272. Baseline: Phase 78 on `main`.
 ## Objective
 
 Make user/application/workload intent executable rather than DTO-only:
+
 - Normalize constraints, objectives, scope, priority, TTL, provenance and confidence.
 - Implement policy resolution and conflict resolution.
 - Support multi-intent arbitration.

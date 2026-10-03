@@ -17,9 +17,7 @@ import {
 } from '../intent/arbitration.js';
 
 export class RuntimePolicyArbitrator {
-  constructor(
-    private readonly intentStore: IntentStore = new InMemoryIntentStore(),
-  ) {}
+  constructor(private readonly intentStore: IntentStore = new InMemoryIntentStore()) {}
 
   async evaluate(
     target: ActionPlan | CandidateAction,
@@ -50,10 +48,14 @@ export class RuntimePolicyArbitrator {
   /** Resolves intent conflicts for the current context. */
   async resolveIntentConflicts(
     context: RuntimeContext,
-  ): Promise<{ readonly ordered: readonly CompiledIntent[]; readonly conflicts: readonly IntentConflict[] }> {
+  ): Promise<{
+    readonly ordered: readonly CompiledIntent[];
+    readonly conflicts: readonly IntentConflict[];
+  }> {
     const activeIntents = await this.intentStore.getActive();
     // Prefer compiledIntents (plural) which already includes compiledIntent, avoid duplication
-    const contextIntents = context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
+    const contextIntents =
+      context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
     const allIntents = [...activeIntents, ...contextIntents];
     return arbitrateIntents(allIntents, new Date());
   }
@@ -68,7 +70,10 @@ export class RuntimePolicyArbitrator {
   }
 
   /** Enforces autonomy at the mutation boundary. */
-  enforceIntentAutonomy(intent: CompiledIntent, actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'): void {
+  enforceIntentAutonomy(
+    intent: CompiledIntent,
+    actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk',
+  ): void {
     enforceAutonomy(intent, actionClass);
   }
 }

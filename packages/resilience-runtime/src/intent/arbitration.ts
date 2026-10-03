@@ -25,7 +25,10 @@ export interface PolicyConflict {
 export const arbitrateIntents = (
   intents: readonly CompiledIntent[],
   now = new Date(),
-): { readonly ordered: readonly CompiledIntent[]; readonly conflicts: readonly IntentConflict[] } => {
+): {
+  readonly ordered: readonly CompiledIntent[];
+  readonly conflicts: readonly IntentConflict[];
+} => {
   // Filter to only effective intents
   const effective = intents.filter((intent) => {
     const from = intent.effectiveFrom ? Date.parse(intent.effectiveFrom) : Number.NEGATIVE_INFINITY;
@@ -57,9 +60,14 @@ export const arbitrateIntents = (
       const b = ordered[j]!;
       if (scopesOverlap(a, b) && a.desiredOutcome !== b.desiredOutcome) {
         // Higher priority supersedes; if same priority, newer version supersedes
-        const resolution = a.priority === b.priority
-          ? (a.version > b.version ? 'supersede-b' : 'supersede-a')
-          : ((priorityOrder[a.priority] ?? 0) > (priorityOrder[b.priority] ?? 0) ? 'supersede-b' : 'supersede-a');
+        const resolution =
+          a.priority === b.priority
+            ? a.version > b.version
+              ? 'supersede-b'
+              : 'supersede-a'
+            : (priorityOrder[a.priority] ?? 0) > (priorityOrder[b.priority] ?? 0)
+              ? 'supersede-b'
+              : 'supersede-a';
         conflicts.push({
           intentA: a,
           intentB: b,
@@ -109,7 +117,12 @@ export const resolvePolicyConflict = (
       resolution: strategy,
     });
   }
-  if (!shallowEqualRecord(policyA.policy.capabilityRequirements, policyB.policy.capabilityRequirements)) {
+  if (
+    !shallowEqualRecord(
+      policyA.policy.capabilityRequirements,
+      policyB.policy.capabilityRequirements,
+    )
+  ) {
     conflictsFound.push({
       policyA,
       policyB,
@@ -139,8 +152,16 @@ export const resolvePolicyConflict = (
     ...policyA,
     policy: {
       ...policyA.policy,
-      allowedActions: mergeArrays(policyA.policy.allowedActions, policyB.policy.allowedActions, strategy),
-      deniedActions: mergeArrays(policyA.policy.deniedActions, policyB.policy.deniedActions, strategy),
+      allowedActions: mergeArrays(
+        policyA.policy.allowedActions,
+        policyB.policy.allowedActions,
+        strategy,
+      ),
+      deniedActions: mergeArrays(
+        policyA.policy.deniedActions,
+        policyB.policy.deniedActions,
+        strategy,
+      ),
       capabilityRequirements: mergeCapabilityRequirements(
         policyA.policy.capabilityRequirements,
         policyB.policy.capabilityRequirements,
@@ -151,9 +172,10 @@ export const resolvePolicyConflict = (
         policyB.policy.confidenceThreshold,
         strategy,
       ),
-      failClosed: strategy === 'intersection'
-        ? policyA.policy.failClosed && policyB.policy.failClosed
-        : policyA.policy.failClosed || policyB.policy.failClosed,
+      failClosed:
+        strategy === 'intersection'
+          ? policyA.policy.failClosed && policyB.policy.failClosed
+          : policyA.policy.failClosed || policyB.policy.failClosed,
     },
   };
 
@@ -165,7 +187,10 @@ const shallowEqual = <T>(a: readonly T[], b: readonly T[]): boolean => {
   return a.every((val, idx) => val === b[idx]);
 };
 
-const shallowEqualRecord = <T>(a: Readonly<Record<string, T>>, b: Readonly<Record<string, T>>): boolean => {
+const shallowEqualRecord = <T>(
+  a: Readonly<Record<string, T>>,
+  b: Readonly<Record<string, T>>,
+): boolean => {
   const aKeys = Object.keys(a);
   const bKeys = Object.keys(b);
   if (aKeys.length !== bKeys.length) return false;
@@ -223,7 +248,7 @@ export const enforceAutonomy = (
   if (!isAutonomyPermitted(intent, actionClass)) {
     throw new Error(
       `Autonomy violation: intent ${intent.intentId} (autonomy=${intent.autonomy}) ` +
-      `does not permit action class ${actionClass}`,
+        `does not permit action class ${actionClass}`,
     );
   }
 };
@@ -231,7 +256,9 @@ export const enforceAutonomy = (
 /**
  * Maps action intents to autonomy action classes for enforcement.
  */
-export const ACTION_CLASS: Readonly<Record<string, 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'>> = Object.freeze({
+export const ACTION_CLASS: Readonly<
+  Record<string, 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'>
+> = Object.freeze({
   noop: 'read',
   health_reprobe: 'advise',
   dns_switch: 'safe_mutate',
@@ -268,7 +295,9 @@ export class InMemoryIntentStore implements IntentStore {
   async getActive(at = new Date()): Promise<readonly CompiledIntent[]> {
     const all = Array.from(this.store.values());
     return all.filter((intent) => {
-      const from = intent.effectiveFrom ? Date.parse(intent.effectiveFrom) : Number.NEGATIVE_INFINITY;
+      const from = intent.effectiveFrom
+        ? Date.parse(intent.effectiveFrom)
+        : Number.NEGATIVE_INFINITY;
       const expires = intent.expiresAt ? Date.parse(intent.expiresAt) : Number.POSITIVE_INFINITY;
       const timestamp = at.getTime();
       return timestamp >= from && timestamp < expires;

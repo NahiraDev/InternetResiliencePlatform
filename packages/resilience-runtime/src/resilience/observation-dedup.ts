@@ -68,8 +68,5 @@ export const nextPollInterval = (
   const next = degraded
     ? currentIntervalMs / config.recoveryFactor
     : currentIntervalMs * config.backoffFactor;
-  return Math.min(
-    config.maxIntervalMs,
-    Math.max(config.minIntervalMs, Math.round(next)),
-  );
+  return Math.min(config.maxIntervalMs, Math.max(config.minIntervalMs, Math.round(next)));
 };

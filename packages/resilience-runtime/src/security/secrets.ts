@@ -37,9 +37,15 @@ const SECRET_VALUE_PATTERNS: readonly { readonly pattern: RegExp; readonly repla
     // scheme://user:password@host
     { pattern: /(\b[a-z][a-z0-9+.-]*:\/\/)[^\s/@:]+:[^\s/@]+@/gi, replacement: `$1${REDACTED}@` },
     // JSON web token
-    { pattern: /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g, replacement: REDACTED },
+    {
+      pattern: /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g,
+      replacement: REDACTED,
+    },
     // PEM private key blocks
-    { pattern: /-----BEGIN[^-]*PRIVATE KEY-----[\s\S]*?-----END[^-]*PRIVATE KEY-----/g, replacement: REDACTED },
+    {
+      pattern: /-----BEGIN[^-]*PRIVATE KEY-----[\s\S]*?-----END[^-]*PRIVATE KEY-----/g,
+      replacement: REDACTED,
+    },
     // Authorization / bearer header values
     { pattern: /\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replacement: `$1 ${REDACTED}` },
     // Common provider key shapes
@@ -61,7 +67,14 @@ export const redactString = (value: string): string => {
 };
 
 /** Sink classes that must never receive secret material. */
-export const SINKS = ['log', 'telemetry', 'ai-context', 'plugin', 'remote-node', 'decision-record'] as const;
+export const SINKS = [
+  'log',
+  'telemetry',
+  'ai-context',
+  'plugin',
+  'remote-node',
+  'decision-record',
+] as const;
 export type Sink = (typeof SINKS)[number];
 
 export interface RedactionReport {
@@ -113,7 +126,10 @@ const walk = (
  * secret even indirectly through a nested string.
  */
 export class SecretSentry {
-  redact(value: unknown, sink: Sink = 'log'): { readonly value: unknown; readonly report: RedactionReport } {
+  redact(
+    value: unknown,
+    sink: Sink = 'log',
+  ): { readonly value: unknown; readonly report: RedactionReport } {
     const counters = { keys: 0, values: 0 };
     // Every sink uses the same key and value patterns. Sinks that need stricter
     // narrowing get it structurally: `aiContext()` additionally allow-lists

@@ -104,7 +104,12 @@ export class DecayingFailureMemory {
     // no scope is supplied both keys are identical, so count the bucket once.
     const wildcard = this.events.get(this.key({ strategyId }));
     const scoped = this.events.get(this.key({ strategyId, ...scope }));
-    const combined = wildcard === undefined ? scoped ?? [] : scoped === undefined || scoped === wildcard ? [...wildcard] : [...wildcard, ...scoped];
+    const combined =
+      wildcard === undefined
+        ? (scoped ?? [])
+        : scoped === undefined || scoped === wildcard
+          ? [...wildcard]
+          : [...wildcard, ...scoped];
     const lastFailureAt = combined.reduce<string>(
       (latest, event) => ((event.observedAt ?? '') > latest ? (event.observedAt ?? '') : latest),
       combined[0]?.observedAt ?? nowIso(),
@@ -134,19 +139,22 @@ export class DecayingFailureMemory {
   }
 
   /** Strategies currently quarantined, for explainability. */
-  quarantined(scope: { destination?: string; providerId?: string } = {}, nowMs: number = Date.now()): readonly StrategyQuarantine[] {
+  quarantined(
+    scope: { destination?: string; providerId?: string } = {},
+    nowMs: number = Date.now(),
+  ): readonly StrategyQuarantine[] {
     const ids = new Set<string>();
     for (const key of this.events.keys()) {
       const [strategyId, destination, providerId] = key.split('|');
       if (!strategyId) continue;
-      if (scope.destination !== undefined && destination !== '*' && destination !== scope.destination) {
+      if (
+        scope.destination !== undefined &&
+        destination !== '*' &&
+        destination !== scope.destination
+      ) {
         continue;
       }
-      if (
-        scope.providerId !== undefined &&
-        providerId !== '*' &&
-        providerId !== scope.providerId
-      ) {
+      if (scope.providerId !== undefined && providerId !== '*' && providerId !== scope.providerId) {
         continue;
       }
       ids.add(strategyId);
@@ -155,7 +163,11 @@ export class DecayingFailureMemory {
       [...ids]
         .map((strategyId) => this.quarantineFor(strategyId, scope, nowMs))
         .filter((entry) => entry.quarantined)
-        .sort((a, b) => b.decayedFailureWeight - a.decayedFailureWeight || a.strategyId.localeCompare(b.strategyId)),
+        .sort(
+          (a, b) =>
+            b.decayedFailureWeight - a.decayedFailureWeight ||
+            a.strategyId.localeCompare(b.strategyId),
+        ),
     );
   }
 
@@ -185,9 +197,7 @@ export class DecayingFailureMemory {
     const ids = [...this.events.keys()].map((key) => key.split('|')[0] ?? key);
     return Object.freeze({
       strategies: Object.freeze(
-        [...new Set(ids)]
-          .sort()
-          .map((strategyId) => this.quarantineFor(strategyId, {}, nowMs)),
+        [...new Set(ids)].sort().map((strategyId) => this.quarantineFor(strategyId, {}, nowMs)),
       ),
       now: new Date(nowMs).toISOString(),
     });

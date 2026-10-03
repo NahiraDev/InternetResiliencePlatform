@@ -1,9 +1,16 @@
 import type { RuntimeContext } from './domain/types.js';
 import type { ObservationProvider } from './ports/ports.js';
 import { ResilienceRuntime, type ResilienceRuntimeOptions } from './runtime.js';
-import { ProgrammableConnectivityFabric, type FabricDiscoveryProvider, type FabricSelectionRequest, type FabricSelectionResult } from './fabric.js';
+import {
+  ProgrammableConnectivityFabric,
+  type FabricDiscoveryProvider,
+  type FabricSelectionRequest,
+  type FabricSelectionResult,
+} from './fabric.js';
 import type { IntentStore } from './intent/arbitration.js';
 import { PostgresIntentStore, type PostgresConfig } from './intent/postgres-store.js';
+import { KnowledgeStore } from './knowledge/knowledge-store.js';
+import { OutcomeLearningLoop, type LearningLoopOptions } from './learning/outcome-learning-loop.js';
 
 export type CanonicalExecutionMode = 'simulation' | 'real';
 
@@ -13,6 +20,10 @@ export interface CanonicalRuntimeCompositionOptions extends ResilienceRuntimeOpt
   readonly fabric?: ProgrammableConnectivityFabric;
   readonly fabricDiscoveryProviders?: readonly FabricDiscoveryProvider[];
   readonly intentStore?: IntentStore;
+  /** Shared knowledge boundary for advisory evidence. Created if absent. */
+  readonly knowledgeStore?: KnowledgeStore;
+  readonly learningLoop?: OutcomeLearningLoop;
+  readonly learningLoopOptions?: LearningLoopOptions;
 }
 
 export type CanonicalRuntimeCycleInput = Omit<
@@ -24,7 +35,18 @@ export interface CanonicalRuntimeComposition {
   readonly executionMode: CanonicalExecutionMode;
   readonly runtime: ResilienceRuntime;
   readonly fabric: ProgrammableConnectivityFabric;
-  discoverFabricResources(options?: { signal?: AbortSignal; limit?: number; since?: string }): ReturnType<ProgrammableConnectivityFabric['discover']>;
+  /**
+   * The one knowledge boundary. Canonical by construction: every host obtains
+   * it from this composition rather than constructing its own.
+   */
+  readonly knowledgeStore: KnowledgeStore;
+  /** Outcome verification -> learning closure. Canonical by construction. */
+  readonly learningLoop: OutcomeLearningLoop;
+  discoverFabricResources(options?: {
+    signal?: AbortSignal;
+    limit?: number;
+    since?: string;
+  }): ReturnType<ProgrammableConnectivityFabric['discover']>;
   selectFabricResource(request?: FabricSelectionRequest): FabricSelectionResult;
   runCycle(input?: CanonicalRuntimeCycleInput): ReturnType<ResilienceRuntime['runCycle']>;
 }
@@ -65,17 +87,39 @@ export const createPostgresIntentStore = async (): Promise<IntentStore | undefin
 export const createCanonicalRuntime = (
   options: CanonicalRuntimeCompositionOptions,
 ): CanonicalRuntimeComposition => {
-  const { executionMode, observationProviders = [], fabric, fabricDiscoveryProviders = [], intentStore, ...runtimeOptions } = options;
-  
-  const runtime = new ResilienceRuntime(observationProviders, { ...runtimeOptions, ...(intentStore !== undefined ? { intentStore } : {}) });
+  const {
+    executionMode,
+    observationProviders = [],
+    fabric,
+    fabricDiscoveryProviders = [],
+    intentStore,
+    knowledgeStore,
+    learningLoop,
+    learningLoopOptions,
+    ...runtimeOptions
+  } = options;
+
+  const runtime = new ResilienceRuntime(observationProviders, {
+    ...runtimeOptions,
+    ...(intentStore !== undefined ? { intentStore } : {}),
+  });
   const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
   for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
+
+  // One knowledge boundary and one learning closure per composed runtime. These
+  // are owned here so a host cannot construct a private, divergent copy.
+  const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
+  const canonicalLearningLoop =
+    learningLoop ?? new OutcomeLearningLoop(learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore });
 
   return Object.freeze({
     executionMode,
     runtime,
     fabric: connectivityFabric,
-    discoverFabricResources: (discoveryOptions = {}) => connectivityFabric.discover(discoveryOptions),
+    knowledgeStore: canonicalKnowledgeStore,
+    learningLoop: canonicalLearningLoop,
+    discoverFabricResources: (discoveryOptions = {}) =>
+      connectivityFabric.discover(discoveryOptions),
     selectFabricResource: (request = {}) => connectivityFabric.select(request),
     runCycle: (input: CanonicalRuntimeCycleInput = {}) =>
       runtime.runCycle({ ...input, mode: runtimeModeFor(executionMode) }),
@@ -89,20 +133,42 @@ export const createCanonicalRuntime = (
 export const createCanonicalRuntimeWithPostgres = async (
   options: CanonicalRuntimeCompositionOptions,
 ): Promise<CanonicalRuntimeComposition> => {
-  const { executionMode, observationProviders = [], fabric, fabricDiscoveryProviders = [], intentStore, ...runtimeOptions } = options;
-  
+  const {
+    executionMode,
+    observationProviders = [],
+    fabric,
+    fabricDiscoveryProviders = [],
+    intentStore,
+    knowledgeStore,
+    learningLoop,
+    learningLoopOptions,
+    ...runtimeOptions
+  } = options;
+
   // Auto-create PostgresIntentStore from env if not provided
   const resolvedIntentStore = intentStore ?? (await createPostgresIntentStore());
-  
-  const runtime = new ResilienceRuntime(observationProviders, { ...runtimeOptions, ...(resolvedIntentStore !== undefined ? { intentStore: resolvedIntentStore } : {}) });
+
+  const runtime = new ResilienceRuntime(observationProviders, {
+    ...runtimeOptions,
+    ...(resolvedIntentStore !== undefined ? { intentStore: resolvedIntentStore } : {}),
+  });
   const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
   for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
+
+  // One knowledge boundary and one learning closure per composed runtime. These
+  // are owned here so a host cannot construct a private, divergent copy.
+  const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
+  const canonicalLearningLoop =
+    learningLoop ?? new OutcomeLearningLoop(learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore });
 
   return Object.freeze({
     executionMode,
     runtime,
     fabric: connectivityFabric,
-    discoverFabricResources: (discoveryOptions = {}) => connectivityFabric.discover(discoveryOptions),
+    knowledgeStore: canonicalKnowledgeStore,
+    learningLoop: canonicalLearningLoop,
+    discoverFabricResources: (discoveryOptions = {}) =>
+      connectivityFabric.discover(discoveryOptions),
     selectFabricResource: (request = {}) => connectivityFabric.select(request),
     runCycle: (input: CanonicalRuntimeCycleInput = {}) =>
       runtime.runCycle({ ...input, mode: runtimeModeFor(executionMode) }),

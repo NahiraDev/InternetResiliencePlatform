@@ -9,7 +9,12 @@
  */
 
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { ActionIntent, CandidateAction, CompiledIntent, RuntimeContext } from '../domain/types.js';
+import type {
+  ActionIntent,
+  CandidateAction,
+  CompiledIntent,
+  RuntimeContext,
+} from '../domain/types.js';
 
 export type StrategyKind = 'primary' | 'fallback' | 'conservative' | 'alternate';
 
@@ -112,9 +117,7 @@ export const generateStrategies = (input: {
         dependencies: Object.freeze([]),
         postconditions: Object.freeze([...(base.postconditions ?? [])]),
         verificationRequirements: Object.freeze([...(base.verificationRequirements ?? [])]),
-        ...(base.rollbackStrategy !== undefined
-          ? { rollbackStrategy: base.rollbackStrategy }
-          : {}),
+        ...(base.rollbackStrategy !== undefined ? { rollbackStrategy: base.rollbackStrategy } : {}),
         rejectionReasons: Object.freeze([]),
       });
       return Object.freeze({

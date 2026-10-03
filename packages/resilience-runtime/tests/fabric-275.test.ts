@@ -5,7 +5,6 @@ import {
   assertFabricStateTransition,
   isLegalFabricTransition,
   IllegalFabricStateTransitionError,
-
   partitionByFreshness,
   sharesFailureDomain,
   selectDiverseResources,
@@ -57,17 +56,40 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
   describe('task 1+3: canonical kinds and states', () => {
     it('canonicalizes all 17 resource kinds from the workstream', () => {
       expect(FABRIC_RESOURCE_KINDS).toEqual([
-        'Device', 'Interface', 'Link', 'Provider', 'Gateway', 'Route', 'Resolver',
-        'Tunnel', 'Transport', 'Proxy', 'Egress', 'RemoteNode', 'Region',
-        'Destination', 'Service', 'Endpoint', 'ApplicationPath',
+        'Device',
+        'Interface',
+        'Link',
+        'Provider',
+        'Gateway',
+        'Route',
+        'Resolver',
+        'Tunnel',
+        'Transport',
+        'Proxy',
+        'Egress',
+        'RemoteNode',
+        'Region',
+        'Destination',
+        'Service',
+        'Endpoint',
+        'ApplicationPath',
       ]);
       expect(FABRIC_RESOURCE_KINDS).toHaveLength(17);
     });
 
     it('canonicalizes all 11 resource states from the workstream', () => {
       expect(FABRIC_RESOURCE_STATES).toEqual([
-        'UNKNOWN', 'DISCOVERING', 'HEALTHY', 'DEGRADED', 'FAILED', 'BLOCKED',
-        'RESTRICTED', 'RECOVERING', 'QUARANTINED', 'DRAINING', 'UNAVAILABLE',
+        'UNKNOWN',
+        'DISCOVERING',
+        'HEALTHY',
+        'DEGRADED',
+        'FAILED',
+        'BLOCKED',
+        'RESTRICTED',
+        'RECOVERING',
+        'QUARANTINED',
+        'DRAINING',
+        'UNAVAILABLE',
       ]);
       expect(FABRIC_RESOURCE_STATES).toHaveLength(11);
     });
@@ -77,8 +99,19 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
     it('carries the full unified attribute surface on every resource', () => {
       const resource = gateway();
       for (const attribute of [
-        'id', 'kind', 'state', 'health', 'confidence', 'observedAt', 'trust',
-        'capacity', 'cost', 'owner', 'failureDomains', 'lifecycle', 'capabilities',
+        'id',
+        'kind',
+        'state',
+        'health',
+        'confidence',
+        'observedAt',
+        'trust',
+        'capacity',
+        'cost',
+        'owner',
+        'failureDomains',
+        'lifecycle',
+        'capabilities',
       ]) {
         expect(resource, `missing ${attribute}`).toHaveProperty(attribute);
       }
@@ -212,8 +245,11 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
       });
 
       expect(
-        authority.authorize({ capabilityId: 'gateway.select', resourceId: 'gw-1', platform: 'linux' })
-          .allowed,
+        authority.authorize({
+          capabilityId: 'gateway.select',
+          resourceId: 'gw-1',
+          platform: 'linux',
+        }).allowed,
       ).toBe(true);
 
       const wrongPlatform = authority.authorize({
@@ -274,19 +310,31 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
     it('rejects duplicate ids and scope collisions', () => {
       const authority = new FabricCapabilityAuthority();
       authority.register({
-        id: 'a.one', scope: 'gateway', authority: 'adapter', trust: 0.5,
-        safety: 'safe', platforms: ['any'],
+        id: 'a.one',
+        scope: 'gateway',
+        authority: 'adapter',
+        trust: 0.5,
+        safety: 'safe',
+        platforms: ['any'],
       });
       expect(() =>
         authority.register({
-          id: 'a.one', scope: 'other', authority: 'adapter', trust: 0.5,
-          safety: 'safe', platforms: ['any'],
+          id: 'a.one',
+          scope: 'other',
+          authority: 'adapter',
+          trust: 0.5,
+          safety: 'safe',
+          platforms: ['any'],
         }),
       ).toThrow(/already registered/);
       expect(() =>
         authority.register({
-          id: 'a.two', scope: 'gateway', authority: 'adapter', trust: 0.5,
-          safety: 'safe', platforms: ['any'],
+          id: 'a.two',
+          scope: 'gateway',
+          authority: 'adapter',
+          trust: 0.5,
+          safety: 'safe',
+          platforms: ['any'],
         }),
       ).toThrow(/already claimed/);
     });
@@ -297,10 +345,16 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
         provider('p', 'linux-client', [
           gateway({
             id: 'gw-linux',
-            capabilities: [{
-              id: 'linux.only', scope: 'gateway', authority: 'adapter', trust: 0.9,
-              safety: 'safe', platforms: ['linux'],
-            }],
+            capabilities: [
+              {
+                id: 'linux.only',
+                scope: 'gateway',
+                authority: 'adapter',
+                trust: 0.9,
+                safety: 'safe',
+                platforms: ['linux'],
+              },
+            ],
           }),
         ]),
       );
@@ -318,15 +372,37 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
 
   describe('task 7: true failure-domain diversity', () => {
     it('detects shared failure domains', () => {
-      expect(sharesFailureDomain(gateway({ id: 'a', failureDomains: ['isp-a'] }), gateway({ id: 'b', failureDomains: ['isp-a'] }))).toBe(true);
-      expect(sharesFailureDomain(gateway({ id: 'a', failureDomains: ['isp-a'] }), gateway({ id: 'b', failureDomains: ['isp-b'] }))).toBe(false);
+      expect(
+        sharesFailureDomain(
+          gateway({ id: 'a', failureDomains: ['isp-a'] }),
+          gateway({ id: 'b', failureDomains: ['isp-a'] }),
+        ),
+      ).toBe(true);
+      expect(
+        sharesFailureDomain(
+          gateway({ id: 'a', failureDomains: ['isp-a'] }),
+          gateway({ id: 'b', failureDomains: ['isp-b'] }),
+        ),
+      ).toBe(false);
     });
 
     it('selects mutually disjoint candidates and reports fallbacks', () => {
       const ranked = [
-        gateway({ id: 'a', failureDomains: ['isp-a'], health: { status: 'healthy', score: 95, checkedAt: iso() } }),
-        gateway({ id: 'b', failureDomains: ['isp-a'], health: { status: 'healthy', score: 94, checkedAt: iso() } }),
-        gateway({ id: 'c', failureDomains: ['isp-c'], health: { status: 'healthy', score: 93, checkedAt: iso() } }),
+        gateway({
+          id: 'a',
+          failureDomains: ['isp-a'],
+          health: { status: 'healthy', score: 95, checkedAt: iso() },
+        }),
+        gateway({
+          id: 'b',
+          failureDomains: ['isp-a'],
+          health: { status: 'healthy', score: 94, checkedAt: iso() },
+        }),
+        gateway({
+          id: 'c',
+          failureDomains: ['isp-c'],
+          health: { status: 'healthy', score: 93, checkedAt: iso() },
+        }),
       ];
       const diversity = selectDiverseResources(ranked, { required: 2 });
       expect(diversity.diverse.map((r) => r.id)).toEqual(['a', 'c']);

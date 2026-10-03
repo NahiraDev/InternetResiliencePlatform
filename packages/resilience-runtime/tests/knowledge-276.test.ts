@@ -60,7 +60,15 @@ const candidate = (over: Partial<CandidateAction> = {}): CandidateAction =>
 describe('#276 t3: seven epistemic kinds', () => {
   it('distinguishes exactly the required kinds', () => {
     expect([...KNOWLEDGE_KINDS].sort()).toEqual(
-      ['decision', 'hypothesis', 'inference', 'measurement', 'observation', 'outcome', 'prediction'].sort(),
+      [
+        'decision',
+        'hypothesis',
+        'inference',
+        'measurement',
+        'observation',
+        'outcome',
+        'prediction',
+      ].sort(),
     );
   });
 
@@ -150,16 +158,23 @@ describe('#276 t2: provenance, freshness, confidence, scope, corroboration, expi
 
 describe('#276 t4: deterministic evidence/confidence arbitration', () => {
   it('aggregates objective evidence as a weighted mean', () => {
-    const result = arbitrateKnowledge([
-      record({ objectiveEvidence: { latency: 1 }, confidence: 0.9 }),
-      record({ objectiveEvidence: { latency: 0 }, confidence: 0.1 }),
-    ], { nowMs: T0 });
+    const result = arbitrateKnowledge(
+      [
+        record({ objectiveEvidence: { latency: 1 }, confidence: 0.9 }),
+        record({ objectiveEvidence: { latency: 0 }, confidence: 0.1 }),
+      ],
+      { nowMs: T0 },
+    );
     expect(result.evidence.latency).toBeGreaterThan(0.5);
     expect(result.evidence.latency).toBeLessThan(1);
   });
 
   it('is deterministic regardless of input order', () => {
-    const a = record({ id: undefined, objectiveEvidence: { latency: 0.2 }, confidence: 0.5 }) as never;
+    const a = record({
+      id: undefined,
+      objectiveEvidence: { latency: 0.2 },
+      confidence: 0.5,
+    }) as never;
     const b = record({ objectiveEvidence: { latency: 0.9 }, confidence: 0.9 });
     const forward = arbitrateKnowledge([a, b], { nowMs: T0 });
     const reverse = arbitrateKnowledge([b, a], { nowMs: T0 });
@@ -170,15 +185,23 @@ describe('#276 t4: deterministic evidence/confidence arbitration', () => {
   });
 
   it('weights trusted local measurement above federated evidence', () => {
-    const result = arbitrateKnowledge([
-      record({ objectiveEvidence: { latency: 1 }, source: 'measurement', confidence: 0.5 }),
-      record({
-        objectiveEvidence: { latency: 0 },
-        source: 'federated',
-        confidence: 1,
-        provenance: { producer: 'peer', source: 'federated', signature: 'sig', trustLevel: 'verified' },
-      }),
-    ], { nowMs: T0 });
+    const result = arbitrateKnowledge(
+      [
+        record({ objectiveEvidence: { latency: 1 }, source: 'measurement', confidence: 0.5 }),
+        record({
+          objectiveEvidence: { latency: 0 },
+          source: 'federated',
+          confidence: 1,
+          provenance: {
+            producer: 'peer',
+            source: 'federated',
+            signature: 'sig',
+            trustLevel: 'verified',
+          },
+        }),
+      ],
+      { nowMs: T0 },
+    );
     expect(result.evidence.latency).toBeGreaterThan(0.5);
   });
 
@@ -195,7 +218,12 @@ describe('#276 t4: deterministic evidence/confidence arbitration', () => {
         record({
           source: 'federated',
           objectiveEvidence: { latency: 1 },
-          provenance: { producer: 'peer', source: 'federated', signature: 'sig', trustLevel: 'untrusted' },
+          provenance: {
+            producer: 'peer',
+            source: 'federated',
+            signature: 'sig',
+            trustLevel: 'untrusted',
+          },
         }),
       ],
       { nowMs: T0 + 5_000, scope: { destination: 'example.test' } },
@@ -214,7 +242,12 @@ describe('#276 t4: deterministic evidence/confidence arbitration', () => {
         record({
           source: 'federated',
           objectiveEvidence: { latency: 0.4 },
-          provenance: { producer: 'peer', source: 'federated', signature: 'sig', trustLevel: 'verified' },
+          provenance: {
+            producer: 'peer',
+            source: 'federated',
+            signature: 'sig',
+            trustLevel: 'verified',
+          },
         }),
       ],
       { nowMs: T0 },
@@ -269,7 +302,12 @@ describe('#276 t4: deterministic evidence/confidence arbitration', () => {
           source: 'federated',
           objectiveEvidence: { latency: 1 },
           confidence: 1,
-          provenance: { producer: 'peer', source: 'federated', signature: 'sig', trustLevel: 'verified' },
+          provenance: {
+            producer: 'peer',
+            source: 'federated',
+            signature: 'sig',
+            trustLevel: 'verified',
+          },
         }),
       ],
       { nowMs: T0 },
@@ -285,7 +323,9 @@ describe('#276 t4: deterministic evidence/confidence arbitration', () => {
   });
 
   it('explains itself', () => {
-    const result = arbitrateKnowledge([record({ objectiveEvidence: { latency: 0.5 } })], { nowMs: T0 });
+    const result = arbitrateKnowledge([record({ objectiveEvidence: { latency: 0.5 } })], {
+      nowMs: T0,
+    });
     expect(explainArbitration(result)).toContain('latency=0.500');
   });
 });
@@ -382,7 +422,11 @@ describe('#276 t1: knowledge store combines evidence families', () => {
 
 describe('#276 t8: decaying failure memory and strategy quarantine', () => {
   const memory = () =>
-    new DecayingFailureMemory({ halfLifeMs: 1_000, quarantineThreshold: 1, quarantinePenalty: 0.5 });
+    new DecayingFailureMemory({
+      halfLifeMs: 1_000,
+      quarantineThreshold: 1,
+      quarantinePenalty: 0.5,
+    });
 
   it('penalises a strategy after failures', () => {
     const m = memory();
@@ -402,7 +446,11 @@ describe('#276 t8: decaying failure memory and strategy quarantine', () => {
   });
 
   it('quarantines once the decayed weight crosses the threshold', () => {
-    const m = new DecayingFailureMemory({ halfLifeMs: 1_000, quarantineThreshold: 1.0, quarantinePenalty: 0.5 });
+    const m = new DecayingFailureMemory({
+      halfLifeMs: 1_000,
+      quarantineThreshold: 1.0,
+      quarantinePenalty: 0.5,
+    });
     m.recordFailure({ strategyId: 's1' });
     m.recordFailure({ strategyId: 's1' });
     const state = m.quarantineFor('s1', {}, Date.now());
@@ -418,7 +466,11 @@ describe('#276 t8: decaying failure memory and strategy quarantine', () => {
   });
 
   it('lists quarantined strategies for explainability', () => {
-    const m = new DecayingFailureMemory({ halfLifeMs: 1_000, quarantineThreshold: 1.5, quarantinePenalty: 0.5 });
+    const m = new DecayingFailureMemory({
+      halfLifeMs: 1_000,
+      quarantineThreshold: 1.5,
+      quarantinePenalty: 0.5,
+    });
     m.recordFailure({ strategyId: 's1' });
     m.recordFailure({ strategyId: 's1' });
     m.recordFailure({ strategyId: 's2' });
@@ -433,7 +485,11 @@ describe('#276 t8: decaying failure memory and strategy quarantine', () => {
   });
 
   it('never forbids a strategy outright', () => {
-    const m = new DecayingFailureMemory({ halfLifeMs: 1_000, quarantineThreshold: 0.01, quarantinePenalty: 0 });
+    const m = new DecayingFailureMemory({
+      halfLifeMs: 1_000,
+      quarantineThreshold: 0.01,
+      quarantinePenalty: 0,
+    });
     m.recordFailure({ strategyId: 's1' });
     // Penalty bounded at 0..1; the module has no deny path, policy owns denial.
     expect(m.scoreMultiplier('s1')).toBeGreaterThanOrEqual(0);
@@ -600,8 +656,19 @@ describe('#276 t6: knowledge materially affects canonical ranking', () => {
     const b = candidate({ id: 'b', expectedBenefit: 0.2, risk: 0.9 });
     const planner = new DeterministicPlanner();
     const objectives = {
-      reachability: 1, latency: 0, jitter: 0, packetLoss: 0, throughput: 0, stability: 0,
-      privacy: 0, trust: 0, security: 0, cost: 0, resourceUsage: 0, diversity: 0, recoveryProbability: 0,
+      reachability: 1,
+      latency: 0,
+      jitter: 0,
+      packetLoss: 0,
+      throughput: 0,
+      stability: 0,
+      privacy: 0,
+      trust: 0,
+      security: 0,
+      cost: 0,
+      resourceUsage: 0,
+      diversity: 0,
+      recoveryProbability: 0,
     };
     // Without knowledge, the high-benefit candidate wins on reachability.
     const without = await planner.planAgainstObjectives([a, b], context(), {
@@ -617,7 +684,10 @@ describe('#276 t6: knowledge materially affects canonical ranking', () => {
       arbitrated: { evidence: {}, weights: {}, contributions: [], rejected: [], advisoryShare: 0 },
       baseEvidenceFor: defaultEvidenceFor,
       arbitratedFor: (c) => ({
-        evidence: c.id === 'a' ? { latency: 0.05, reachability: 0.95 } : { latency: 0.95, reachability: 0.05 },
+        evidence:
+          c.id === 'a'
+            ? { latency: 0.05, reachability: 0.95 }
+            : { latency: 0.95, reachability: 0.05 },
         weights: { latency: 1, reachability: 1 },
         contributions: [],
         rejected: [],
@@ -704,12 +774,14 @@ describe('#276 t9: local decisions survive federation outage', () => {
     // Passed directly to arbitration, expiry is recorded as an explicit rejection.
     const direct = arbitrateKnowledge([expiredRecord], { nowMs: T0 });
     expect(direct.rejected[0]!.reason).toBe('expired');
-    expect(knowledgeInfluenceFor({
-      base: neutralEvidence(),
-      arbitrated,
-      candidate: candidate(),
-      nowMs: T0,
-    }).scoreMultiplier).toBe(1);
+    expect(
+      knowledgeInfluenceFor({
+        base: neutralEvidence(),
+        arbitrated,
+        candidate: candidate(),
+        nowMs: T0,
+      }).scoreMultiplier,
+    ).toBe(1);
   });
 
   it('cannot become mutation authority: knowledge never sets rejectionReasons or capabilities', () => {

@@ -72,7 +72,10 @@ export class TransactionCancelledError extends Error {
 export class TransactionTimeoutError extends Error {
   readonly code = 'TRANSACTION_TIMEOUT';
 
-  constructor(readonly phase: TransactionPhase, readonly elapsedMs: number) {
+  constructor(
+    readonly phase: TransactionPhase,
+    readonly elapsedMs: number,
+  ) {
     super(`transaction timed out at '${phase}' after ${elapsedMs}ms`);
     this.name = 'TransactionTimeoutError';
   }
@@ -93,7 +96,10 @@ export class ConcurrentMutationError extends Error {
 export class StaleMutationError extends Error {
   readonly code = 'STALE_MUTATION';
 
-  constructor(readonly mutationId: string, readonly reason: 'epoch-superseded' | 'resource-version-changed') {
+  constructor(
+    readonly mutationId: string,
+    readonly reason: 'epoch-superseded' | 'resource-version-changed',
+  ) {
     super(`mutation '${mutationId}' is stale: ${reason}`);
     this.name = 'StaleMutationError';
   }
@@ -235,7 +241,10 @@ export class PrivilegedMutationBoundary {
   private readonly options: Required<Omit<PrivilegedBoundaryOptions, 'authorizer' | 'safety'>> &
     Pick<PrivilegedBoundaryOptions, 'authorizer' | 'safety'>;
   /** Bound action id per idempotency key, so a rebind can be refused. */
-  private readonly completed = new Map<string, { readonly actionId: string; readonly outcome: TransactionOutcome }>();
+  private readonly completed = new Map<
+    string,
+    { readonly actionId: string; readonly outcome: TransactionOutcome }
+  >();
   private readonly inFlight = new Map<string, Promise<TransactionOutcome>>();
   private readonly held = new Map<string, string>();
   private epoch: number;
@@ -307,17 +316,12 @@ export class PrivilegedMutationBoundary {
     return outcome;
   }
 
-  private blocked(
-    phase: TransactionPhase,
-    reasons: readonly string[],
-  ): TransactionOutcome {
+  private blocked(phase: TransactionPhase, reasons: readonly string[]): TransactionOutcome {
     return deepFreeze({
       transactionId: nextId('transaction'),
       phaseReached: phase,
       status: 'blocked',
-      phases: [
-        deepFreeze({ phase, status: 'blocked', reasons, at: nowIso() }),
-      ],
+      phases: [deepFreeze({ phase, status: 'blocked', reasons, at: nowIso() })],
       reasons,
       partialFailure: false,
     });
@@ -360,7 +364,10 @@ export class PrivilegedMutationBoundary {
     if (request.epoch !== undefined && request.epoch !== this.epoch) {
       return this.staleOutcome(phases, 'prepare', 'epoch-superseded', startedAt);
     }
-    if (this.held.has(request.resourceId) && this.held.get(request.resourceId) !== request.mutationId) {
+    if (
+      this.held.has(request.resourceId) &&
+      this.held.get(request.resourceId) !== request.mutationId
+    ) {
       return this.concurrentOutcome(phases, 'prepare', startedAt);
     }
     this.counter += 1;
@@ -418,7 +425,10 @@ export class PrivilegedMutationBoundary {
         canonicalCapabilities: [...plan.requiredCapabilities, ...policy.requiredCapabilities],
         ...(request.ai !== undefined ? { ai: request.ai } : {}),
       });
-      if (request.ai?.recommendedIntent !== undefined && request.ai.recommendedIntent !== canonical.intent) {
+      if (
+        request.ai?.recommendedIntent !== undefined &&
+        request.ai.recommendedIntent !== canonical.intent
+      ) {
         await this.ports.events.emit('runtime.mutation.ai-intent-ignored', {
           correlationId: context.correlationId,
           transactionId,
@@ -497,7 +507,8 @@ export class PrivilegedMutationBoundary {
       }
 
       // --- verify ----------------------------------------------------------
-      if (cancelled()) return this.cancelledOutcome(phases, 'verify', startedAt, snapshot, execution);
+      if (cancelled())
+        return this.cancelledOutcome(phases, 'verify', startedAt, snapshot, execution);
       if (timeout()) return this.timedOutOutcome(phases, 'verify', startedAt, snapshot, execution);
       const verification = await this.ports.verify(plan, context, snapshot);
       if (!verification.verified) {
@@ -607,7 +618,12 @@ export class PrivilegedMutationBoundary {
       ...(execution !== undefined ? { execution } : {}),
       snapshot,
       phases,
-      reasons: [...reasons, ...compensation.reasons, ...rollbackVerification.reasons, ...recovery.reasons],
+      reasons: [
+        ...reasons,
+        ...compensation.reasons,
+        ...rollbackVerification.reasons,
+        ...recovery.reasons,
+      ],
       recovery,
       partialFailure,
     });

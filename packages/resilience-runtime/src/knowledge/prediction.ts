@@ -93,8 +93,9 @@ export const fusePredictions = (
   }
   if (totalWeight <= 0) return undefined;
 
-  const direction = (Object.entries(directionWeight).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ??
-    'stable') as PredictiveDirection;
+  const direction = (Object.entries(directionWeight).sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  )[0]?.[0] ?? 'stable') as PredictiveDirection;
 
   // Only keep objectives whose fused weight is meaningful, so a single weak
   // signal cannot pollute a dimension.

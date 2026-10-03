@@ -156,7 +156,10 @@ export const createKnowledgeRecord = (input: {
   if (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 1) {
     throw new KnowledgeValidationError(`confidence must be within [0,1]: ${input.confidence}`);
   }
-  if (input.halfLifeMs !== undefined && (!Number.isFinite(input.halfLifeMs) || input.halfLifeMs <= 0)) {
+  if (
+    input.halfLifeMs !== undefined &&
+    (!Number.isFinite(input.halfLifeMs) || input.halfLifeMs <= 0)
+  ) {
     throw new KnowledgeValidationError(`halfLifeMs must be > 0: ${input.halfLifeMs}`);
   }
   if (EXPIRY_REQUIRED && input.kind === 'prediction' && input.expiresAt === undefined) {
@@ -209,10 +212,7 @@ export const createKnowledgeRecord = (input: {
  * Time-decayed confidence. Records lose confidence exponentially as they age
  * toward their expiry, and are rejected once expired.
  */
-export const decayedConfidence = (
-  record: KnowledgeRecord,
-  nowMs: number = Date.now(),
-): number => {
+export const decayedConfidence = (record: KnowledgeRecord, nowMs: number = Date.now()): number => {
   const observedMs = Date.parse(record.observedAt);
   if (!Number.isFinite(observedMs)) return 0;
   if (record.expiresAt !== undefined && nowMs >= Date.parse(record.expiresAt)) return 0;
@@ -231,10 +231,7 @@ export const isExpired = (record: KnowledgeRecord, nowMs: number = Date.now()): 
  * a scoped record matches only when every declared field agrees. This is the
  * guard that stops one destination's federated evidence from steering another.
  */
-export const scopeMatches = (
-  record: KnowledgeScope,
-  active: KnowledgeScope,
-): boolean => {
+export const scopeMatches = (record: KnowledgeScope, active: KnowledgeScope): boolean => {
   const fields = ['destination', 'providerId', 'pathId', 'region'] as const;
   for (const field of fields) {
     const declared = record[field];
