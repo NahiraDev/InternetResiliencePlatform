@@ -117,7 +117,6 @@ describe('PostgresIntentStore (Phase 2: Persistence)', () => {
   });
 
   it('returns active intents within time window', async () => {
-    const now = new Date().toISOString();
     mockPool.query.mockResolvedValue({
       rows: [{
         intent_id: 'active-intent',

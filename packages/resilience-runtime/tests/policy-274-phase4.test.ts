@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { PolicyRegistry, getPolicyRegistry, resetPolicyRegistry, type PolicyDomain } from '../src/policy/index.js';
+import { PolicyRegistry, getPolicyRegistry, resetPolicyRegistry } from '../src/policy/index.js';
 import { defaultPolicy } from '../src/context/context.js';
 
 describe('Phase 4: Policy Composition & Versioning', () => {
@@ -16,7 +16,7 @@ describe('Phase 4: Policy Composition & Versioning', () => {
 
   it('proposes new versions with semantic versioning', () => {
     const registry = new PolicyRegistry();
-    const v1 = registry.propose(
+    registry.propose(
       { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'noop'] },
       'test-user',
       'Add dns_switch to allowed actions',
@@ -24,7 +24,7 @@ describe('Phase 4: Policy Composition & Versioning', () => {
     );
     expect(registry.getCurrentVersion()).toBe('0.2.0');
 
-    const v2 = registry.propose(
+    registry.propose(
       { ...defaultPolicy('simulation'), allowedActions: ['dns_switch', 'connectivity_failover', 'noop'] },
       'test-user',
       'Add connectivity_failover',
@@ -32,7 +32,7 @@ describe('Phase 4: Policy Composition & Versioning', () => {
     );
     expect(registry.getCurrentVersion()).toBe('0.2.1');
 
-    const v3 = registry.propose(
+    registry.propose(
       { ...defaultPolicy('simulation'), actionBudget: 100 },
       'test-user',
       'Increase action budget',

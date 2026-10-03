@@ -4,14 +4,7 @@
  * No new authority — pure functions consumed by the canonical runtime.
  */
 
-import type {
-  PolicySnapshot,
-  RuntimeContext,
-  PolicyEvaluation,
-  CandidateAction,
-  ActionPlan,
-} from '../domain/types.js';
-import type { CompiledIntent } from '../domain/types.js';
+import type { PolicySnapshot, CompiledIntent } from '../domain/types.js';
 import { isAutonomyPermitted } from '@irp/core';
 
 export interface IntentConflict {
@@ -100,7 +93,6 @@ export const resolvePolicyConflict = (
   policyB: PolicySnapshot,
   strategy: 'union' | 'intersection' | 'hierarchical' = 'hierarchical',
 ): { readonly merged: PolicySnapshot; readonly conflicts: readonly PolicyConflict[] } => {
-  const conflicts: PolicyConflict[] = [];
   const conflictsFound: PolicyConflict[] = [];
 
   // Detect conflicts

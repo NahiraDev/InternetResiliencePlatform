@@ -4,7 +4,7 @@
  */
 
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { PolicySnapshot, ResiliencePolicy, PolicyEvaluation } from '../domain/types.js';
+import type { PolicySnapshot, ResiliencePolicy } from '../domain/types.js';
 import { defaultPolicy } from '../context/context.js';
 
 export type PolicyDomain = 

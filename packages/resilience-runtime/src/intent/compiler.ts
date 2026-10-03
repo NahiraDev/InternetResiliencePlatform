@@ -1,4 +1,4 @@
-import { isIntentEffective, type IntentObjective, type NetworkIntent, type IntentAutonomyLevel } from '@irp/core';
+import { isIntentEffective, type IntentObjective, type NetworkIntent } from '@irp/core';
 import type { CompiledIntent } from '../domain/types.js';
 
 export type { IntentObjective };
@@ -60,18 +60,6 @@ const defaultsFor = (outcome: string): Record<IntentObjective, number> => {
   const total = Object.values(result).reduce((sum, value) => sum + value, 0);
   return Object.fromEntries(
     OBJECTIVES.map((objective) => [objective, clamp((result[objective] ?? 0) / total)]),
-  ) as Record<IntentObjective, number>;
-};
-
-const explicitObjective = (constraints: Readonly<Record<string, string | number | boolean>>) => {
-  const objectives = defaultsFor('');
-  for (const objective of OBJECTIVES) {
-    const value = constraints[`objective.${objective}`] ?? constraints[objective];
-    if (typeof value === 'number' && Number.isFinite(value)) objectives[objective] = clamp(value);
-  }
-  const total = Object.values(objectives).reduce((sum, value) => sum + value, 0);
-  return Object.fromEntries(
-    OBJECTIVES.map((objective) => [objective, clamp((objectives[objective] ?? 0) / total)]),
   ) as Record<IntentObjective, number>;
 };
 

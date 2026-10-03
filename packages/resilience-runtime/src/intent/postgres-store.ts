@@ -33,7 +33,6 @@ export interface IntentRow {
 }
 
 import pg from 'pg';
-const { Pool } = pg;
 
 const MIGRATION_SQL = `
 -- Migration 001: Create intents table
