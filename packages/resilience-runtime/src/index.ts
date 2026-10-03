@@ -43,5 +43,7 @@ export * from './intent/governance.js';
 export * from './gateway/gateway-registry-plane.js';
 export * from './tunnel/tunnel-control-plane.js';
 export * from './fabric.js';
+export * from './fabric-authority.js';
+export * from './fabric-lifecycle.js';
 
 export * from './autopilot/autopilot.js';

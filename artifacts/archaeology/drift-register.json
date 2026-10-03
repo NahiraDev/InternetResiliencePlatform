@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-03T12:07:43.574Z",
+  "findings": [
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-46.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-46.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    },
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-54.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-54.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    },
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-66.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-66.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    },
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-75.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-75.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    },
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-76.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-76.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    },
+    {
+      "id": "unsubstantiated-phase-claim:docs/phases/phase-80.md",
+      "severity": "MINOR",
+      "area": "documentation",
+      "evidence": [
+        "docs/phases/phase-80.md"
+      ],
+      "impact": "Phase document claims implementation without citing source, test or CI evidence.",
+      "owner": "docs-owner",
+      "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
+      "verification": "pnpm run validate:docs",
+      "registeredAt": "2026-10-03T12:07:43.574Z"
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "critical": 0,
+    "major": 0,
+    "minor": 6
+  }
+}

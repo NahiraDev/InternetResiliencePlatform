@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { NetworkPathGraph, normalizeRoute, type NetworkPath } from '@irp/routing';
-import { ProgrammableConnectivityFabric, type FabricDiscoveryProvider, type FabricResource } from './fabric.js';
+import { ProgrammableConnectivityFabric, type FabricDiscoveryProvider, type FabricResource } from '../src/fabric.js';
 
-const resource = (id: string, score: number, domain: string): FabricResource => ({
+const resource = (
+  id: string,
+  score: number,
+  domain: string,
+  owner = 'test-provider',
+): FabricResource => ({
   id, kind: 'Gateway', state: score >= 70 ? 'HEALTHY' : 'DEGRADED',
   health: { status: score >= 70 ? 'healthy' : 'degraded', score, checkedAt: new Date().toISOString() },
   confidence: 0.9, observedAt: new Date().toISOString(), trust: 0.9, capacity: {},
-  cost: { unit: score >= 70 ? 2 : 1 }, owner: 'test-provider', failureDomains: [domain],
+  cost: { unit: score >= 70 ? 2 : 1 }, owner, failureDomains: [domain],
   lifecycle: 'discovered',
   capabilities: [{ id: 'route.select', scope: 'gateway', authority: 'provider', trust: 0.9, safety: 'read-only', platforms: ['linux'] }],
   metadata: {},
@@ -51,14 +56,14 @@ describe('ProgrammableConnectivityFabric', () => {
       id: 'provider-a',
       owner: 'owner-a',
       async discover() {
-        return [resource('same', 90, 'isp-a')];
+        return [resource('same', 90, 'isp-a', 'owner-a')];
       },
     });
     conflicting.registerProvider({
       id: 'provider-b',
       owner: 'owner-b',
       async discover() {
-        return [resource('same', 90, 'isp-b')];
+        return [resource('same', 90, 'isp-b', 'owner-b')];
       },
     });
 

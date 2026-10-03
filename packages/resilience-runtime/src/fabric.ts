@@ -1,4 +1,18 @@
 import type { NetworkPathGraph, PathGraphNode } from '@irp/routing';
+import {
+  FabricCapabilityAuthority,
+  type CapabilityDecision,
+  type CapabilityRequest,
+  type FabricPlatform,
+} from './fabric-authority.js';
+import {
+  SELECTABLE_FABRIC_STATES,
+  evaluateFabricFreshness,
+  partitionByFreshness,
+  selectDiverseResources,
+  type DiverseSelection,
+  type FreshnessReport,
+} from './fabric-lifecycle.js';
 
 export const FABRIC_RESOURCE_KINDS = [
   'Device','Interface','Link','Provider','Gateway','Route','Resolver','Tunnel','Transport',
@@ -95,12 +109,26 @@ export interface FabricSelectionRequest {
   readonly minimumTrust?: number;
   readonly maximumCost?: number;
   readonly now?: string;
+  /** Platform the selection must support; enforced through the capability registry. */
+  readonly platform?: FabricPlatform;
+  /** Safety ceiling the caller may not exceed. */
+  readonly maximumSafety?: FabricCapability['safety'];
+  /** Require runtime-authority capabilities only. */
+  readonly requireRuntimeAuthority?: boolean;
+  /** Minimum number of failure-domain-disjoint alternatives. */
+  readonly minimumDiverseAlternatives?: number;
 }
 export interface FabricSelectionResult {
   readonly selected: FabricResource | undefined;
   readonly candidates: readonly FabricResource[];
   readonly rejected: readonly { id: string; reason: string }[];
   readonly reason: string;
+  /** Failure-domain-disjoint alternatives backing the selection. */
+  readonly diversity?: DiverseSelection;
+  /** Per-resource freshness evidence at decision time. */
+  readonly freshness?: readonly FreshnessReport[];
+  /** Capability authorization evidence for the selected resource. */
+  readonly capabilityDecisions?: readonly CapabilityDecision[];
 }
 
 const nowIso = () => new Date().toISOString();
@@ -114,6 +142,8 @@ const healthRank = (resource: FabricResource) =>
 
 export class ProgrammableConnectivityFabric {
   readonly capabilities = new FabricCapabilityRegistry();
+  /** Enforceable capability authority consulted during selection (issue #275 task 5). */
+  readonly capabilityAuthority = new FabricCapabilityAuthority();
   private readonly providers = new Map<string, FabricDiscoveryProvider>();
   private snapshot: FabricSnapshot = Object.freeze({
     version: 0, discoveredAt: new Date(0).toISOString(),
@@ -130,7 +160,43 @@ export class ProgrammableConnectivityFabric {
   providersList(): readonly FabricDiscoveryProvider[] { return [...this.providers.values()]; }
   snapshotState(): FabricSnapshot { return this.snapshot; }
 
-  async discover(options: { signal?: AbortSignal; limit?: number; since?: string } = {}) {
+  /** Explicit ownership index: resource id -> owner (issue #275 task 8). */
+  ownershipIndex(): Readonly<Record<string, string>> {
+    return Object.freeze(
+      Object.fromEntries(this.snapshot.resources.map((resource) => [resource.id, resource.owner])),
+    );
+  }
+
+  /** Resources owned by a given owner, for duplicate-ownership auditing. */
+  resourcesOwnedBy(owner: string): readonly FabricResource[] {
+    return Object.freeze(this.snapshot.resources.filter((resource) => resource.owner === owner));
+  }
+
+  /** Freshness evidence for the current snapshot (issue #275 task 4). */
+  freshnessReport(now: string = nowIso()): readonly FreshnessReport[] {
+    return Object.freeze(
+      this.snapshot.resources.map((resource) => evaluateFabricFreshness(resource, now)),
+    );
+  }
+
+  /** Drops resources whose evidence has expired, keeping the graph consistent. */
+  pruneExpired(now: string = nowIso()): FabricSnapshot {
+    const { fresh, stale } = partitionByFreshness(this.snapshot.resources, now);
+    if (stale.length === 0) return this.snapshot;
+    const retained = new Set(fresh.map((resource) => resource.id));
+    this.snapshot = Object.freeze({
+      ...this.snapshot,
+      version: this.snapshot.version + 1,
+      discoveredAt: now,
+      resources: Object.freeze([...fresh]),
+      edges: Object.freeze(
+        this.snapshot.edges.filter((edge) => retained.has(edge.from) && retained.has(edge.to)),
+      ),
+    });
+    return this.snapshot;
+  }
+
+  async discover(options: { signal?: AbortSignal; limit?: number | undefined; since?: string } = {}) {
     const signal = options.signal ?? new AbortController().signal;
     const limit = Math.max(1, Math.min(options.limit ?? 256, 2_000));
     const context: FabricDiscoveryContext = {
@@ -157,6 +223,13 @@ export class ProgrammableConnectivityFabric {
         if (existingOwner && existingOwner !== resource.owner)
           throw new Error(`duplicate fabric ownership for resource ${resource.id}`);
         owners.set(resource.id, resource.owner);
+        // Register any capability the provider claims so the unified registry
+        // can authorize it during selection.
+        for (const capability of resource.capabilities) {
+          if (!this.capabilityAuthority.get(capability.id)) {
+            this.capabilityAuthority.register(capability);
+          }
+        }
         resources.set(resource.id, resource);
         if (!options.since && resources.size >= limit) break;
       }
@@ -173,47 +246,107 @@ export class ProgrammableConnectivityFabric {
       resources: Object.freeze(boundedResources),
       edges: this.snapshot.edges,
     });
+    // Freshness-aware discovery records evidence with an explicit observation
+    // time and optional expiry; staleness is surfaced via `freshnessReport` and
+    // honoured by `select`, never silently deleted here. Callers that want to
+    // compact explicitly invoke `pruneExpired`.
     return this.snapshot;
   }
 
   select(request: FabricSelectionRequest = {}): FabricSelectionResult {
     const now = request.now ?? nowIso();
     const rejected: { id: string; reason: string }[] = [];
+    const capabilityDecisions: CapabilityDecision[] = [];
+    const freshness: FreshnessReport[] = this.snapshot.resources.map((resource) =>
+      evaluateFabricFreshness(resource, now),
+    );
+    const freshnessById = new Map(freshness.map((report) => [report.resourceId, report]));
+
     const eligible = this.snapshot.resources.filter((resource) => {
       if (request.kind && resource.kind !== request.kind) {
-        rejected.push({ id: resource.id, reason: 'kind-mismatch' }); return false;
+        rejected.push({ id: resource.id, reason: 'kind-mismatch' });
+        return false;
       }
-      if (!fresh(resource, now)) {
-        rejected.push({ id: resource.id, reason: 'stale-resource' }); return false;
+      if (freshnessById.get(resource.id)?.fresh !== true) {
+        rejected.push({ id: resource.id, reason: 'stale-resource' });
+        return false;
       }
-      if (['FAILED','BLOCKED','QUARANTINED','UNAVAILABLE','DRAINING'].includes(resource.state)) {
-        rejected.push({ id: resource.id, reason: `state-${resource.state.toLowerCase()}` }); return false;
+      if (!SELECTABLE_FABRIC_STATES.has(resource.state)) {
+        rejected.push({ id: resource.id, reason: `state-${resource.state.toLowerCase()}` });
+        return false;
       }
       if (resource.trust < (request.minimumTrust ?? 0)) {
-        rejected.push({ id: resource.id, reason: 'insufficient-trust' }); return false;
+        rejected.push({ id: resource.id, reason: 'insufficient-trust' });
+        return false;
       }
       if (request.maximumCost !== undefined && numericCost(resource) > request.maximumCost) {
-        rejected.push({ id: resource.id, reason: 'cost-limit' }); return false;
+        rejected.push({ id: resource.id, reason: 'cost-limit' });
+        return false;
       }
-      const missing = (request.requiredCapabilities ?? []).filter(
-        capability => !resource.capabilities.some(candidate => candidate.id === capability),
+      // Capabilities are authorized through the unified registry, not trusted
+      // from the resource-local claim alone.
+      const required = request.requiredCapabilities ?? [];
+      const missing = required.filter(
+        (capability) => !resource.capabilities.some((candidate) => candidate.id === capability),
       );
       if (missing.length) {
-        rejected.push({ id: resource.id, reason: `missing-capability:${missing.join(',')}` }); return false;
+        rejected.push({ id: resource.id, reason: `missing-capability:${missing.join(',')}` });
+        return false;
+      }
+      const capabilityRequests: CapabilityRequest[] = required.map((capabilityId) => ({
+        capabilityId,
+        resourceId: resource.id,
+        ...(request.platform ? { platform: request.platform } : {}),
+        ...(request.minimumTrust !== undefined ? { minimumTrust: request.minimumTrust } : {}),
+        ...(request.maximumSafety ? { maximumSafety: request.maximumSafety } : {}),
+        ...(request.requireRuntimeAuthority ? { requireRuntimeAuthority: true } : {}),
+      }));
+      if (capabilityRequests.length > 0) {
+        const decision = this.capabilityAuthority.authorizeAll(capabilityRequests);
+        if (!decision.allowed) {
+          rejected.push({
+            id: resource.id,
+            reason: `capability-denied:${decision.reasons.join(',')}`,
+          });
+          return false;
+        }
+        capabilityDecisions.push(decision);
       }
       return true;
     });
-    const candidates = [...eligible].sort((a,b) => {
-      const diversityA = request.preferredFailureDomains?.some(d => a.failureDomains.includes(d)) ? 1 : 0;
-      const diversityB = request.preferredFailureDomains?.some(d => b.failureDomains.includes(d)) ? 1 : 0;
+
+    const candidates = [...eligible].sort((a, b) => {
+      const diversityA = request.preferredFailureDomains?.some((d) =>
+        a.failureDomains.includes(d),
+      )
+        ? 1
+        : 0;
+      const diversityB = request.preferredFailureDomains?.some((d) =>
+        b.failureDomains.includes(d),
+      )
+        ? 1
+        : 0;
       return diversityB - diversityA || healthRank(b) - healthRank(a) || a.id.localeCompare(b.id);
     });
-    return {
-      selected: candidates[0], candidates, rejected,
-      reason: candidates[0]
-        ? 'selected by health, confidence, trust, cost and failure-domain diversity'
+
+    // True failure-domain diversity: pick mutually disjoint candidates rather
+    // than assuming the top-ranked candidate is independent.
+    const diversity = selectDiverseResources(candidates, {
+      required: request.minimumDiverseAlternatives ?? 2,
+    });
+    const selected = diversity.selected ?? candidates[0];
+
+    return Object.freeze({
+      selected,
+      candidates,
+      rejected: Object.freeze(rejected),
+      reason: selected
+        ? diversity.reason
         : 'no eligible fabric resource',
-    };
+      diversity,
+      freshness: Object.freeze(freshness),
+      capabilityDecisions: Object.freeze(capabilityDecisions),
+    });
   }
 
   reconcileRoutingGraph(graph: NetworkPathGraph): FabricSnapshot {

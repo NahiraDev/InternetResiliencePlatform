@@ -1,0 +1,1181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-03T12:07:43.379Z",
+  "packages": [
+    {
+      "group": "apps",
+      "name": "@irp/api",
+      "path": "apps/api",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@fastify/cors",
+        "@fastify/helmet",
+        "@fastify/swagger",
+        "@fastify/swagger-ui",
+        "@irp/auth",
+        "@irp/config",
+        "@irp/core",
+        "@irp/database",
+        "@irp/dns",
+        "@irp/events",
+        "@irp/historical-analysis",
+        "@irp/logger",
+        "@irp/metrics",
+        "@irp/network",
+        "@irp/queue",
+        "@irp/resilience-runtime",
+        "@irp/telemetry",
+        "@opentelemetry/api",
+        "@vercel/analytics",
+        "@vercel/speed-insights",
+        "fastify",
+        "pino",
+        "pino-pretty",
+        "prom-client",
+        "zod"
+      ],
+      "sourceFiles": 21,
+      "testFiles": 9,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/auth",
+      "path": "packages/auth",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/shared"
+      ],
+      "sourceFiles": 4,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/auto-optimization",
+      "path": "packages/auto-optimization",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/resilience-runtime"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "apps",
+      "name": "@irp/cli",
+      "path": "apps/cli",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/config",
+        "@irp/core",
+        "@irp/dns",
+        "@irp/logger",
+        "@irp/network",
+        "@irp/resilience-runtime",
+        "@irp/telemetry",
+        "commander"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/config",
+      "path": "packages/config",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "yaml",
+        "zod"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/connectivity",
+      "path": "packages/connectivity",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/events",
+        "@irp/kernel",
+        "@irp/network",
+        "@irp/shared",
+        "@irp/telemetry"
+      ],
+      "sourceFiles": 6,
+      "testFiles": 3,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/core",
+      "path": "packages/core",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/config",
+        "@irp/dns",
+        "@irp/logger"
+      ],
+      "sourceFiles": 5,
+      "testFiles": 3,
+      "hasTests": true
+    },
+    {
+      "group": "apps",
+      "name": "@irp/daemon",
+      "path": "apps/daemon",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/auto-optimization",
+        "@irp/config",
+        "@irp/connectivity",
+        "@irp/core",
+        "@irp/logger",
+        "@irp/network",
+        "@irp/plugin-manager",
+        "@irp/plugin-sdk",
+        "@irp/resilience-runtime",
+        "@irp/routing",
+        "@irp/tunnel"
+      ],
+      "sourceFiles": 6,
+      "testFiles": 3,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/database",
+      "path": "packages/database",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "prisma:generate",
+        "prisma:migrate:deploy",
+        "prisma:migrate:reset",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "pg"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/dns",
+      "path": "packages/dns",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 8,
+      "testFiles": 3,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/events",
+      "path": "packages/events",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/shared"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/failover",
+      "path": "packages/failover",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/gateway-registry",
+      "path": "packages/gateway-registry",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 16,
+      "testFiles": 8,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/historical-analysis",
+      "path": "packages/historical-analysis",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/database"
+      ],
+      "sourceFiles": 4,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/internet-intelligence-agent",
+      "path": "packages/internet-intelligence-agent",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 8,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/kernel",
+      "path": "packages/kernel",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 3,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/linux-client",
+      "path": "packages/linux-client",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "prebuild",
+        "pretest",
+        "pretypecheck",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/resilience-runtime"
+      ],
+      "sourceFiles": 3,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/logger",
+      "path": "packages/logger",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "pino",
+        "pino-pretty"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/macos-client",
+      "path": "packages/macos-client",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 1,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/metrics",
+      "path": "packages/metrics",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 1,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/network",
+      "path": "packages/network",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/network-intelligence",
+      "path": "packages/network-intelligence",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 37,
+      "testFiles": 6,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-api",
+      "path": "packages/plugin-api",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-sdk",
+        "@irp/security"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-config",
+      "path": "packages/plugin-config",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-sdk",
+        "@irp/security"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-events",
+      "path": "packages/plugin-events",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-loader",
+      "path": "packages/plugin-loader",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-registry",
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-manager",
+      "path": "packages/plugin-manager",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-loader",
+        "@irp/plugin-registry",
+        "@irp/plugin-runtime",
+        "@irp/plugin-samples",
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-registry",
+      "path": "packages/plugin-registry",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-runtime",
+      "path": "packages/plugin-runtime",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-api",
+        "@irp/plugin-config",
+        "@irp/plugin-events",
+        "@irp/plugin-registry",
+        "@irp/plugin-sandbox",
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-samples",
+      "path": "packages/plugin-samples",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-sdk"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-sandbox",
+      "path": "packages/plugin-sandbox",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/plugin-samples",
+        "@irp/plugin-sdk",
+        "@irp/security"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/plugin-sdk",
+      "path": "packages/plugin-sdk",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/queue",
+      "path": "packages/queue",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/shared"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/resilience-runtime",
+      "path": "packages/resilience-runtime",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "coverage",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/connectivity",
+        "@irp/core",
+        "@irp/events",
+        "@irp/failover",
+        "@irp/gateway-registry",
+        "@irp/historical-analysis",
+        "@irp/internet-intelligence-agent",
+        "@irp/network-intelligence",
+        "@irp/routing",
+        "@irp/telemetry",
+        "@irp/tunnel",
+        "@irp/utils"
+      ],
+      "sourceFiles": 68,
+      "testFiles": 36,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/routing",
+      "path": "packages/routing",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/connectivity",
+        "@irp/events",
+        "@irp/kernel",
+        "@irp/shared",
+        "@irp/telemetry"
+      ],
+      "sourceFiles": 3,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/sdk",
+      "path": "packages/sdk",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/kernel"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/security",
+      "path": "packages/security",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/auth",
+        "@irp/shared"
+      ],
+      "sourceFiles": 3,
+      "testFiles": 2,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/shared",
+      "path": "packages/shared",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "zod"
+      ],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/telemetry",
+      "path": "packages/telemetry",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/metrics",
+        "@irp/types",
+        "@opentelemetry/api",
+        "@opentelemetry/exporter-metrics-otlp-proto",
+        "@opentelemetry/exporter-trace-otlp-proto",
+        "@opentelemetry/resources",
+        "@opentelemetry/sdk-metrics",
+        "@opentelemetry/sdk-node",
+        "@opentelemetry/sdk-trace-base",
+        "@opentelemetry/semantic-conventions",
+        "prom-client"
+      ],
+      "sourceFiles": 12,
+      "testFiles": 6,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/tunnel",
+      "path": "packages/tunnel",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [
+        "@irp/events",
+        "@irp/shared",
+        "@irp/telemetry"
+      ],
+      "sourceFiles": 10,
+      "testFiles": 5,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/types",
+      "path": "packages/types",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/utils",
+      "path": "packages/utils",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "packages",
+      "name": "@irp/windows-client",
+      "path": "packages/windows-client",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
+      "group": "clients",
+      "name": "clients/android",
+      "path": "clients/android",
+      "kind": "native-client",
+      "scripts": [],
+      "dependencies": [],
+      "sourceFiles": 0,
+      "testFiles": 0,
+      "hasTests": false
+    },
+    {
+      "group": "clients",
+      "name": "clients/ios",
+      "path": "clients/ios",
+      "kind": "native-client",
+      "scripts": [],
+      "dependencies": [],
+      "sourceFiles": 0,
+      "testFiles": 0,
+      "hasTests": false
+    }
+  ],
+  "totals": {
+    "packages": 45,
+    "workspacePackages": 43,
+    "nativeClients": 2,
+    "packagesWithoutTests": 0,
+    "workflows": 15,
+    "docs": 147,
+    "phaseDocs": 45
+  },
+  "infrastructure": {
+    "workflows": [
+      ".github/workflows/android-client.yml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/codeql.yml",
+      ".github/workflows/dependency-review.yml",
+      ".github/workflows/docker-publish.yml",
+      ".github/workflows/ios-client.yml",
+      ".github/workflows/ios-network-integration.yml",
+      ".github/workflows/linux-primary-device.yml",
+      ".github/workflows/macos-client.yml",
+      ".github/workflows/public-runtime-lab.yml",
+      ".github/workflows/release-gate.yml",
+      ".github/workflows/repository-deep-audit.yml",
+      ".github/workflows/runtime-lab.yml",
+      ".github/workflows/system-assurance.yml",
+      ".github/workflows/windows-client.yml"
+    ],
+    "scripts": [
+      "scripts/archaeology.mjs",
+      "scripts/architecture/validate-architecture.mjs",
+      "scripts/architecture/validate-architecture.test.mjs",
+      "scripts/architecture-guards.cjs",
+      "scripts/architecture-guards.mjs",
+      "scripts/assemble-linux-client-package.mjs",
+      "scripts/clean.mjs",
+      "scripts/examples-smoke.mjs",
+      "scripts/full-system-assurance.mjs",
+      "scripts/healthcheck.mjs",
+      "scripts/integration-baseline.mjs",
+      "scripts/integration-graph.mjs",
+      "scripts/operational-diagnostics.mjs",
+      "scripts/phase69-readiness.mjs",
+      "scripts/phase70-certification.mjs",
+      "scripts/phase71-release.mjs",
+      "scripts/production-assurance.mjs",
+      "scripts/production-certification.mjs",
+      "scripts/regional-online-test.mjs",
+      "scripts/repository-deep-audit.mjs",
+      "scripts/runtime-entrypoint.mjs",
+      "scripts/validate-architecture.mjs",
+      "scripts/validate-documentation.mjs",
+      "scripts/validate-repository.mjs",
+      "scripts/wait-for-database.mjs"
+    ],
+    "tools": [
+      "tools/runtime-lab/package-e2e.mjs",
+      "tools/runtime-lab/package-integration.mjs",
+      "tools/runtime-lab/real-e2e.mjs",
+      "tools/runtime-lab/server.mjs"
+    ],
+    "ops": [
+      "ops/observability/docker-compose.yml",
+      "ops/observability/grafana/dashboards/irp-runtime.json",
+      "ops/observability/grafana/provisioning/dashboards/dashboards.yml",
+      "ops/observability/grafana/provisioning/datasources/datasources.yml",
+      "ops/observability/prometheus/prometheus.yml",
+      "ops/observability/tempo/tempo.yml",
+      "ops/release/full-system-assurance.json",
+      "ops/release/integration-baseline.json",
+      "ops/release/phase-69-readiness.json",
+      "ops/release/phase-70-certification.json",
+      "ops/release/phase-71-release.json",
+      "ops/release/production-assurance.json",
+      "ops/release/production-certification.json",
+      "ops/release/real-environment/ASSURANCE_REGISTRY.json"
+    ],
+    "config": [
+      "default.yaml",
+      "development.yaml",
+      "production.yaml",
+      "staging.yaml"
+    ],
+    "deployment": [
+      "Dockerfile",
+      "Dockerfile.dev",
+      "compose.dev.yaml",
+      "compose.yaml",
+      "docker-publish.yml",
+      "fly.toml",
+      "release-gate.yml"
+    ],
+    "docs": [
+      "docs/README.md",
+      "docs/adr/0001-network-kernel.md",
+      "docs/adr/0001-repository-architecture.md",
+      "docs/adr/0002-phase-4-core-platform.md",
+      "docs/adr/0003-phase-6-network-intelligence.md",
+      "docs/adr/README.md",
+      "docs/adr/phase-33-auto-optimization.md",
+      "docs/adr/phase-34-historical-analysis.md",
+      "docs/adr/phase-35-metrics-platform.md",
+      "docs/adr/phase-36-opentelemetry.md",
+      "docs/adr/template.md",
+      "docs/api/README.md",
+      "docs/api/control-plane-contract.md",
+      "docs/api/overview.md",
+      "docs/api/platform-status-api.md",
+      "docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md",
+      "docs/architecture/README.md",
+      "docs/architecture/connectivity.md",
+      "docs/architecture/control-plane-ownership.md",
+      "docs/architecture/control-plane-phase72-dependencies.md",
+      "docs/architecture/data-flow.md",
+      "docs/architecture/dns.md",
+      "docs/architecture/e2e-integration-invariants.md",
+      "docs/architecture/engineering-governance.md",
+      "docs/architecture/event-stream.md",
+      "docs/architecture/failover.md",
+      "docs/architecture/gateway-and-tunnel-architecture.md",
+      "docs/architecture/internet-intelligence-agent.md",
+      "docs/architecture/live-control-plane.md",
+      "docs/architecture/network-intelligence.md",
+      "docs/architecture/overview.md",
+      "docs/architecture/platform-model.md",
+      "docs/architecture/post-v1-distribution-roadmap.md",
+      "docs/architecture/product-architecture.md",
+      "docs/architecture/product-roadmap-70-phases.md",
+      "docs/architecture/release-gates.md",
+      "docs/architecture/resilience-runtime.md",
+      "docs/architecture/routing.md",
+      "docs/architecture/runtime-adapter-model.md",
+      "docs/architecture/security-boundaries.md",
+      "docs/architecture/system-architecture.md",
+      "docs/audits/control-plane-execution-baseline-2026-09-03.md",
+      "docs/audits/documentation-audit-2026-08-23.md",
+      "docs/audits/documentation-quality-standard.md",
+      "docs/audits/full-system-architecture-reconstruction.md",
+      "docs/audits/phase-history-evidence-matrix.md",
+      "docs/concepts/README.md",
+      "docs/concepts/autopilot.md",
+      "docs/concepts/connectivity-and-paths.md",
+      "docs/concepts/control-loop.md",
+      "docs/concepts/control-plane.md",
+      "docs/concepts/devices-and-enrollment.md",
+      "docs/concepts/extensibility.md",
+      "docs/concepts/full-client-model.md",
+      "docs/concepts/gateways-and-tunnels.md",
+      "docs/concepts/network-autopilot.md",
+      "docs/concepts/policies-and-decisions.md",
+      "docs/concepts/probes-and-evidence.md",
+      "docs/concepts/resilience-and-recovery.md",
+      "docs/concepts/telemetry-and-analytics.md",
+      "docs/configuration.md",
+      "docs/current-architecture.md",
+      "docs/development.md",
+      "docs/documentation-standards.md",
+      "docs/downloads.md",
+      "docs/getting-started/client-onboarding.md",
+      "docs/getting-started/platform-support.md",
+      "docs/getting-started/quick-start.md",
+      "docs/guides/testing.md",
+      "docs/guides/troubleshooting.md",
+      "docs/integrations/starlink-egress-resources.md",
+      "docs/integrations/starlink-egress.md",
+      "docs/integrations/starlink.md",
+      "docs/javascript-snippets.md",
+      "docs/network/README.md",
+      "docs/network/measurement-model.md",
+      "docs/observability.md",
+      "docs/operations/autopilot-runbook.md",
+      "docs/operations/deployment-model.md",
+      "docs/operations/deployment.md",
+      "docs/operations/docker.md",
+      "docs/operations/incident-response.md",
+      "docs/operations/observability.md",
+      "docs/operations/recovery.md",
+      "docs/operations/runtime-production-mode.md",
+      "docs/phases/README.md",
+      "docs/phases/phase-00.md",
+      "docs/phases/phase-39.md",
+      "docs/phases/phase-40-evidence.md",
+      "docs/phases/phase-40.md",
+      "docs/phases/phase-41.md",
+      "docs/phases/phase-42.md",
+      "docs/phases/phase-43.md",
+      "docs/phases/phase-44.md",
+      "docs/phases/phase-45.md",
+      "docs/phases/phase-46.md",
+      "docs/phases/phase-47.md",
+      "docs/phases/phase-48.md",
+      "docs/phases/phase-49.md",
+      "docs/phases/phase-50.md",
+      "docs/phases/phase-51.md",
+      "docs/phases/phase-52.md",
+      "docs/phases/phase-53.md",
+      "docs/phases/phase-54.md",
+      "docs/phases/phase-55.md",
+      "docs/phases/phase-56.md",
+      "docs/phases/phase-57.md",
+      "docs/phases/phase-58.md",
+      "docs/phases/phase-59.md",
+      "docs/phases/phase-60.md",
+      "docs/phases/phase-61.md",
+      "docs/phases/phase-62.md",
+      "docs/phases/phase-63.md",
+      "docs/phases/phase-64.md",
+      "docs/phases/phase-65.md",
+      "docs/phases/phase-66.md",
+      "docs/phases/phase-67.md",
+      "docs/phases/phase-68.md",
+      "docs/phases/phase-69.md",
+      "docs/phases/phase-70.md",
+      "docs/phases/phase-71.md",
+      "docs/phases/phase-72.md",
+      "docs/phases/phase-73.md",
+      "docs/phases/phase-74.md",
+      "docs/phases/phase-75.md",
+      "docs/phases/phase-76.md",
+      "docs/phases/phase-77.md",
+      "docs/phases/phase-78.md",
+      "docs/phases/phase-79.md",
+      "docs/phases/phase-80.md",
+      "docs/reference/README.md",
+      "docs/reference/packages.md",
+      "docs/regional-validation.md",
+      "docs/release/debian-device-acceptance.md",
+      "docs/release/full-system-assurance.md",
+      "docs/release/integration-baseline.md",
+      "docs/release/linux-primary-platform.md",
+      "docs/release/phase-69-compatibility-matrix.md",
+      "docs/release/production-assurance.md",
+      "docs/release/production-certification.md",
+      "docs/roadmap/MASTER_ROADMAP_V2.md",
+      "docs/security/README.md",
+      "docs/security/overview.md",
+      "docs/security/runtime-execution-security.md",
+      "docs/security/runtime-security-model.md",
+      "docs/security/security-architecture.md",
+      "docs/typescript-snippets.md"
+    ],
+    "phaseDocs": [
+      "README.md",
+      "phase-00.md",
+      "phase-39.md",
+      "phase-40-evidence.md",
+      "phase-40.md",
+      "phase-41.md",
+      "phase-42.md",
+      "phase-43.md",
+      "phase-44.md",
+      "phase-45.md",
+      "phase-46.md",
+      "phase-47.md",
+      "phase-48.md",
+      "phase-49.md",
+      "phase-50.md",
+      "phase-51.md",
+      "phase-52.md",
+      "phase-53.md",
+      "phase-54.md",
+      "phase-55.md",
+      "phase-56.md",
+      "phase-57.md",
+      "phase-58.md",
+      "phase-59.md",
+      "phase-60.md",
+      "phase-61.md",
+      "phase-62.md",
+      "phase-63.md",
+      "phase-64.md",
+      "phase-65.md",
+      "phase-66.md",
+      "phase-67.md",
+      "phase-68.md",
+      "phase-69.md",
+      "phase-70.md",
+      "phase-71.md",
+      "phase-72.md",
+      "phase-73.md",
+      "phase-74.md",
+      "phase-75.md",
+      "phase-76.md",
+      "phase-77.md",
+      "phase-78.md",
+      "phase-79.md",
+      "phase-80.md"
+    ]
+  },
+  "entrypoints": [
+    {
+      "path": "apps/daemon/src/index.ts",
+      "exists": true,
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false
+    },
+    {
+      "path": "packages/linux-client/src/index.ts",
+      "exists": true,
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false
+    }
+  ]
+}

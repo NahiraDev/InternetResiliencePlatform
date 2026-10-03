@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-03T12:07:43.527Z",
+  "contractAuthorities": {
+    "runtime": "@irp/resilience-runtime",
+    "decision": "@irp/resilience-runtime",
+    "policy": "@irp/resilience-runtime",
+    "safety": "@irp/resilience-runtime",
+    "planning": "@irp/resilience-runtime",
+    "transaction": "@irp/resilience-runtime",
+    "verification": "@irp/resilience-runtime",
+    "recovery": "@irp/resilience-runtime"
+  },
+  "productionAuthorityCount": 1,
+  "compositionSymbol": "createCanonicalRuntime",
+  "hosts": [
+    {
+      "path": "apps/api/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "apps/cli/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "apps/daemon/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "packages/linux-client/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "packages/resilience-runtime/src/canonical-runtime-composition.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": true,
+      "role": "host-composition"
+    },
+    {
+      "path": "packages/resilience-runtime/src/runtime.ts",
+      "composesCanonicalRuntime": false,
+      "role": "safety-kernel-host"
+    },
+    {
+      "path": "packages/resilience-runtime/src/safety/safety-kernel.ts",
+      "composesCanonicalRuntime": false,
+      "role": "safety-kernel-host"
+    }
+  ],
+  "violations": [],
+  "summary": {
+    "hosts": 7,
+    "violations": 0,
+    "singleProductionAuthority": true
+  }
+}
