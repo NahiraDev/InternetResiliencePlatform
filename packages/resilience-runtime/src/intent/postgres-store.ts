@@ -3,7 +3,7 @@
  * Implements the IntentStore interface for production deployments.
  */
 
-import type { CompiledIntent, IntentStore } from './index.js';
+import type { CompiledIntent, IntentConflict, IntentStore } from './index.js';
 import type pg from 'pg';
 
 export interface PostgresConfig {
@@ -57,6 +57,18 @@ CREATE TABLE IF NOT EXISTS intents (
 CREATE INDEX IF NOT EXISTS idx_intents_effective_from ON intents(effective_from);
 CREATE INDEX IF NOT EXISTS idx_intents_expires_at ON intents(expires_at);
 CREATE INDEX IF NOT EXISTS idx_intents_priority ON intents(priority);
+
+-- Migration 002: durable arbitration-conflict journal
+CREATE TABLE IF NOT EXISTS intent_conflicts (
+  id TEXT PRIMARY KEY,
+  intent_a_id TEXT NOT NULL,
+  intent_b_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  resolution TEXT NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_intent_conflicts_recorded_at ON intent_conflicts(recorded_at);
 `;
 
 const UPSERT_SQL = `
@@ -168,6 +180,25 @@ export class PostgresIntentStore implements IntentStore {
   async delete(id: string): Promise<void> {
     const pool = this.pool as pg.Pool;
     await pool.query(DELETE_SQL, [id]);
+  }
+
+  async recordConflicts(conflicts: readonly IntentConflict[]): Promise<void> {
+    if (conflicts.length === 0) return;
+    const pool = this.pool as pg.Pool;
+    for (const conflict of conflicts) {
+      await pool.query(
+        `INSERT INTO intent_conflicts (id, intent_a_id, intent_b_id, reason, resolution, recorded_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        [
+          `${conflict.intentA.intentId}:${conflict.intentB.intentId}:${conflict.resolution}`,
+          conflict.intentA.intentId,
+          conflict.intentB.intentId,
+          conflict.reason,
+          conflict.resolution,
+        ],
+      );
+    }
   }
 
   async close(): Promise<void> {

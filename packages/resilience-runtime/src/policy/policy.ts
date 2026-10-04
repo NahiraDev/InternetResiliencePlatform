@@ -60,7 +60,13 @@ export class RuntimePolicyArbitrator {
     const contextIntents =
       context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
     const allIntents = [...activeIntents, ...contextIntents];
-    return arbitrateIntents(allIntents, new Date());
+    const arbitration = arbitrateIntents(allIntents, new Date());
+    // Persist arbitration conflicts wherever the runtime persists intents, so
+    // the conflict journal is durable rather than event-only.
+    if (arbitration.conflicts.length > 0) {
+      await this.intentStore.recordConflicts?.(arbitration.conflicts);
+    }
+    return arbitration;
   }
 
   /** Resolves policy conflicts between two snapshots. */

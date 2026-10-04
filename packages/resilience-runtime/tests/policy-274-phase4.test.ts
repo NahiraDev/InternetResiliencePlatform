@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PolicyRegistry } from '../src/policy/index.js';
 import { RuntimePolicyArbitrator } from '../src/policy/policy.js';
-import { createPolicySnapshot, defaultPolicy } from '../src/context/context.js';
+import { InMemoryIntentStore } from '../src/intent/arbitration.js';
+import { createPolicySnapshot, createCapabilitySnapshot, defaultPolicy } from '../src/context/context.js';
+import type { CompiledIntent, RuntimeContext } from '../src/domain/types.js';
 
 describe('Phase 4: Policy Composition & Versioning', () => {
 
@@ -173,6 +175,53 @@ describe('Phase 4: Policy Composition & Versioning', () => {
     expect(result.merged.policy.confidenceThreshold).toBe(0.8);
     expect(result.merged.policy.failClosed).toBe(false);
     expect(result.conflicts.map((conflict) => conflict.reason)).toEqual(['allowedActions differ']);
+  });
+
+  it('persists arbitration conflicts to the intent store', async () => {
+    const intent = (id: string, outcome: string): CompiledIntent => ({
+      intentId: id,
+      version: 1,
+      priority: 'high',
+      desiredOutcome: outcome,
+      target: { destination: 'example.test' },
+      constraints: {},
+      objectives: {},
+      confidence: 0.9,
+      provenance: 'test',
+      autonomy: 'AUTONOMOUS',
+      scope: { destination: 'example.test' },
+      compiledAt: new Date().toISOString(),
+    });
+    const store = new InMemoryIntentStore();
+    const arbitrator = new RuntimePolicyArbitrator(store);
+    const context: RuntimeContext = {
+      runtimeId: 'policy-conflict-test',
+      correlationId: 'policy-conflict-test',
+      mode: 'simulation',
+      policySnapshot: createPolicySnapshot(defaultPolicy('simulation')),
+      capabilitySnapshot: createCapabilitySnapshot([], true),
+      deadline: new Date(Date.now() + 5_000).toISOString(),
+      cancelled: false,
+      securityContext: { trusted: true },
+      configuration: {
+        enabled: true,
+        mode: 'simulation',
+        cycleIntervalMs: 30_000,
+        maxActionsPerCycle: 3,
+        maxConcurrentActions: 1,
+        observationFreshnessMs: 60_000,
+        decisionTimeoutMs: 500,
+        verificationTimeoutMs: 500,
+        recoveryTimeoutMs: 500,
+        persistenceMode: 'memory',
+        replayEnabled: true,
+      },
+      compiledIntents: [intent('a', 'use-primary'), intent('b', 'use-secondary')],
+    };
+
+    const { conflicts } = await arbitrator.resolveIntentConflicts(context);
+    expect(conflicts.length).toBeGreaterThan(0);
+    expect(await store.listConflicts()).toHaveLength(conflicts.length);
   });
 
   it('uses independently constructed registries instead of shared global state', () => {
