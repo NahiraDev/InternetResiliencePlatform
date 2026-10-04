@@ -259,6 +259,12 @@ export class ResilienceRuntime {
     await this.state.transition('planning', context.correlationId);
     const orchestration = await this.decisionOrchestrator.orchestrate(found, context);
     const candidates = orchestration.candidates;
+    await this.events.emit('runtime.candidate.generated', {
+      correlationId: context.correlationId,
+      candidateIds: candidates.map((candidate) => candidate.id),
+      candidateCount: candidates.length,
+      reason: orchestration.reason,
+    });
     const compiledIntent: CompiledIntent | undefined =
       context.compiledIntents?.[0] ?? context.compiledIntent;
     const knowledgeString = (value: unknown): string | undefined =>

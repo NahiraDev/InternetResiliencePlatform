@@ -7,7 +7,8 @@
  * in memory loses it on restart.
  *
  * The `criticalPath` flag is the important one: only ephemeral state may be
- * required to keep local safe control working.
+ * required to keep local safe control working. Durable security state must be
+ * recoverable after restart, but local control must fail safe without it.
  */
 
 import { deepFreeze } from '../domain/ids.js';
@@ -27,7 +28,7 @@ export interface StateClassSpec {
   readonly stateClass: StateClass;
   /** Durable across restart. */
   readonly durable: boolean;
-  /** Required for local safe control to continue. Never true except for ephemeral. */
+  /** Required for local safe control to continue. True only for ephemeral state. */
   readonly criticalPath: boolean;
   /** Default retention in ms; `undefined` means retain indefinitely. */
   readonly retentionMs?: number;
@@ -78,9 +79,9 @@ export const STATE_CLASS_SPECS: readonly StateClassSpec[] = Object.freeze([
   Object.freeze({
     stateClass: 'security',
     durable: true,
-    criticalPath: true,
+    criticalPath: false,
     mayContainSensitivePayload: true,
-    description: 'Security state: trust levels, denials, quarantine. Must survive restart; must never contain raw secrets.',
+    description: 'Security state: trust levels, denials, quarantine. It must survive restart, but local control fails safe without it; it must never contain raw secrets.',
   }),
 ]);
 
@@ -88,8 +89,9 @@ export const specFor = (stateClass: StateClass): StateClassSpec =>
   STATE_CLASS_SPECS.find((spec) => spec.stateClass === stateClass) ?? STATE_CLASS_SPECS[0]!;
 
 /**
- * Only ephemeral runtime state may be treated as a hard dependency. Anything
- * else must degrade rather than disable local control.
+ * Only ephemeral runtime state may be treated as a hard dependency. Durable
+ * state, including security state, must degrade or fail safe rather than
+ * disable local control.
  */
 export const mayBlockLocalControl = (stateClass: StateClass): boolean =>
   specFor(stateClass).criticalPath;
@@ -108,9 +110,9 @@ export interface StateAuditResult {
 }
 
 /**
- * Audits state placement: anything marked critical-path while also being
- * durable (or an analytics aggregate marked critical) is a design error, because
- * it implies local control depends on infrastructure.
+ * Audits state placement: durable state must not also be critical-path,
+ * because that implies local control depends on infrastructure. Analytics must
+ * additionally never block local control.
  */
 export const auditStatePlacement = (input: {
   readonly assignments: Readonly<Record<string, StateClass>>;
@@ -121,6 +123,16 @@ export const auditStatePlacement = (input: {
   const unclassified: string[] = [];
 
   for (const [name, stateClass] of Object.entries(input.assignments)) {
+    if (!(STATE_CLASSES as readonly string[]).includes(stateClass)) {
+      unclassified.push(name);
+      findings.push({
+        stateClass: 'ephemeral-runtime',
+        severity: 'MAJOR',
+        issue: `'${name}' is assigned to unknown state class '${stateClass}'`,
+        fix: 'Assign one of the six canonical state classes.',
+      });
+      continue;
+    }
     const spec = specFor(stateClass);
     if (input.mustWorkOffline?.includes(name) && !spec.criticalPath) {
       findings.push({
@@ -128,6 +140,14 @@ export const auditStatePlacement = (input: {
         severity: 'MAJOR',
         issue: `'${name}' must work offline but is classified '${stateClass}', which is not critical-path`,
         fix: 'Classify as ephemeral-runtime, or guarantee an in-memory fallback path.',
+      });
+    }
+    if (spec.durable && spec.criticalPath) {
+      findings.push({
+        stateClass,
+        severity: 'MAJOR',
+        issue: `'${name}' is durable and critical-path, so local control depends on restart-persistent infrastructure`,
+        fix: 'Make it ephemeral, or provide a fail-safe local fallback and mark it non-critical.',
       });
     }
     if (spec.stateClass === 'analytics' && spec.criticalPath) {

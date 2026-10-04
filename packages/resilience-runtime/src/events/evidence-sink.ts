@@ -55,6 +55,8 @@ export const TELEMETRY_CLASSIFICATIONS: readonly TelemetryClassification[] = Obj
   defineTelemetry('runtime_decision_confidence', 'diagnostic', true, 'Decision confidence distribution.'),
   defineTelemetry('runtime_observation_staleness', 'diagnostic', true, 'Observation staleness distribution.'),
   defineTelemetry('runtime_telemetry_failures_total', 'diagnostic', true, 'Telemetry export failures observed locally.'),
+  defineTelemetry('runtime_telemetry_redactions_total', 'diagnostic', true, 'Secret redactions performed before retention or export.'),
+  defineTelemetry('runtime_event_invalid_total', 'diagnostic', true, 'Events retained without satisfying taxonomy validation.'),
   defineTelemetry('runtime_event_export_failures_total', 'diagnostic', true, 'Event export failures observed locally.'),
   defineTelemetry('runtime_persistence_failures_total', 'diagnostic', true, 'Persistence failures observed locally.'),
   defineTelemetry('runtime_policy_denied_total', 'security', true, 'Policy denials by reason class.'),
@@ -100,8 +102,8 @@ export interface EvidenceSinkOptions {
  *  2. export failure is counted and swallowed — it never propagates to the
  *     control loop;
  *  3. payloads are redacted before both retention and export;
- *  4. events failing taxonomy validation are dropped and counted, unless
- *     `rejectInvalidEvents` is disabled.
+ *  4. events failing taxonomy validation are annotated and counted by default;
+ *     they are discarded only when `rejectInvalidEvents` is explicitly enabled.
  */
 export class EvidencePreservingEventSink implements EventSink {
   private readonly local: ExportedEvent[] = [];

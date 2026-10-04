@@ -18,6 +18,7 @@ import {
   classificationFor,
   isRegisteredTelemetry,
 } from '../src/events/evidence-sink.js';
+import { runtimeMetricNames } from '../src/telemetry/telemetry.js';
 import {
   STATE_CLASSES,
   STATE_CLASS_SPECS,
@@ -407,6 +408,17 @@ describe('#281 t8: telemetry classification and leak prevention', () => {
     expect(JSON.stringify(exported)).not.toContain('hunter2');
   });
 
+  it('registers sink-generated invalid-event and redaction counters', () => {
+    expect(isRegisteredTelemetry('runtime_event_invalid_total')).toBe(true);
+    expect(isRegisteredTelemetry('runtime_telemetry_redactions_total')).toBe(true);
+  });
+
+  it('keeps the legacy metric registry aligned with classifications', () => {
+    expect([...runtimeMetricNames].sort()).toEqual(
+      TELEMETRY_CLASSIFICATIONS.map((entry) => entry.metric).sort(),
+    );
+  });
+
   it('knows which metrics are registered', () => {
     expect(isRegisteredTelemetry('runtime_cycles_total')).toBe(true);
     expect(isRegisteredTelemetry('nope')).toBe(false);
@@ -429,9 +441,9 @@ describe('#281 t2: state class separation', () => {
     }
   });
 
-  it('makes only ephemeral runtime and security state critical-path', () => {
+  it('makes only ephemeral runtime state critical-path', () => {
     expect(mayBlockLocalControl('ephemeral-runtime')).toBe(true);
-    expect(mayBlockLocalControl('security')).toBe(true);
+    expect(mayBlockLocalControl('security')).toBe(false);
     expect(mayBlockLocalControl('persistent-operational')).toBe(false);
     expect(mayBlockLocalControl('analytics')).toBe(false);
     expect(mayBlockLocalControl('historical')).toBe(false);
@@ -453,6 +465,21 @@ describe('#281 t2: state class separation', () => {
       assignments: { mutations: 'persistent-operational' },
       mustWorkOffline: ['mutations'],
     });
+    expect(result.findings.some((finding) => finding.severity === 'MAJOR')).toBe(true);
+  });
+
+  it('flags durable critical-path state as an infrastructure dependency', () => {
+    const result = auditStatePlacement({
+      assignments: { trust: 'security' },
+    });
+    expect(result.findings).toEqual([]);
+  });
+
+  it('flags unknown state classes instead of leaving them unreported', () => {
+    const result = auditStatePlacement({
+      assignments: { mystery: 'unclassified-state' as never },
+    });
+    expect(result.unclassified).toEqual(['mystery']);
     expect(result.findings.some((finding) => finding.severity === 'MAJOR')).toBe(true);
   });
 

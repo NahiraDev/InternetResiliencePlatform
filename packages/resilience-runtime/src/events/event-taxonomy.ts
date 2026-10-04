@@ -39,11 +39,14 @@ export type PipelineStage = (typeof PIPELINE_STAGES)[number];
  *
  *  - `correlationId` spans one causal chain and is minted once, at the trigger.
  *    Everything downstream must carry the same value.
- *  - `decisionId` identifies one decision and may fork: a chain can contain many.
- *  - `transactionId` identifies one mutation attempt, and is unique per attempt.
+ *  - `decisionId` identifies one decision and begins when the decision record
+ *    is persisted; it may fork because a chain can contain many decisions.
+ *  - `transactionId` identifies one mutation attempt and begins when the
+ *    mutation boundary starts that attempt.
  *
  * The three are deliberately distinct: reusing one id for all three is exactly
- * what makes a trace ambiguous.
+ * what makes a trace ambiguous. Earlier stages therefore require only the IDs
+ * that can already exist.
  */
 export const IDENTITY_FIELDS = [
   'correlationId',
@@ -92,54 +95,54 @@ export const EVENT_TAXONOMY: readonly EventDefinition[] = Object.freeze([
   define('runtime.observation.updated', 'evidence', ['correlationId'], 'New observation evidence was admitted.'),
   define('runtime.fabric.discovered', 'evidence', ['correlationId'], 'Programmable fabric resources were discovered.'),
   // --- diagnosis ---
-  define('runtime.incident.detected', 'diagnosis', ['correlationId', 'decisionId'], 'An incident was classified from evidence.'),
+  define('runtime.incident.detected', 'diagnosis', ['correlationId'], 'An incident was classified from evidence.'),
   define('autopilot.circuit_breaker.opened', 'diagnosis', ['correlationId'], 'A circuit breaker opened.'),
   // --- candidate ---
-  define('runtime.candidate.generated', 'candidate', ['correlationId', 'decisionId'], 'Candidate actions were generated from a diagnosis.'),
-  define('runtime.arbitration.conflict', 'candidate', ['correlationId', 'decisionId'], 'Intent arbitration reported a conflict.'),
+  define('runtime.candidate.generated', 'candidate', ['correlationId'], 'Candidate actions were generated from a diagnosis.'),
+  define('runtime.arbitration.conflict', 'candidate', ['correlationId'], 'Intent arbitration reported a conflict.'),
   // --- decision ---
   define('runtime.decision.recorded', 'decision', ['correlationId', 'decisionId'], 'A decision record was persisted.'),
   // --- policy ---
-  define('runtime.policy.evaluated', 'policy', ['correlationId', 'decisionId'], 'Policy was evaluated for a candidate.'),
+  define('runtime.policy.evaluated', 'policy', ['correlationId'], 'Policy was evaluated for a candidate.'),
   // --- safety ---
-  define('runtime.safety.assessed', 'safety', ['correlationId', 'decisionId'], 'Safety kernel assessed a plan.'),
-  define('runtime.safety.blocked', 'safety', ['correlationId', 'decisionId'], 'Safety blocked a plan.'),
-  define('runtime.safety.checkpoint.created', 'safety', ['correlationId', 'decisionId'], 'A safety checkpoint was captured.'),
-  define('runtime.safety.completed', 'safety', ['correlationId', 'decisionId'], 'Safety evaluation completed.'),
-  define('runtime.mutation.blocked', 'safety', ['correlationId', 'decisionId', 'transactionId'], 'A mutation was blocked by a gate.'),
-  define('runtime.mutation.ai-intent-ignored', 'safety', ['correlationId', 'decisionId', 'transactionId'], 'An AI-recommended intent was discarded.'),
-  define('runtime.autonomy.violation', 'safety', ['correlationId', 'decisionId'], 'An autonomy boundary was violated.'),
+  define('runtime.safety.assessed', 'safety', ['correlationId'], 'Safety kernel assessed a plan.'),
+  define('runtime.safety.blocked', 'safety', ['correlationId'], 'Safety blocked a plan.'),
+  define('runtime.safety.checkpoint.created', 'safety', ['correlationId'], 'A safety checkpoint was captured.'),
+  define('runtime.safety.completed', 'safety', ['correlationId'], 'Safety evaluation completed.'),
+  define('runtime.mutation.blocked', 'safety', ['correlationId', 'transactionId'], 'A mutation was blocked by a gate.'),
+  define('runtime.mutation.ai-intent-ignored', 'safety', ['correlationId', 'transactionId'], 'An AI-recommended intent was discarded.'),
+  define('runtime.autonomy.violation', 'safety', ['correlationId'], 'An autonomy boundary was violated.'),
   // --- plan ---
-  define('runtime.plan.created', 'plan', ['correlationId', 'decisionId'], 'An action plan was produced.'),
-  define('runtime.plan.rejected', 'plan', ['correlationId', 'decisionId'], 'A plan was rejected.'),
+  define('runtime.plan.created', 'plan', ['correlationId'], 'An action plan was produced.'),
+  define('runtime.plan.rejected', 'plan', ['correlationId'], 'A plan was rejected.'),
   // --- action ---
-  define('runtime.execution.started', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A mutation began applying.'),
-  define('runtime.execution.completed', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A mutation returned a result.'),
-  define('runtime.execution.failed', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A mutation failed.'),
-  define('runtime.mutation.applying', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A mutation is about to be applied.'),
-  define('runtime.mutation.committed', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A mutation was committed.'),
-  define('runtime.transaction.created', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A transaction was created.'),
-  define('runtime.transaction.executing', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A transaction began executing.'),
-  define('runtime.transaction.duplicate', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A duplicate transaction was suppressed.'),
-  define('runtime.transaction.committed', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A transaction committed.'),
-  define('runtime.transaction.failed', 'action', ['correlationId', 'decisionId', 'transactionId'], 'A transaction failed.'),
+  define('runtime.execution.started', 'action', ['correlationId', 'transactionId'], 'A mutation began applying.'),
+  define('runtime.execution.completed', 'action', ['correlationId', 'transactionId'], 'A mutation returned a result.'),
+  define('runtime.execution.failed', 'action', ['correlationId', 'transactionId'], 'A mutation failed.'),
+  define('runtime.mutation.applying', 'action', ['correlationId', 'transactionId'], 'A mutation is about to be applied.'),
+  define('runtime.mutation.committed', 'action', ['correlationId', 'transactionId'], 'A mutation was committed.'),
+  define('runtime.transaction.created', 'action', ['correlationId', 'transactionId'], 'A transaction was created.'),
+  define('runtime.transaction.executing', 'action', ['correlationId', 'transactionId'], 'A transaction began executing.'),
+  define('runtime.transaction.duplicate', 'action', ['correlationId', 'transactionId'], 'A duplicate transaction was suppressed.'),
+  define('runtime.transaction.committed', 'action', ['correlationId', 'transactionId'], 'A transaction committed.'),
+  define('runtime.transaction.failed', 'action', ['correlationId', 'transactionId'], 'A transaction failed.'),
   // --- verification ---
-  define('runtime.verification.started', 'verification', ['correlationId', 'decisionId', 'transactionId'], 'Outcome verification began.'),
-  define('runtime.verification.completed', 'verification', ['correlationId', 'decisionId', 'transactionId'], 'Outcome verification finished.'),
+  define('runtime.verification.started', 'verification', ['correlationId', 'transactionId'], 'Outcome verification began.'),
+  define('runtime.verification.completed', 'verification', ['correlationId', 'transactionId'], 'Outcome verification finished.'),
   // --- outcome ---
-  define('runtime.outcome.verified', 'outcome', ['correlationId', 'decisionId', 'transactionId'], 'A verified outcome was learned from.'),
+  define('runtime.outcome.verified', 'outcome', ['correlationId', 'transactionId'], 'A verified outcome was learned from.'),
   define('runtime.state.changed', 'outcome', ['correlationId'], 'Runtime state transitioned.'),
   // --- recovery ---
-  define('runtime.recovery.started', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Recovery began.'),
-  define('runtime.recovery.completed', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Recovery finished.'),
-  define('runtime.safety.rollback.started', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Rollback began.'),
-  define('runtime.safety.rollback.completed', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Rollback finished.'),
-  define('runtime.safety.rollback.failed', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Rollback failed.'),
-  define('runtime.mutation.rolledback', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'A mutation was compensated and verified.'),
-  define('runtime.safety.recovery.started', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Safety recovery began.'),
-  define('runtime.safety.recovery.completed', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Safety recovery finished.'),
-  define('runtime.mutation.recovered', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Recovery succeeded after escalation.'),
-  define('runtime.mutation.recovery-failed', 'recovery', ['correlationId', 'decisionId', 'transactionId'], 'Recovery failed and needs operator action.'),
+  define('runtime.recovery.started', 'recovery', ['correlationId', 'transactionId'], 'Recovery began.'),
+  define('runtime.recovery.completed', 'recovery', ['correlationId', 'transactionId'], 'Recovery finished.'),
+  define('runtime.safety.rollback.started', 'recovery', ['correlationId', 'transactionId'], 'Rollback began.'),
+  define('runtime.safety.rollback.completed', 'recovery', ['correlationId', 'transactionId'], 'Rollback finished.'),
+  define('runtime.safety.rollback.failed', 'recovery', ['correlationId', 'transactionId'], 'Rollback failed.'),
+  define('runtime.mutation.rolledback', 'recovery', ['correlationId', 'transactionId'], 'A mutation was compensated and verified.'),
+  define('runtime.safety.recovery.started', 'recovery', ['correlationId', 'transactionId'], 'Safety recovery began.'),
+  define('runtime.safety.recovery.completed', 'recovery', ['correlationId', 'transactionId'], 'Safety recovery finished.'),
+  define('runtime.mutation.recovered', 'recovery', ['correlationId', 'transactionId'], 'Recovery succeeded after escalation.'),
+  define('runtime.mutation.recovery-failed', 'recovery', ['correlationId', 'transactionId'], 'Recovery failed and needs operator action.'),
 ]);
 
 export const eventDefinition = (type: string): EventDefinition | undefined =>

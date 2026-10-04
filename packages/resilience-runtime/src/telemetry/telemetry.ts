@@ -1,4 +1,5 @@
 import type { TelemetrySink } from '../ports/ports.js';
+import { TELEMETRY_CLASSIFICATIONS } from '../events/evidence-sink.js';
 
 export class InMemoryTelemetrySink implements TelemetrySink {
   private values: Record<string, number> = {};
@@ -45,18 +46,10 @@ export class ResilientTelemetrySink implements TelemetrySink {
     }
   }
 }
-export const runtimeMetricNames = [
-  'runtime_cycles_total',
-  'runtime_cycles_failed_total',
-  'runtime_decisions_total',
-  'runtime_actions_total',
-  'runtime_actions_failed_total',
-  'runtime_verifications_failed_total',
-  'runtime_recoveries_total',
-  'runtime_rollbacks_total',
-  'runtime_blocked_total',
-  'runtime_degraded_total',
-  'runtime_cycle_duration',
-  'runtime_decision_confidence',
-  'runtime_observation_staleness',
-] as const;
+/**
+ * Canonical metric registry. This is derived from telemetry classifications so
+ * legacy and classified sinks cannot diverge on accepted metric names.
+ */
+export const runtimeMetricNames: readonly string[] = Object.freeze(
+  TELEMETRY_CLASSIFICATIONS.map((entry) => entry.metric),
+);

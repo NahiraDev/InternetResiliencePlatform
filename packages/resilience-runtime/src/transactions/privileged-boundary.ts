@@ -206,6 +206,8 @@ export interface MutationRequest {
   readonly idempotencyKey: string;
   readonly resourceId: string;
   readonly resourceVersion?: string;
+  /** Caller-supplied transaction identity for cross-boundary traceability. */
+  readonly transactionId?: string;
   /** Epoch the decision was computed against; a stale epoch is rejected. */
   readonly epoch?: number;
   readonly ai?: AiContribution;
@@ -343,7 +345,7 @@ export class PrivilegedMutationBoundary {
 
   private async runMachine(request: MutationRequest): Promise<TransactionOutcome> {
     const phases: PhaseRecord[] = [];
-    const transactionId = nextId('transaction');
+    const transactionId = request.transactionId ?? nextId('transaction');
     const startedAt = this.options.nowMs();
     const { plan, context, actor } = request;
     const budget = () => startedAt + this.options.mutationTimeoutMs;
