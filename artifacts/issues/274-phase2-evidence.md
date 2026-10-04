@@ -32,12 +32,13 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
 
 - `createPostgresIntentStore()` reads env vars:
   - `IRP_INTENT_DB_HOST` (required)
-  - `IRP_INTENT_DB_PORT` (default 5432)
-  - `IRP_INTENT_DB_NAME` (default `irp`)
-  - `IRP_INTENT_DB_USER` (default `irp`)
-  - `IRP_INTENT_DB_PASSWORD` (required)
+  - `IRP_INTENT_DB_PORT` (default 5432, validated 1–65535)
+  - `IRP_INTENT_DB_NAME` (default `irp`, required non-empty)
+  - `IRP_INTENT_DB_USER` (default `irp`, required non-empty)
+  - `IRP_INTENT_DB_PASSWORD` (optional; empty allowed for trust auth)
   - `IRP_INTENT_DB_SSL` (optional, default false)
-  - `IRP_INTENT_DB_MAX` (default 10)
+  - `IRP_INTENT_DB_MAX` (default 10, validated >= 1)
+  - invalid settings throw before the driver is loaded.
 - `createCanonicalRuntimeWithPostgres()` — async constructor that auto-creates store from env
 - `createCanonicalRuntime` remains synchronous for backward compatibility
 - Daemon/CLI continue to work with synchronous `createCanonicalRuntime`
@@ -80,7 +81,11 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
 - No etcd/Consul backend — only PostgreSQL implemented
 - No connection pooling tuning beyond `max` config
 - No intent store metrics/telemetry integration yet
-- `pg` is optional dependency — not in `package.json` dependencies (loaded dynamically)
+- `pg` is optional — no static import (type-only); loaded dynamically in
+  `initialize()` only, with settings validated first.
+- Arbitration conflicts are journaled durably: `RuntimePolicyArbitrator`
+  calls `IntentStore.recordConflicts`; `InMemoryIntentStore` keeps a journal and
+  `PostgresIntentStore` writes `intent_conflicts` (migration 002).
 
 ## Potential follow-up
 

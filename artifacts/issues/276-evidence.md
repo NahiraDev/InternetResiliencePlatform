@@ -182,13 +182,17 @@ and refusal, knowledge flipping the selection, and federation-outage survival.
 
 - The knowledge store is in-memory. Durable knowledge persistence across restarts
   belongs to Section J (#281), which is still unimplemented.
-- `KnowledgeStore` is not yet composed into `createCanonicalRuntime`; the
-  canonical decision provider still uses the pre-existing `annotateHistory()`
-  path. The integration contract (`knowledgeEvidenceFunction`) exists and is
-  tested, but wiring it into the composed runtime is the next step.
+- `KnowledgeStore` is composed into `createCanonicalRuntime` (both sync and
+  Postgres factories) and consumed by `ResilienceRuntime` planning through
+  `knowledgeEvidenceFunction`, including per-candidate destination/provider/path
+  arbitration via `arbitratedFor`. Proven by
+  `tests/canonical-knowledge-composition.test.ts` (“routes compositional
+  knowledge into canonical planning decisions”), which flips the selected
+  strategy after valid path-scoped knowledge is admitted.
 - `probe-federation.ts` signature verification predates this work; the knowledge
   plane enforces _presence_ of a signature and trust level, not cryptographic
   re-verification of the underlying probe transport.
-- Sections H (#279) and J (#281) remain unimplemented, so #272 is still not
-  end-to-end complete.
+- Sections H (#279) and J (#281) are implemented; see their evidence reports
+  for remaining external-only blockers (remote CI, release artifacts,
+  device soak).
 - No CI run has executed against this SHA.

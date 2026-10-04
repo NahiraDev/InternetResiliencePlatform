@@ -20,6 +20,7 @@ import {
   NetworkEventStormGuard,
   ObservationDedupCache,
   evaluateSelfHealth,
+  withOperationTimeout,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
   type Observation,
@@ -328,19 +329,23 @@ export class RuntimeDaemonHost {
             reason: 'destination is outside configured probe scope',
           };
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5_000);
         try {
-          const result = await this.destinationProbe.execute({
-            signal: controller.signal,
-            now: () => new Date().toISOString(),
-          });
+          const result = await withOperationTimeout(
+            'destination-probe',
+            this.destinationProbe.execute({
+              signal: controller.signal,
+              now: () => new Date().toISOString(),
+            }),
+            5_000,
+            controller.signal,
+          );
           return {
             status: result.success ? ('reachable' as const) : ('failed' as const),
             latencyMs: result.latencyMs,
             ...(result.error ? { reason: result.error } : {}),
           };
         } finally {
-          clearTimeout(timeout);
+          controller.abort();
         }
       },
     },

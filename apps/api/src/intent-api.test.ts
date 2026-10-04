@@ -1,7 +1,12 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
 import { ValidationAppError, ConflictAppError, NotFoundAppError } from '@irp/core';
-import { InMemoryIntentStore, registerIntentRoutes } from './intent-api.js';
+import {
+  DatabaseIntentStore,
+  InMemoryIntentStore,
+  registerIntentRoutes,
+  type ArbitrationConflict,
+} from './intent-api.js';
 
 describe('intent API', () => {
   const build = async () => {
@@ -145,5 +150,70 @@ describe('intent API', () => {
     const response = await app.inject({ method: 'GET', url: '/api/v1/intents/missing' });
     expect(response.statusCode).toBe(404);
     await app.close();
+  });
+
+  it('returns not found for an unknown conflict id', async () => {
+    const app = await build();
+    const response = await app.inject({ method: 'GET', url: '/api/v1/intents/conflicts/nope' });
+    expect(response.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('database conflict journal', () => {
+  const conflict = (timestamp = new Date().toISOString()): ArbitrationConflict => ({
+    intentA: { intentId: 'a', desiredOutcome: 'primary', priority: 'high', version: 1 },
+    intentB: { intentId: 'b', desiredOutcome: 'secondary', priority: 'high', version: 1 },
+    reason: 'overlap',
+    resolution: 'supersede-a' as const,
+    timestamp,
+  });
+  const owner = { principalId: 'test-principal' };
+
+  it('persists recorded conflicts to the database', async () => {
+    const queries: unknown[][] = [];
+    const client = {
+      async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]) {
+        queries.push([strings.join('?'), values]);
+        return [];
+      },
+      async $disconnect() {},
+    };
+    const store = new DatabaseIntentStore(client);
+    await store.recordConflict(conflict(), owner);
+    expect(queries.some(([sql]) => String(sql).includes('IntentConflictRecord'))).toBe(true);
+  });
+
+  it('serves the local mirror when the database is unavailable', async () => {
+    const failing = {
+      async $queryRaw(): Promise<unknown> {
+        throw new Error('db-down');
+      },
+      async $disconnect() {},
+    };
+    const store = new DatabaseIntentStore(failing);
+    await store.recordConflict(conflict(), owner);
+    const listed = await store.listConflicts(owner, 10);
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.reason).toBe('overlap');
+  });
+
+  it('drains buffered conflicts once the database recovers', async () => {
+    let down = true;
+    const queries: unknown[][] = [];
+    const flapping = {
+      async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]) {
+        if (down) throw new Error('db-down');
+        queries.push([strings.join('?'), values]);
+        return [];
+      },
+      async $disconnect() {},
+    };
+    const store = new DatabaseIntentStore(flapping);
+    await store.recordConflict(conflict(), owner);
+    expect(await store.listConflicts(owner, 10)).toHaveLength(1);
+    down = false;
+    await store.listConflicts(owner, 10);
+    expect(queries.some(([sql]) => String(sql).includes('IntentConflictRecord'))).toBe(true);
   });
 });

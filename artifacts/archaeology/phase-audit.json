@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T20:53:15.948Z",
+  "generatedAt": "2026-10-04T22:18:50.347Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -527,10 +527,10 @@
       "kind": "issue-evidence",
       "number": null,
       "beyondPhase78": false,
-      "claimsImplementation": false,
+      "claimsImplementation": true,
       "citesEvidence": true,
       "hasTestEvidence": true,
-      "evidenceClass": "descriptive"
+      "evidenceClass": "evidence-backed"
     },
     {
       "file": "artifacts/issues/278-evidence.md",
@@ -589,6 +589,6 @@
       "docs/phases/phase-76.md",
       "docs/phases/phase-80.md"
     ],
-    "evidenceBacked": 13
+    "evidenceBacked": 14
   }
 }

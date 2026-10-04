@@ -301,3 +301,14 @@ model NetworkIntentRecord {
   @@index([ownerScopeKey, status, updatedAt])
   @@unique([ownerScopeKey, idempotencyKey])
 }
+
+model IntentConflictRecord {
+  id          String   @id @db.VarChar(256)
+  intentAId   String   @db.VarChar(128)
+  intentBId   String   @db.VarChar(128)
+  reason      String
+  resolution  String   @db.VarChar(32)
+  ownerScopeKey String @db.VarChar(384)
+  recordedAt  DateTime
+  @@index([ownerScopeKey, recordedAt])
+}

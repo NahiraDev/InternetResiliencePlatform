@@ -208,16 +208,17 @@ circular safety, and the four bypass guards.
 
 ## Known limitations
 
-- `PrivilegedMutationBoundary` is not yet composed into `createCanonicalRuntime`.
-  The machine, its guards and its repository-level bypass guard are in place and
-  tested; the composed runtime still routes through `ActionTransactionEngine`.
-  Wiring is the next step and is required before #278's acceptance criterion can
-  be claimed for the live path.
+- `PrivilegedMutationBoundary` is composed into the canonical runtime via
+  `createPrivilegedMutationBoundary`. When a canonical knowledge store is
+  present, live mutations route through the boundary's phase machine; the
+  legacy `ActionTransactionEngine` path remains only for direct
+  non-canonical `ResilienceRuntime` use and its pre-existing safety tests.
 - `SecretSentry` redacts by pattern; it does not perform cryptographic
   verification of secrets or guarantee removal from an opaque byte buffer.
 - `packages/kernel`'s `CapabilityAuthorizer` and this `TrustBoundaryAuthorizer`
   remain two distinct authorizers by design. Consolidating them is a cross-package
   contract migration, not a cleanup.
-- Sections H (#279) and J (#281) remain unimplemented, so #272 is still not
-  end-to-end complete.
+- Sections H (#279) and J (#281) are implemented; see their evidence reports
+  for remaining external-only blockers (remote CI, release artifacts,
+  device soak).
 - No CI run has executed against this SHA.

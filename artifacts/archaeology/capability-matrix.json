@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T20:53:15.742Z",
+  "generatedAt": "2026-10-04T22:18:50.081Z",
   "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
@@ -207,10 +207,13 @@
         "packages/resilience-runtime/src/adapter-registry.ts#dns"
       ],
       "owners": [
+        "@irp/daemon",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:dns"
       ],
       "consumers": [
+        "apps/daemon/src/index.test.ts",
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapters/adapters.ts",
         "packages/resilience-runtime/src/autopilot/autopilot.ts",
@@ -220,6 +223,8 @@
         "packages/resilience-runtime/src/scenario-lab/scenario.ts"
       ],
       "runtimePaths": [
+        "apps/daemon/src/index.test.ts",
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#dns",
         "packages/resilience-runtime/src/adapters/adapters.ts",

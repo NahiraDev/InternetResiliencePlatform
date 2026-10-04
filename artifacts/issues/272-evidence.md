@@ -1,174 +1,159 @@
-# Evidence report — issue #272
+# Evidence report — issue #272 (master EPIC closure)
 
 Parent/master EPIC: [#272](https://github.com/NahiraDev/InternetResiliencePlatform/issues/272)  
-Local verification SHA: `3c9c998`  
-Scope: implement every locally solvable #272 requirement without creating a second control plane, policy/safety engine, planner, transaction executor, event bus, or privileged client authority.
+Workstreams: #273–#284. Local verification HEAD: `9722047` (+ untracked `272-evidence.md`, this file).
 
-## Canonical result
+This is the required final report: what existed, what was missing, what was
+connected, what was replaced, what was removed as duplicate, what was verified,
+and what remains blocked by genuine external dependencies.
 
-The repository now traverses the required pipeline through one canonical runtime:
+## Objective
+
+Turn the repository into the target autonomous network superplatform, with one
+canonical control authority and an evidence-backed closed loop:
 
 `Intent → Constraints/Objectives → Resource Discovery → Knowledge → Diagnosis → Candidate Strategies → Optimization → Policy → Security → Safety → Plan → Reservation/Scheduling → Transactional Execution → Data-plane Outcome → Verification → Commit OR Rollback → Recovery → Learning → Knowledge Update`
-
-Canonical ownership remains:
-
-- `@irp/resilience-runtime`
-- `ResilienceRuntime`
-- `createCanonicalRuntime`
-- `PrivilegedMutationBoundary`
-- `DeterministicPlanner.planAgainstObjectives`
-- `KnowledgeStore`
-- `OutcomeLearningLoop`
-- `EvidencePreservingEventSink`
-
-No competing production authority was introduced.
 
 ## 1. What existed
 
 The baseline already contained substantial control-plane primitives:
+canonical runtime cycle, observation aggregation, incident correlation, intent
+compiler/arbitration/governance, policy evaluation, deterministic planner,
+validation, execution, verification, safety kernel with checkpoint/rollback,
+recovery provider, transactions, knowledge/federation/history advisories,
+fabric discovery/selection, adapters, runtime lab/replay, telemetry, event
+sinks, persistence stores, platform clients, API/CLI/daemon hosts, and an
+architecture contract with CI guards.
 
-- canonical runtime cycle, observation aggregation, incidents, policy arbitration, governance, planning, validation, execution, verification, safety checkpoints, rollback/recovery, telemetry, event sinks, persistence stores, replay/scenario lab, fabric discovery/selection, adapters, and platform clients;
-- signed federated probes, historical advisory inputs, capability registries, objective scoring, transaction idempotency, secret redaction, architecture checks, archaeology output, integration graphs, and assurance matrices.
+## 2. What was missing (found by re-audit, then fixed)
 
-Those components were present but not fully connected into one verifiable autonomous path.
+A recheck of all workstreams against the tree found structural gaps behind
+previously green reports. Each was fixed with executable code plus tests:
 
-## 2. What was missing
+| # | Gap | Fix |
+|---|---|---|
+| 273 | orphan detector read the wrong vitest config (vacuous 0-orphan claim) | reads `packages/resilience-runtime/vitest.config.ts`, supports both quote styles |
+| 273 | capability matrix required absent `dist/` | source-declared registry fallback when `dist/` is unavailable |
+| 273 | phase audit ignored `artifacts/issues/` evidence | audits both `docs/phases` (45) and `artifacts/issues` (12) |
+| 273 | authority map missed import/export and near-miss authorities | import/export detection plus canonical-component owner map |
+| 275 | legacy `FabricCapabilityRegistry` alongside enforceable authority | removed from production path, deprecated, test moved to `capabilityAuthority` |
+| 275 | state-machine assert never enforced on mutation paths | enforced in `discover()` and `reconcileRoutingGraph()`; same-state rediscovery allowed |
+| 275 | scope-collision abort untested | tested: discovery fails closed on conflicting scope claims |
+| 275 | `countDistinctFailureDomains` unwired | surfaced on `DiverseSelection.distinctFailureDomains` |
+| 274 | static `pg` import contradicted optional-dependency claim | type-only import; dynamic load in `initialize()` only |
+| 274 | no config validation | host/database/user/port/max validated before driver load |
+| 274 | intent store symbols unreachable from package root | explicit root-barrel exports, tested |
+| 274 | duplicate policy-conflict resolvers + global registry singleton | `RuntimePolicyArbitrator` delegates to canonical `PolicyRegistry`; global singleton removed |
+| 274 | conflict journal had no runtime→store wiring; API DB stubs | `IntentStore.recordConflicts` (memory + Postgres `intent_conflicts` table); arbitrator persists conflicts; API `DatabaseIntentStore` journals durably with degradable buffering; `GET /conflicts/:id` implemented |
+| 281 | security `criticalPath` contradicted its own spec | durable security state is fail-safe, not critical-path |
+| 281 | audit never filled `unclassified`, never checked durable+critical | both enforced |
+| 281 | sink doc inverted vs code; internal counters unregistered | doc corrected; `runtime_event_invalid_total` and `runtime_telemetry_redactions_total` classified; legacy metric list derived from classifications |
+| 281 | taxonomy demanded IDs that cannot exist yet | IDs required only where they can exist; decision/transaction IDs join downstream |
+| 281 | runtime emitted no candidate-stage event, no transaction IDs | `runtime.candidate.generated` emitted; execution/verification carry transaction IDs |
+| 281 | trace `complete` exempted candidate/recovery silently | candidate required; recovery conditional |
+| 280 | platform/explain helpers had no production consumers | daemon negotiates/enforces Linux capabilities, reports them in health; API serves `explainDecision` at `GET /runtime/decisions/:id/explanation` |
+| 282 | scenario timestamps used wall-clock | deterministic seeded scenario clock |
+| 283 | storm/dedup/self-health/timeout helpers unwired | daemon ingress sheds storms (keeping last observations), dedups repeats, reports self-health, bounds probes with `withOperationTimeout` |
+| 284 | deployment contract covered 1 package, 2 entrypoints, Linux only | all workspace manifests checked; API/CLI entrypoints asserted; observe-only client contracts; macOS launchd contract |
+| 272 | canonical boundary/knowledge wiring incomplete | `createPrivilegedMutationBoundary` factory; canonical compositions pass one shared `KnowledgeStore`; planner consumes per-candidate knowledge; replay uses canonical planner |
 
-Inspection found the following real integration gaps:
+Deliberately **not** changed (documented, not drift):
 
-- History/federation evidence was annotated but did not materially change canonical ranking.
-- Planning still had a legacy fixed-score path alongside objective-driven optimization.
-- `PrivilegedMutationBoundary` existed but was not cleanly composed into the canonical live execution path.
-- `KnowledgeStore` was composed in one runtime factory path but not consistently supplied by the Postgres composition path.
-- Replay used the legacy planner instead of the canonical objective-driven planner.
-- Event taxonomy did not cover all actually emitted runtime event types.
-- Recovery-result mapping and rollback handling needed correction so verified recovery would not trigger duplicate legacy recovery.
-- The deterministic learning estimator test was time-sensitive.
-- A duplicated `MutationSnapshot` contract risk existed across boundary/domain declarations.
-- Several naming collisions risked ambiguous duplicate contracts.
+- `CanonicalDecisionProvider` keeps metadata history annotation; final ranking
+  authority is the canonical planner gate, which now consumes knowledge.
+- `ActionTransactionEngine` remains for direct non-canonical runtime use and its
+  safety tests; the canonical live path uses the privileged boundary.
+- macOS/Windows clients stay observe-only snapshot adapters by design; their
+  non-authority is now contract-tested.
+- `ResourceReservationTable` stays a tested primitive; live concurrency control
+  is the boundary's epoch/held-mutation/idempotency gates.
+- `replayScenario` re-runs the scenario definition (documented semantics).
 
 ## 3. What was connected
 
-### Intent/objectives/optimization
-
-- `ResilienceRuntime` now always uses `DeterministicPlanner.planAgainstObjectives`.
-- Compiled-intent objectives flow into optimization weights.
-- `KnowledgeStore` arbitration flows into the planner through `knowledgeEvidenceFunction`.
-- Candidate-specific destination/provider/path/region scope is arbitrated separately, so path-scoped knowledge can change which strategy wins.
-- A canonical composition test proves the same two candidates select differently before and after valid path-scoped knowledge is admitted.
-
-### Canonical execution/security
-
-- `createPrivilegedMutationBoundary` is the only non-test construction path for the boundary.
-- `ResilienceRuntime` injects its existing executor, events, safety kernel, validator, and adapters into the factory.
-- Canonical live execution with a knowledge store passes through:
-  - prepare;
-  - snapshot;
-  - validate;
-  - policy;
-  - security;
-  - safety;
-  - apply;
-  - verify;
-  - commit.
-- Failure handling preserves:
-  - rollback;
-  - rollback verification;
-  - recovery;
-  - safe terminal outcomes.
-- A verified boundary recovery no longer triggers duplicate legacy recovery; the runtime records the verified boundary recovery result and re-observes.
-- Safety assessment emits `runtime.safety.assessed` from the canonical boundary.
-- The architecture guard continues to prohibit constructing executors, privileged execution implementations, direct transaction execution, or another boundary outside the canonical path.
-
-### Knowledge/learning composition
-
-- Canonical composition owns one `KnowledgeStore` and one `OutcomeLearningLoop` per composed runtime.
-- The same store is passed into `ResilienceRuntime`, including the Postgres composition path.
-- Each composition receives its own boundary/loop by default; injected instances are accepted rather than duplicated.
-- Rollback verification re-probes rather than trusting a rollback return code.
-- Knowledge decay, bounded evidence, explainability, observability, reversibility, and verified-only learning remain enforced by the learning loop.
-
-### Observability/state/persistence
-
-- Event taxonomy now covers all 28 actually emitted runtime event types.
-- Correlation, decision, and transaction IDs retain distinct semantics.
-- The runtime uses `EvidencePreservingEventSink` and `ClassifiedTelemetrySink`.
-- Local evidence is retained even when an external exporter fails.
-- Invalid events are annotated and counted rather than silently accepted as valid traces; configured strict mode can drop them.
-- Unregistered telemetry metrics are rejected.
-- `DegradableStore` preserves local reads and queues writes when persistence is unavailable.
-- Nine health scopes and destination/service/application outcome verification remain available for verified learning inputs.
+- Knowledge → planning: `ResilienceRuntime` arbitrates the canonical
+  `KnowledgeStore` per candidate and ranks with `planAgainstObjectives`;
+  a composition test proves identical candidates flip selection after valid
+  path-scoped knowledge is admitted.
+- Planning → execution: canonical live mutations traverse `prepare → snapshot
+  → validate → policy → security → safety → apply → verify → commit`, with
+  `rollback → verifyRollback → recover` on failure; verified boundary recovery
+  is recorded once, never duplicated by the legacy path.
+- Verification → learning: `OutcomeLearningLoop` is composed per runtime with
+  the canonical store; rollback verification re-probes; only verified outcomes
+  update estimates, memory, and intensity.
+- Execution → evidence: every canonical emission carries correlation IDs, with
+  decision/transaction IDs joined where they exist; exporter failures are
+  retained locally and counted, never propagated.
+- Hosts → canonical boundary: daemon, API, and CLI compose through
+  `createCanonicalRuntime`; the bypass guard (proven to fail on an injected
+  violation) blocks parallel executors, planners, and boundaries.
 
 ## 4. What was replaced
 
-- Legacy fixed-score planner behavior is superseded by objective-driven planning in both live runtime and replay paths.
-- Direct `new PrivilegedMutationBoundary(...)` wiring was replaced by `createPrivilegedMutationBoundary(...)`.
-- The canonical runtime no longer invents resource versions before snapshotting; version comparison occurs only when a real version is supplied.
-- Recovery success is determined by actual recovery status rather than object presence.
+- Fixed-score planning and replay ranking with objective-driven planning.
+- Direct boundary construction with the canonical `createPrivilegedMutationBoundary` factory.
+- Invented resource versions with version comparison only when a real version is supplied.
+- Recovery success by object presence with status-based mapping.
+- Dual policy-conflict merge implementations with single canonical delegation.
+- Wall-clock scenario timestamps with a deterministic seeded clock.
 
 ## 5. What was removed as duplicate
 
-- Ambiguous second capability-authorizer semantics were renamed to `TrustBoundaryAuthorizer`.
-- Ambiguous failure-classification naming was clarified as failed-layer classification.
-- Ambiguous health names were scoped as `ScopedHealthSignal` and `ScopedHealthStatus`.
-- `MutationSnapshot` is now declared once in the canonical domain contract.
-- Archaeology duplicate contracts returned to the pre-existing set: **23**, with no newly introduced duplicates.
+- Second policy-conflict resolver (`intent/arbitration.ts` implementation).
+- Global policy-registry singleton.
+- Legacy fabric registry from the production selection path.
+- Legacy `resolvePolicyConflict` export surface (type retained for compatibility).
+- Duplicate-contract count held at the pre-existing **23**; no new duplicates
+  introduced (`HealthSignal`/`HealthStatus` renamed to `ScopedHealth*`,
+  `CapabilityAuthorizer` collision renamed to `TrustBoundaryAuthorizer`).
 
 ## 6. What was verified
 
-Uncached/local verification at `3c9c998`:
+Uncached, local, at `9722047`:
 
-- `turbo run build typecheck lint test --force`: **172/172 tasks passed, 0 cached**.
-- `@irp/resilience-runtime`: **42 test files, 588 tests passed**.
-- `pnpm run validate`: **43 packages, 15 workflows, 804 files passed**.
-- `pnpm run validate:docs`: **147 Markdown/MDX files passed**.
+- `turbo run build typecheck lint test --force`: **172/172 tasks, 0 cached**.
+- `@irp/resilience-runtime`: **42 files, 604 tests**.
+- `@irp/api`: **9 files, 66 tests** (incl. conflict-journal and explanation endpoint).
+- `@irp/daemon`: **3 files, 8 tests** (incl. platform negotiation, ingress, self-health).
+- `@irp/database`: **1 file, 2 tests**.
+- `pnpm run validate`: **43 packages, 15 workflows, 806 files**.
+- `pnpm run validate:docs`: **147 files**.
 - `pnpm run architecture:check`: **passed**.
 - `pnpm run architecture:guards`: **passed**.
-- `pnpm run architecture:test`: **2/2 passed**, including the expected negative NetworkAutopilot fixture.
+- `pnpm run architecture:test`: **2/2** (incl. expected negative NetworkAutopilot fixture).
 - `pnpm run audit:deep`: **43 workspaces, 15 workflows, 0 findings**.
-- Archaeology:
-  - 45 packages;
-  - 2 entrypoints traced;
-  - 11 capabilities mapped;
-  - 0 authority violations;
-  - 45 phase documents audited;
-  - 0 orphaned tests;
-  - 0 orphaned modules;
-  - 23 duplicate contracts;
-  - 20 graph nodes reconciled, 0 unreferenced;
-  - **0 critical, 0 major, 29 minor drift findings**.
-- Integration graph: **43 components, 93 workspace edges, 10 closed-loop stages, 28 real-environment capability contracts**.
-- Full-system assurance: **PASS**, **222 components/phases, 494 source files represented, 0 missing phase docs, 0 executable surfaces without assurance**.
+- Archaeology: **45 packages, 2 entrypoints, 11 capabilities, 0 authority
+  violations, 45 phase docs + 12 issue-evidence docs audited, 0 orphans,
+  23 duplicate contracts, 20 graph nodes reconciled, 0 critical / 0 major /
+  29 minor drift**.
+- Integration graph: **43 components, 93 edges, 10 closed-loop stages,
+  28 real-environment capability contracts**.
+- Full-system assurance: **PASS — 222 components/phases, 495 source files,
+  0 missing phase docs, 0 executable surfaces without assurance**.
 
-Workstream evidence:
-
-- `artifacts/issues/273-275-evidence.md`
-- `artifacts/issues/274-evidence.md`
-- `artifacts/issues/274-phase2-evidence.md`
-- `artifacts/issues/274-phase3-evidence.md`
-- `artifacts/issues/274-phase5-evidence.md`
-- `artifacts/issues/276-evidence.md`
-- `artifacts/issues/277-evidence.md`
-- `artifacts/issues/278-evidence.md`
-- `artifacts/issues/279-evidence.md`
-- `artifacts/issues/280-282-evidence.md`
-- `artifacts/issues/283-284-evidence.md`
+Workstream evidence: `273-275`, `274` (+phase2/3/5), `276`, `277`, `278`,
+`279`, `280-282`, `283-284`, and this file under `artifacts/issues/`.
 
 ## 7. What remains blocked by genuine external dependencies
 
-No local source/test/architecture blocker remains. The following cannot be completed locally:
+No local source/test/architecture blocker remains. These cannot be completed
+from this environment:
 
-1. **Remote GitHub issue closure.** `gh`/GitHub mutation access is unavailable in this environment, so #272 and its workstream issues remain open remotely.
-2. **Remote CI execution.** No GitHub Actions run has executed against the local commit. A maintainer must push the branch/commit and obtain green CI before closing #272.
-3. **Release/tag/distribution evidence.** Tagged releases, published artifacts, checksums, and platform release inspection remain external release operations.
-4. **Physical data-plane soak.** Deterministic adapters, simulation, replay, failure injection, and unit/integration tests verify the pipeline locally; production hardware/network behavior still requires real runtime-lab/device evidence.
-5. **Separate Linux runtime gate.** Linux gate #254 remains its own tracker and is not closed by this #272 implementation work.
+1. **Remote CI execution** — no GitHub Actions run has executed against these
+   commits; a maintainer must push and confirm green CI before closing #272.
+2. **Remote issue closure** — no `gh`/API mutation access here; #272–#284 stay
+   open until a maintainer closes them on CI evidence.
+3. **Release/tag/distribution evidence** — tags, published artifacts, checksums,
+   and platform inspection are release operations, not source work.
+4. **Physical data-plane soak** — deterministic adapters, simulation, replay,
+   failure injection, and unit/integration tests verify the pipeline locally;
+   production hardware/network behavior still needs real runtime-lab/device runs.
+5. **Linux runtime gate #254** — a separate tracker, not closed by this work.
 
 ## Closure assessment
 
-All locally solvable #272 source/runtime/test/architecture work is complete at `3c9c998`. Maintainer action required:
-
-1. Review this report and the listed workstream evidence.
-2. Push the commit.
-3. Confirm green remote CI.
-4. Close #272 and its completed workstream issues only after that evidence exists.
+All locally solvable #272 source/runtime/test/architecture work is complete.
+Maintainer actions: review this report and the listed evidence, push the
+commits, confirm green remote CI, then close #272 and its completed
+workstreams on that evidence — never on this report alone.

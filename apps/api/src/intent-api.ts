@@ -17,6 +17,7 @@ import {
   type DatabaseClient,
   type IntentRecordRow,
 } from '@irp/database';
+import { DegradableStore } from '@irp/resilience-runtime';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
@@ -177,6 +178,23 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
     this.conflicts.push(_conflict);
   }
 
+  async getConflict(id: string): Promise<ArbitrationConflict | undefined> {
+    return this.conflicts.find(
+      (conflict) =>
+        createHash('sha256')
+          .update(
+            JSON.stringify([
+              conflict.intentA.intentId,
+              conflict.intentB.intentId,
+              conflict.reason,
+              conflict.resolution,
+              conflict.timestamp,
+            ]),
+          )
+          .digest('hex') === id,
+    );
+  }
+
   async listConflicts(
     ownership: IntentOwnership,
     limit: number,
@@ -297,25 +315,151 @@ const toRow = (
 
 export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
   private readonly repository: ReturnType<typeof createIntentRepository>;
-  private readonly conflicts: ArbitrationConflict[] = [];
+  private readonly conflictMirror: { conflict: ArbitrationConflict; ownerScopeKey: string }[] = [];
+  /**
+   * Degradable write buffer for conflict records: when the database is
+   * unavailable, records are retained locally and retried on the next read,
+   * so exporter/collector outages degrade the journal rather than losing it.
+   */
+  private readonly conflictPending = new DegradableStore();
 
   constructor(client: Pick<DatabaseClient, '$queryRaw'>) {
     this.repository = createIntentRepository(client);
   }
 
-  recordConflict(_conflict: ArbitrationConflict): void {
-    // In a real implementation, this would persist to the database
-    // For now, we'll log a warning
-    console.warn('DatabaseIntentStore.recordConflict not implemented for database');
+  private conflictId(conflict: ArbitrationConflict): string {
+    return createHash('sha256')
+      .update(
+        JSON.stringify([
+          conflict.intentA.intentId,
+          conflict.intentB.intentId,
+          conflict.reason,
+          conflict.resolution,
+          conflict.timestamp,
+        ]),
+      )
+      .digest('hex');
+  }
+
+  async recordConflict(
+    conflict: ArbitrationConflict,
+    ownership: IntentOwnership = { principalId: 'unknown' },
+  ): Promise<void> {
+    const scopeKey = ownershipKey(ownership);
+    const entry = { conflict, ownerScopeKey: scopeKey };
+    this.conflictMirror.push(entry);
+    while (this.conflictMirror.length > 1000) this.conflictMirror.shift();
+    try {
+      await this.repository.recordConflict({
+        id: this.conflictId(conflict),
+        intentAId: conflict.intentA.intentId,
+        intentBId: conflict.intentB.intentId,
+        reason: conflict.reason,
+        resolution: conflict.resolution,
+        ownerScopeKey: scopeKey,
+        recordedAt: conflict.timestamp,
+      });
+    } catch {
+      // Database unavailable: retain locally and retry on the next read.
+      await this.conflictPending.set(this.conflictId(conflict), entry);
+    }
+  }
+
+  private toArbitrationConflict(row: {
+    intentAId: string;
+    intentBId: string;
+    reason: string;
+    resolution: string;
+  }): ArbitrationConflict | undefined {
+    const base = { intentId: '', desiredOutcome: '', priority: 'normal' as const, version: 1 };
+    if (typeof row.intentAId !== 'string' || typeof row.intentBId !== 'string') return undefined;
+    return {
+      intentA: { ...base, intentId: row.intentAId },
+      intentB: { ...base, intentId: row.intentBId },
+      reason: row.reason,
+      resolution:
+        row.resolution === 'supersede-a' ||
+        row.resolution === 'supersede-b' ||
+        row.resolution === 'queue-b' ||
+        row.resolution === 'merge'
+          ? row.resolution
+          : 'queue-b',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  async getConflict(
+    id: string,
+    ownership: IntentOwnership,
+  ): Promise<ArbitrationConflict | undefined> {
+    const scopeKey = ownershipKey(ownership);
+    const mirrored = this.conflictMirror.find(
+      (entry) =>
+        entry.ownerScopeKey === scopeKey && this.conflictId(entry.conflict) === id,
+    );
+    if (mirrored) return clone(mirrored.conflict);
+    try {
+      const row = await this.repository.getConflict(id, scopeKey);
+      if (!row) return undefined;
+      return this.toArbitrationConflict(row as never);
+    } catch {
+      return undefined;
+    }
   }
 
   async listConflicts(
-    _ownership: IntentOwnership,
-    _limit: number,
-    _since?: Date,
+    ownership: IntentOwnership,
+    limit: number,
+    since?: Date,
   ): Promise<readonly ArbitrationConflict[]> {
-    // In a real implementation, this would query the database
-    return Object.freeze([]);
+    const scopeKey = ownershipKey(ownership);
+    // Retry any conflicts buffered while the database was unavailable.
+    for (const key of this.conflictPending.pending()) {
+      const entry = this.conflictPending.get(key) as
+        | { conflict: ArbitrationConflict; ownerScopeKey: string }
+        | undefined;
+      if (!entry) continue;
+      try {
+        await this.repository.recordConflict({
+          id: this.conflictId(entry.conflict),
+          intentAId: entry.conflict.intentA.intentId,
+          intentBId: entry.conflict.intentB.intentId,
+          reason: entry.conflict.reason,
+          resolution: entry.conflict.resolution,
+          ownerScopeKey: entry.ownerScopeKey,
+          recordedAt: entry.conflict.timestamp,
+        });
+        await this.conflictPending.drain();
+      } catch {
+        break;
+      }
+    }
+    let conflicts = this.conflictMirror
+      .filter((entry) => entry.ownerScopeKey === scopeKey)
+      .map((entry) => entry.conflict);
+    try {
+      const rows = await this.repository.listConflicts(
+        scopeKey,
+        limit,
+        since,
+      );
+      const fromDb = rows
+        .map((row) => this.toArbitrationConflict(row as never))
+        .filter((conflict): conflict is ArbitrationConflict => conflict !== undefined);
+      const seen = new Set(conflicts.map((conflict) => this.conflictId(conflict)));
+      for (const conflict of fromDb) {
+        if (!seen.has(this.conflictId(conflict))) {
+          conflicts = [...conflicts, conflict];
+          seen.add(this.conflictId(conflict));
+        }
+      }
+    } catch {
+      // Database unavailable: the local mirror is authoritative.
+    }
+    const filtered = since
+      ? conflicts.filter((conflict) => new Date(conflict.timestamp) > since)
+      : conflicts;
+    return Object.freeze(filtered.slice(-Math.max(1, limit)));
   }
 
   async get(id: string, ownership: IntentOwnership) {
@@ -517,11 +661,17 @@ export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOpt
   });
 
   app.get('/api/v1/intents/conflicts/:id', async (request) => {
-    await authorize(request, 'runtime.inspect');
-    idParams.parse(request.params ?? {});
-    // In a real implementation, this would look up a specific conflict by ID
-    // For now, return not found as conflicts don't have individual IDs in this impl
-    throw new NotFoundAppError('conflict');
+    const principal = await authorize(request, 'runtime.inspect');
+    const params = idParams.parse(request.params ?? {});
+    const storeWithLookup = store as ConflictApiStore & {
+      getConflict?: (
+        id: string,
+        ownership: IntentOwnership,
+      ) => Promise<ArbitrationConflict | undefined>;
+    };
+    const conflict = await storeWithLookup.getConflict?.(params.id, ownership(principal));
+    if (!conflict) throw new NotFoundAppError('conflict');
+    return { success: true, data: conflict };
   });
 
   return { store };

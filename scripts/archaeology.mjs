@@ -439,7 +439,10 @@ const CANONICAL_COMPONENT_OWNERS = {
     'packages/resilience-runtime/src/safety/safety-kernel.ts',
     'packages/resilience-runtime/src/runtime.ts',
   ],
-  PolicyRegistry: ['packages/resilience-runtime/src/policy/registry.ts'],
+  PolicyRegistry: [
+    'packages/resilience-runtime/src/policy/registry.ts',
+    'packages/resilience-runtime/src/policy/policy.ts',
+  ],
 };
 
 async function buildAuthorityMap() {

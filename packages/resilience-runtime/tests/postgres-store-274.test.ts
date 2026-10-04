@@ -55,6 +55,22 @@ describe('PostgresIntentStore (Phase 2: Persistence)', () => {
     await expect(new PostgresIntentStore({ ...base, max: 0 }).initialize()).rejects.toThrow(/max >= 1/);
   });
 
+  it('journals arbitration conflicts durably', async () => {
+    mockPool.query.mockResolvedValue({ rows: [] });
+    await store.recordConflicts([
+      {
+        intentA: { intentId: 'a' },
+        intentB: { intentId: 'b' },
+        reason: 'overlap',
+        resolution: 'supersede-a',
+      } as never,
+    ]);
+    expect(mockPool.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO intent_conflicts'),
+      expect.arrayContaining(['a', 'b', 'overlap', 'supersede-a']),
+    );
+  });
+
   it('upserts intent with correct fields', async () => {
     const now = new Date();
     const draftIntent = createNetworkIntent({

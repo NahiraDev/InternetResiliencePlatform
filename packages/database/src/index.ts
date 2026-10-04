@@ -78,6 +78,16 @@ export class IntentRepositoryConflictError extends Error {
   }
 }
 
+export interface IntentConflictRow {
+  id: string;
+  intentAId: string;
+  intentBId: string;
+  reason: string;
+  resolution: string;
+  ownerScopeKey: string;
+  recordedAt: Date | string;
+}
+
 export interface IntentRepository {
   get(id: string, ownerScopeKey: string): Promise<IntentRecordRow | undefined>;
   list(
@@ -87,6 +97,13 @@ export interface IntentRepository {
   ): Promise<readonly IntentRecordRow[]>;
   put(row: IntentRecordRow, expectedVersion?: number): Promise<void>;
   findByIdempotency(ownerScopeKey: string, key: string): Promise<IntentRecordRow | undefined>;
+  recordConflict(row: IntentConflictRow): Promise<void>;
+  listConflicts(
+    ownerScopeKey: string,
+    limit?: number,
+    since?: Date | string,
+  ): Promise<readonly IntentConflictRow[]>;
+  getConflict(id: string, ownerScopeKey: string): Promise<IntentConflictRow | undefined>;
 }
 
 export const createIntentRepository = (
@@ -120,5 +137,19 @@ export const createIntentRepository = (
     const rows =
       await client.$queryRaw`SELECT * FROM "NetworkIntentRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} AND "idempotencyKey" = ${key} LIMIT 1`;
     return (rows as IntentRecordRow[])[0];
+  },
+  async recordConflict(row) {
+    await client.$queryRaw`INSERT INTO "IntentConflictRecord" ("id","intentAId","intentBId","reason","resolution","ownerScopeKey","recordedAt") VALUES (${row.id},${row.intentAId},${row.intentBId},${row.reason},${row.resolution},${row.ownerScopeKey},${row.recordedAt}) ON CONFLICT ("id") DO NOTHING`;
+  },
+  async listConflicts(ownerScopeKey, limit = 100, since?) {
+    const bounded = Math.min(100, Math.max(1, limit));
+    if (since)
+      return (await client.$queryRaw`SELECT * FROM "IntentConflictRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} AND "recordedAt" > ${since} ORDER BY "recordedAt" DESC LIMIT ${bounded}`) as IntentConflictRow[];
+    return (await client.$queryRaw`SELECT * FROM "IntentConflictRecord" WHERE "ownerScopeKey" = ${ownerScopeKey} ORDER BY "recordedAt" DESC LIMIT ${bounded}`) as IntentConflictRow[];
+  },
+  async getConflict(id, ownerScopeKey) {
+    const rows =
+      await client.$queryRaw`SELECT * FROM "IntentConflictRecord" WHERE "id" = ${id} AND "ownerScopeKey" = ${ownerScopeKey} LIMIT 1`;
+    return (rows as IntentConflictRow[])[0];
   },
 });

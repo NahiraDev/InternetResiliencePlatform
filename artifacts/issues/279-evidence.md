@@ -192,25 +192,25 @@ decay, ledger bounds, pruning, snapshot observability, undo and explainability.
 | A, B | #273 | done |
 | C | #274 | done |
 | D | #275 | done |
-| E | #276 | done; `KnowledgeStore` now composed |
+| E | #276 | done; `KnowledgeStore` composed and consumed by canonical planning |
 | F | #277 | done |
-| G | #278 | done; boundary not yet on the live execution path |
+| G | #278 | done; boundary on the canonical live execution path |
 | H | #279 | **done now** |
 | I | #280 | done |
-| J | #281 | **not started** |
+| J | #281 | done |
 | K | #282 | done |
 | L | #283 | done |
 | M | #284 | done |
 
-**#272 is not closed.** Two integration gaps and one unimplemented section remain:
+**#272 closure requires only external evidence:**
 
-1. **#281 (Section J) is not started** — event versioning/provenance envelope and
-   durable persistence. The knowledge store is still in-memory, so knowledge does
-   not survive restart.
-2. `canonical-decision-provider` still uses the pre-existing `annotateHistory()`
-   rather than the knowledge-aware ranking path built in #276.
-3. `PrivilegedMutationBoundary` (#278) is built and guarded but the composed
-   runtime still routes mutations through `ActionTransactionEngine`.
+1. **Remote CI run** against the final SHA (no GitHub Actions run has executed
+   locally; a maintainer must push and confirm green CI).
+2. **Release/tag/distribution evidence** where applicable (tagged releases,
+   published artifacts, checksums).
+3. **Physical data-plane soak** beyond deterministic adapters/simulation
+   (device/network runs).
 
-No CI run has executed against this SHA, so no issue can be honestly closed
+No local source/test/architecture blocker remains. No issue can be honestly
+closed
 until a maintainer pushes and CI is green.

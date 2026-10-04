@@ -137,10 +137,12 @@ structured-plan completeness.
 - `generateStrategies()` is a deterministic template expansion. It does **not**
   invent new strategies from measured topology; wiring it to
   `ProgrammableConnectivityFabric` alternatives is the next step.
-- `ResourceReservationTable` is not yet invoked on the execution path — it is a
-  canonical building block awaiting wiring into the decision provider so
-  reservations are taken before mutation.
-- Sections E (#276), H (#279) and J (#281) remain unimplemented, so the #272
-  end-to-end pipeline is still incomplete end to end.
+- Concurrency control on the execution path is provided by the privileged
+  boundary's epoch/held-mutation/idempotency gates; `ResourceReservationTable`
+  remains a tested canonical building block for explicit pre-mutation
+  reservations rather than a second live gate.
+- Sections E (#276), H (#279) and J (#281) are implemented; see their evidence
+  reports for remaining external-only blockers (remote CI, release artifacts,
+  device soak).
 - No CI run has executed against this SHA; #272 cannot honestly be closed until
   sections E, F, H and J all land and a maintainer confirms green CI.
