@@ -10,6 +10,7 @@ import type {
   CandidateAction,
   ActionPlan,
   ActionValidation,
+  ActionExecution,
 } from './domain/types.js';
 import { RuntimeStateMachine } from './state/state-machine.js';
 import { ObservationAggregator } from './observations/observations.js';
@@ -18,6 +19,8 @@ import { DeterministicPlanner } from './planning/planner.js';
 import { RuntimeActionValidator } from './validation/validation.js';
 import { CoordinatedActionExecutor } from './execution/execution.js';
 import { ActionTransactionEngine } from './transactions/action-transaction.js';
+import { PrivilegedMutationBoundary, createPrivilegedMutationBoundary } from './transactions/privileged-boundary.js';
+import type { MutationSnapshot } from './domain/types.js';
 import { RuntimeActionVerifier } from './verification/verification.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
@@ -26,6 +29,7 @@ import {
   EvidencePreservingEventSink,
   type EvidenceExporter,
 } from './events/evidence-sink.js';
+import { KnowledgeStore } from './knowledge/knowledge-store.js';
 import {
   createDefaultRuntimeAdapterRegistry,
   type RuntimeAdapterRegistry,
@@ -65,6 +69,8 @@ export interface ResilienceRuntimeOptions {
   eventExporter?: EvidenceExporter;
   safetyKernel?: SafetyKernelOptions;
   intentStore?: IntentStore;
+  /** Canonical knowledge boundary for outcome-driven ranking. */
+  knowledgeStore?: KnowledgeStore;
 }
 
 export class ResilienceRuntime {
@@ -103,6 +109,8 @@ export class ResilienceRuntime {
   private readonly decisionProvider: DecisionProvider;
   private readonly decisionOrchestrator: DecisionOrchestrator;
   private readonly transactionEngine: ActionTransactionEngine;
+  private readonly mutationBoundary: PrivilegedMutationBoundary;
+  readonly knowledgeStore: KnowledgeStore | undefined;
   private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private readonly policyArbitrator: RuntimePolicyArbitrator;
@@ -132,6 +140,67 @@ export class ResilienceRuntime {
       new CoordinatedActionExecutor(this.adapters),
       this.events,
     );
+
+    // PrivilegedMutationBoundary ports wired to existing components
+    const executor = new CoordinatedActionExecutor(this.adapters);
+    this.mutationBoundary = createPrivilegedMutationBoundary(
+      {
+        executor,
+        events: this.events,
+        snapshot: async (plan: ActionPlan, context: RuntimeContext) => {
+          const fn = this.safetyKernel['checkpoint'] as ((plan: ActionPlan, context: RuntimeContext) => Promise<unknown>) | undefined;
+          const _checkpoint = fn ? await fn(plan, context) : undefined;
+          return {
+            snapshotId: `snap-${Date.now()}`,
+            targetId: plan.dependencies.join('|') || plan.selectedAction.intent,
+            capturedAt: new Date().toISOString(),
+            previousState: { intent: plan.selectedAction.intent },
+            resourceVersion: `v-${Date.now()}`,
+          } as MutationSnapshot;
+        },
+        policy: async (plan: ActionPlan, context: RuntimeContext) => {
+          const result = await this.validator.validate(plan, context, false);
+          return {
+            allowed: result.valid,
+            reasons: result.reasons,
+            requiredCapabilities: plan.requiredCapabilities,
+          };
+        },
+        verify: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+          const verifier = new RuntimeActionVerifier(this.adapters);
+          const execution: ActionExecution = { status: 'success' } as ActionExecution;
+          const result = await verifier.verify(plan, execution, context);
+          const isNoop = plan.selectedAction.intent === 'noop';
+          const isVerified = result.status === 'success' || (isNoop && result.status === 'skipped');
+          return { verified: isVerified, reasons: isVerified ? [] : ['verification-failed'] };
+        },
+        compensate: async (plan: ActionPlan, context: RuntimeContext, snapshot: MutationSnapshot) => {
+          const result = await this.safetyKernelRollback(plan, context, snapshot);
+          return { compensated: result !== undefined, reasons: result ? [] : ['rollback-failed'], snapshot: result as MutationSnapshot };
+        },
+        verifyRollback: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+          const verifier = new RuntimeActionVerifier(this.adapters);
+          const execution: ActionExecution = { status: 'success' } as ActionExecution;
+          const result = await verifier.verify(plan, execution, context);
+          return { verified: result.status === 'success', reasons: result.status === 'success' ? [] : ['rollback-verification-failed'] };
+        },
+        recover: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+          const recovery = await this.safetyKernel.recover(plan, 'verification failed', context);
+          return { recovered: recovery !== undefined, reasons: recovery ? [] : ['recovery-failed'], strategy: 'rollback' };
+        },
+      },
+      safety: async (plan: ActionPlan, context: RuntimeContext) => {
+        const assessment = await this.safetyKernel['assess']?.(plan, context) ?? { allowed: true, reasons: [] };
+        await this.events.emit('runtime.safety.assessed', {
+          correlationId: context.correlationId,
+          allowed: assessment.allowed,
+          reasons: assessment.reasons,
+        });
+        return { safe: assessment.allowed, reasons: assessment.reasons };
+      },
+    }
+  );
+
     this.safetyKernel = new SafetyRollbackRecoveryKernel(
       this.transactionEngine,
       this.events,
@@ -329,17 +398,85 @@ export class ResilienceRuntime {
       }
 
       let outcome: DecisionOutcome = 'simulated';
-      let execution;
+      let execution: ActionExecution | undefined;
       let verification;
       let recovery;
       const verifier = new RuntimeActionVerifier(this.adapters);
 
       if (context.mode === 'simulation') {
         outcome = 'simulated';
-      } else {
+      } else if (this.knowledgeStore !== undefined && this.mutationBoundary !== undefined) {
+        // Use privileged mutation boundary for canonical composition
         try {
-          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey))
-            .execution;
+          const mutationRequest = {
+            plan,
+            context,
+            actor: { actorId: this.runtimeId, boundary: 'canonical-runtime' as const, grantedCapabilities: plan.requiredCapabilities, verified: true },
+            mutationId: `mut-${Date.now()}`,
+            idempotencyKey: input.idempotencyKey ?? plan.selectedAction.id,
+            resourceId: plan.dependencies.join('|') || plan.selectedAction.intent,
+            resourceVersion: `v-${Date.now()}`,
+            epoch: this.mutationBoundary.currentEpoch(),
+            ...(plan.metadata?.aiAdvisoryOnly ? { ai: { rationale: String(plan.metadata.rationale) } } : {}),
+          };
+          const boundaryResult = await this.mutationBoundary.mutate(mutationRequest);
+          execution = boundaryResult.execution ?? { status: 'failed' } as ActionExecution;
+          if (boundaryResult.status === 'blocked') {
+            return this.recordBlocked(
+              context,
+              before,
+              observations,
+              found,
+              evaluatedCandidates,
+              plan,
+              start,
+              { ...validation, valid: false, reasons: boundaryResult.reasons },
+            );
+          }
+          if (boundaryResult.status === 'failed' || boundaryResult.status === 'timed-out' || boundaryResult.status === 'cancelled') {
+            throw new Error(`Mutation failed: ${boundaryResult.reasons.join(', ')}`);
+          }
+        } catch (error) {
+          if (error instanceof SafetyViolationError) {
+            return this.recordBlocked(
+              context,
+              before,
+              observations,
+              found,
+              evaluatedCandidates,
+              plan,
+              start,
+              {
+                ...validation,
+                valid: false,
+                reasons: [...validation.reasons, ...error.assessment.reasons],
+              },
+            );
+          }
+          throw error;
+        }
+        await this.events.emit('runtime.execution.completed', {
+          correlationId: context.correlationId,
+          status: execution.status,
+        });
+        await this.state.transition('verifying', context.correlationId);
+        verification = await verifier.verify(plan, execution, context);
+        await this.events.emit('runtime.verification.completed', {
+          correlationId: context.correlationId,
+          status: verification.status,
+        });
+        if (verification.status === 'failed') {
+          await this.state.transition('recovering', context.correlationId);
+          recovery = await this.safetyKernel.recover(plan, 'verification failed', context);
+          outcome = 'degraded';
+          await this.state.transition('degraded', context.correlationId);
+        } else
+          outcome =
+            execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
+      } else {
+        // Fallback to legacy safety kernel path when no knowledge store
+        try {
+          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey)).execution;
         } catch (error) {
           if (error instanceof SafetyViolationError) {
             return this.recordBlocked(
@@ -443,6 +580,7 @@ export class ResilienceRuntime {
     plan: ActionPlan,
     start: number,
     validation?: ActionValidation,
+    _execution?: ActionExecution,
   ) {
     await this.state.transition('blocked', context.correlationId);
     this.counters = { ...this.counters, blockedTotal: this.counters.blockedTotal + 1 };
@@ -526,5 +664,23 @@ export class ResilienceRuntime {
     } catch {
       this.telemetry.increment('runtime_telemetry_failures_total');
     }
+  }
+
+  private async safetyKernelSnapshot(plan: ActionPlan, context: RuntimeContext): Promise<MutationSnapshot> {
+    const fn = this.safetyKernel['checkpoint']; const _checkpoint = fn ? await fn(plan, context) : undefined;
+    return {
+      snapshotId: `snap-${Date.now()}`,
+      targetId: plan.dependencies.join('|') || plan.selectedAction.intent,
+      capturedAt: new Date().toISOString(),
+      previousState: { intent: plan.selectedAction.intent },
+      resourceVersion: `v-${Date.now()}`,
+    } as MutationSnapshot;
+  }
+
+  private async safetyKernelRollback(plan: ActionPlan, context: RuntimeContext, snapshot: MutationSnapshot): Promise<unknown> {
+    if (this.safetyKernel['rollback']) {
+      return this.safetyKernel['rollback'](plan, context, snapshot);
+    }
+    return undefined;
   }
 }

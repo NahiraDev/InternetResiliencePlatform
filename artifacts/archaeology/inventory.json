@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T21:00:42.759Z",
+  "generatedAt": "2026-10-03T22:29:11.627Z",
   "packages": [
     {
       "group": "apps",
@@ -676,8 +676,8 @@
         "@irp/tunnel",
         "@irp/utils"
       ],
-      "sourceFiles": 84,
-      "testFiles": 41,
+      "sourceFiles": 89,
+      "testFiles": 42,
       "hasTests": true
     },
     {

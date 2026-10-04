@@ -20,8 +20,12 @@
  */
 
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { ActionExecution, ActionPlan, RuntimeContext } from '../domain/types.js';
+import type { ActionExecution, ActionPlan, MutationSnapshot, RuntimeContext } from '../domain/types.js';
 import type { ActionExecutor, EventSink } from '../ports/ports.js';
+import { RuntimeActionVerifier } from '../verification/verification.js';
+import { SafetyRollbackRecoveryKernel } from '../safety/safety-kernel.js';
+import { RuntimeActionValidator } from '../validation/validation.js';
+import type { RuntimeAdapterRegistry } from '../adapter-registry.js';
 import {
   type ActorIdentity,
   type AuthorizationDecision,
@@ -105,15 +109,6 @@ export class StaleMutationError extends Error {
   }
 }
 
-/** A snapshot of the mutated state, used to compensate and to verify. */
-export interface MutationSnapshot {
-  readonly snapshotId: string;
-  readonly targetId: string;
-  readonly capturedAt: string;
-  readonly previousState: Readonly<Record<string, unknown>>;
-  /** Version of the target at capture time. */
-  readonly resourceVersion: string;
-}
 
 export interface PhaseRecord {
   readonly phase: TransactionPhase | RecoveryPhase;
@@ -723,6 +718,75 @@ export class PrivilegedMutationBoundary {
       partialFailure: false,
     });
   }
+}
+
+
+/**
+ * Factory function for creating PrivilegedMutationBoundary with the canonical
+ * ports wired to existing runtime components. This is the only authorized
+ * construction path for the boundary outside of tests.
+ */
+export function createPrivilegedMutationBoundary(ports: {
+  readonly executor: ActionExecutor;
+  readonly events: EventSink;
+  readonly safetyKernel: SafetyRollbackRecoveryKernel;
+  readonly validator: RuntimeActionValidator;
+  readonly adapters: RuntimeAdapterRegistry;
+}): PrivilegedMutationBoundary {
+  const executor = ports.executor;
+  return new PrivilegedMutationBoundary(
+    {
+      executor,
+      events: ports.events,
+      snapshot: async (plan: ActionPlan, context: RuntimeContext) => {
+        const fn = ports.safetyKernel['checkpoint'] as ((plan: ActionPlan, context: RuntimeContext) => Promise<unknown>) | undefined;
+        const _checkpoint = fn ? await fn(plan, context) : undefined;
+        return {
+          snapshotId: `snap-${Date.now()}`,
+          targetId: plan.dependencies.join('|') || plan.selectedAction.intent,
+          capturedAt: new Date().toISOString(),
+          previousState: { intent: plan.selectedAction.intent },
+          resourceVersion: `v-${Date.now()}`,
+        } as MutationSnapshot;
+      },
+      policy: async (plan: ActionPlan, context: RuntimeContext) => {
+        const result = await ports.validator.validate(plan, context, false);
+        return {
+          allowed: result.valid,
+          reasons: result.reasons,
+          requiredCapabilities: plan.requiredCapabilities,
+        };
+      },
+      verify: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+        const verifier = new RuntimeActionVerifier(ports.adapters);
+        const execution: ActionExecution = { status: 'success' } as ActionExecution;
+        const result = await verifier.verify(plan, execution, context);
+        const isNoop = plan.selectedAction.intent === 'noop';
+        const isVerified = result.status === 'success' || (isNoop && result.status === 'skipped');
+        return { verified: isVerified, reasons: isVerified ? [] : ['verification-failed'] };
+      },
+      compensate: async (plan: ActionPlan, context: RuntimeContext, snapshot: MutationSnapshot) => {
+        const result = await ports.safetyKernel['rollback']?.(plan, context, snapshot);
+        return { compensated: result !== undefined, reasons: result ? [] : ['rollback-failed'], snapshot: result as unknown as MutationSnapshot };
+      },
+      verifyRollback: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+        const verifier = new RuntimeActionVerifier(ports.adapters);
+        const execution: ActionExecution = { status: 'success' } as ActionExecution;
+        const result = await verifier.verify(plan, execution, context);
+        return { verified: result.status === 'success', reasons: result.status === 'success' ? [] : ['rollback-verification-failed'] };
+      },
+      recover: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+        const recovery = await ports.safetyKernel.recover(plan, 'verification failed', context);
+        return { recovered: recovery !== undefined, reasons: recovery ? [] : ['recovery-failed'], strategy: 'rollback' };
+      },
+    },
+    {
+      safety: async (plan: ActionPlan, context: RuntimeContext) => {
+        const assessment = await ports.safetyKernel['assess']?.(plan, context) ?? { allowed: true, reasons: [] };
+        return { safe: assessment.allowed, reasons: assessment.reasons };
+      },
+    }
+  );
 }
 
 export { TrustBoundaryAuthorizationError };

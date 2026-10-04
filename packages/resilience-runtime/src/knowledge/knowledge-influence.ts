@@ -15,6 +15,7 @@
 
 import type { CandidateAction } from '../domain/types.js';
 import type { ObjectiveEvidence } from '../planning/objectives.js';
+export type { ObjectiveEvidence };
 import { STRATEGY_OBJECTIVES } from '../planning/objectives.js';
 import { type ArbitratedEvidence, explainArbitration } from './arbitration.js';
 import type { DecayingFailureMemory } from './failure-memory.js';

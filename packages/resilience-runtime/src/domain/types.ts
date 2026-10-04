@@ -283,3 +283,12 @@ export interface DecisionReplayResult {
   readonly outcome: DecisionOutcome;
   readonly differences: readonly string[];
 }
+
+export interface MutationSnapshot {
+  readonly snapshotId: string;
+  readonly targetId: string;
+  readonly capturedAt: string;
+  readonly previousState: Readonly<Record<string, unknown>>;
+  readonly resourceVersion: string;
+}
+
