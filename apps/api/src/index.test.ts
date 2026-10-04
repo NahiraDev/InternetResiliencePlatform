@@ -100,6 +100,18 @@ describe('canonical autopilot compatibility API', () => {
       runtimeContext: { correlationId: expect.stringMatching(/^api-autopilot-/) },
     });
 
+    const explanation = await app.inject({
+      method: 'GET',
+      url: `/api/v1/runtime/decisions/${run.json().data.decisionId}/explanation`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(explanation.statusCode).toBe(200);
+    expect(explanation.json().data).toMatchObject({
+      decisionId: run.json().data.decisionId,
+      outcome: expect.any(String),
+      explanation: expect.any(Array),
+    });
+
     const actions = await app.inject({
       method: 'POST',
       url: '/api/v1/autopilot/actions/example/approve',

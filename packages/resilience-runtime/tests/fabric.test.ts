@@ -123,7 +123,7 @@ describe('ProgrammableConnectivityFabric', () => {
 
   it('registers capabilities in the unified fabric registry', () => {
     const fabric = new ProgrammableConnectivityFabric();
-    fabric.capabilities.register({
+    fabric.capabilityAuthority.register({
       id: 'route.select',
       scope: 'gateway',
       authority: 'adapter',
@@ -132,8 +132,8 @@ describe('ProgrammableConnectivityFabric', () => {
       platforms: ['linux', 'macos'],
     });
 
-    expect(fabric.capabilities.get('route.select')?.scope).toBe('gateway');
-    expect(fabric.capabilities.list()).toHaveLength(1);
+    expect(fabric.capabilityAuthority.get('route.select')?.scope).toBe('gateway');
+    expect(fabric.capabilityAuthority.list()).toHaveLength(1);
   });
 
   it('reconciles NetworkPathGraph into the same fabric identity space', () => {

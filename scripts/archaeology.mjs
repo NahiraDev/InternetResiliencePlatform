@@ -240,10 +240,36 @@ const CAPABILITY_DOMAINS =
  * capabilities that no registry actually declares. Consumers are then located
  * by searching for those exact capability literals.
  */
+/**
+ * Source-declared adapter registry.
+ *
+ * When a compiled `dist/` tree is unavailable, the same default adapter
+ * descriptors are parsed from source. This preserves executable ground truth
+ * without executing generated output.
+ */
+function parseAdapterRegistryFromSource(sourceText) {
+  const adapters = [];
+  const tuplePattern =
+    /\[\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\[([^\]]*)\]\s*,\s*\[([^\]]*)\]\s*\]/g;
+  const literals = (listText) =>
+    [...listText.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  for (const match of sourceText.matchAll(tuplePattern)) {
+    const [, adapterId, subsystem, capabilitiesText, supportedActionsText] = match;
+    const capabilities = literals(capabilitiesText);
+    const supportedActions = literals(supportedActionsText);
+    if (!adapterId || !subsystem || capabilities.length === 0 || supportedActions.length === 0) {
+      continue;
+    }
+    adapters.push({ adapterId, subsystem, capabilities, supportedActions });
+  }
+  return adapters;
+}
+
 async function buildCapabilityMatrix() {
   const registryModule = join(root, 'packages/resilience-runtime/dist/adapter-registry.js');
   const registry = {
     available: false,
+    source: 'text scan fallback',
     adapters: [],
     error: undefined,
   };
@@ -254,6 +280,7 @@ async function buildCapabilityMatrix() {
       );
       const instance = createDefaultRuntimeAdapterRegistry();
       registry.available = true;
+      registry.source = 'canonical adapter registry (executed)';
       registry.adapters = instance.list().map((descriptor) => ({
         adapterId: descriptor.adapterId,
         subsystem: descriptor.subsystem,
@@ -265,6 +292,17 @@ async function buildCapabilityMatrix() {
       }));
     } catch (error) {
       registry.error = error instanceof Error ? error.message : String(error);
+    }
+  }
+  if (!registry.available) {
+    const sourceText = await readText(
+      join(root, 'packages/resilience-runtime/src/adapter-registry.ts'),
+    );
+    const sourceAdapters = parseAdapterRegistryFromSource(sourceText);
+    if (sourceAdapters.length > 0) {
+      registry.available = true;
+      registry.source = 'canonical adapter registry (source-declared)';
+      registry.adapters = sourceAdapters;
     }
   }
 
@@ -353,7 +391,7 @@ async function buildCapabilityMatrix() {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     source: registry.available
-      ? 'canonical adapter registry (executed)'
+      ? registry.source
       : `text scan fallback${registry.error ? `: ${registry.error}` : ''}`,
     registryAdapters: registry.adapters,
     capabilities,
@@ -383,6 +421,27 @@ const FORBIDDEN_AUTHORITIES = [
   'Planner',
 ];
 
+// Canonical component owners. These names resemble forbidden authorities, so
+// construction outside the listed owner is reported as drift rather than being
+// silently accepted.
+const CANONICAL_COMPONENT_OWNERS = {
+  NetworkAutopilot: ['packages/resilience-runtime/src/autopilot/autopilot.ts'],
+  DecisionOrchestrator: [
+    'packages/resilience-runtime/src/decision-orchestration.ts',
+    'packages/resilience-runtime/src/runtime.ts',
+  ],
+  DeterministicPlanner: [
+    'packages/resilience-runtime/src/planning/planner.ts',
+    'packages/resilience-runtime/src/replay/replay.ts',
+    'packages/resilience-runtime/src/runtime.ts',
+  ],
+  SafetyRollbackRecoveryKernel: [
+    'packages/resilience-runtime/src/safety/safety-kernel.ts',
+    'packages/resilience-runtime/src/runtime.ts',
+  ],
+  PolicyRegistry: ['packages/resilience-runtime/src/policy/registry.ts'],
+};
+
 async function buildAuthorityMap() {
   const files = [
     ...(await walk(join(root, 'apps'), isSource)),
@@ -398,9 +457,22 @@ async function buildAuthorityMap() {
     for (const symbol of FORBIDDEN_AUTHORITIES) {
       const constructs = new RegExp(`\\bnew\\s+${symbol}\\s*\\(`).test(text);
       const extendsSymbol = new RegExp(`\\bextends\\s+${symbol}\\b`).test(text);
+      const imported = new RegExp(
+        `(?:^|\\n)\\s*import\\s+(?:type\\s+)?[^;\\n]*\\b${symbol}\\b[^;\\n]*;`,
+      ).test(text);
+      const exported = new RegExp(
+        `(?:^|\\n)\\s*export\\s+(?:type\\s+)?[^;\\n]*\\b${symbol}\\b[^;\\n]*;`,
+      ).test(text);
       const inRuntime = r.startsWith('packages/resilience-runtime/');
-      if ((constructs || extendsSymbol) && !inRuntime) {
-        violations.push({ symbol, path: r, constructs, extends: extendsSymbol });
+      if ((constructs || extendsSymbol || imported || exported) && !inRuntime) {
+        violations.push({ symbol, path: r, constructs, extends: extendsSymbol, imported, exported });
+      }
+    }
+    for (const [component, owners] of Object.entries(CANONICAL_COMPONENT_OWNERS)) {
+      const constructed = new RegExp(`\\bnew\\s+${component}\\s*\\(`).test(text);
+      const extended = new RegExp(`\\bextends\\s+${component}\\b`).test(text);
+      if ((constructed || extended) && !owners.includes(r)) {
+        violations.push({ symbol: component, path: r, constructs: constructed, extends: extended });
       }
     }
     if (r.startsWith('apps/') || r.startsWith('packages/')) {
@@ -439,34 +511,40 @@ async function buildAuthorityMap() {
 // Task 5: phase document audit
 // ---------------------------------------------------------------------------
 async function buildPhaseAudit() {
-  const dir = join(root, 'docs/phases');
-  if (!existsSync(dir))
-    return { schemaVersion: 1, generatedAt: new Date().toISOString(), phases: [] };
-  const files = (await readdir(dir)).filter((f) => f.endsWith('.md')).sort();
+  const auditTargets = [
+    { directory: 'docs/phases', kind: 'phase' },
+    { directory: 'artifacts/issues', kind: 'issue-evidence' },
+  ];
   const phases = [];
-  for (const file of files) {
-    const text = await readText(join(dir, file));
-    const number = Number.parseInt(/phase-(\d+)/.exec(file)?.[1] ?? '', 10);
-    const claimsImplementation = /\b(implemented|merged|complete[d]?)\b/i.test(text);
-    const citesEvidence =
-      /\b(PR|commit|CI run|evidence|sha)\b/i.test(text) || /`[0-9a-f]{7,40}`/.test(text);
-    const hasTestEvidence = /\.test\.|tests\/|vitest/i.test(text);
-    phases.push({
-      file: `docs/phases/${file}`,
-      number: Number.isFinite(number) ? number : null,
-      beyondPhase78: Number.isFinite(number) ? number > 78 : false,
-      claimsImplementation,
-      citesEvidence,
-      hasTestEvidence,
-      // Historical claims without evidence are recorded, never treated as current proof.
-      evidenceClass: !claimsImplementation
-        ? 'descriptive'
-        : citesEvidence && hasTestEvidence
-          ? 'evidence-backed'
-          : citesEvidence
-            ? 'claim-with-citation'
-            : 'unsubstantiated-claim',
-    });
+  for (const target of auditTargets) {
+    const dir = join(root, target.directory);
+    if (!existsSync(dir)) continue;
+    const files = (await readdir(dir)).filter((f) => f.endsWith('.md')).sort();
+    for (const file of files) {
+      const text = await readText(join(dir, file));
+      const number = Number.parseInt(/phase-(\d+)/.exec(file)?.[1] ?? '', 10);
+      const claimsImplementation = /\b(implemented|merged|complete[d]?)\b/i.test(text);
+      const citesEvidence =
+        /\b(PR|commit|CI run|evidence|sha)\b/i.test(text) || /`[0-9a-f]{7,40}`/.test(text);
+      const hasTestEvidence = /\.test\.|tests\/|vitest/i.test(text);
+      phases.push({
+        file: `${target.directory}/${file}`,
+        kind: target.kind,
+        number: Number.isFinite(number) ? number : null,
+        beyondPhase78: Number.isFinite(number) ? number > 78 : false,
+        claimsImplementation,
+        citesEvidence,
+        hasTestEvidence,
+        // Historical claims without evidence are recorded, never treated as current proof.
+        evidenceClass: !claimsImplementation
+          ? 'descriptive'
+          : citesEvidence && hasTestEvidence
+            ? 'evidence-backed'
+            : citesEvidence
+              ? 'claim-with-citation'
+              : 'unsubstantiated-claim',
+      });
+    }
   }
   return {
     schemaVersion: 1,
@@ -474,6 +552,8 @@ async function buildPhaseAudit() {
     phases,
     summary: {
       total: phases.length,
+      phaseDocuments: phases.filter((p) => p.kind === 'phase').length,
+      issueEvidenceDocuments: phases.filter((p) => p.kind === 'issue-evidence').length,
       beyondPhase78: phases.filter((p) => p.beyondPhase78).map((p) => p.file),
       unsubstantiated: phases
         .filter((p) => p.evidenceClass === 'unsubstantiated-claim')
@@ -490,10 +570,10 @@ async function buildOrphans() {
   const pkgRoot = join(root, 'packages/resilience-runtime');
   const srcFiles = await walk(join(pkgRoot, 'src'), isSource);
   const testFiles = await walk(join(pkgRoot, 'tests'), isSource);
-  const vitestInclude = await readText(join(root, 'vitest.config.ts'));
+  const vitestInclude = await readText(join(pkgRoot, 'vitest.config.ts'));
   const includeMatch = /include:\s*\[([^\]]+)\]/.exec(vitestInclude);
   const includeGlobs = includeMatch
-    ? [...includeMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
+    ? [...includeMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1])
     : [];
 
   const allText = new Map();
@@ -945,7 +1025,8 @@ async function main() {
   console.log(`  entrypoints traced        : ${paths.summary.entrypoints}`);
   console.log(`  capabilities mapped       : ${matrix.summary.total}`);
   console.log(`  authority violations      : ${authority.summary.violations}`);
-  console.log(`  phase documents audited   : ${phases.summary.total}`);
+  console.log(`  phase documents audited   : ${phases.summary.phaseDocuments}`);
+  console.log(`  issue evidence audited    : ${phases.summary.issueEvidenceDocuments}`);
   console.log(`  orphaned tests            : ${orphans.summary.orphanTests}`);
   console.log(`  orphaned modules          : ${orphans.summary.orphanModules}`);
   console.log(`  duplicate contracts       : ${orphans.summary.duplicateContracts}`);

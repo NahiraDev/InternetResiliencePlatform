@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { PostgresIntentStore } from '../src/intent/postgres-store.js';
-import { compileNetworkIntent } from '../src/index.js';
+import { PostgresIntentStore as RootPostgresIntentStore, compileNetworkIntent } from '../src/index.js';
 import { transitionIntent } from '@irp/core';
 import { createNetworkIntent } from '@irp/core';
 
@@ -37,10 +37,22 @@ describe('PostgresIntentStore (Phase 2: Persistence)', () => {
   });
 
   it('initializes schema on startup', async () => {
+    expect(RootPostgresIntentStore).toBe(PostgresIntentStore);
     await store.initialize();
     expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('CREATE TABLE IF NOT EXISTS intents'),
     );
+  });
+
+  it('validates connection settings before loading the driver', async () => {
+    const base = { host: 'localhost', port: 5432, database: 'test', user: 'test', password: 'test' };
+    await expect(new PostgresIntentStore({ ...base, host: '' }).initialize()).rejects.toThrow(
+      /host, database, and user/,
+    );
+    await expect(new PostgresIntentStore({ ...base, port: 0 }).initialize()).rejects.toThrow(
+      /valid port/,
+    );
+    await expect(new PostgresIntentStore({ ...base, max: 0 }).initialize()).rejects.toThrow(/max >= 1/);
   });
 
   it('upserts intent with correct fields', async () => {

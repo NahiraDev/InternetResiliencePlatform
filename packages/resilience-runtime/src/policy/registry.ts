@@ -380,19 +380,3 @@ export class PolicyRegistry {
     return this.domainResolutions[domain] ?? DOMAIN_RESOLUTIONS[domain];
   }
 }
-
-/** Global singleton instance for the canonical policy registry. */
-let globalPolicyRegistry: PolicyRegistry | null = null;
-
-/** Get or create the global policy registry. */
-export const getPolicyRegistry = (options?: PolicyRegistryOptions): PolicyRegistry => {
-  if (!globalPolicyRegistry) {
-    globalPolicyRegistry = new PolicyRegistry(options);
-  }
-  return globalPolicyRegistry;
-};
-
-/** Reset the global registry (for testing). */
-export const resetPolicyRegistry = (): void => {
-  globalPolicyRegistry = null;
-};

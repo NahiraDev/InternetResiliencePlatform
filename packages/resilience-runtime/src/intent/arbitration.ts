@@ -90,152 +90,10 @@ const scopesOverlap = (a: CompiledIntent, b: CompiledIntent): boolean => {
 };
 
 /**
- * Resolves conflicts between two policy snapshots.
- * Returns a merged policy and any conflicts.
+ * Policy-conflict resolution now lives in {@link PolicyRegistry}. Snapshot-level
+ * callers should use `RuntimePolicyArbitrator.resolvePolicyConflicts`, which
+ * delegates to that canonical implementation.
  */
-export const resolvePolicyConflict = (
-  policyA: PolicySnapshot,
-  policyB: PolicySnapshot,
-  strategy: 'union' | 'intersection' | 'hierarchical' = 'hierarchical',
-): { readonly merged: PolicySnapshot; readonly conflicts: readonly PolicyConflict[] } => {
-  const conflictsFound: PolicyConflict[] = [];
-
-  // Detect conflicts
-  if (!shallowEqual(policyA.policy.allowedActions, policyB.policy.allowedActions)) {
-    conflictsFound.push({
-      policyA,
-      policyB,
-      reason: 'allowedActions differ',
-      resolution: strategy,
-    });
-  }
-  if (!shallowEqual(policyA.policy.deniedActions, policyB.policy.deniedActions)) {
-    conflictsFound.push({
-      policyA,
-      policyB,
-      reason: 'deniedActions differ',
-      resolution: strategy,
-    });
-  }
-  if (
-    !shallowEqualRecord(
-      policyA.policy.capabilityRequirements,
-      policyB.policy.capabilityRequirements,
-    )
-  ) {
-    conflictsFound.push({
-      policyA,
-      policyB,
-      reason: 'capabilityRequirements differ',
-      resolution: strategy,
-    });
-  }
-  if (policyA.policy.confidenceThreshold !== policyB.policy.confidenceThreshold) {
-    conflictsFound.push({
-      policyA,
-      policyB,
-      reason: 'confidenceThreshold differ',
-      resolution: strategy,
-    });
-  }
-  if (policyA.policy.failClosed !== policyB.policy.failClosed) {
-    conflictsFound.push({
-      policyA,
-      policyB,
-      reason: 'failClosed differ',
-      resolution: strategy,
-    });
-  }
-
-  // Merge based on strategy
-  const mergedPolicy: PolicySnapshot = {
-    ...policyA,
-    policy: {
-      ...policyA.policy,
-      allowedActions: mergeArrays(
-        policyA.policy.allowedActions,
-        policyB.policy.allowedActions,
-        strategy,
-      ),
-      deniedActions: mergeArrays(
-        policyA.policy.deniedActions,
-        policyB.policy.deniedActions,
-        strategy,
-      ),
-      capabilityRequirements: mergeCapabilityRequirements(
-        policyA.policy.capabilityRequirements,
-        policyB.policy.capabilityRequirements,
-        strategy,
-      ),
-      confidenceThreshold: mergeThreshold(
-        policyA.policy.confidenceThreshold,
-        policyB.policy.confidenceThreshold,
-        strategy,
-      ),
-      failClosed:
-        strategy === 'intersection'
-          ? policyA.policy.failClosed && policyB.policy.failClosed
-          : policyA.policy.failClosed || policyB.policy.failClosed,
-    },
-  };
-
-  return { merged: Object.freeze(mergedPolicy), conflicts: Object.freeze(conflictsFound) };
-};
-
-const shallowEqual = <T>(a: readonly T[], b: readonly T[]): boolean => {
-  if (a.length !== b.length) return false;
-  return a.every((val, idx) => val === b[idx]);
-};
-
-const shallowEqualRecord = <T>(
-  a: Readonly<Record<string, T>>,
-  b: Readonly<Record<string, T>>,
-): boolean => {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((k) => a[k] === b[k]);
-};
-
-const mergeArrays = <T>(
-  a: readonly T[],
-  b: readonly T[],
-  strategy: 'union' | 'intersection' | 'hierarchical',
-): readonly T[] => {
-  if (strategy === 'intersection') {
-    return a.filter((x) => b.includes(x));
-  }
-  if (strategy === 'union') {
-    return Array.from(new Set([...a, ...b]));
-  }
-  // hierarchical: first policy wins (policyA is higher priority)
-  return a;
-};
-
-const mergeCapabilityRequirements = (
-  a: Readonly<Record<string, readonly string[]>>,
-  b: Readonly<Record<string, readonly string[]>>,
-  strategy: 'union' | 'intersection' | 'hierarchical',
-): Readonly<Record<string, readonly string[]>> => {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  const result: Record<string, readonly string[]> = {};
-  for (const key of keys) {
-    const av = a[key] ?? [];
-    const bv = b[key] ?? [];
-    result[key] = mergeArrays(av, bv, strategy);
-  }
-  return Object.freeze(result);
-};
-
-const mergeThreshold = (
-  a: number,
-  b: number,
-  strategy: 'union' | 'intersection' | 'hierarchical',
-): number => {
-  if (strategy === 'intersection') return Math.max(a, b); // stricter
-  if (strategy === 'union') return Math.min(a, b); // more permissive
-  return a; // hierarchical: first wins
-};
 
 /**
  * Enforces intent autonomy at the mutation boundary.
@@ -280,6 +138,12 @@ export interface IntentStore {
   readonly getActive: (at?: Date) => Promise<readonly CompiledIntent[]>;
   readonly put: (intent: CompiledIntent) => Promise<void>;
   readonly delete: (id: string) => Promise<void>;
+  /**
+   * Durable arbitration-conflict journal. Optional so read-only stores stay
+   * valid; the canonical arbitrator calls it when present, so conflicts are
+   * persisted wherever the runtime persists intents.
+   */
+  readonly recordConflicts?: (conflicts: readonly IntentConflict[]) => Promise<void>;
 }
 
 /**
@@ -287,6 +151,7 @@ export interface IntentStore {
  */
 export class InMemoryIntentStore implements IntentStore {
   private readonly store = new Map<string, CompiledIntent>();
+  private readonly conflicts: IntentConflict[] = [];
 
   async get(id: string): Promise<CompiledIntent | undefined> {
     return this.store.get(id);
@@ -310,5 +175,15 @@ export class InMemoryIntentStore implements IntentStore {
 
   async delete(id: string): Promise<void> {
     this.store.delete(id);
+  }
+
+  async recordConflicts(conflicts: readonly IntentConflict[]): Promise<void> {
+    for (const conflict of conflicts) {
+      this.conflicts.push(conflict);
+    }
+  }
+
+  async listConflicts(): Promise<readonly IntentConflict[]> {
+    return Object.freeze([...this.conflicts]);
   }
 }

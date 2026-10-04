@@ -16,6 +16,10 @@ import {
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
   createCanonicalRuntime,
+  negotiatePlatformCapabilities,
+  NetworkEventStormGuard,
+  ObservationDedupCache,
+  evaluateSelfHealth,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
   type Observation,
@@ -181,8 +185,45 @@ const observationsForSource = (
 
 export class LinuxObservationProvider implements ObservationProvider {
   readonly id = 'linux-connectivity-observer';
-  constructor(private readonly connectivity: ConnectivityManager) {}
+  private readonly stormGuard: NetworkEventStormGuard;
+  private readonly observationDedup: ObservationDedupCache;
+  private lastObservations: Observation[] = [];
+  constructor(
+    private readonly connectivity: ConnectivityManager,
+    options: {
+      readonly stormGuard?: NetworkEventStormGuard;
+      readonly observationDedup?: ObservationDedupCache;
+    } = {},
+  ) {
+    this.stormGuard = options.stormGuard ?? new NetworkEventStormGuard();
+    this.observationDedup = options.observationDedup ?? new ObservationDedupCache();
+  }
+  stormStatus() {
+    return this.stormGuard.status();
+  }
+  dedupStatus() {
+    return this.observationDedup.status();
+  }
+  observationDedupKey(observation: Observation): string {
+    return [
+      observation.source,
+      observation.category,
+      observation.metric,
+      JSON.stringify(observation.value),
+      observation.status,
+    ].join('|');
+  }
   async collect(context: RuntimeContext): Promise<ObservationProviderResult> {
+    const collectedAt = new Date().toISOString();
+    const storm = this.stormGuard.admit(Date.now());
+    if (!storm.admitted) {
+      return {
+        providerId: this.id,
+        observations: this.lastObservations,
+        collectedAt,
+        errors: ['observation storm shed; returning last admitted observations'],
+      };
+    }
     if (process.platform !== 'linux')
       return {
         providerId: this.id,
@@ -229,7 +270,11 @@ export class LinuxObservationProvider implements ObservationProvider {
       severity: active ? 'info' : 'critical',
       status: active ? 'healthy' : 'failed',
     });
-    return { providerId: this.id, observations, collectedAt: now, errors };
+    const admittedObservations = observations.filter((observation) =>
+      this.observationDedup.admit(this.observationDedupKey(observation), Date.now()),
+    );
+    this.lastObservations = admittedObservations;
+    return { providerId: this.id, observations: admittedObservations, collectedAt: now, errors };
   }
 }
 
@@ -407,6 +452,8 @@ export class RuntimeDaemonHost {
   private async applyDnsProvider(providerId: string): Promise<void> {
     const provider = this.dnsProviders.find((candidate) => candidate.id === providerId);
     if (!provider) throw new Error(`Unknown DNS provider: ${providerId}`);
+    const negotiation = this.platformNegotiation(['dns.write']);
+    if (negotiation.denied.length > 0) throw new Error(negotiation.reasons.join('; '));
     const active = this.connectivity.getActiveSource();
     const interfaceName = active?.interfaceName;
     if (process.platform !== 'linux' || !interfaceName)
@@ -419,6 +466,17 @@ export class RuntimeDaemonHost {
       maxBuffer: 64 * 1024,
     });
     this.dns.selectProvider(providerId);
+  }
+  /**
+   * Linux capability negotiation stays inside the canonical runtime boundary.
+   * The daemon advertises and checks only capabilities implemented by its
+   * OS-specific adapters; unsupported work is denied with an explicit reason
+   * instead of executing through another path.
+   */
+  platformNegotiation(requestedCapabilities: readonly string[] = this.runtime
+    .capabilities()
+    .flatMap((descriptor) => [...descriptor.capabilities])) {
+    return negotiatePlatformCapabilities('linux', requestedCapabilities);
   }
   async initialize() {
     await this.connectivity.discoverResources();
@@ -436,6 +494,28 @@ export class RuntimeDaemonHost {
     this.scheduler.stop();
     await this.plugins.stop();
     this.lifecycle = 'stopped';
+  }
+  /**
+   * Distinguishes daemon distress from network distress using scheduler,
+   * telemetry, and process evidence. The daemon has no production queue, so
+   * queue fields remain zero rather than inventing backpressure evidence.
+   */
+  selfHealth() {
+    const scheduler = this.scheduler.status();
+    const telemetry = this.runtime.telemetry.snapshot();
+    const cycleLatencyMs = telemetry['runtime_cycle_duration'];
+    return evaluateSelfHealth({
+      schedulerActive: scheduler.active,
+      schedulerFailedTotal: scheduler.failedTotal,
+      schedulerOverlapPreventedTotal: scheduler.overlapPreventedTotal,
+      queueDepth: 0,
+      queueRejectedTotal: 0,
+      telemetryFailuresTotal: telemetry['runtime_telemetry_failures_total'] ?? 0,
+      performance: {
+        heapUsedBytes: process.memoryUsage().heapUsed,
+        ...(typeof cycleLatencyMs === 'number' ? { cycleLatencyMs } : {}),
+      },
+    });
   }
   health() {
     return {
@@ -460,6 +540,12 @@ export class RuntimeDaemonHost {
       },
       plugins: this.plugins.status(),
       autoOptimization: { bound: true, enabled: this.autoOptimization.enabled },
+      self: this.selfHealth(),
+      ingress: {
+        storm: this.observer.stormStatus(),
+        duplicates: this.observer.dedupStatus(),
+      },
+      platform: this.platformNegotiation(),
       capabilities: this.runtime.capabilities(),
     };
   }

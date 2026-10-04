@@ -7,6 +7,7 @@ import {
 } from './fabric-authority.js';
 import {
   SELECTABLE_FABRIC_STATES,
+  assertFabricStateTransition,
   evaluateFabricFreshness,
   partitionByFreshness,
   selectDiverseResources,
@@ -60,6 +61,11 @@ export interface FabricCapability {
   readonly safety: 'read-only' | 'safe' | 'governed';
   readonly platforms: readonly string[];
 }
+/**
+ * @deprecated Retained only for backward compatibility. Production fabric
+ * selection must use {@link FabricCapabilityAuthority} through
+ * `ProgrammableConnectivityFabric.capabilityAuthority`.
+ */
 export class FabricCapabilityRegistry {
   private readonly capabilities = new Map<string, FabricCapability>();
 
@@ -165,7 +171,6 @@ const healthRank = (resource: FabricResource) =>
   numericCost(resource) * 0.1;
 
 export class ProgrammableConnectivityFabric {
-  readonly capabilities = new FabricCapabilityRegistry();
   /** Enforceable capability authority consulted during selection (issue #275 task 5). */
   readonly capabilityAuthority = new FabricCapabilityAuthority();
   private readonly providers = new Map<string, FabricDiscoveryProvider>();
@@ -254,6 +259,10 @@ export class ProgrammableConnectivityFabric {
         if (existingOwner && existingOwner !== resource.owner)
           throw new Error(`duplicate fabric ownership for resource ${resource.id}`);
         owners.set(resource.id, resource.owner);
+        assertFabricStateTransition(
+          resources.get(resource.id)?.state ?? 'UNKNOWN',
+          resource.state,
+        );
         // Register any capability the provider claims so the unified registry
         // can authorize it during selection.
         for (const capability of resource.capabilities) {
@@ -384,6 +393,10 @@ export class ProgrammableConnectivityFabric {
 
     for (const node of graph.nodes) {
       const resource = resourceFromPathNode(node);
+      assertFabricStateTransition(
+        resources.get(resource.id)?.state ?? 'UNKNOWN',
+        resource.state,
+      );
       resources.set(resource.id, resource);
     }
 

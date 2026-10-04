@@ -1,11 +1,9 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { PolicyRegistry, getPolicyRegistry, resetPolicyRegistry } from '../src/policy/index.js';
-import { defaultPolicy } from '../src/context/context.js';
+import { describe, expect, it } from 'vitest';
+import { PolicyRegistry } from '../src/policy/index.js';
+import { RuntimePolicyArbitrator } from '../src/policy/policy.js';
+import { createPolicySnapshot, defaultPolicy } from '../src/context/context.js';
 
 describe('Phase 4: Policy Composition & Versioning', () => {
-  beforeEach(() => {
-    resetPolicyRegistry();
-  });
 
   it('creates default registry with safe policy', () => {
     const registry = new PolicyRegistry();
@@ -151,10 +149,36 @@ describe('Phase 4: Policy Composition & Versioning', () => {
     expect(registry.getDomainResolution('routing').strategy).toBe('hierarchical');
   });
 
-  it('global singleton management', () => {
-    resetPolicyRegistry();
-    const r1 = getPolicyRegistry();
-    const r2 = getPolicyRegistry();
-    expect(r1).toBe(r2);
+  it('delegates snapshot conflict resolution to the canonical registry', () => {
+    const first = createPolicySnapshot({
+      ...defaultPolicy('simulation'),
+      actionBudget: 1,
+      confidenceThreshold: 0.4,
+      failClosed: false,
+    });
+    const second = createPolicySnapshot({
+      ...defaultPolicy('simulation'),
+      allowedActions: ['dns_switch'],
+      actionBudget: 5,
+      confidenceThreshold: 0.8,
+      failClosed: true,
+    });
+    const result = new RuntimePolicyArbitrator().resolvePolicyConflicts(
+      first,
+      second,
+      'intersection',
+    );
+
+    expect(result.merged.policy.actionBudget).toBe(5);
+    expect(result.merged.policy.confidenceThreshold).toBe(0.8);
+    expect(result.merged.policy.failClosed).toBe(false);
+    expect(result.conflicts.map((conflict) => conflict.reason)).toEqual(['allowedActions differ']);
+  });
+
+  it('uses independently constructed registries instead of shared global state', () => {
+    const first = new PolicyRegistry();
+    const second = new PolicyRegistry();
+    expect(first).not.toBe(second);
+    expect(first.getCurrentVersion()).toBe(second.getCurrentVersion());
   });
 });

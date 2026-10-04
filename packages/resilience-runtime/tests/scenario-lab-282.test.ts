@@ -76,6 +76,16 @@ describe('Issue #282: Runtime Lab, Digital Twin, Failure Injection & Replay', ()
     expect(first.records.length).toBe(3);
   });
 
+  it('uses deterministic seeded observation timestamps', async () => {
+    const first = await runScenario(scenario('timestamp-seed'));
+    const second = await runScenario(scenario('timestamp-seed'));
+    const timestamps = (records: typeof first.records) =>
+      [...records].flatMap((record) =>
+        record.observations.observations.map((observation) => observation.timestamp),
+      );
+    expect(timestamps(second.records)).toEqual(timestamps(first.records));
+  });
+
   it('replays incidents from captured scenario definitions', async () => {
     const original = await runScenario(scenario('replay-seed'));
     const revived = JSON.parse(JSON.stringify(original.scenario)) as ScenarioDefinition;

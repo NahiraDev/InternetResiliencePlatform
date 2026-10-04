@@ -1,7 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T20:27:28.981Z",
-  "vitestIncludeGlobs": [],
+  "generatedAt": "2026-10-04T20:53:16.005Z",
+  "vitestIncludeGlobs": [
+    "packages/resilience-runtime/tests/**/*.test.ts"
+  ],
   "orphanTests": [],
   "orphanModules": [],
   "duplicateContracts": [

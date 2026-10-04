@@ -66,9 +66,9 @@ describe('#281 t1: versioned event taxonomy', () => {
 
   it('declares identity requirements per event', () => {
     expect(eventDefinition('runtime.cycle.started')?.requiredIdentity).toEqual(['correlationId']);
+    expect(eventDefinition('runtime.plan.created')?.requiredIdentity).toEqual(['correlationId']);
     expect(eventDefinition('runtime.execution.started')?.requiredIdentity).toEqual([
       'correlationId',
-      'decisionId',
       'transactionId',
     ]);
   });
@@ -83,6 +83,19 @@ describe('#281 t1: versioned event taxonomy', () => {
     }
   });
 
+  it('requires decision and transaction IDs only where they can exist', () => {
+    expect(eventDefinition('runtime.incident.detected')?.requiredIdentity).toEqual(['correlationId']);
+    expect(eventDefinition('runtime.plan.created')?.requiredIdentity).toEqual(['correlationId']);
+    expect(eventDefinition('runtime.decision.recorded')?.requiredIdentity).toEqual([
+      'correlationId',
+      'decisionId',
+    ]);
+    expect(eventDefinition('runtime.mutation.applying')?.requiredIdentity).toEqual([
+      'correlationId',
+      'transactionId',
+    ]);
+  });
+
   it('rejects an unknown event type', () => {
     expect(validateEvent('runtime.does-not-exist', { correlationId: 'c' })).toEqual({
       valid: false,
@@ -94,7 +107,7 @@ describe('#281 t1: versioned event taxonomy', () => {
   it('reports missing identity fields', () => {
     const result = validateEvent('runtime.execution.started', { correlationId: 'c' });
     expect(result.valid).toBe(false);
-    expect(result.reasons).toEqual(['missing-identity:decisionId', 'missing-identity:transactionId']);
+    expect(result.reasons).toEqual(['missing-identity:transactionId']);
     expect(result.stage).toBe('action');
   });
 
@@ -169,6 +182,7 @@ describe('#281 t5: end-to-end traceability', () => {
   it('rebuilds a complete incident chain', () => {
     const trace = reconstructTrace(fullChain(), 'c1');
     expect(trace.complete).toBe(true);
+    expect(trace.stagesObserved).toContain('candidate');
     expect(trace.gaps).toEqual([]);
     expect(trace.decisionIds).toEqual(['d1']);
     expect(trace.transactionIds).toEqual(['t1']);
@@ -300,7 +314,7 @@ describe('#281 t6: evidence preserved when exporters fail', () => {
     expect(sink.events).toHaveLength(1);
     expect(sink.droppedInvalid()).toBe(0);
     expect(sink.invalidCount()).toBe(1);
-    expect(sink.invalidReasons()).toContain('missing-identity:decisionId');
+    expect(sink.invalidReasons()).toContain('missing-identity:transactionId');
   });
 
   it('exports invalid events too, because evidence is not optional', async () => {

@@ -5,7 +5,6 @@ export {
 } from './compiler.js';
 export {
   arbitrateIntents,
-  resolvePolicyConflict,
   enforceAutonomy,
   type IntentConflict,
   type PolicyConflict,

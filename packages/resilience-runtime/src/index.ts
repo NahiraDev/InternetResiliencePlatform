@@ -59,6 +59,15 @@ export * from './transactions/action-transaction.js';
 export * from './canonical-network-adapter.js';
 export * from './core-integration.js';
 export * from './closed-loop.js';
+export {
+  arbitrateIntents,
+  type IntentConflict,
+  type PolicyConflict,
+  type IntentStore,
+  InMemoryIntentStore,
+  PostgresIntentStore,
+  type PostgresConfig,
+} from './intent/index.js';
 export * from './intent/compiler.js';
 export * from './intent/governance.js';
 export * from './gateway/gateway-registry-plane.js';

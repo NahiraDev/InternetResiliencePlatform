@@ -406,6 +406,7 @@ export class ResilienceRuntime {
       let execution: ActionExecution | undefined;
       let verification;
       let recovery;
+      let runtimeTransactionId: string | undefined;
       const verifier = new RuntimeActionVerifier(this.adapters);
 
       if (context.mode === 'simulation') {
@@ -413,6 +414,7 @@ export class ResilienceRuntime {
       } else if (this.knowledgeStore !== undefined && this.mutationBoundary !== undefined) {
         // Use privileged mutation boundary for canonical composition
         try {
+          runtimeTransactionId = nextId('transaction');
           const mutationRequest = {
             plan,
             context,
@@ -420,10 +422,12 @@ export class ResilienceRuntime {
             mutationId: `mut-${Date.now()}`,
             idempotencyKey: input.idempotencyKey ?? plan.selectedAction.id,
             resourceId: plan.dependencies.join('|') || plan.selectedAction.intent,
+            transactionId: runtimeTransactionId,
             epoch: this.mutationBoundary.currentEpoch(),
             ...(plan.metadata?.aiAdvisoryOnly ? { ai: { rationale: String(plan.metadata.rationale) } } : {}),
           };
           const boundaryResult = await this.mutationBoundary.mutate(mutationRequest);
+          runtimeTransactionId = boundaryResult.transactionId;
           execution = boundaryResult.execution ?? { status: 'failed' } as ActionExecution;
           if (boundaryResult.status === 'blocked') {
             return this.recordBlocked(
@@ -464,12 +468,14 @@ export class ResilienceRuntime {
           } else {
             await this.events.emit('runtime.execution.completed', {
               correlationId: context.correlationId,
+              transactionId: boundaryResult.transactionId,
               status: execution.status,
             });
             await this.state.transition('verifying', context.correlationId);
             verification = await verifier.verify(plan, execution, context);
             await this.events.emit('runtime.verification.completed', {
               correlationId: context.correlationId,
+              transactionId: boundaryResult.transactionId,
               status: verification.status,
             });
             if (verification.status === 'failed') {
@@ -503,6 +509,7 @@ export class ResilienceRuntime {
       } else {
         // Fallback to legacy safety kernel path when no knowledge store
         try {
+          runtimeTransactionId = nextId('transaction');
           execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey)).execution;
         } catch (error) {
           if (error instanceof SafetyViolationError) {
@@ -525,12 +532,14 @@ export class ResilienceRuntime {
         }
         await this.events.emit('runtime.execution.completed', {
           correlationId: context.correlationId,
+          transactionId: runtimeTransactionId,
           status: execution.status,
         });
         await this.state.transition('verifying', context.correlationId);
         verification = await verifier.verify(plan, execution, context);
         await this.events.emit('runtime.verification.completed', {
           correlationId: context.correlationId,
+          transactionId: runtimeTransactionId,
           status: verification.status,
         });
         if (verification.status === 'failed') {

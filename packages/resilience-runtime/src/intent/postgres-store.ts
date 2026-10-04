@@ -4,6 +4,7 @@
  */
 
 import type { CompiledIntent, IntentStore } from './index.js';
+import type pg from 'pg';
 
 export interface PostgresConfig {
   host: string;
@@ -31,8 +32,6 @@ export interface IntentRow {
   expires_at: string | null;
   compiled_at: string;
 }
-
-import pg from 'pg';
 
 const MIGRATION_SQL = `
 -- Migration 001: Create intents table
@@ -104,6 +103,18 @@ export class PostgresIntentStore implements IntentStore {
   constructor(private readonly config: PostgresConfig) {}
 
   async initialize(): Promise<void> {
+    if (!this.config.host.trim() || !this.config.database.trim() || !this.config.user.trim()) {
+      throw new Error('PostgresIntentStore requires host, database, and user');
+    }
+    if (!Number.isInteger(this.config.port) || this.config.port < 1 || this.config.port > 65_535) {
+      throw new Error(`PostgresIntentStore requires a valid port, received ${this.config.port}`);
+    }
+    if (
+      this.config.max !== undefined &&
+      (!Number.isInteger(this.config.max) || this.config.max < 1)
+    ) {
+      throw new Error(`PostgresIntentStore requires max >= 1, received ${this.config.max}`);
+    }
     // Dynamic import to avoid requiring pg as a hard dependency
     const pg = await import('pg');
     const { Pool } = pg;

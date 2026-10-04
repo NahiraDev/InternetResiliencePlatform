@@ -49,6 +49,8 @@ export interface StrategyComparison {
   readonly identical: boolean;
 }
 
+const SCENARIO_EPOCH_MS = Date.parse('2026-01-01T00:00:00.000Z');
+
 const buildObservation = (
   scenario: ScenarioDefinition,
   stepIndex: number,
@@ -57,11 +59,17 @@ const buildObservation = (
   const step = scenario.steps[stepIndex];
   const random = createSeededRandom(`${scenario.seed}:${stepIndex}:${cycleIndex}`);
   const jitter = Math.floor(random() * 1000);
+  // Deterministic scenario clock: keep inputs reproducible without depending on
+  // wall-clock time. Downstream runtime records still carry their own IDs and
+  // timestamps; semantic comparison uses projectRecord.
+  const at = new Date(
+    SCENARIO_EPOCH_MS + stepIndex * 60_000 + cycleIndex * 1_000 + jitter,
+  ).toISOString();
   if (!step?.fault) {
     return {
       id: `scenario-${scenario.seed}-${stepIndex}-${cycleIndex}-healthy`,
       schemaVersion: 1,
-      createdAt: new Date().toISOString(),
+      createdAt: at,
       correlationId: scenario.name,
       source: 'scenario-lab',
       metadata: { seed: scenario.seed },
@@ -69,7 +77,7 @@ const buildObservation = (
       metric: 'health',
       value: 1,
       unit: 'state',
-      timestamp: new Date().toISOString(),
+      timestamp: at,
       freshnessMs: 0,
       confidence: 0.9,
       severity: 'info',
@@ -80,7 +88,7 @@ const buildObservation = (
   return {
     id: `scenario-${scenario.seed}-${stepIndex}-${cycleIndex}-${spec.kind}`,
     schemaVersion: 1,
-    createdAt: new Date().toISOString(),
+    createdAt: at,
     correlationId: scenario.name,
     source: 'scenario-lab',
     metadata: { seed: scenario.seed, jitterMs: jitter, ...(spec.metadata ?? {}) },
@@ -88,7 +96,7 @@ const buildObservation = (
     metric: 'health',
     value: 1,
     unit: 'state',
-    timestamp: new Date().toISOString(),
+    timestamp: at,
     freshnessMs: 0,
     confidence: 0.9,
     severity: 'critical',

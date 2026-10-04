@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T20:27:28.921Z",
+  "generatedAt": "2026-10-04T20:53:15.948Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
+      "kind": "phase",
       "number": null,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -13,6 +14,7 @@
     },
     {
       "file": "docs/phases/phase-00.md",
+      "kind": "phase",
       "number": 0,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -22,6 +24,7 @@
     },
     {
       "file": "docs/phases/phase-39.md",
+      "kind": "phase",
       "number": 39,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -31,6 +34,7 @@
     },
     {
       "file": "docs/phases/phase-40-evidence.md",
+      "kind": "phase",
       "number": 40,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -40,6 +44,7 @@
     },
     {
       "file": "docs/phases/phase-40.md",
+      "kind": "phase",
       "number": 40,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -49,6 +54,7 @@
     },
     {
       "file": "docs/phases/phase-41.md",
+      "kind": "phase",
       "number": 41,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -58,6 +64,7 @@
     },
     {
       "file": "docs/phases/phase-42.md",
+      "kind": "phase",
       "number": 42,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -67,6 +74,7 @@
     },
     {
       "file": "docs/phases/phase-43.md",
+      "kind": "phase",
       "number": 43,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -76,6 +84,7 @@
     },
     {
       "file": "docs/phases/phase-44.md",
+      "kind": "phase",
       "number": 44,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -85,6 +94,7 @@
     },
     {
       "file": "docs/phases/phase-45.md",
+      "kind": "phase",
       "number": 45,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -94,6 +104,7 @@
     },
     {
       "file": "docs/phases/phase-46.md",
+      "kind": "phase",
       "number": 46,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -103,6 +114,7 @@
     },
     {
       "file": "docs/phases/phase-47.md",
+      "kind": "phase",
       "number": 47,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -112,6 +124,7 @@
     },
     {
       "file": "docs/phases/phase-48.md",
+      "kind": "phase",
       "number": 48,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -121,6 +134,7 @@
     },
     {
       "file": "docs/phases/phase-49.md",
+      "kind": "phase",
       "number": 49,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -130,6 +144,7 @@
     },
     {
       "file": "docs/phases/phase-50.md",
+      "kind": "phase",
       "number": 50,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -139,6 +154,7 @@
     },
     {
       "file": "docs/phases/phase-51.md",
+      "kind": "phase",
       "number": 51,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -148,6 +164,7 @@
     },
     {
       "file": "docs/phases/phase-52.md",
+      "kind": "phase",
       "number": 52,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -157,6 +174,7 @@
     },
     {
       "file": "docs/phases/phase-53.md",
+      "kind": "phase",
       "number": 53,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -166,6 +184,7 @@
     },
     {
       "file": "docs/phases/phase-54.md",
+      "kind": "phase",
       "number": 54,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -175,6 +194,7 @@
     },
     {
       "file": "docs/phases/phase-55.md",
+      "kind": "phase",
       "number": 55,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -184,6 +204,7 @@
     },
     {
       "file": "docs/phases/phase-56.md",
+      "kind": "phase",
       "number": 56,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -193,6 +214,7 @@
     },
     {
       "file": "docs/phases/phase-57.md",
+      "kind": "phase",
       "number": 57,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -202,6 +224,7 @@
     },
     {
       "file": "docs/phases/phase-58.md",
+      "kind": "phase",
       "number": 58,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -211,6 +234,7 @@
     },
     {
       "file": "docs/phases/phase-59.md",
+      "kind": "phase",
       "number": 59,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -220,6 +244,7 @@
     },
     {
       "file": "docs/phases/phase-60.md",
+      "kind": "phase",
       "number": 60,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -229,6 +254,7 @@
     },
     {
       "file": "docs/phases/phase-61.md",
+      "kind": "phase",
       "number": 61,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -238,6 +264,7 @@
     },
     {
       "file": "docs/phases/phase-62.md",
+      "kind": "phase",
       "number": 62,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -247,6 +274,7 @@
     },
     {
       "file": "docs/phases/phase-63.md",
+      "kind": "phase",
       "number": 63,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -256,6 +284,7 @@
     },
     {
       "file": "docs/phases/phase-64.md",
+      "kind": "phase",
       "number": 64,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -265,6 +294,7 @@
     },
     {
       "file": "docs/phases/phase-65.md",
+      "kind": "phase",
       "number": 65,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -274,6 +304,7 @@
     },
     {
       "file": "docs/phases/phase-66.md",
+      "kind": "phase",
       "number": 66,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -283,6 +314,7 @@
     },
     {
       "file": "docs/phases/phase-67.md",
+      "kind": "phase",
       "number": 67,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -292,6 +324,7 @@
     },
     {
       "file": "docs/phases/phase-68.md",
+      "kind": "phase",
       "number": 68,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -301,6 +334,7 @@
     },
     {
       "file": "docs/phases/phase-69.md",
+      "kind": "phase",
       "number": 69,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -310,6 +344,7 @@
     },
     {
       "file": "docs/phases/phase-70.md",
+      "kind": "phase",
       "number": 70,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -319,6 +354,7 @@
     },
     {
       "file": "docs/phases/phase-71.md",
+      "kind": "phase",
       "number": 71,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -328,6 +364,7 @@
     },
     {
       "file": "docs/phases/phase-72.md",
+      "kind": "phase",
       "number": 72,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -337,6 +374,7 @@
     },
     {
       "file": "docs/phases/phase-73.md",
+      "kind": "phase",
       "number": 73,
       "beyondPhase78": false,
       "claimsImplementation": false,
@@ -346,6 +384,7 @@
     },
     {
       "file": "docs/phases/phase-74.md",
+      "kind": "phase",
       "number": 74,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -355,6 +394,7 @@
     },
     {
       "file": "docs/phases/phase-75.md",
+      "kind": "phase",
       "number": 75,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -364,6 +404,7 @@
     },
     {
       "file": "docs/phases/phase-76.md",
+      "kind": "phase",
       "number": 76,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -373,6 +414,7 @@
     },
     {
       "file": "docs/phases/phase-77.md",
+      "kind": "phase",
       "number": 77,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -382,6 +424,7 @@
     },
     {
       "file": "docs/phases/phase-78.md",
+      "kind": "phase",
       "number": 78,
       "beyondPhase78": false,
       "claimsImplementation": true,
@@ -391,6 +434,7 @@
     },
     {
       "file": "docs/phases/phase-79.md",
+      "kind": "phase",
       "number": 79,
       "beyondPhase78": true,
       "claimsImplementation": true,
@@ -400,16 +444,139 @@
     },
     {
       "file": "docs/phases/phase-80.md",
+      "kind": "phase",
       "number": 80,
       "beyondPhase78": true,
       "claimsImplementation": true,
       "citesEvidence": false,
       "hasTestEvidence": false,
       "evidenceClass": "unsubstantiated-claim"
+    },
+    {
+      "file": "artifacts/issues/272-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": false,
+      "evidenceClass": "claim-with-citation"
+    },
+    {
+      "file": "artifacts/issues/273-275-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/274-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "artifacts/issues/274-phase2-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/274-phase3-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "artifacts/issues/274-phase5-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/276-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/277-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "artifacts/issues/278-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/279-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "artifacts/issues/280-282-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "artifacts/issues/283-284-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "evidenceClass": "descriptive"
     }
   ],
   "summary": {
-    "total": 45,
+    "total": 57,
+    "phaseDocuments": 45,
+    "issueEvidenceDocuments": 12,
     "beyondPhase78": [
       "docs/phases/phase-79.md",
       "docs/phases/phase-80.md"
@@ -422,6 +589,6 @@
       "docs/phases/phase-76.md",
       "docs/phases/phase-80.md"
     ],
-    "evidenceBacked": 8
+    "evidenceBacked": 13
   }
 }

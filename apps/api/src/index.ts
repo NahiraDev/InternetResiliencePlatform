@@ -48,6 +48,7 @@ import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
 import {
   createCanonicalRuntime,
+  explainDecision,
   runtimeEnvelope,
   type Observation,
   type ObservationProvider,
@@ -903,6 +904,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   app.get('/api/v1/runtime/decisions', async (request) => {
     await requirePermission(request, 'runtime.read');
     return runtimeResponse(request, await resilienceRuntime.decisions.list());
+  });
+  app.get('/api/v1/runtime/decisions/:id/explanation', async (request) => {
+    await requirePermission(request, 'runtime.read');
+    const params = z.object({ id: z.string().min(1) }).parse(request.params);
+    const decision = (await resilienceRuntime.decisions.list()).find(
+      (candidate) => candidate.decisionId === params.id,
+    );
+    if (!decision) throw new NotFoundAppError('runtime decision');
+    return runtimeResponse(request, explainDecision(decision));
   });
   app.get('/api/v1/runtime/incidents', async (request) => {
     await requirePermission(request, 'runtime.read');

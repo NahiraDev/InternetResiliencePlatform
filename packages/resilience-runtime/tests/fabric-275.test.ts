@@ -142,6 +142,48 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
         expect(FABRIC_STATE_TRANSITIONS[state], `missing transitions for ${state}`).toBeDefined();
       }
     });
+
+    it('treats rediscovery of the same state as no transition', () => {
+      expect(() => assertFabricStateTransition('HEALTHY', 'HEALTHY')).not.toThrow();
+    });
+
+    it('enforces legal transitions during incremental discovery', async () => {
+      const fabric = new ProgrammableConnectivityFabric();
+      let updated = false;
+      fabric.registerProvider({
+        id: 'transitions',
+        owner: 'linux-client',
+        async discover(context) {
+          if (context.since && updated) return [gateway({ id: 'gw-1', state: 'HEALTHY' })];
+          return [gateway({ id: 'gw-1', state: 'FAILED' })];
+        },
+      });
+
+      await fabric.discover();
+      updated = true;
+      await expect(fabric.discover({ since: iso(-1_000) })).rejects.toThrow(
+        IllegalFabricStateTransitionError,
+      );
+    });
+
+    it('enforces legal transitions during graph reconciliation', () => {
+      const fabric = new ProgrammableConnectivityFabric();
+      const failed = {
+        version: 1,
+        builtAt: iso(),
+        nodes: [{ id: 'path:direct', kind: 'path' as const, state: 'failed' as const, metadata: {} }],
+        edges: [],
+      };
+      const healthy = {
+        ...failed,
+        nodes: [{ id: 'path:direct', kind: 'path' as const, state: 'available' as const, metadata: {} }],
+      };
+
+      fabric.reconcileRoutingGraph(failed as never);
+      expect(() => fabric.reconcileRoutingGraph(healthy as never)).toThrow(
+        IllegalFabricStateTransitionError,
+      );
+    });
   });
 
   describe('task 4: bounded/cancellable/incremental/freshness-aware discovery', () => {
@@ -307,6 +349,28 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
       expect(authority.authorize({ capabilityId: 'nope', resourceId: 'x' }).allowed).toBe(false);
     });
 
+    it('fails discovery closed when two providers claim one scope with different capabilities', async () => {
+      const fabric = new ProgrammableConnectivityFabric();
+      const scoped = (id: string, capabilityId: string) =>
+        gateway({
+          id,
+          capabilities: [
+            {
+              id: capabilityId,
+              scope: 'shared-scope',
+              authority: 'adapter',
+              trust: 0.9,
+              safety: 'safe',
+              platforms: ['any'],
+            },
+          ],
+        });
+      fabric.registerProvider(provider('first', 'owner-a', [scoped('gw-1', 'first.capability')]));
+      fabric.registerProvider(provider('second', 'owner-b', [scoped('gw-2', 'second.capability')]));
+
+      await expect(fabric.discover()).rejects.toThrow(/already claimed/);
+    });
+
     it('rejects duplicate ids and scope collisions', () => {
       const authority = new FabricCapabilityAuthority();
       authority.register({
@@ -432,6 +496,7 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
       const selection = fabric.select({ minimumDiverseAlternatives: 2 });
       expect(selection.diversity?.diverse.length).toBeGreaterThanOrEqual(2);
       expect(selection.diversity?.diverse.map((r) => r.id)).not.toContain('gw-b');
+      expect(selection.diversity?.distinctFailureDomains).toBe(2);
     });
   });
 

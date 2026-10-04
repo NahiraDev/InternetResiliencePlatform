@@ -26,6 +26,30 @@ describe('RuntimeDaemonHost', () => {
     expect(health.capabilities).toEqual(expect.any(Array));
   });
 
+  it('advertises negotiated Linux capabilities in daemon health', () => {
+    const host = createRuntimeDaemonHost();
+    const health = host.health();
+    expect(health.platform.platform).toBe('linux');
+    expect(health.platform.granted).toContain('dns.write');
+    expect(host.platformNegotiation(['unsupported.capability']).denied).toEqual([
+      'unsupported.capability',
+    ]);
+    expect(health.ingress.storm).toMatchObject({
+      admittedTotal: expect.any(Number),
+      shedTotal: expect.any(Number),
+      coolingDown: expect.any(Boolean),
+    });
+    expect(health.ingress.duplicates).toMatchObject({
+      keys: expect.any(Number),
+      admittedTotal: expect.any(Number),
+      duplicateHitsTotal: expect.any(Number),
+    });
+    expect(health.self).toMatchObject({
+      level: expect.stringMatching(/^(healthy|degraded|critical)$/),
+      reasons: expect.any(Array),
+    });
+  });
+
   it('enables gateway selection and tunnel planes only via explicit environment opt-in', async () => {
     process.env.IRP_GATEWAY_SELECTION_ENABLED = '1';
     process.env.IRP_TUNNEL_ENABLED = '1';

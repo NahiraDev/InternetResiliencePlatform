@@ -9,15 +9,18 @@ import type {
 import type { IntentConflict } from '../intent/arbitration.js';
 import {
   arbitrateIntents,
-  resolvePolicyConflict,
   enforceAutonomy,
   InMemoryIntentStore,
   type IntentStore,
   type PolicyConflict,
 } from '../intent/arbitration.js';
+import { PolicyRegistry, type PolicyDomain } from './registry.js';
 
 export class RuntimePolicyArbitrator {
-  constructor(private readonly intentStore: IntentStore = new InMemoryIntentStore()) {}
+  constructor(
+    private readonly intentStore: IntentStore = new InMemoryIntentStore(),
+    private readonly policyRegistry: PolicyRegistry = new PolicyRegistry(),
+  ) {}
 
   async evaluate(
     target: ActionPlan | CandidateAction,
@@ -66,7 +69,18 @@ export class RuntimePolicyArbitrator {
     policyB: PolicySnapshot,
     strategy: 'union' | 'intersection' | 'hierarchical' = 'hierarchical',
   ): { readonly merged: PolicySnapshot; readonly conflicts: readonly PolicyConflict[] } {
-    return resolvePolicyConflict(policyA, policyB, strategy);
+    // PolicyRegistry is the canonical conflict resolver. Map the requested
+    // merge strategy onto an existing domain so snapshot resolution does not
+    // maintain a second merge implementation.
+    const domain: PolicyDomain =
+      strategy === 'union' ? 'dns' : strategy === 'intersection' ? 'failover' : 'global';
+    const resolution = this.policyRegistry.resolveConflict(policyA.policy, policyB.policy, domain);
+    return {
+      merged: Object.freeze({ ...policyA, policy: resolution.merged }),
+      conflicts: Object.freeze(
+        resolution.conflicts.map((reason) => ({ policyA, policyB, reason, resolution: strategy })),
+      ),
+    };
   }
 
   /** Enforces autonomy at the mutation boundary. */

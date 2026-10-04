@@ -63,6 +63,7 @@ export const assertFabricStateTransition = (
   from: FabricResourceState,
   to: FabricResourceState,
 ): void => {
+  if (from === to) return;
   if (!isLegalFabricTransition(from, to)) throw new IllegalFabricStateTransitionError(from, to);
 };
 
@@ -142,8 +143,14 @@ export interface DiverseSelection {
   /** Ordered candidates; each entry is disjoint from all previously chosen ones. */
   readonly diverse: readonly FabricResource[];
   readonly fallback: readonly FabricResource[];
+  /** Distinct failure domains spanned by the diverse selection. */
+  readonly distinctFailureDomains: number;
   readonly reason: string;
 }
+
+/** Count of distinct failure domains spanned by a candidate set. */
+export const countDistinctFailureDomains = (resources: readonly FabricResource[]): number =>
+  new Set(resources.flatMap((resource) => [...resource.failureDomains])).size;
 
 /**
  * Greedy maximal-disjoint selection: repeatedly take the highest ranked
@@ -168,6 +175,7 @@ export const selectDiverseResources = (
     selected,
     diverse: Object.freeze(diverse),
     fallback: Object.freeze(fallback),
+    distinctFailureDomains: countDistinctFailureDomains(diverse),
     reason:
       selected && diverse.length >= required
         ? `selected ${selected.id} with ${diverse.length} failure-domain-disjoint alternatives`
@@ -176,7 +184,3 @@ export const selectDiverseResources = (
           : 'no candidate available for diversity selection',
   });
 };
-
-/** Count of distinct failure domains spanned by a candidate set. */
-export const countDistinctFailureDomains = (resources: readonly FabricResource[]): number =>
-  new Set(resources.flatMap((resource) => [...resource.failureDomains])).size;
