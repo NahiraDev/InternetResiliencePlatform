@@ -500,7 +500,10 @@ describe('#279 t7,t8,t9,t10: the learning loop', () => {
   });
 
   it('counts a verified rollback as a strategy failure', async () => {
-    const loop = loopWith();
+    const loop = new OutcomeLearningLoop({
+      nowMs: () => T0,
+      estimator: new StrategyOutcomeEstimator({ nowMs: () => T0 }),
+    });
     const update = loop.learn({ verification: await verified(true), strategyId: 's1', rollback: true });
     // Prior is 2:1, so one failure moves the mean to exactly 0.5.
     expect(update.estimateUpdated!.successRate).toBeLessThanOrEqual(0.5);

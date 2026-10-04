@@ -109,6 +109,20 @@ export class SafetyRollbackRecoveryKernel {
     return deepFreeze({ allowed: reasons.length === 0, reasons, blastRadius });
   }
 
+  async createCheckpoint(plan: ActionPlan, context: RuntimeContext): Promise<unknown> {
+    if (!this.checkpoint || plan.selectedAction.intent === 'noop') return undefined;
+    return this.checkpoint(plan, context);
+  }
+
+  async rollbackCheckpoint(
+    plan: ActionPlan,
+    context: RuntimeContext,
+    checkpoint: unknown,
+  ): Promise<ActionExecution | undefined> {
+    if (!this.rollback) return undefined;
+    return this.rollback(plan, context, checkpoint);
+  }
+
   async execute(
     plan: ActionPlan,
     context: RuntimeContext,

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T22:29:11.646Z",
+  "generatedAt": "2026-10-04T20:19:16.326Z",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
@@ -78,17 +78,25 @@
     },
     {
       "marker": "runtime-action-verifier",
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
+    },
+    {
+      "marker": "runtime-action-verifier",
       "path": "packages/resilience-runtime/src/verification/verification.ts"
     },
     {
       "marker": "verify-call",
       "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "verify-call",
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
     }
   ],
   "summary": {
     "entrypoints": 2,
     "mutationSites": 4,
-    "verificationSites": 12,
+    "verificationSites": 14,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }

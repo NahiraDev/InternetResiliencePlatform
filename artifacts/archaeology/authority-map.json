@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-03T22:29:11.792Z",
+  "generatedAt": "2026-10-04T20:19:16.528Z",
   "contractAuthorities": {
     "runtime": "@irp/resilience-runtime",
     "decision": "@irp/resilience-runtime",
@@ -53,11 +53,16 @@
       "path": "packages/resilience-runtime/src/safety/safety-kernel.ts",
       "composesCanonicalRuntime": false,
       "role": "safety-kernel-host"
+    },
+    {
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts",
+      "composesCanonicalRuntime": false,
+      "role": "safety-kernel-host"
     }
   ],
   "violations": [],
   "summary": {
-    "hosts": 7,
+    "hosts": 8,
     "violations": 0,
     "singleProductionAuthority": true
   }

@@ -739,13 +739,12 @@ export function createPrivilegedMutationBoundary(ports: {
       executor,
       events: ports.events,
       snapshot: async (plan: ActionPlan, context: RuntimeContext) => {
-        const fn = ports.safetyKernel['checkpoint'] as ((plan: ActionPlan, context: RuntimeContext) => Promise<unknown>) | undefined;
-        const _checkpoint = fn ? await fn(plan, context) : undefined;
+        const checkpoint = await ports.safetyKernel.createCheckpoint(plan, context);
         return {
           snapshotId: `snap-${Date.now()}`,
           targetId: plan.dependencies.join('|') || plan.selectedAction.intent,
           capturedAt: new Date().toISOString(),
-          previousState: { intent: plan.selectedAction.intent },
+          previousState: { checkpoint },
           resourceVersion: `v-${Date.now()}`,
         } as MutationSnapshot;
       },
@@ -766,8 +765,8 @@ export function createPrivilegedMutationBoundary(ports: {
         return { verified: isVerified, reasons: isVerified ? [] : ['verification-failed'] };
       },
       compensate: async (plan: ActionPlan, context: RuntimeContext, snapshot: MutationSnapshot) => {
-        const result = await ports.safetyKernel['rollback']?.(plan, context, snapshot);
-        return { compensated: result !== undefined, reasons: result ? [] : ['rollback-failed'], snapshot: result as unknown as MutationSnapshot };
+        const rollbackExecution = await ports.safetyKernel.rollbackCheckpoint(plan, context, snapshot.previousState.checkpoint);
+        return { compensated: rollbackExecution !== undefined, reasons: rollbackExecution ? [] : ['rollback-failed'], snapshot };
       },
       verifyRollback: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
         const verifier = new RuntimeActionVerifier(ports.adapters);
@@ -777,12 +776,18 @@ export function createPrivilegedMutationBoundary(ports: {
       },
       recover: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
         const recovery = await ports.safetyKernel.recover(plan, 'verification failed', context);
-        return { recovered: recovery !== undefined, reasons: recovery ? [] : ['recovery-failed'], strategy: 'rollback' };
+        const recovered = recovery.status === 'success';
+        return { recovered, reasons: recovered ? [] : [recovery.reason], strategy: 'rollback' };
       },
     },
     {
       safety: async (plan: ActionPlan, context: RuntimeContext) => {
-        const assessment = await ports.safetyKernel['assess']?.(plan, context) ?? { allowed: true, reasons: [] };
+        const assessment = ports.safetyKernel.assess(plan, context);
+        await ports.events.emit('runtime.safety.assessed', {
+          correlationId: context.correlationId,
+          allowed: assessment.allowed,
+          reasons: assessment.reasons,
+        });
         return { safe: assessment.allowed, reasons: assessment.reasons };
       },
     }

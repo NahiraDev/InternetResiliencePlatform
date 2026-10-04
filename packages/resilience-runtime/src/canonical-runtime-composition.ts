@@ -148,17 +148,18 @@ export const createCanonicalRuntimeWithPostgres = async (
 
   // Auto-create PostgresIntentStore from env if not provided
   const resolvedIntentStore = intentStore ?? (await createPostgresIntentStore());
+  const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
 
   const runtime = new ResilienceRuntime(observationProviders, {
     ...runtimeOptions,
     ...(resolvedIntentStore !== undefined ? { intentStore: resolvedIntentStore } : {}),
+    knowledgeStore: canonicalKnowledgeStore,
   });
   const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
   for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
 
   // One knowledge boundary and one learning closure per composed runtime. These
   // are owned here so a host cannot construct a private, divergent copy.
-  const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
   const canonicalLearningLoop =
     learningLoop ?? new OutcomeLearningLoop(learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore });
 
