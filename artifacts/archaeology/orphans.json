@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-05T00:17:25.979Z",
+  "generatedAt": "2026-10-05T23:03:32.504Z",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -43,6 +43,11 @@
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "FAILURE_LAYERS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/learning/adaptive-control.ts"
+    },
+    {
       "symbol": "PolicyDeniedError",
       "kind": "class",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
@@ -51,6 +56,11 @@
       "symbol": "SafetyGateError",
       "kind": "class",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "SINKS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/security/secrets.ts"
     }
   ],
   "duplicateContracts": [
@@ -222,7 +232,7 @@
   "summary": {
     "orphanTests": 0,
     "orphanModules": 0,
-    "orphanExports": 9,
+    "orphanExports": 11,
     "duplicateContracts": 23,
     "unreferencedPersistenceModels": 0
   }

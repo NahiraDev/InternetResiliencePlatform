@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-05T00:17:25.769Z",
+  "generatedAt": "2026-10-05T23:03:32.295Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -556,7 +556,23 @@
       "claimsImplementation": true,
       "citesEvidence": true,
       "hasTestEvidence": true,
-      "pinnedShas": [],
+      "pinnedShas": [
+        "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+      ],
+      "stalePins": [],
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "artifacts/issues/272-final-report.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [
+        "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+      ],
       "stalePins": [],
       "evidenceClass": "evidence-backed"
     },
@@ -704,8 +720,10 @@
         "8f598afbcc001e57c27f7917a9b871e21fe86a61"
       ],
       "stalePins": [],
-      "behindHead": [],
-      "evidenceClass": "descriptive"
+      "behindHead": [
+        "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+      ],
+      "evidenceClass": "behind-head"
     },
     {
       "file": ".github/ACTIVE_WORK.md",
@@ -719,14 +737,16 @@
         "8f598afbcc001e57c27f7917a9b871e21fe86a61"
       ],
       "stalePins": [],
-      "behindHead": [],
-      "evidenceClass": "descriptive"
+      "behindHead": [
+        "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+      ],
+      "evidenceClass": "behind-head"
     }
   ],
   "summary": {
-    "total": 59,
+    "total": 60,
     "phaseDocuments": 45,
-    "issueEvidenceDocuments": 12,
+    "issueEvidenceDocuments": 13,
     "beyondPhase78": [
       "docs/phases/phase-79.md",
       "docs/phases/phase-80.md"
@@ -739,9 +759,22 @@
       "docs/phases/phase-76.md",
       "docs/phases/phase-80.md"
     ],
-    "evidenceBacked": 15,
+    "evidenceBacked": 16,
     "coordinationRecords": 2,
     "staleReferences": [],
-    "behindHeadRecords": []
+    "behindHeadRecords": [
+      {
+        "file": "PROJECT_STATE.md",
+        "behindHead": [
+          "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+        ]
+      },
+      {
+        "file": ".github/ACTIVE_WORK.md",
+        "behindHead": [
+          "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+        ]
+      }
+    ]
   }
 }

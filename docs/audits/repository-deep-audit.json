@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T04:41:34.021Z",
+  "generatedAt": "2026-10-05T23:03:12.946Z",
   "workspaceCount": 43,
   "workflowCount": 15,
   "findings": [],
@@ -487,8 +487,8 @@
     {
       "name": "@irp/tunnel",
       "path": "packages/tunnel/package.json",
-      "sourceFiles": 5,
-      "testFiles": 5,
+      "sourceFiles": 6,
+      "testFiles": 6,
       "scripts": [
         "build",
         "lint",

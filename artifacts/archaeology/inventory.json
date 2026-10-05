@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-05T00:17:25.495Z",
+  "generatedAt": "2026-10-05T23:03:32.017Z",
   "packages": [
     {
       "group": "apps",
@@ -801,8 +801,8 @@
         "@irp/shared",
         "@irp/telemetry"
       ],
-      "sourceFiles": 10,
-      "testFiles": 5,
+      "sourceFiles": 12,
+      "testFiles": 6,
       "hasTests": true
     },
     {
