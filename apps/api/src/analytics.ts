@@ -141,6 +141,10 @@ export async function trackServerEvent(
   properties?: Record<string, string | number | boolean | null>,
 ): Promise<void> {
   try {
+    // Analytics is strictly opt-in. No event leaves the deployment unless the
+    // operator explicitly enables third-party analytics.
+    if (process.env.IRP_ANALYTICS_ENABLED !== 'true') return;
+
     // Only attempt to track in production environments
     const env = process.env.NODE_ENV?.toLowerCase() ?? 'development';
     const isProduction = ['production', 'staging'].includes(env);
