@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-05T23:03:32.036Z",
+  "generatedAt": "2026-10-05T23:50:51.442Z",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
