@@ -55,6 +55,7 @@ import {
   type ObservationProvider,
 } from '@irp/resilience-runtime';
 import { registerIntentRoutes } from './intent-api.js';
+import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
 import {
   generateSpeedInsightsScript,
   injectSpeedInsightsIntoHtml,
@@ -201,6 +202,13 @@ const resolveJwtSecret = () => {
     throw new Error('JWT_SECRET is required for production or staging API runtime.');
   return 'development-secret-development-secret-32';
 };
+const bootstrapAdminEmails = (): string[] =>
+  (process.env.IRP_BOOTSTRAP_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+const isBootstrapAdminEmail = (email: string): boolean =>
+  bootstrapAdminEmails().includes(email.toLowerCase());
 const permissions = [
   'users:read',
   'users:write',
@@ -353,7 +361,11 @@ export const buildServer = async (): Promise<FastifyInstance> => {
       route,
     });
   });
-  await app.register(cors);
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  await app.register(cors, allowedOrigins.length > 0 ? { origin: allowedOrigins } : { origin: false });
   await app.register(helmet);
   await app.register(swagger, {
     openapi: {
@@ -1010,7 +1022,8 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     return ok(snapshot);
   });
 
-  app.post('/api/v1/auth/register', async (request, reply) => {
+  const authRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 10, windowMs: 60_000 }));
+  app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
     const input = registerSchema.parse(request.body);
     if (users.find((u) => u.email === input.email))
       throw new ConflictAppError('Email is already registered.');
@@ -1020,8 +1033,8 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       name: input.name,
       passwordHash: hashPassword(input.password),
       status: 'active',
-      roles: ['platform_admin'],
-      permissions,
+      roles: isBootstrapAdminEmail(input.email) ? ['platform_admin'] : ['member'],
+      permissions: isBootstrapAdminEmail(input.email) ? permissions : [],
       createdAt: now(),
       updatedAt: now(),
     });
@@ -1029,16 +1042,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 
     // Track user registration in Vercel Analytics
     await trackServerEvent('user_registered', {
-      userId: user.id,
       status: user.status,
     });
 
     return reply.code(201).send(created(publicUser(user) as never));
   });
-  app.post('/api/v1/auth/login', async (request) => {
+  app.post('/api/v1/auth/login', { preHandler: authRateLimit }, async (request) => {
     const input = loginSchema.parse(request.body);
     const user = users.find((u) => u.email === input.email);
-    if (!user || !verifyPassword(input.password, user.passwordHash))
+    if (!user || user.status !== 'active' || !verifyPassword(input.password, user.passwordHash))
       throw new UnauthorizedAppError('Invalid credentials');
     const session: Session = {
       id: crypto.randomUUID(),
@@ -1058,7 +1070,6 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 
     // Track successful login in Vercel Analytics
     await trackServerEvent('user_login', {
-      userId: user.id,
       method: 'password',
     });
 
@@ -1072,20 +1083,38 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     });
     return ok({ accessToken, refreshToken, expiresIn: 900, user: publicUser(user) });
   });
-  app.post('/api/v1/auth/refresh', async (request) => {
+  app.post('/api/v1/auth/refresh', { preHandler: authRateLimit }, async (request) => {
     const token = z.object({ refreshToken: z.string() }).parse(request.body).refreshToken;
     const claims = jwt.verify(token, 'refresh');
     const user = users.get(claims.sub);
-    if (!user || !claims.sessionId || !sessions.has(claims.sessionId))
+    const session = claims.sessionId ? sessions.get(claims.sessionId) : undefined;
+    const sessionExpired = session ? Date.now() >= Date.parse(session.expiresAt) : true;
+    if (!user || user.status !== 'active' || !session || session.revokedAt || sessionExpired)
       throw new UnauthorizedAppError();
+    sessions.delete(session.id);
+    const rotated: Session = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      refreshToken: crypto.randomUUID(),
+      expiresAt: new Date(Date.now() + 30 * 86400_000).toISOString(),
+    };
+    sessions.set(rotated.id, rotated);
     return ok({
       accessToken: jwt.sign({
         sub: user.id,
         roles: user.roles,
         scopes: user.permissions,
-        sessionId: claims.sessionId,
+        sessionId: rotated.id,
         type: 'access',
         ttlSeconds: 900,
+      }),
+      refreshToken: jwt.sign({
+        sub: user.id,
+        roles: user.roles,
+        scopes: user.permissions,
+        sessionId: rotated.id,
+        type: 'refresh',
+        ttlSeconds: 30 * 86400,
       }),
       expiresIn: 900,
     });
@@ -1093,8 +1122,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   app.post('/api/v1/auth/logout', async (request) => {
     const p = await requireAuth(request);
     const sid = String(p.metadata?.sessionId ?? '');
-    const s = sessions.get(sid);
-    if (s) s.revokedAt = now();
+    sessions.delete(sid);
     return ok({ loggedOut: true });
   });
   app.post('/api/v1/auth/password-reset/request', async (request) => {
