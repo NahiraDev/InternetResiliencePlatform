@@ -698,3 +698,5 @@ export const supportedProtocolStatus: Record<
 };
 export * from './wireguard.js';
 export * from './lifecycle.js';
+
+export * from './kill-switch.js';

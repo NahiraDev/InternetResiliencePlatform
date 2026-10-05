@@ -107,6 +107,7 @@ const capabilities: TunnelCapability[] = [
   'keepalive',
   'reconnect',
   'healthCheck',
+  'killSwitch',
 ];
 
 export class WireGuardProvider implements TunnelProvider {

@@ -132,8 +132,9 @@ describe('Analytics Module', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should log in development mode when debug is enabled', async () => {
+    it('should log in development mode when analytics is explicitly enabled and debug is on', async () => {
       process.env.NODE_ENV = 'development';
+      process.env.IRP_ANALYTICS_ENABLED = 'true';
       process.env.VERCEL_ANALYTICS_DEBUG = 'true';
 
       const logs: unknown[] = [];
@@ -143,7 +144,23 @@ describe('Analytics Module', () => {
       await trackServerEvent('dev_event', { test: 'value' });
 
       console.log = originalLog;
+      delete process.env.IRP_ANALYTICS_ENABLED;
       expect(logs.length).toBeGreaterThan(0);
+    });
+
+    it('should not send or log anything when analytics is not explicitly enabled', async () => {
+      process.env.NODE_ENV = 'development';
+      delete process.env.IRP_ANALYTICS_ENABLED;
+      process.env.VERCEL_ANALYTICS_DEBUG = 'true';
+
+      const logs: unknown[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => logs.push(args);
+
+      await trackServerEvent('dev_event', { test: 'value' });
+
+      console.log = originalLog;
+      expect(logs.length).toBe(0);
     });
 
     it('should not log when debug is disabled', async () => {
