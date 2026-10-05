@@ -10,7 +10,6 @@
  * with no redaction and no failure isolation.
  */
 
-import { deepFreeze } from '../domain/ids.js';
 import type { EventSink, TelemetrySink } from '../ports/ports.js';
 import { SecretSentry } from '../security/secrets.js';
 import { traceEvent, type TraceEvent } from '../verification/incident-trace.js';
@@ -59,6 +58,7 @@ export const TELEMETRY_CLASSIFICATIONS: readonly TelemetryClassification[] = Obj
   defineTelemetry('runtime_event_invalid_total', 'diagnostic', true, 'Events retained without satisfying taxonomy validation.'),
   defineTelemetry('runtime_event_export_failures_total', 'diagnostic', true, 'Event export failures observed locally.'),
   defineTelemetry('runtime_persistence_failures_total', 'diagnostic', true, 'Persistence failures observed locally.'),
+  defineTelemetry('runtime_persistence_dropped_total', 'diagnostic', true, 'Retry entries evicted by the bounded persistence queue during an outage.'),
   defineTelemetry('runtime_policy_denied_total', 'security', true, 'Policy denials by reason class.'),
 ]);
 
@@ -295,8 +295,3 @@ export class ClassifiedTelemetrySink implements TelemetrySink {
     return this.nowMs();
   }
 }
-
-export const TELEMETRY_SNAPSHOT = deepFreeze({
-  metrics: TELEMETRY_CLASSIFICATIONS.map((entry) => entry.metric),
-  classes: TELEMETRY_CLASSES,
-});

@@ -152,10 +152,17 @@ host-constructible. Each composition gets its own boundary, and the composition
 stays frozen. Covered by `tests/canonical-knowledge-composition.test.ts`.
 
 This closes the "not yet composed into `createCanonicalRuntime`" gap I reported
-for #276's `KnowledgeStore`. It does **not** yet route
-`canonical-decision-provider`'s live ranking through `knowledgeEvidenceFunction`,
-nor compose `PrivilegedMutationBoundary` into the execution path — both remain
-open and are listed below.
+for #276's `KnowledgeStore`.
+
+**Both follow-on gaps are now closed.** Canonical planning consumes per-candidate
+knowledge through `evidenceFor` / `knowledgeEvidenceFunction`, and
+`PrivilegedMutationBoundary` is on the live execution path — unconditionally for
+every non-simulation mutation. `ResilienceRuntime` now holds `learningLoop` and
+`outcomeProbes` and steps the loop in `learnFromOutcome()` after verification and
+after boundary recovery, emitting `runtime.outcome.verified` and
+`runtime.learning.applied`. Learning activates only from real
+destination/service/application probes; with no probe the outcome is recorded as
+unverified evidence and selection is unchanged.
 
 ## Tests
 
@@ -171,7 +178,7 @@ decay, ledger bounds, pruning, snapshot observability, undo and explainability.
 
 `tests/canonical-knowledge-composition.test.ts` — 6 tests.
 
-- `@irp/resilience-runtime`: **41 test files, 519 tests PASS** (5 consecutive runs)
+- `@irp/resilience-runtime`: **49 test files, 663 tests PASS** at `8f598af`
 - Full workspace: **172/172 turbo tasks PASS**, 0 cached
 
 ## CI/runtime evidence (this session, uncached)

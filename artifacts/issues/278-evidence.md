@@ -7,8 +7,11 @@ Goal: enforce one secure privileged mutation boundary.
 
 Existing partial coverage found by inspection, not assumed:
 
-- `src/safety/safety-kernel.ts` — `SafetyRollbackRecoveryKernel` with checkpoint,
-  rollback and recovery. Kept.
+- `src/safety/safety-kernel.ts` — `SafetyRollbackRecoveryKernel` reduced to a safety **port**:
+  `assess` / `createCheckpoint` / `rollback` / `recover`, constructor
+  `(events, recovery, options)`. `execute()` and `SafetyExecutionResult` were **removed** so the
+  safety port cannot reach an executor, and the `runtime.safety.*` emissions moved to
+  `PrivilegedMutationBoundary`. Kept as the canonical safety port.
 - `src/transactions/action-transaction.ts` — idempotency keys, in-flight
   collapsing, duplicate/conflict detection. Kept.
 - `src/policy/policy.ts` — policy evaluation with `failClosed`.
@@ -192,7 +195,7 @@ epoch and resource-version staleness, concurrent-resource rejection, concurrent
 different-resource success, every secret redaction path, AI allow-listing,
 circular safety, and the four bypass guards.
 
-- `@irp/resilience-runtime`: **39 test files, 453 tests PASS**
+- `@irp/resilience-runtime`: **49 test files, 663 tests PASS** at `8f598af`
 - Full workspace: **172/172 turbo tasks PASS**, 0 cached
 
 ## CI/runtime evidence (this session, uncached)
@@ -203,16 +206,18 @@ circular safety, and the four bypass guards.
 - `pnpm run architecture:check` — PASS
 - `pnpm run architecture:guards` — PASS (and proven to fail on a real violation)
 - `pnpm run audit:deep` — PASS (0 findings)
-- `pnpm run architecture:archaeology` — 0 orphan tests, 0 orphan modules,
-  23 duplicate contracts, 29 drift findings (0 critical, 0 major)
+- `pnpm run architecture:archaeology` — 0 orphan tests, 0 orphan modules, 9 orphan exports
+  (all LEGACY autopilot), 23 duplicate contracts, 29 drift findings (0 critical, 0 major)
 
 ## Known limitations
 
-- `PrivilegedMutationBoundary` is composed into the canonical runtime via
-  `createPrivilegedMutationBoundary`. When a canonical knowledge store is
-  present, live mutations route through the boundary's phase machine; the
-  legacy `ActionTransactionEngine` path remains only for direct
-  non-canonical `ResilienceRuntime` use and its pre-existing safety tests.
+- `PrivilegedMutationBoundary` is composed via `createPrivilegedMutationBoundary` and is now the
+  **unconditional** live mutation path: every non-simulation mutation calls
+  `mutationBoundary.mutate()`. The knowledge-store-conditional legacy `ActionTransactionEngine`
+  branch was **deleted** from `runtime.ts`, and the safety kernel has no execution method through
+  which it could be reached. Its policy phase evaluates through the same `RuntimePolicyArbitrator`
+  instance the cycle uses, rather than re-running runtime admission checks (which previously made
+  every boundary mutation conflict with the caller's own single-flight lock and block it).
 - `SecretSentry` redacts by pattern; it does not perform cryptographic
   verification of secrets or guarantee removal from an opaque byte buffer.
 - `packages/kernel`'s `CapabilityAuthorizer` and this `TrustBoundaryAuthorizer`

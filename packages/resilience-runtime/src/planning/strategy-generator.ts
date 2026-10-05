@@ -35,7 +35,7 @@ export interface GeneratedStrategy {
 }
 
 /** The default ladder: primary, fallback, conservative, alternate. */
-export const defaultStrategyTemplates = (): readonly StrategyTemplate[] =>
+const defaultStrategyTemplates = (): readonly StrategyTemplate[] =>
   Object.freeze([
     {
       kind: 'primary',

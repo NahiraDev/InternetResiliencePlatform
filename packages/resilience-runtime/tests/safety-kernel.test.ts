@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SafetyRollbackRecoveryKernel, SafetyViolationError } from '../src/safety/safety-kernel.js';
+import { SafetyRollbackRecoveryKernel } from '../src/safety/safety-kernel.js';
 import type { ActionExecution, ActionPlan, RuntimeContext } from '../src/domain/types.js';
-import type { ActionExecutor, EventSink, RecoveryProvider } from '../src/ports/ports.js';
-import { ActionTransactionEngine } from '../src/transactions/action-transaction.js';
+import type { EventSink, RecoveryProvider } from '../src/ports/ports.js';
+import { validateEvent } from '../src/events/event-taxonomy.js';
 
 const context = (): RuntimeContext => ({
   runtimeId: 'runtime',
@@ -117,82 +117,81 @@ const recovery: RecoveryProvider = {
   }),
 };
 
-const make = (executor: ActionExecutor, options = {}) => {
+const make = (options = {}) => {
   const events: EventSink = { emit: async () => undefined };
-  const tx = new ActionTransactionEngine(executor, events);
-  return new SafetyRollbackRecoveryKernel(tx, events, recovery, options);
+  return new SafetyRollbackRecoveryKernel(events, recovery, options);
 };
 
 describe('SafetyRollbackRecoveryKernel', () => {
-  it('blocks excessive blast radius before execution', async () => {
-    let calls = 0;
-    const kernel = make({
-      execute: async () => {
-        calls++;
-        return exec();
-      },
-    });
-    await expect(kernel.execute(plan(0.2, { blastRadius: 0.9 }), context())).rejects.toBeInstanceOf(
-      SafetyViolationError,
-    );
-    expect(calls).toBe(0);
+  it('blocks excessive blast radius', () => {
+    const kernel = make();
+    const assessment = kernel.assess(plan(0.2, { blastRadius: 0.9 }), context());
+    expect(assessment.allowed).toBe(false);
+    expect(assessment.reasons.join('; ')).toContain('blast radius');
+    expect(assessment.blastRadius).toBe(0.9);
   });
 
-  it('fails closed for expired context', async () => {
-    let calls = 0;
-    const kernel = make({
-      execute: async () => {
-        calls++;
-        return exec();
-      },
-    });
+  it('fails closed for expired context', () => {
+    const kernel = make();
     const c = { ...context(), deadline: '2000-01-01T00:00:00.000Z' };
-    await expect(kernel.execute(plan(), c)).rejects.toBeInstanceOf(SafetyViolationError);
-    expect(calls).toBe(0);
+    expect(kernel.assess(plan(), c).reasons).toContain('context deadline has expired');
   });
 
-  it('creates a checkpoint before mutation and rolls back failed execution', async () => {
+  it('fails closed for cancelled context', () => {
+    const kernel = make();
+    const assessment = kernel.assess(plan(), { ...context(), cancelled: true });
+    expect(assessment.allowed).toBe(false);
+    expect(assessment.reasons).toContain('context is cancelled');
+  });
+
+  it('fails closed for an untrusted mutation context', () => {
+    const kernel = make();
+    const assessment = kernel.assess(plan(), {
+      ...context(),
+      mode: 'live',
+      securityContext: { trusted: false },
+    });
+    expect(assessment.allowed).toBe(false);
+    expect(assessment.reasons).toContain('trusted authorization is required for mutation');
+  });
+
+  it('allows a bounded, trusted, permitted plan', () => {
+    const kernel = make();
+    const assessment = kernel.assess(plan(), context());
+    expect(assessment.allowed).toBe(true);
+    expect(assessment.reasons).toEqual([]);
+  });
+
+  it('captures a checkpoint for a mutating plan and skips it for noop', async () => {
     const order: string[] = [];
-    const rollback = async () => {
-      order.push('rollback');
-      return exec('success');
+    const kernel = make({
+      checkpoint: async () => {
+        order.push('checkpoint');
+        return { state: 'before' };
+      },
+    });
+    expect(await kernel.createCheckpoint(plan(), context())).toEqual({ state: 'before' });
+    const noopPlan: ActionPlan = {
+      ...plan(),
+      selectedAction: { ...plan().selectedAction, intent: 'noop' },
     };
-    const kernel = make(
-      {
-        execute: async () => {
-          order.push('execute');
-          return exec('failed');
-        },
-      },
-      {
-        checkpoint: async () => {
-          order.push('checkpoint');
-          return { state: 'before' };
-        },
-        rollback,
-      },
-    );
-    const result = await kernel.execute(plan(), context());
-    expect(order).toEqual(['checkpoint', 'execute', 'rollback']);
-    expect(result.rollbackAttempted).toBe(true);
-    expect(result.rollbackExecution?.status).toBe('success');
+    expect(await kernel.createCheckpoint(noopPlan, context())).toBeUndefined();
+    expect(order).toEqual(['checkpoint']);
   });
 
-  it('does not roll back successful execution', async () => {
-    let rollbacks = 0;
-    const kernel = make(
-      { execute: async () => exec() },
-      {
-        checkpoint: async () => ({ state: 'before' }),
-        rollback: async () => {
-          rollbacks++;
-          return exec();
-        },
-      },
-    );
-    const result = await kernel.execute(plan(), context());
-    expect(result.rollbackAttempted).toBe(false);
-    expect(rollbacks).toBe(0);
+  it('rolls back a checkpoint through the configured rollback port', async () => {
+    const kernel = make({
+      checkpoint: async () => ({ state: 'before' }),
+      rollback: async () => exec('success'),
+    });
+    const checkpoint = await kernel.createCheckpoint(plan(), context());
+    const result = await kernel.rollbackCheckpoint(plan(), context(), checkpoint);
+    expect(result?.status).toBe('success');
+  });
+
+  it('returns undefined rollback when no rollback port is configured', async () => {
+    const kernel = make({ checkpoint: async () => ({ state: 'before' }) });
+    expect(await kernel.rollbackCheckpoint(plan(), context(), { state: 'before' })).toBeUndefined();
   });
 
   it('delegates verification recovery to the canonical recovery provider', async () => {
@@ -204,10 +203,36 @@ describe('SafetyRollbackRecoveryKernel', () => {
       },
     };
     const events: EventSink = { emit: async () => undefined };
-    const tx = new ActionTransactionEngine({ execute: async () => exec() }, events);
-    const kernel = new SafetyRollbackRecoveryKernel(tx, events, rp);
+    const kernel = new SafetyRollbackRecoveryKernel(events, rp);
     const result = await kernel.recover(plan(), 'verification failed', context());
     expect(result.status).toBe('success');
     expect(calls).toBe(1);
+  });
+
+  it('stamps the mutation transaction identity onto recovery evidence', async () => {
+    const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const events: EventSink = {
+      emit: async (type: string, payload: Record<string, unknown>) => {
+        emitted.push({ type, payload });
+      },
+    };
+    const kernel = new SafetyRollbackRecoveryKernel(events, recovery);
+    await kernel.recover(plan(), 'verification failed', context(), 'transaction-42');
+    const started = emitted.find((e) => e.type === 'runtime.safety.recovery.started');
+    const completed = emitted.find((e) => e.type === 'runtime.safety.recovery.completed');
+    expect(started?.payload.transactionId).toBe('transaction-42');
+    expect(completed?.payload.transactionId).toBe('transaction-42');
+    // Both are taxonomy-conformant only with the transaction identity present.
+    for (const event of emitted) {
+      expect(validateEvent(event.type, event.payload).valid).toBe(true);
+    }
+  });
+
+  it('exposes no execution method, so the boundary stays the only live executor', () => {
+    const kernel = make();
+    expect((kernel as unknown as Record<string, unknown>).execute).toBeUndefined();
+    expect(Object.getOwnPropertyNames(SafetyRollbackRecoveryKernel.prototype)).not.toContain(
+      'execute',
+    );
   });
 });

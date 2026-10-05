@@ -28,6 +28,7 @@ import {
   type CandidateAction,
   type TelemetrySink,
 } from '../src/index.js';
+import { validateEvent } from '../src/events/event-taxonomy.js';
 const obs = (
   id: string,
   category = 'dns',
@@ -99,11 +100,17 @@ describe('Phase 22 resilience runtime', () => {
   it('blocks terminal transitions', async () => {
     await expect(new RuntimeStateMachine('stopped').transition('idle')).rejects.toThrow('Illegal');
   });
-  it('emits blocked events', async () => {
+  it('emits taxonomy-conformant terminal state events', async () => {
     const e = new InMemoryEventSink();
     const sm = new RuntimeStateMachine('planning', e);
     await sm.transition('blocked');
-    expect(e.events.map((x) => x.event)).toContain('runtime.blocked');
+    const names = e.events.map((x) => x.event);
+    expect(names).toContain('runtime.state.blocked');
+    // Every emitted name must be a real taxonomy entry, otherwise the evidence
+    // is rejected and silently dropped from the incident trace.
+    for (const name of names) {
+      expect(validateEvent(name, { correlationId: 'c' }).valid).toBe(true);
+    }
   });
   it('creates immutable contexts', () => {
     const c = createRuntimeContext({ mode: 'safe' });

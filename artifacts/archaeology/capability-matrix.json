@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T22:18:50.081Z",
+  "generatedAt": "2026-10-05T00:17:25.596Z",
   "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
@@ -112,11 +112,64 @@
       "recoverySupport": false
     }
   ],
+  "sourceDeclaredCapabilities": [
+    {
+      "capability": "dns.write",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "connectivity.failover",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "route.write",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "gateway.select",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.rotate",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.execute",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.execute",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    }
+  ],
   "capabilities": [
     {
       "capability": "connectivity.failover",
       "implementations": [
-        "packages/resilience-runtime/src/adapter-registry.ts#connectivity"
+        "packages/resilience-runtime/src/adapter-registry.ts#connectivity",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
         "@irp/resilience-runtime",
@@ -204,7 +257,8 @@
     {
       "capability": "dns.write",
       "implementations": [
-        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+        "packages/resilience-runtime/src/adapter-registry.ts#dns",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
         "@irp/daemon",
@@ -237,6 +291,22 @@
       "hasImplementation": true,
       "hasOwner": true,
       "hasConsumer": true
+    },
+    {
+      "capability": "gateway.select",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
     },
     {
       "capability": "kernel.route",
@@ -283,6 +353,22 @@
       "hasConsumer": true
     },
     {
+      "capability": "observability.read",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
       "capability": "plugin.action",
       "implementations": [
         "packages/resilience-runtime/src/adapter-registry.ts#plugin"
@@ -325,7 +411,8 @@
     {
       "capability": "route.write",
       "implementations": [
-        "packages/resilience-runtime/src/adapter-registry.ts#routing"
+        "packages/resilience-runtime/src/adapter-registry.ts#routing",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
         "@irp/resilience-runtime",
@@ -349,6 +436,38 @@
       "hasImplementation": true,
       "hasOwner": true,
       "hasConsumer": true
+    },
+    {
+      "capability": "tunnel.execute",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
+      "capability": "tunnel.rotate",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
     },
     {
       "capability": "tunnel.write",
@@ -376,9 +495,14 @@
     }
   ],
   "summary": {
-    "total": 11,
+    "total": 15,
     "withoutImplementation": [],
     "withoutOwner": [],
-    "withoutConsumer": []
+    "withoutConsumer": [
+      "gateway.select",
+      "observability.read",
+      "tunnel.execute",
+      "tunnel.rotate"
+    ]
   }
 }

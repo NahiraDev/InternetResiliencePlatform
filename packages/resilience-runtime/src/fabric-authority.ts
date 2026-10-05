@@ -15,6 +15,12 @@ export interface CapabilityRequest {
   readonly capabilityId: string;
   /** Resource the capability would act on. */
   readonly resourceId: string;
+  /**
+   * Scope the resource belongs to. When supplied it must match the capability's
+   * declared scope, so a capability registered for one scope cannot be used
+   * against a resource in another.
+   */
+  readonly scope?: string;
   readonly platform?: FabricPlatform;
   /** Minimum trust the caller must hold. */
   readonly minimumTrust?: number;
@@ -106,6 +112,11 @@ export class FabricCapabilityAuthority {
     }
     if (!platformMatches(capability.platforms, request.platform)) {
       reasons.push(`platform-unsupported:${request.platform ?? 'any'}`);
+    }
+    // Declared scope is binding: without this a capability registered for
+    // `gateway` would authorize a request against any resource at all.
+    if (request.scope !== undefined && capability.scope !== request.scope) {
+      reasons.push(`scope-mismatch:${capability.scope}!=${request.scope}`);
     }
     if (request.minimumTrust !== undefined && capability.trust < request.minimumTrust) {
       reasons.push(`insufficient-trust:${capability.trust}<${request.minimumTrust}`);

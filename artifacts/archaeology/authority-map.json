@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T22:18:50.337Z",
+  "generatedAt": "2026-10-05T00:17:25.752Z",
   "contractAuthorities": {
     "runtime": "@irp/resilience-runtime",
     "decision": "@irp/resilience-runtime",
@@ -16,54 +16,93 @@
   "hosts": [
     {
       "path": "apps/api/src/index.ts",
+      "owner": "@irp/api",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
       "role": "host-composition"
     },
     {
       "path": "apps/cli/src/index.ts",
+      "owner": "@irp/cli",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
       "role": "host-composition"
     },
     {
       "path": "apps/daemon/src/index.ts",
+      "owner": "@irp/daemon",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
       "role": "host-composition"
     },
     {
       "path": "packages/linux-client/src/index.ts",
+      "owner": "@irp/linux-client",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
       "role": "host-composition"
     },
     {
       "path": "packages/resilience-runtime/src/canonical-runtime-composition.ts",
+      "owner": "@irp/resilience-runtime",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": true,
       "role": "host-composition"
     },
     {
       "path": "packages/resilience-runtime/src/runtime.ts",
+      "owner": "@irp/resilience-runtime",
+      "composesCanonicalRuntime": false,
+      "role": "safety-kernel-host"
+    },
+    {
+      "path": "packages/resilience-runtime/src/runtime.ts",
+      "owner": "@irp/resilience-runtime",
+      "composesCanonicalRuntime": false,
+      "role": "privileged-mutation-boundary"
+    },
+    {
+      "path": "packages/resilience-runtime/src/safety/safety-kernel.ts",
+      "owner": "@irp/resilience-runtime",
       "composesCanonicalRuntime": false,
       "role": "safety-kernel-host"
     },
     {
       "path": "packages/resilience-runtime/src/safety/safety-kernel.ts",
+      "owner": "@irp/resilience-runtime",
+      "composesCanonicalRuntime": false,
+      "role": "privileged-mutation-boundary"
+    },
+    {
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts",
+      "owner": "@irp/resilience-runtime",
       "composesCanonicalRuntime": false,
       "role": "safety-kernel-host"
     },
     {
       "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts",
+      "owner": "@irp/resilience-runtime",
       "composesCanonicalRuntime": false,
-      "role": "safety-kernel-host"
+      "role": "privileged-mutation-boundary"
     }
   ],
   "violations": [],
   "summary": {
-    "hosts": 8,
+    "hosts": 11,
     "violations": 0,
-    "singleProductionAuthority": true
+    "singleProductionAuthority": true,
+    "authoritiesByRole": {
+      "host-composition": 5,
+      "safety-kernel-host": 3,
+      "privileged-mutation-boundary": 3
+    },
+    "authorityOwners": [
+      "@irp/api",
+      "@irp/cli",
+      "@irp/daemon",
+      "@irp/linux-client",
+      "@irp/resilience-runtime"
+    ],
+    "unownedAuthorities": []
   }
 }

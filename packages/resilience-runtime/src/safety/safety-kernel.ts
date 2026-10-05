@@ -1,6 +1,5 @@
-import { deepFreeze, nextId } from '../domain/ids.js';
+import { deepFreeze } from '../domain/ids.js';
 import type { ActionExecution, ActionPlan, RecoveryPlan, RuntimeContext } from '../domain/types.js';
-import type { ActionTransactionEngine } from '../transactions/action-transaction.js';
 import type { RecoveryProvider } from '../ports/ports.js';
 
 export interface SafetyKernelOptions {
@@ -17,13 +16,6 @@ export interface SafetyAssessment {
   readonly allowed: boolean;
   readonly reasons: readonly string[];
   readonly blastRadius: number;
-}
-
-export interface SafetyExecutionResult {
-  readonly execution: ActionExecution;
-  readonly checkpointCreated: boolean;
-  readonly rollbackAttempted: boolean;
-  readonly rollbackExecution?: ActionExecution;
 }
 
 export class SafetyViolationError extends Error {
@@ -43,11 +35,18 @@ const metadataNumber = (plan: ActionPlan, key: string): number | undefined => {
   return finiteNumber(value) ? value : undefined;
 };
 
+/**
+ * The canonical safety port consumed by `PrivilegedMutationBoundary`.
+ *
+ * This class deliberately has no execution method. It assesses, checkpoints and
+ * recovers, but it never applies a mutation itself: applying requires the
+ * privileged boundary, so a caller cannot reach an executor through the safety
+ * port and bypass the policy/security/safety/verify/commit phase machine.
+ */
 export class SafetyRollbackRecoveryKernel {
   private readonly maxBlastRadius: number;
 
   constructor(
-    private readonly transactions: ActionTransactionEngine,
     private readonly events: {
       emit(event: string, payload: Readonly<Record<string, unknown>>): Promise<void>;
     },
@@ -123,91 +122,24 @@ export class SafetyRollbackRecoveryKernel {
     return this.rollback(plan, context, checkpoint);
   }
 
-  async execute(
+  async recover(
     plan: ActionPlan,
+    reason: string,
     context: RuntimeContext,
-    requestedIdempotencyKey?: string,
-  ): Promise<SafetyExecutionResult> {
-    const assessment = this.assess(plan, context);
-    const base = {
+    transactionId?: string,
+  ): Promise<RecoveryPlan> {
+    const identity = {
       correlationId: context.correlationId,
       actionId: plan.selectedAction.id,
-      blastRadius: assessment.blastRadius,
+      ...(transactionId !== undefined ? { transactionId } : {}),
     };
-
-    await this.events.emit('runtime.safety.assessed', {
-      ...base,
-      allowed: assessment.allowed,
-      reasons: assessment.reasons,
-    });
-    if (!assessment.allowed) {
-      await this.events.emit('runtime.safety.blocked', { ...base, reasons: assessment.reasons });
-      throw new SafetyViolationError(assessment);
-    }
-
-    let checkpoint: unknown;
-    if (this.checkpoint && plan.selectedAction.intent !== 'noop') {
-      checkpoint = await this.checkpoint(plan, context);
-      await this.events.emit('runtime.safety.checkpoint.created', {
-        ...base,
-        checkpointId: nextId('checkpoint'),
-      });
-    }
-
-    const execution = await this.transactions.execute(plan, context, requestedIdempotencyKey);
-    const rollbackEligible =
-      execution.status === 'failed' && checkpoint !== undefined && this.rollback !== undefined;
-
-    if (!rollbackEligible) {
-      await this.events.emit('runtime.safety.completed', {
-        ...base,
-        executionStatus: execution.status,
-        rollbackAttempted: false,
-      });
-      return deepFreeze({
-        execution,
-        checkpointCreated: checkpoint !== undefined,
-        rollbackAttempted: false,
-      });
-    }
-
-    await this.events.emit('runtime.safety.rollback.started', { ...base });
-    try {
-      const rollbackExecution = await this.rollback!(plan, context, checkpoint);
-      const success =
-        rollbackExecution.status === 'success' || rollbackExecution.status === 'skipped';
-      await this.events.emit(
-        success ? 'runtime.safety.rollback.completed' : 'runtime.safety.rollback.failed',
-        {
-          ...base,
-          rollbackStatus: rollbackExecution.status,
-        },
-      );
-      return deepFreeze({
-        execution,
-        checkpointCreated: true,
-        rollbackAttempted: true,
-        rollbackExecution,
-      });
-    } catch (error) {
-      await this.events.emit('runtime.safety.rollback.failed', {
-        ...base,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  }
-
-  async recover(plan: ActionPlan, reason: string, context: RuntimeContext): Promise<RecoveryPlan> {
     await this.events.emit('runtime.safety.recovery.started', {
-      correlationId: context.correlationId,
-      actionId: plan.selectedAction.id,
+      ...identity,
       reason,
     });
     const result = await this.recovery.recover(plan, reason, context);
     await this.events.emit('runtime.safety.recovery.completed', {
-      correlationId: context.correlationId,
-      actionId: plan.selectedAction.id,
+      ...identity,
       reason,
       status: result.status,
     });

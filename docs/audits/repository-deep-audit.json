@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T22:18:47.988Z",
+  "generatedAt": "2026-10-05T04:41:34.021Z",
   "workspaceCount": 43,
   "workflowCount": 15,
   "findings": [],
@@ -34,7 +34,7 @@
       "name": "@irp/daemon",
       "path": "apps/daemon/package.json",
       "sourceFiles": 3,
-      "testFiles": 3,
+      "testFiles": 4,
       "scripts": [
         "build",
         "lint",
@@ -414,8 +414,8 @@
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
-      "sourceFiles": 89,
-      "testFiles": 42,
+      "sourceFiles": 90,
+      "testFiles": 49,
       "scripts": [
         "build",
         "coverage",

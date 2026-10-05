@@ -66,7 +66,7 @@ Non-goals: no new authorities, no CI/daemon/client changes, no second control pl
 
 - `packages/core/tests/intent-274.test.ts` — 11 tests covering objectives validation, autonomy checks, intent lifecycle, compiler explicit objectives, effective-window revalidation.
 - `packages/resilience-runtime/tests/intent-274.test.ts` — 12 tests covering arbitration (priority/version ordering, scope conflicts), policy conflict resolution (union/intersection/hierarchical), autonomy enforcement, intent store, autonomy boundary enforcement in planner/executor path.
-- Total runtime tests: 32 files / 254 PASS.
+- Total runtime tests: 49 files / 663 PASS (re-verified at `8f598af` + this workstream's corrections).
 
 ## CI/runtime evidence
 
@@ -80,7 +80,7 @@ Non-goals: no new authorities, no CI/daemon/client changes, no second control pl
 
 ## Known limitations
 
-- Full-workspace `pnpm test` still OOM-`SIGKILL`s on `@irp/linux-client` builds in this container (pre-existing, unrelated).
+- Full-workspace `pnpm test` is **86/86 turbo tasks PASS**. The previously recorded container OOM-`SIGKILL` on `@irp/linux-client` no longer reproduces and this limitation is retired.
 - Durable `IntentStore` implementation (DB/etcd) not in scope — `InMemoryIntentStore` provided for testing/simulation.
 - GitHub issue #274 must be closed by a maintainer (`gh`/web): no GitHub API access here.
 

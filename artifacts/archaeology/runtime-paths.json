@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-04T22:18:49.933Z",
+  "generatedAt": "2026-10-05T00:17:25.514Z",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
@@ -25,10 +25,6 @@
     {
       "marker": "direct-route-mutation",
       "path": "apps/daemon/src/index.ts"
-    },
-    {
-      "marker": "safety-kernel-execute",
-      "path": "packages/resilience-runtime/src/runtime.ts"
     },
     {
       "marker": "transaction-engine",
@@ -66,6 +62,10 @@
     },
     {
       "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "postcondition-check",
       "path": "packages/resilience-runtime/src/verification/outcome-verification.ts"
     },
     {
@@ -95,8 +95,8 @@
   ],
   "summary": {
     "entrypoints": 2,
-    "mutationSites": 4,
-    "verificationSites": 14,
+    "mutationSites": 3,
+    "verificationSites": 15,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }

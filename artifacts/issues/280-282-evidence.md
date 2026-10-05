@@ -14,7 +14,7 @@ Prior related evidence: `artifacts/issues/283-284-evidence.md`.
 Touched only:
 
 - `packages/resilience-runtime/src/scenario-lab/*` (new: `seed.ts`,
-  `faults.ts`, `scenario.ts`, `index.ts`).
+  `faults.ts`, `scenario.ts`, `golden-scenarios.ts`, `index.ts`).
 - `packages/resilience-runtime/src/platform/*` (new: `capabilities.ts`,
   `explain.ts`, `index.ts`).
 - One barrel line in `packages/resilience-runtime/src/index.ts`.
@@ -42,7 +42,15 @@ mode; the platform helpers are pure functions.
   policy-change, verification-failure, rollback-failure.
 - Scenario runner: `runScenario` builds seeded observations and cycles the
   canonical runtime once per observation with deterministic
-  correlation/idempotency keys.
+  correlation/idempotency keys, a **scenario-derived `deadline`**, and a
+  deterministic `runtimeId`/`instanceId`. Without the explicit deadline the
+  runtime defaulted to `now + 5s`, so a run slower than five seconds produced a
+  different decision than an identical faster run.
+- Canonical golden registry: `GOLDEN_SCENARIOS` in `src/scenario-lab/golden-scenarios.ts`
+  is the single registry for the ten scenarios required by #272 Section M,
+  including `federation-loss`, `concurrency-race` and `verification-failure`,
+  which previously existed only as degenerate ad-hoc tests that never exercised
+  the condition they named.
 - What-if comparison: `compareStrategies` runs one scenario under two
   allowed-action sets and diffs semantic projections (`projectRecord`).
 - Incident replay: `replayScenario` re-runs a captured (including JSON
@@ -78,12 +86,19 @@ ProviderRegistry`) — zero hits.
   (allowed/denied, required capabilities, policy reasons), path, health,
   confidence, incidents, failure domain, security posture and recovery state
   from a canonical `DecisionRecord` — read-only data for cockpit/API/CLI/
-  mobile/desktop, zero mutation authority.
+  mobile/desktop, zero mutation authority. It now additionally projects
+  `selection` (chosen action, objective score, intent-derived weights, and
+  rejected alternatives **with** their reasons), `guards` (validation validity
+  and reasons, safety applied) and `verification` (status, verified and failed
+  postconditions), so an expert can answer what was rejected and why.
+- Platform negotiation: the API now serves a read-only
+  `GET /api/v1/runtime/platform-capabilities` view using the same canonical
+  `negotiatePlatformCapabilities` contract as every other host. It reports
+  support and performs no operation, so it is not an execution authority.
 
 ## Tests
 
-- `@irp/resilience-runtime`: 32 files, 254 tests — PASS (was 30/242:
-  +12 new, 0 regressions).
+- `@irp/resilience-runtime`: 49 files, 663 tests — PASS at `8f598af`.
 - New: `scenario-lab-282.test.ts` (7), `client-authority-280.test.ts` (5).
 
 ## CI/runtime evidence (this session, working tree)
@@ -99,9 +114,8 @@ ProviderRegistry`) — zero hits.
 
 ## Known limitations (genuine external blockers only)
 
-- Full-workspace `pnpm test` still OOM-`SIGKILL`s on `@irp/linux-client`
-  dependency builds in this container (pre-existing, unrelated; identical
-  before this change). Needs a larger runner or sharded CI evidence.
+- ~~Full-workspace `pnpm test` still OOM-`SIGKILL`s on `@irp/linux-client`~~
+  — **retired**: the workspace suite is 86/86 turbo tasks PASS.
 - Live runtime-lab soak / device runs (Linux/macOS/Windows/iOS/Android) need
   CI runners and hardware; covered here by contract tests, not live runs.
 - GitHub issues #280/#282 must be closed by a maintainer (`gh`/web): no GitHub

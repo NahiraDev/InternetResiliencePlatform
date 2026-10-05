@@ -191,7 +191,7 @@ class FailureInjectingAdapter extends DeterministicRuntimeAdapter {
   }
 }
 
-export const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => ({
+const createPhase40ExecutionHarness = (): Phase40ExecutionHarness => ({
   execute: async (plan, runtimeContext, faults) => {
     const adapter = new FailureInjectingAdapter(
       {

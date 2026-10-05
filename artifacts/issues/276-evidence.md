@@ -164,7 +164,7 @@ indexing/filtering/eviction/expunge, outcomes closing the loop, failure decay,
 destination scoping, quarantine listing/pruning, no-deny-path, prediction fusion
 and refusal, knowledge flipping the selection, and federation-outage survival.
 
-- `@irp/resilience-runtime`: **38 test files, 387 tests PASS**
+- `@irp/resilience-runtime`: **49 test files, 663 tests PASS** at `8f598af`
 - Full workspace: **172/172 turbo tasks PASS**, 0 cached
 
 ## CI/runtime evidence (this session, uncached)
@@ -180,8 +180,10 @@ and refusal, knowledge flipping the selection, and federation-outage survival.
 
 ## Known limitations
 
-- The knowledge store is in-memory. Durable knowledge persistence across restarts
-  belongs to Section J (#281), which is still unimplemented.
+- The knowledge store is in-memory, but Section J (#281) persistence is now implemented:
+  `DegradableStore` serves reads from an authoritative local mirror, queues retries behind a
+  **bounded** queue, and reports `droppedWrites` so loss during a long outage is observable rather
+  than silent. Durable knowledge across process restarts is still not attempted.
 - `KnowledgeStore` is composed into `createCanonicalRuntime` (both sync and
   Postgres factories) and consumed by `ResilienceRuntime` planning through
   `knowledgeEvidenceFunction`, including per-candidate destination/provider/path

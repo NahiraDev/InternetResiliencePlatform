@@ -6,7 +6,7 @@ import type {
   RuntimeContext,
 } from '../domain/types.js';
 import type { ObservationProvider } from '../ports/ports.js';
-export const normalizeObservation = (input: Observation, context: RuntimeContext): Observation => {
+const normalizeObservation = (input: Observation, context: RuntimeContext): Observation => {
   const freshnessMs =
     Date.parse(context.policySnapshot.createdAt) >= 0
       ? Date.now() - Date.parse(input.timestamp)

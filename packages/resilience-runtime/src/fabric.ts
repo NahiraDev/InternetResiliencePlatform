@@ -61,33 +61,6 @@ export interface FabricCapability {
   readonly safety: 'read-only' | 'safe' | 'governed';
   readonly platforms: readonly string[];
 }
-/**
- * @deprecated Retained only for backward compatibility. Production fabric
- * selection must use {@link FabricCapabilityAuthority} through
- * `ProgrammableConnectivityFabric.capabilityAuthority`.
- */
-export class FabricCapabilityRegistry {
-  private readonly capabilities = new Map<string, FabricCapability>();
-
-  register(capability: FabricCapability): void {
-    if (!capability.id.trim() || !capability.scope.trim()) {
-      throw new Error('fabric capability id and scope are required');
-    }
-    if (this.capabilities.has(capability.id)) {
-      throw new Error(`fabric capability already registered: ${capability.id}`);
-    }
-    this.capabilities.set(capability.id, capability);
-  }
-
-  get(id: string): FabricCapability | undefined {
-    return this.capabilities.get(id);
-  }
-
-  list(): readonly FabricCapability[] {
-    return [...this.capabilities.values()];
-  }
-}
-
 export interface FabricHealth {
   readonly status: 'healthy' | 'degraded' | 'failed' | 'unknown';
   readonly score: number;
@@ -265,11 +238,7 @@ export class ProgrammableConnectivityFabric {
         );
         // Register any capability the provider claims so the unified registry
         // can authorize it during selection.
-        for (const capability of resource.capabilities) {
-          if (!this.capabilityAuthority.get(capability.id)) {
-            this.capabilityAuthority.register(capability);
-          }
-        }
+        this.registerProviderCapabilities(resource);
         resources.set(resource.id, resource);
         if (!options.since && resources.size >= limit) break;
       }
@@ -291,6 +260,34 @@ export class ProgrammableConnectivityFabric {
     // honoured by `select`, never silently deleted here. Callers that want to
     // compact explicitly invoke `pruneExpired`.
     return this.snapshot;
+  }
+
+  /**
+   * Registers a resource's declared capabilities, fail-closed on scope conflict.
+   *
+   * An identical re-registration is a no-op. A second provider claiming the same
+   * capability id with a *different* scope is rejected: silently keeping the
+   * first writer would make the declared scope meaningless and let a provider
+   * appear to own a scope it does not.
+   */
+  private registerProviderCapabilities(resource: FabricResource): void {
+    for (const capability of resource.capabilities) {
+      const existing = this.capabilityAuthority.get(capability.id);
+      if (existing === undefined) {
+        this.capabilityAuthority.register(capability);
+        continue;
+      }
+      const sameScope =
+        existing.scope === capability.scope &&
+        existing.authority === capability.authority &&
+        existing.trust === capability.trust;
+      if (!sameScope) {
+        throw new Error(
+          `fabric capability scope conflict for ${capability.id}: ` +
+            `already registered with a different scope/authority/trust`,
+        );
+      }
+    }
   }
 
   select(request: FabricSelectionRequest = {}): FabricSelectionResult {
@@ -367,16 +364,40 @@ export class ProgrammableConnectivityFabric {
 
     // True failure-domain diversity: pick mutually disjoint candidates rather
     // than assuming the top-ranked candidate is independent.
-    const diversity = selectDiverseResources(candidates, {
-      required: request.minimumDiverseAlternatives ?? 2,
-    });
+    // A diversity floor is advisory unless the caller states one. Requiring two
+    // disjoint alternatives unconditionally would make a single-path
+    // deployment unselectable; requiring one when the caller asked for it makes
+    // the floor binding instead of decorative.
+    const requiredDiverse = request.minimumDiverseAlternatives ?? 1;
+    const diversity = selectDiverseResources(candidates, { required: requiredDiverse });
     const selected = diversity.selected ?? candidates[0];
 
+    // When the caller demands a real diversity floor, a shortfall is a
+    // fail-closed outcome rather than a note in the reason string. Returning a
+    // non-diverse selection silently would make the floor decorative.
+    const diversityShortfall =
+      request.minimumDiverseAlternatives !== undefined &&
+      request.minimumDiverseAlternatives > 1 &&
+      selected !== undefined &&
+      diversity.diverse.length < requiredDiverse;
+    if (diversityShortfall) {
+      for (const candidate of diversity.diverse) {
+        rejected.push({ id: candidate.id, reason: 'insufficient-failure-domain-diversity' });
+      }
+    }
+
     return Object.freeze({
-      selected,
+      // A diversity shortfall reports no selection: the caller must handle the
+      // absence explicitly rather than inherit a path that shares a failure
+      // domain with the alternative it was told to have.
+      selected: diversityShortfall ? undefined : selected,
       candidates,
       rejected: Object.freeze(rejected),
-      reason: selected ? diversity.reason : 'no eligible fabric resource',
+      reason: !selected
+        ? 'no eligible fabric resource'
+        : diversityShortfall
+          ? `fail-closed: ${diversity.reason}`
+          : diversity.reason,
       diversity,
       freshness: Object.freeze(freshness),
       capabilityDecisions: Object.freeze(capabilityDecisions),
@@ -390,14 +411,26 @@ export class ProgrammableConnectivityFabric {
     const graphNodeIds = new Map(
       graph.nodes.map((node) => [node.id, fabricResourceIdFromPathNode(node)] as const),
     );
+    // Real failure domains come from the canonical path evidence, keyed by the
+    // path node. Reading a singular `metadata.failureDomain` yielded an empty
+    // domain set for every production graph, which made diversity vacuous.
+    const domainsByPathNode = new Map<string, readonly string[]>(
+      (graph.entries ?? []).map(
+        ({ path, evidence }) => [`path:${path.id}`, evidence.failureDomains] as const,
+      ),
+    );
 
     for (const node of graph.nodes) {
-      const resource = resourceFromPathNode(node);
-      assertFabricStateTransition(
-        resources.get(resource.id)?.state ?? 'UNKNOWN',
-        resource.state,
-      );
-      resources.set(resource.id, resource);
+      const resource = resourceFromPathNode(node, domainsByPathNode.get(node.id));
+      const previous = resources.get(resource.id);
+      const next = transitionedResource(previous, resource);
+      // Duplicate ownership is fail-closed in `discover`; reconcile must apply
+      // the same rule or two write paths disagree about resource ownership.
+      if (previous !== undefined && previous.owner !== resource.owner) {
+        throw new Error(`duplicate fabric ownership for resource ${resource.id}`);
+      }
+      resources.set(resource.id, next);
+      this.registerProviderCapabilities(next);
     }
 
     const edges = graph.edges.map((edge) => ({
@@ -448,7 +481,10 @@ const resourceIdFromPathNode = (node: PathGraphNode): string =>
 const fabricResourceIdFromPathNode = (node: PathGraphNode): string =>
   `fabric:${kindForNode(node).toLowerCase()}:${resourceIdFromPathNode(node)}`;
 
-const resourceFromPathNode = (node: PathGraphNode): FabricResource => {
+const resourceFromPathNode = (
+  node: PathGraphNode,
+  evidenceFailureDomains?: readonly string[],
+): FabricResource => {
   const kind = kindForNode(node);
   const failed = ['failed', 'disabled', 'expired'].includes(node.state);
   const state: FabricResourceState = failed
@@ -456,6 +492,15 @@ const resourceFromPathNode = (node: PathGraphNode): FabricResource => {
     : node.state === 'degraded'
       ? 'DEGRADED'
       : 'HEALTHY';
+  const declared = node.metadata.failureDomains;
+  const failureDomains =
+    evidenceFailureDomains && evidenceFailureDomains.length > 0
+      ? [...evidenceFailureDomains]
+      : Array.isArray(declared)
+        ? declared.filter((value): value is string => typeof value === 'string' && value.length > 0)
+        : typeof node.metadata.failureDomain === 'string'
+          ? [node.metadata.failureDomain]
+          : [];
   return {
     id: `fabric:${kind.toLowerCase()}:${resourceIdFromPathNode(node)}`,
     kind,
@@ -471,11 +516,42 @@ const resourceFromPathNode = (node: PathGraphNode): FabricResource => {
     capacity: {},
     cost: {},
     owner: '@irp/routing:NetworkPathGraph',
-    failureDomains: [node.metadata.failureDomain].filter(
-      (value): value is string => typeof value === 'string',
-    ),
+    failureDomains,
     lifecycle: 'discovered',
     capabilities: [],
     metadata: node.metadata,
   };
+};
+
+/**
+ * Applies the legal transition between the observed and previously known state.
+ *
+ * A graph node can only report healthy/degraded/failed, so a resource that is
+ * currently FAILED or UNAVAILABLE would otherwise have no legal path back to
+ * usable: `FAILED -> HEALTHY` is deliberately illegal. Recovery is expressed as
+ * `FAILED -> RECOVERING`, and the observed state is then asserted from
+ * RECOVERING, which is legal. The result is a recovered resource rather than an
+ * unrecoverable one, without weakening the transition table.
+ */
+const transitionedResource = (
+  previous: FabricResource | undefined,
+  observed: FabricResource,
+): FabricResource => {
+  const from = previous?.state ?? 'UNKNOWN';
+  if (previous === undefined) {
+    assertFabricStateTransition(from, observed.state);
+    return observed;
+  }
+
+  const requiresRecoveryHop =
+    (from === 'FAILED' || from === 'UNAVAILABLE') &&
+    (observed.state === 'HEALTHY' || observed.state === 'DEGRADED');
+  if (!requiresRecoveryHop) {
+    assertFabricStateTransition(from, observed.state);
+    return observed;
+  }
+
+  assertFabricStateTransition(from, 'RECOVERING');
+  assertFabricStateTransition('RECOVERING', observed.state);
+  return { ...observed, metadata: { ...observed.metadata, recoveredFrom: from } };
 };

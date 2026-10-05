@@ -49,6 +49,7 @@ import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
 import {
   createCanonicalRuntime,
   explainDecision,
+  negotiatePlatformCapabilities,
   runtimeEnvelope,
   type Observation,
   type ObservationProvider,
@@ -925,6 +926,31 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   app.get('/api/v1/runtime/capabilities', async (request) => {
     await requirePermission(request, 'runtime.inspect');
     return runtimeResponse(request, resilienceRuntime.capabilities());
+  });
+  // Read-only negotiation view. It reports which platform capabilities this
+  // deployment actually supports; it never grants or performs an operation, so
+  // exposing it does not make the API an execution authority.
+  app.get('/api/v1/runtime/platform-capabilities', async (request) => {
+    await requirePermission(request, 'runtime.inspect');
+    const rawQuery = (request.query ?? {}) as Readonly<Record<string, unknown>>;
+    const requested = String(rawQuery['capabilities'] ?? '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+    return runtimeResponse(
+      request,
+      negotiatePlatformCapabilities(
+        // The API host runs the same negotiated contract as every other host.
+        process.platform === 'darwin'
+          ? 'macos'
+          : process.platform === 'win32'
+            ? 'windows'
+            : process.platform === 'android'
+              ? 'android'
+              : 'linux',
+        [...resilienceRuntime.capabilities().map((adapter) => adapter.adapterId), ...requested],
+      ),
+    );
   });
   app.post('/api/v1/runtime/cycle', async (request, reply) => {
     const input = runtimeCycleSchema.parse(request.body ?? {});

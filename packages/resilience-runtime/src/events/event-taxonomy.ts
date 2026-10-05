@@ -2,10 +2,12 @@
  * Versioned event taxonomy and identity semantics for issue #281
  * (issue #272 Section J, tasks 1, 5 and 7).
  *
- * The pre-existing `runtimeEvents` list was a flat array of strings with no
- * version, no stage and no declared identity semantics. That cannot support
- * reconstructing an incident, because nothing says which stage an event belongs
- * to or how the ids relate.
+ * A pre-existing `runtimeEvents` list was a flat array of strings with no
+ * version, no stage and no declared identity semantics, and it had drifted from
+ * the names the runtime actually emits. It has been removed: this taxonomy is
+ * the single event-name contract. A flat list cannot support reconstructing an
+ * incident, because nothing says which stage an event belongs to or how the ids
+ * relate.
  *
  * Every event declares:
  *  - a stable type name;
@@ -13,8 +15,6 @@
  *  - a schema version, so consumers can migrate rather than guess;
  *  - the identity fields it carries.
  */
-
-import { deepFreeze } from '../domain/ids.js';
 
 /** The end-to-end pipeline stages, in causal order (task 5). */
 export const PIPELINE_STAGES = [
@@ -131,7 +131,11 @@ export const EVENT_TAXONOMY: readonly EventDefinition[] = Object.freeze([
   define('runtime.verification.completed', 'verification', ['correlationId', 'transactionId'], 'Outcome verification finished.'),
   // --- outcome ---
   define('runtime.outcome.verified', 'outcome', ['correlationId', 'transactionId'], 'A verified outcome was learned from.'),
+  define('runtime.learning.applied', 'outcome', ['correlationId', 'transactionId'], 'Outcome evidence was passed to the learning loop.'),
   define('runtime.state.changed', 'outcome', ['correlationId'], 'Runtime state transitioned.'),
+  define('runtime.state.blocked', 'outcome', ['correlationId'], 'Runtime entered the blocked state.'),
+  define('runtime.state.degraded', 'outcome', ['correlationId'], 'Runtime entered the degraded state.'),
+  define('runtime.state.failed', 'outcome', ['correlationId'], 'Runtime entered the failed state.'),
   // --- recovery ---
   define('runtime.recovery.started', 'recovery', ['correlationId', 'transactionId'], 'Recovery began.'),
   define('runtime.recovery.completed', 'recovery', ['correlationId', 'transactionId'], 'Recovery finished.'),
@@ -210,10 +214,3 @@ export const identityFor = (
   }
   return Object.freeze(payload);
 };
-
-export const TAXONOMY_SNAPSHOT = deepFreeze({
-  version: EVENT_TAXONOMY_VERSION,
-  stages: PIPELINE_STAGES,
-  eventCount: EVENT_TAXONOMY.length,
-  types: EVENT_TAXONOMY.map((definition) => definition.type),
-});

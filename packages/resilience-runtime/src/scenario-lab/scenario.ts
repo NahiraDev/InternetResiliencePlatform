@@ -51,6 +51,14 @@ export interface StrategyComparison {
 
 const SCENARIO_EPOCH_MS = Date.parse('2026-01-01T00:00:00.000Z');
 
+/**
+ * Scenario deadline budget.
+ *
+ * Generous relative to simulated work so the deadline never becomes the
+ * variable that decides a scenario, while still being a real, explicit bound.
+ */
+const SCENARIO_DEADLINE_MS = 10 * 60_000;
+
 const buildObservation = (
   scenario: ScenarioDefinition,
   stepIndex: number,
@@ -104,7 +112,11 @@ const buildObservation = (
   };
 };
 
-const cycleContext = (scenario: ScenarioDefinition, allowedActions: readonly ActionIntent[]) => ({
+const cycleContext = (
+  scenario: ScenarioDefinition,
+  allowedActions: readonly ActionIntent[],
+  cycleIndex: number,
+) => ({
   mode: 'simulation' as const,
   securityContext: { trusted: true },
   capabilitySnapshot: createCapabilitySnapshot(
@@ -117,6 +129,12 @@ const cycleContext = (scenario: ScenarioDefinition, allowedActions: readonly Act
     deniedActions: [],
     simulationOnly: false,
   }),
+  // A scenario-derived deadline. Without it the runtime defaults to
+  // `now + 5s`, so a run that happened to be slower than five seconds produced a
+  // different decision than an identical faster run.
+  deadline: new Date(
+    SCENARIO_EPOCH_MS + (cycleIndex + 1) * 60_000 + SCENARIO_DEADLINE_MS,
+  ).toISOString(),
 });
 
 /** Runs a scenario deterministically through the canonical runtime. */
@@ -130,11 +148,13 @@ export const runScenario = async (scenario: ScenarioDefinition): Promise<Scenari
   });
   const runtime = new ResilienceRuntime(
     [new StaticObservationProvider('scenario-lab', observations)],
-    {},
+    // A derived instance id keeps replayed records byte-comparable; the default
+    // uses Math.random() and would differ on every run.
+    { runtimeId: `scenario-lab-${scenario.seed}`, instanceId: `scenario-${scenario.name}` },
   );
-  const context = cycleContext(scenario, scenario.allowedActions);
   const records: DecisionRecord[] = [];
   for (let index = 0; index < observations.length; index++) {
+    const context = cycleContext(scenario, scenario.allowedActions, index);
     records.push(
       await runtime.cycle({
         ...context,

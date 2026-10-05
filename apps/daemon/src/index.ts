@@ -20,6 +20,7 @@ import {
   NetworkEventStormGuard,
   ObservationDedupCache,
   evaluateSelfHealth,
+  classifyFailure,
   withOperationTimeout,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
@@ -34,6 +35,17 @@ import { AutoOptimizationHost } from './auto-optimization-host.js';
 import { PluginHost } from './plugin-host.js';
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Default deduplication window for the observation provider.
+ *
+ * Must be at least one cycle interval, otherwise a repeated reading on the next
+ * cycle is always outside the window and can never be deduplicated.
+ */
+const DEFAULT_DEDUP_TTL_MS = 60_000;
+
+/** Deadline for platform observation calls so a hung tool cannot stall a cycle. */
+const OPERATION_TIMEOUT_MS = 5_000;
 
 type Health = {
   score?: number;
@@ -194,13 +206,24 @@ export class LinuxObservationProvider implements ObservationProvider {
     options: {
       readonly stormGuard?: NetworkEventStormGuard;
       readonly observationDedup?: ObservationDedupCache;
+      /**
+       * Deduplication window. Defaults to one full cycle interval so a repeated
+       * reading across consecutive cycles is actually suppressed; a window
+       * shorter than the interval can never observe a duplicate.
+       */
+      readonly dedupTtlMs?: number;
     } = {},
   ) {
     this.stormGuard = options.stormGuard ?? new NetworkEventStormGuard();
-    this.observationDedup = options.observationDedup ?? new ObservationDedupCache();
+    this.observationDedup =
+      options.observationDedup ?? new ObservationDedupCache(options.dedupTtlMs ?? DEFAULT_DEDUP_TTL_MS);
   }
   stormStatus() {
     return this.stormGuard.status();
+  }
+  /** Most recent admitted observations, for health classification. */
+  observationsSnapshot(): readonly Observation[] {
+    return [...this.lastObservations];
   }
   dedupStatus() {
     return this.observationDedup.status();
@@ -215,16 +238,6 @@ export class LinuxObservationProvider implements ObservationProvider {
     ].join('|');
   }
   async collect(context: RuntimeContext): Promise<ObservationProviderResult> {
-    const collectedAt = new Date().toISOString();
-    const storm = this.stormGuard.admit(Date.now());
-    if (!storm.admitted) {
-      return {
-        providerId: this.id,
-        observations: this.lastObservations,
-        collectedAt,
-        errors: ['observation storm shed; returning last admitted observations'],
-      };
-    }
     if (process.platform !== 'linux')
       return {
         providerId: this.id,
@@ -232,20 +245,29 @@ export class LinuxObservationProvider implements ObservationProvider {
         collectedAt: new Date().toISOString(),
         errors: ['linux connectivity observation is unavailable on non-linux platforms'],
       };
-    await this.connectivity.discoverResources();
+    const errors: string[] = [];
+    // Discovery and health probes shell out to platform tools. Without a
+    // deadline a hung probe stalls the whole observation cycle indefinitely.
+    try {
+      await withOperationTimeout(
+        'connectivity-discovery',
+        this.connectivity.discoverResources(),
+        OPERATION_TIMEOUT_MS,
+      );
+    } catch (error) {
+      errors.push(`discovery: ${error instanceof Error ? error.message : 'discovery failed'}`);
+    }
     const sources = this.connectivity.getAvailableSources();
     const observations: Observation[] = [];
-    const errors: string[] = [];
     await Promise.all(
       sources.map(async (source) => {
         try {
-          observations.push(
-            ...observationsForSource(
-              context,
-              source,
-              await this.connectivity.registry.get(source.providerId).getHealth(source.id),
-            ),
+          const health = await withOperationTimeout(
+            `health-probe-${source.sourceId}`,
+            this.connectivity.registry.get(source.providerId)!.getHealth(source.id),
+            OPERATION_TIMEOUT_MS,
           );
+          observations.push(...observationsForSource(context, source, health));
         } catch (error) {
           errors.push(
             `${source.sourceId}: ${error instanceof Error ? error.message : 'health probe failed'}`,
@@ -271,11 +293,26 @@ export class LinuxObservationProvider implements ObservationProvider {
       severity: active ? 'info' : 'critical',
       status: active ? 'healthy' : 'failed',
     });
-    const admittedObservations = observations.filter((observation) =>
-      this.observationDedup.admit(this.observationDedupKey(observation), Date.now()),
-    );
-    this.lastObservations = admittedObservations;
-    return { providerId: this.id, observations: admittedObservations, collectedAt: now, errors };
+    // Rate limiting is applied per observation, not once per cycle. Admitting a
+    // single token per 30s cycle meant a 500/s budget could never be reached, so
+    // the guard could not shed a genuine burst of network events.
+    const admittedObservations = observations.filter((observation) => {
+      const storm = this.stormGuard.admit(Date.now());
+      if (!storm.admitted) {
+        errors.push(`storm shed observation ${observation.id}`);
+        return false;
+      }
+      return this.observationDedup.admit(this.observationDedupKey(observation), Date.now()).admitted;
+    });
+    // The last admitted set is retained so a cycle that sheds everything under
+    // storm pressure still reports the most recent real evidence.
+    if (admittedObservations.length > 0) this.lastObservations = admittedObservations;
+    return {
+      providerId: this.id,
+      observations: admittedObservations,
+      collectedAt: now,
+      errors,
+    };
   }
 }
 
@@ -509,7 +546,7 @@ export class RuntimeDaemonHost {
     const scheduler = this.scheduler.status();
     const telemetry = this.runtime.telemetry.snapshot();
     const cycleLatencyMs = telemetry['runtime_cycle_duration'];
-    return evaluateSelfHealth({
+    const health = evaluateSelfHealth({
       schedulerActive: scheduler.active,
       schedulerFailedTotal: scheduler.failedTotal,
       schedulerOverlapPreventedTotal: scheduler.overlapPreventedTotal,
@@ -521,6 +558,18 @@ export class RuntimeDaemonHost {
         ...(typeof cycleLatencyMs === 'number' ? { cycleLatencyMs } : {}),
       },
     });
+    // Distinguish IRP distress from network distress. Without this, an internal
+    // fault is reported as a generic unhealthy state and provokes network
+    // recovery for a problem that is not in the network.
+    const failureClass = classifyFailure({
+      runtimeFault: scheduler.failedTotal > 0,
+      selfUnhealthy: health.level !== 'healthy',
+      networkDegraded: this.observer
+        .observationsSnapshot()
+        .some((observation: Observation) => observation.status === 'failed'),
+      dependencyFault: (telemetry['runtime_telemetry_failures_total'] ?? 0) > 0,
+    });
+    return { ...health, failureClass };
   }
   health() {
     return {

@@ -123,7 +123,7 @@ export const DEFAULT_CAPABILITY_RULES: readonly CapabilityRule[] = Object.freeze
   }),
 ]);
 
-export const ruleFor = (
+const ruleFor = (
   capability: string,
   rules: readonly CapabilityRule[] = DEFAULT_CAPABILITY_RULES,
 ): CapabilityRule | undefined => rules.find((rule) => rule.capability === capability);

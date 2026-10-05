@@ -10,12 +10,7 @@
  */
 
 import { deepFreeze } from '../domain/ids.js';
-import {
-  PIPELINE_STAGES,
-  type IdentityField,
-  type PipelineStage,
-  validateEvent,
-} from '../events/event-taxonomy.js';
+import { PIPELINE_STAGES, type PipelineStage, validateEvent } from '../events/event-taxonomy.js';
 
 export interface TraceEvent {
   readonly type: string;
@@ -151,9 +146,3 @@ export const traceEvent = (input: {
     payload: Object.freeze({ ...(input.payload ?? {}) }),
   });
 };
-
-export const IDENTITY_ORDER: readonly IdentityField[] = Object.freeze([
-  'correlationId',
-  'decisionId',
-  'transactionId',
-]);

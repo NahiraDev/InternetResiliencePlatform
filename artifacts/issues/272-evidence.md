@@ -1,7 +1,7 @@
 # Evidence report — issue #272 (master EPIC closure)
 
 Parent/master EPIC: [#272](https://github.com/NahiraDev/InternetResiliencePlatform/issues/272)  
-Workstreams: #273–#284. Local verification HEAD: `9722047` (+ untracked `272-evidence.md`, this file).
+Workstreams: #273–#284. Local verification HEAD: `8f598af` (+ untracked `272-evidence.md`, this file).
 
 This is the required final report: what existed, what was missing, what was
 connected, what was replaced, what was removed as duplicate, what was verified,
@@ -36,7 +36,7 @@ previously green reports. Each was fixed with executable code plus tests:
 | 273 | capability matrix required absent `dist/` | source-declared registry fallback when `dist/` is unavailable |
 | 273 | phase audit ignored `artifacts/issues/` evidence | audits both `docs/phases` (45) and `artifacts/issues` (12) |
 | 273 | authority map missed import/export and near-miss authorities | import/export detection plus canonical-component owner map |
-| 275 | legacy `FabricCapabilityRegistry` alongside enforceable authority | removed from production path, deprecated, test moved to `capabilityAuthority` |
+| 275 | legacy `FabricCapabilityRegistry` alongside enforceable authority | **removed entirely** (no such symbol remains); enforcement lives solely in `FabricCapabilityAuthority` |
 | 275 | state-machine assert never enforced on mutation paths | enforced in `discover()` and `reconcileRoutingGraph()`; same-state rediscovery allowed |
 | 275 | scope-collision abort untested | tested: discovery fails closed on conflicting scope claims |
 | 275 | `countDistinctFailureDomains` unwired | surfaced on `DiverseSelection.distinctFailureDomains` |
@@ -61,7 +61,7 @@ Deliberately **not** changed (documented, not drift):
 
 - `CanonicalDecisionProvider` keeps metadata history annotation; final ranking
   authority is the canonical planner gate, which now consumes knowledge.
-- `ActionTransactionEngine` remains for direct non-canonical runtime use and its
+- `ActionTransactionEngine` remains as a standalone primitive, no longer composed into the safety kernel (which has no execution method); the privileged boundary is the only production mutation path. The knowledge-store-conditional legacy branch was deleted from `runtime.ts`.
   safety tests; the canonical live path uses the privileged boundary.
 - macOS/Windows clients stay observe-only snapshot adapters by design; their
   non-authority is now contract-tested.
@@ -75,11 +75,11 @@ Deliberately **not** changed (documented, not drift):
   `KnowledgeStore` per candidate and ranks with `planAgainstObjectives`;
   a composition test proves identical candidates flip selection after valid
   path-scoped knowledge is admitted.
-- Planning → execution: canonical live mutations traverse `prepare → snapshot
+- Planning → execution: canonical live mutations are **unconditional** — every non-simulation mutation calls `mutationBoundary.mutate()` and traverses `prepare → snapshot → validate → policy → security → safety → apply → verify → commit`, with `rollback → verifyRollback → recover` on failure. There is no alternate executor; the safety kernel has no execution method and the boundary owns the `runtime.safety.*` emissions.
   → validate → policy → security → safety → apply → verify → commit`, with
   `rollback → verifyRollback → recover` on failure; verified boundary recovery
   is recorded once, never duplicated by the legacy path.
-- Verification → learning: `OutcomeLearningLoop` is composed per runtime with
+- Verification → learning: `OutcomeLearningLoop` is composed per runtime with the canonical store and **injected into the runtime**, which steps it in `learnFromOutcome()` after verification **and** after boundary recovery, emitting `runtime.outcome.verified` and `runtime.learning.applied`. Learning activates only from real destination/service/application probes; an unverified outcome is recorded as evidence and leaves selection unchanged. Rollback verification re-probes; only verified outcomes update estimates, memory, and intensity.
   the canonical store; rollback verification re-probes; only verified outcomes
   update estimates, memory, and intensity.
 - Execution → evidence: every canonical emission carries correlation IDs, with
@@ -110,10 +110,10 @@ Deliberately **not** changed (documented, not drift):
 
 ## 6. What was verified
 
-Uncached, local, at `9722047`:
+Uncached, local, at `8f598af`:
 
 - `turbo run build typecheck lint test --force`: **172/172 tasks, 0 cached**.
-- `@irp/resilience-runtime`: **42 files, 604 tests**.
+- `@irp/resilience-runtime`: **49 files, 663 tests**.
 - `@irp/api`: **9 files, 66 tests** (incl. conflict-journal and explanation endpoint).
 - `@irp/daemon`: **3 files, 8 tests** (incl. platform negotiation, ingress, self-health).
 - `@irp/database`: **1 file, 2 tests**.
@@ -123,7 +123,7 @@ Uncached, local, at `9722047`:
 - `pnpm run architecture:guards`: **passed**.
 - `pnpm run architecture:test`: **2/2** (incl. expected negative NetworkAutopilot fixture).
 - `pnpm run audit:deep`: **43 workspaces, 15 workflows, 0 findings**.
-- Archaeology: **45 packages, 2 entrypoints, 11 capabilities, 0 authority
+- Archaeology: **45 packages, 2 entrypoints, 15 capabilities (8 executed-registry + 10 source-declared), 0 authority violations, 45 phase docs + 12 issue-evidence docs audited + 2 coordination records, 0 orphan tests / 0 orphan modules / 9 orphan exports, 23 duplicate contracts, 20 graph nodes reconciled, 0 critical / 0 major / 29 minor drift**.
   violations, 45 phase docs + 12 issue-evidence docs audited, 0 orphans,
   23 duplicate contracts, 20 graph nodes reconciled, 0 critical / 0 major /
   29 minor drift**.
@@ -157,3 +157,15 @@ All locally solvable #272 source/runtime/test/architecture work is complete.
 Maintainer actions: review this report and the listed evidence, push the
 commits, confirm green remote CI, then close #272 and its completed
 workstreams on that evidence — never on this report alone.
+
+---
+
+## Superseded by the #272 final report
+
+`artifacts/issues/272-final-report.md` is the authoritative deliverable for #272. It records, with
+source and test evidence, what existed, what was missing, what was connected, what was replaced, what
+was removed as duplicate, what was verified, and what remains blocked by a genuine external dependency.
+
+The claims above were re-verified against `8f598afbcc001e57c27f7917a9b871e21fe86a61` plus the
+corrections recorded in this repository. Where a claim above describes a gap that the final report
+records as closed, the final report wins.

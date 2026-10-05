@@ -1,4 +1,4 @@
-import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
+import { deepFreeze, nowIso } from '../domain/ids.js';
 import type {
   ActionPlan,
   CandidateAction,
@@ -14,17 +14,27 @@ import {
   rankByObjectives,
   uniformObjectives,
 } from './objectives.js';
-/** @deprecated Prefer `rankByObjectives`, which scores against intent-derived
- * objectives. Retained for the legacy fixed ordering and for explainable
- * comparison in decision records. */
-export const rankCandidates = (c: readonly CandidateAction[]) =>
-  [...c].sort(
-    (a, b) =>
-      b.confidence - a.confidence ||
-      b.expectedBenefit - a.expectedBenefit ||
-      a.risk - b.risk ||
-      a.intent.localeCompare(b.intent) ||
-      a.id.localeCompare(b.id),
+
+/**
+ * The one ranking entry point.
+ *
+ * A second comparator here produced a second, incompatible ordering inside the
+ * canonical planner, so the same candidate set could rank two different ways
+ * depending on which entry point a caller used.
+ */
+export const rankCandidates = (
+  candidates: readonly CandidateAction[],
+  context: RuntimeContext,
+  options: {
+    readonly intent?: CompiledIntent;
+    readonly objectives?: ObjectiveVector;
+    readonly evidenceFor?: (candidate: CandidateAction) => ObjectiveEvidence;
+  } = {},
+): readonly ScoredCandidate[] =>
+  rankByObjectives(
+    candidates,
+    options.objectives ?? objectivesFromIntent(options.intent, uniformObjectives()),
+    options.evidenceFor,
   );
 export class DeterministicPlanner {
   constructor(private readonly policy = new RuntimePolicyArbitrator()) {}
@@ -69,8 +79,13 @@ export class DeterministicPlanner {
       objectives,
     };
   }
+  /**
+   * Plans without an explicit intent. Kept as a compatible entry point; it uses
+   * the same ranking authority as `planAgainstObjectives` with uniform weights.
+   */
   async plan(candidates: readonly CandidateAction[], context: RuntimeContext): Promise<ActionPlan> {
-    return this.planFromRanked(rankCandidates(candidates), context);
+    const { plan } = await this.planAgainstObjectives(candidates, context);
+    return plan;
   }
   private async planFromRanked(
     ranked: readonly CandidateAction[],
@@ -94,11 +109,19 @@ export class DeterministicPlanner {
     );
     const fallback = noopCandidate(context);
     const fallbackPolicy = await this.policy.evaluate(fallback, context);
-    const selectedEvaluation = evaluated.find(
+    const eligible = evaluated.find(
       ({ candidate, policyResult }) =>
         candidate.rejectionReasons.length === 0 && policyResult.allowed,
-    ) ??
-      evaluated[0] ?? {
+    );
+    // Fail-closed: when every candidate is denied, the plan still reports the
+    // highest-ranked denied candidate so the denial is visible and the cycle is
+    // blocked. Substituting the permitted noop fallback here would silently hide
+    // the governance decision and let the cycle succeed having done nothing.
+    // `evaluated[0]` is the highest-ranked entry because `evaluated` preserves the
+    // deterministically ranked order, so this selection is reproducible.
+    const denied = evaluated.length > 0 ? evaluated[0] : undefined;
+    const selectedEvaluation = eligible ??
+      denied ?? {
         candidate:
           fallbackPolicy.reasons.length === 0
             ? fallback
@@ -108,7 +131,7 @@ export class DeterministicPlanner {
     const selected = selectedEvaluation.candidate;
     const policyResult = selectedEvaluation.policyResult;
     return deepFreeze({
-      id: nextId('plan'),
+      id: `plan-${context.correlationId}`,
       schemaVersion: 1,
       createdAt: nowIso(),
       correlationId: context.correlationId,
@@ -131,9 +154,16 @@ export class DeterministicPlanner {
     });
   }
 }
+/**
+ * The inert candidate used when nothing else is eligible.
+ *
+ * Its id is derived from the correlation id rather than a process-global
+ * counter: a counter-derived id made tie-breaks and replay comparisons depend
+ * on how many ids happened to be minted earlier in the process.
+ */
 export const noopCandidate = (context: RuntimeContext): CandidateAction =>
   deepFreeze({
-    id: nextId('candidate'),
+    id: `candidate-noop-${context.correlationId}`,
     schemaVersion: 1,
     createdAt: nowIso(),
     correlationId: context.correlationId,

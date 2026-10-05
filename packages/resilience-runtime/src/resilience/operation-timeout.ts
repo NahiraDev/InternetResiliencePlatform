@@ -15,7 +15,7 @@ export class OperationTimeoutError extends Error {
   }
 }
 
-export const assertValidTimeout = (timeoutMs: number, name = 'timeoutMs'): void => {
+const assertValidTimeout = (timeoutMs: number, name = 'timeoutMs'): void => {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
     throw new RangeError(`${name} must be an integer >= 1, got ${timeoutMs}`);
   }

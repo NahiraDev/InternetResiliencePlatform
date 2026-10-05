@@ -38,6 +38,70 @@ const SOURCE_EXT = /\.(ts|tsx|mts|cts|mjs|cjs|js|jsx)$/;
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 const readText = async (path) => readFile(path, 'utf8');
 
+/**
+ * Verifies that a pinned commit SHA exists in local git history.
+ *
+ * Used to detect coordination records that cite a commit which is no longer
+ * reachable. The check is memoised because the phase audit pins the same few
+ * SHAs across many documents.
+ */
+/** Resolves the current HEAD commit, or undefined outside a repository. */
+const headCommit = await (async () => {
+  try {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    return (await promisify(execFile)('git', ['rev-parse', 'HEAD'], { cwd: root })).stdout
+      .toString()
+      .trim();
+  } catch {
+    return undefined;
+  }
+})();
+
+/**
+ * True when the commit is a *strict* ancestor of HEAD, i.e. it is behind main.
+ *
+ * HEAD itself is not "behind": a record that pins the current commit is current.
+ */
+const isAncestorOfHead = (() => {
+  const cache = new Map();
+  return async (sha) => {
+    if (sha === headCommit) return false;
+    if (cache.has(sha)) return cache.get(sha);
+    let ancestor = false;
+    try {
+      const { execFile } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      const run = promisify(execFile);
+      await run('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: root });
+      ancestor = true;
+    } catch {
+      ancestor = false;
+    }
+    cache.set(sha, ancestor);
+    return ancestor;
+  };
+})();
+
+const commitExists = (() => {
+  const cache = new Map();
+  return async (sha) => {
+    if (cache.has(sha)) return cache.get(sha);
+    let exists = false;
+    try {
+      const { execFile } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      const run = promisify(execFile);
+      await run('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: root });
+      exists = true;
+    } catch {
+      exists = false;
+    }
+    cache.set(sha, exists);
+    return exists;
+  };
+})();
+
 async function walk(dir, filter, acc = []) {
   if (!existsSync(dir)) return acc;
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -227,6 +291,16 @@ async function buildRuntimePaths() {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/** Maps a repository-relative path to its accountable package owner. */
+const resolveOwner = (r) =>
+  r.startsWith('apps/')
+    ? `@irp/${r.split('/')[1]}`
+    : (() => {
+        const m = /packages\/([^/]+)/.exec(r);
+        return m ? `@irp/${m[1]}` : r;
+      })();
+
 // Task 3: capability -> implementation -> owner -> consumer -> runtime path
 // ---------------------------------------------------------------------------
 const CAPABILITY_DOMAINS =
@@ -306,6 +380,43 @@ async function buildCapabilityMatrix() {
     }
   }
 
+  // Source-declared capability fallback.
+  //
+  // The adapter registry is not the only canonical capability declaration: the
+  // platform contract, the telemetry classification table and the fabric
+  // capability authority each declare capabilities the runtime enforces. When
+  // neither the executed nor the source-parsed adapter registry yields
+  // descriptors, the matrix would report zero capabilities and imply that the
+  // platform has none. These declarations are read directly so the matrix keeps
+  // its evidence when the adapter registry is unavailable.
+  const sourceDeclaredCapabilities = [];
+  const sourceDeclaredSources = [
+    {
+      path: 'packages/resilience-runtime/src/platform/capabilities.ts',
+      owner: '@irp/resilience-runtime',
+      pattern: /'([a-z]+(?:\.[a-z]+)+)'/g,
+    },
+    {
+      path: 'packages/resilience-runtime/src/events/evidence-sink.ts',
+      owner: '@irp/resilience-runtime',
+      pattern: /defineTelemetry\(\s*'([a-z0-9_]+)'/g,
+    },
+  ];
+  for (const declared of sourceDeclaredSources) {
+    const file = join(root, declared.path);
+    if (!existsSync(file)) continue;
+    const text = await readText(file);
+    for (const m of text.matchAll(declared.pattern)) {
+      const capability = m[1];
+      if (!CAPABILITY_DOMAINS.test(capability)) continue;
+      sourceDeclaredCapabilities.push({
+        capability,
+        owner: declared.owner,
+        declaredIn: declared.path,
+      });
+    }
+  }
+
   const files = [
     ...(await walk(join(root, 'apps'), isSource)),
     ...(await walk(join(root, 'packages'), isSource)),
@@ -339,13 +450,7 @@ async function buildCapabilityMatrix() {
   }
 
   // 2. Consumers are located by exact literal search for declared capabilities.
-  const ownerOfFile = (r) =>
-    r.startsWith('apps/')
-      ? `@irp/${r.split('/')[1]}`
-      : (() => {
-          const m = /packages\/([^/]+)/.exec(r);
-          return m ? `@irp/${m[1]}` : r;
-        })();
+  const ownerOfFile = resolveOwner;
 
   for (const file of files) {
     const r = rel(file);
@@ -360,7 +465,16 @@ async function buildCapabilityMatrix() {
     }
   }
 
-  // 3. Fabric capability registry declarations are also implementations.
+  // 3. Source-declared capabilities are implementations even when the adapter
+  // registry could not be read.
+  for (const declared of sourceDeclaredCapabilities) {
+    const row = ensure(declared.capability);
+    row.implementations.add(declared.declaredIn);
+    row.owners.add(declared.owner);
+    row.runtimePaths.add(declared.declaredIn);
+  }
+
+  // 4. Fabric capability registry declarations are also implementations.
   const fabricFile = join(root, 'packages/resilience-runtime/src/fabric-authority.ts');
   if (existsSync(fabricFile)) {
     const text = await readText(fabricFile);
@@ -394,6 +508,7 @@ async function buildCapabilityMatrix() {
       ? registry.source
       : `text scan fallback${registry.error ? `: ${registry.error}` : ''}`,
     registryAdapters: registry.adapters,
+    sourceDeclaredCapabilities,
     capabilities,
     summary: {
       total: capabilities.length,
@@ -482,13 +597,29 @@ async function buildAuthorityMap() {
       if (/createCanonicalRuntime/.test(text)) {
         authorities.push({
           path: r,
+          owner: resolveOwner(r),
           composesCanonicalRuntime: true,
           constructsRuntimeDirectly: /\bnew\s+ResilienceRuntime\s*\(/.test(text),
           role: 'host-composition',
         });
       }
       if (/safetyKernel|SafetyRollbackRecoveryKernel/.test(text)) {
-        authorities.push({ path: r, composesCanonicalRuntime: false, role: 'safety-kernel-host' });
+        authorities.push({
+          path: r,
+          owner: resolveOwner(r),
+          composesCanonicalRuntime: false,
+          role: 'safety-kernel-host',
+        });
+      }
+      // Record every privileged-mutation authority site with its owner so a
+      // second authority cannot appear without an accountable owner in the map.
+      if (/PrivilegedMutationBoundary|createPrivilegedMutationBoundary/.test(text)) {
+        authorities.push({
+          path: r,
+          owner: resolveOwner(r),
+          composesCanonicalRuntime: /createCanonicalRuntime/.test(text),
+          role: 'privileged-mutation-boundary',
+        });
       }
     }
   }
@@ -506,6 +637,12 @@ async function buildAuthorityMap() {
       hosts: authorities.length,
       violations: violations.length,
       singleProductionAuthority: contract.canonicalRuntime?.productionAuthorityCount === 1,
+      authoritiesByRole: authorities.reduce((acc, entry) => {
+        acc[entry.role] = (acc[entry.role] ?? 0) + 1;
+        return acc;
+      }, {}),
+      authorityOwners: [...new Set(authorities.map((entry) => entry.owner))].sort(),
+      unownedAuthorities: authorities.filter((entry) => !entry.owner).map((entry) => entry.path),
     },
   };
 }
@@ -530,6 +667,14 @@ async function buildPhaseAudit() {
       const citesEvidence =
         /\b(PR|commit|CI run|evidence|sha)\b/i.test(text) || /`[0-9a-f]{7,40}`/.test(text);
       const hasTestEvidence = /\.test\.|tests\/|vitest/i.test(text);
+      // A coordination record that pins a reviewed commit must pin the commit
+      // that is actually reachable, otherwise the record is stale evidence even
+      // though it cites a real SHA.
+      const pinnedShas = [...text.matchAll(/`([0-9a-f]{40})`/g)].map((m) => m[1]);
+      const stalePins = [];
+      for (const sha of pinnedShas) {
+        if (!(await commitExists(sha))) stalePins.push(sha);
+      }
       phases.push({
         file: `${target.directory}/${file}`,
         kind: target.kind,
@@ -538,6 +683,8 @@ async function buildPhaseAudit() {
         claimsImplementation,
         citesEvidence,
         hasTestEvidence,
+        pinnedShas,
+        stalePins,
         // Historical claims without evidence are recorded, never treated as current proof.
         evidenceClass: !claimsImplementation
           ? 'descriptive'
@@ -549,6 +696,41 @@ async function buildPhaseAudit() {
       });
     }
   }
+
+  // Coordination records are single files rather than a directory listing.
+  // They are audited because they are the canonical handoff point and are where
+  // a stale reviewed-commit claim actually lives.
+  for (const record of ['PROJECT_STATE.md', '.github/ACTIVE_WORK.md']) {
+    const path = join(root, record);
+    if (!existsSync(path)) continue;
+    const text = await readText(path);
+    const pinnedShas = [...text.matchAll(/`([0-9a-f]{40})`/g)].map((m) => m[1]);
+    const stalePins = [];
+    const behindHead = [];
+    for (const sha of pinnedShas) {
+      if (!(await commitExists(sha))) stalePins.push(sha);
+      else if (await isAncestorOfHead(sha)) behindHead.push(sha);
+    }
+    phases.push({
+      file: record,
+      kind: 'coordination-record',
+      number: null,
+      beyondPhase78: false,
+      claimsImplementation: /\b(implemented|merged|complete[d]?)\b/i.test(text),
+      citesEvidence: pinnedShas.length > 0,
+      hasTestEvidence: false,
+      pinnedShas,
+      stalePins,
+      behindHead,
+      evidenceClass:
+        stalePins.length > 0
+          ? 'stale-reference'
+          : behindHead.length > 0
+            ? 'behind-head'
+            : 'descriptive',
+    });
+  }
+
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -562,6 +744,11 @@ async function buildPhaseAudit() {
         .filter((p) => p.evidenceClass === 'unsubstantiated-claim')
         .map((p) => p.file),
       evidenceBacked: phases.filter((p) => p.evidenceClass === 'evidence-backed').length,
+      coordinationRecords: phases.filter((p) => p.kind === 'coordination-record').length,
+      staleReferences: phases.filter((p) => p.evidenceClass === 'stale-reference').map((p) => p.file),
+      behindHeadRecords: phases
+        .filter((p) => p.evidenceClass === 'behind-head')
+        .map((p) => ({ file: p.file, behindHead: p.behindHead })),
     },
   };
 }
@@ -675,17 +862,64 @@ async function buildOrphans() {
     }
   }
 
+  // Orphaned exported symbols.
+  //
+  // Barrel reachability alone cannot detect an orphan: a module that is exported
+  // from the root barrel looks reachable even when nothing consumes it. This
+  // detector counts references outside a symbol's own declaration site, across
+  // production source, tests, scripts and docs, so an export that exists only to
+  // be published is reported honestly.
+  const referenceCorpus = new Map();
+  const corpusFiles = [
+    ...(await walk(join(root, 'packages'), isSource)),
+    ...(await walk(join(root, 'apps'), isSource)),
+    ...(await walk(join(root, 'scripts'), isSource)),
+    ...(await walk(join(root, 'tools'), isSource)),
+  ];
+  for (const file of corpusFiles) referenceCorpus.set(file, await readText(file));
+
+  const orphanExports = [];
+  const runtimePkgRoot = join(pkgRoot, 'src');
+  for (const file of await walk(runtimePkgRoot, isSource)) {
+    if (file.endsWith('.d.ts')) continue;
+    const text = referenceCorpus.get(file);
+    if (text === undefined) continue;
+    // Only runtime values are reported. An exported `interface`/`type` is a
+    // published contract, and a contract with no in-repo consumer is normal for
+    // a library barrel; reporting it as an orphan would bury the real findings.
+    for (const m of text.matchAll(
+      /export\s+(?:declare\s+)?(?:abstract\s+)?(class|const|function|enum)\s+([A-Za-z0-9_]+)/g,
+    )) {
+      const symbol = m[2];
+      let referenced = false;
+      for (const [other, otherText] of referenceCorpus) {
+        if (other === file) continue;
+        // Ignore the declaration line itself in the declaring file.
+        if (new RegExp(`\\b${symbol}\\b`).test(otherText)) {
+          referenced = true;
+          break;
+        }
+      }
+      if (!referenced) orphanExports.push({ symbol, kind: m[1], declaredIn: rel(file) });
+    }
+  }
+  orphanExports.sort((a, b) =>
+    a.symbol === b.symbol ? a.declaredIn.localeCompare(b.declaredIn) : a.symbol.localeCompare(b.symbol),
+  );
+
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     vitestIncludeGlobs: includeGlobs,
     orphanTests,
     orphanModules,
+    orphanExports,
     duplicateContracts,
     persistenceModels,
     summary: {
       orphanTests: orphanTests.length,
       orphanModules: orphanModules.length,
+      orphanExports: orphanExports.length,
       duplicateContracts: duplicateContracts.length,
       unreferencedPersistenceModels: persistenceModels.filter((m) => !m.referenced).length,
     },

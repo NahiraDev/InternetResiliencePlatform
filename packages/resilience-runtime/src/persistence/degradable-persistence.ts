@@ -155,6 +155,8 @@ export interface DegradableStoreOptions {
   readonly telemetry?: { increment(metric: string, value?: number): void };
   /** Keys retained in the local mirror. */
   readonly maxLocalEntries?: number;
+  /** Keys retained in the retry queue. Defaults to `maxLocalEntries`. */
+  readonly maxPendingWrites?: number;
 }
 
 interface LocalEntry {
@@ -174,9 +176,14 @@ export class DegradableStore {
   private readonly local = new Map<string, LocalEntry>();
   private readonly pendingWrites = new Map<string, unknown>();
   private readonly maxLocalEntries: number;
+  private readonly maxPendingWrites: number;
+  private droppedWrites = 0;
 
   constructor(private readonly options: DegradableStoreOptions = {}) {
     this.maxLocalEntries = Math.max(1, options.maxLocalEntries ?? 10_000);
+    // The retry queue is bounded for the same reason the mirror is: a long
+    // outage must not grow the daemon's heap without limit.
+    this.maxPendingWrites = Math.max(1, options.maxPendingWrites ?? this.maxLocalEntries);
   }
 
   /** Always succeeds: reads are served from the authoritative local mirror. */
@@ -196,9 +203,12 @@ export class DegradableStore {
     }
 
     const persistence = this.options.persistence;
-    if (!persistence) return 'queued';
+    // Without a remote port there is nothing to report honestly: the value is
+    // durably held only in the local mirror. Reporting `queued` here would claim
+    // a retry exists when none does, which silently disabled every drain loop.
+    if (!persistence) return 'persisted';
     if (!persistence.available()) {
-      this.pendingWrites.set(key, value);
+      this.enqueue(key, value);
       this.count('runtime_persistence_failures_total');
       return 'queued';
     }
@@ -207,10 +217,23 @@ export class DegradableStore {
       this.pendingWrites.delete(key);
       return 'persisted';
     } catch {
-      this.pendingWrites.set(key, value);
+      this.enqueue(key, value);
       this.count('runtime_persistence_failures_total');
       return 'queued';
     }
+  }
+
+  /** Queues a write for retry, evicting the oldest entry when full. */
+  private enqueue(key: string, value: unknown): void {
+    if (this.pendingWrites.size >= this.maxPendingWrites && !this.pendingWrites.has(key)) {
+      const oldest = this.pendingWrites.keys().next().value as string | undefined;
+      if (oldest !== undefined) {
+        this.pendingWrites.delete(oldest);
+        this.droppedWrites += 1;
+        this.count('runtime_persistence_dropped_total');
+      }
+    }
+    this.pendingWrites.set(key, value);
   }
 
   async remove(key: string): Promise<void> {
@@ -279,12 +302,15 @@ export class DegradableStore {
     readonly pendingWrites: number;
     readonly remoteAvailable: boolean;
     readonly degraded: boolean;
+    /** Retry entries evicted by the bounded queue during an outage. */
+    readonly droppedWrites: number;
   } {
     return deepFreeze({
       localEntries: this.local.size,
       pendingWrites: this.pendingWrites.size,
       remoteAvailable: this.options.persistence?.available() ?? false,
-      degraded: this.pendingWrites.size > 0,
+      degraded: this.pendingWrites.size > 0 || this.droppedWrites > 0,
+      droppedWrites: this.droppedWrites,
     });
   }
 

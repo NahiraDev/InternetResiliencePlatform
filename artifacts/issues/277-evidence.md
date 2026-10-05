@@ -59,8 +59,10 @@ alternatives remain explainable in the plan.
 `scoreCandidate()` produces a normalized weighted score **plus a per-objective
 contribution map**, so every ranking decision is auditable. Unmeasured objectives
 (privacy, security, diversity) score a neutral `0.5` rather than being invented as
-favourable. Ties fall back to the legacy deterministic ordering, so results stay
-reproducible.
+favourable. Ties fall back to a total, content-derived `candidateOrderKey` (intent, sorted
+capabilities/dependencies/postconditions, benefit, risk, confidence, rollback strategy), so the
+ordering is a pure function of the inputs and never depends on the process-global candidate id
+counter.
 
 ### 4. Structured plans
 
@@ -120,7 +122,7 @@ monotonic risk/benefit, value clamping, no upstream policy filtering, reservatio
 grant/hold/release/expiry/capacity/ttl validation, all four staleness guards, and
 structured-plan completeness.
 
-- `@irp/resilience-runtime`: **37 test files, 338 tests PASS**
+- `@irp/resilience-runtime`: **49 test files, 663 tests PASS** at `8f598af`
 - Full workspace: **172/172 turbo tasks PASS**, 0 cached
 
 ## CI/runtime evidence (this session, uncached)

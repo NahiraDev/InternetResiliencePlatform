@@ -25,6 +25,7 @@ import type { ActionExecutor, EventSink } from '../ports/ports.js';
 import { RuntimeActionVerifier } from '../verification/verification.js';
 import { SafetyRollbackRecoveryKernel } from '../safety/safety-kernel.js';
 import { RuntimeActionValidator } from '../validation/validation.js';
+import { RuntimePolicyArbitrator } from '../policy/policy.js';
 import type { RuntimeAdapterRegistry } from '../adapter-registry.js';
 import {
   type ActorIdentity,
@@ -52,39 +53,6 @@ export type TransactionPhase = (typeof TRANSACTION_PHASES)[number];
 export const RECOVERY_PHASES = ['rollback', 'verifyRollback', 'recover'] as const;
 export type RecoveryPhase = (typeof RECOVERY_PHASES)[number];
 
-export class TransactionGateError extends Error {
-  readonly code = 'TRANSACTION_GATE_FAILED';
-
-  constructor(
-    readonly phase: TransactionPhase,
-    readonly reasons: readonly string[],
-  ) {
-    super(`transaction blocked at '${phase}': ${reasons.join('; ')}`);
-    this.name = 'TransactionGateError';
-  }
-}
-
-export class TransactionCancelledError extends Error {
-  readonly code = 'TRANSACTION_CANCELLED';
-
-  constructor(readonly phase: TransactionPhase) {
-    super(`transaction cancelled at '${phase}'`);
-    this.name = 'TransactionCancelledError';
-  }
-}
-
-export class TransactionTimeoutError extends Error {
-  readonly code = 'TRANSACTION_TIMEOUT';
-
-  constructor(
-    readonly phase: TransactionPhase,
-    readonly elapsedMs: number,
-  ) {
-    super(`transaction timed out at '${phase}' after ${elapsedMs}ms`);
-    this.name = 'TransactionTimeoutError';
-  }
-}
-
 export class ConcurrentMutationError extends Error {
   readonly code = 'CONCURRENT_MUTATION';
 
@@ -96,19 +64,6 @@ export class ConcurrentMutationError extends Error {
     this.name = 'ConcurrentMutationError';
   }
 }
-
-export class StaleMutationError extends Error {
-  readonly code = 'STALE_MUTATION';
-
-  constructor(
-    readonly mutationId: string,
-    readonly reason: 'epoch-superseded' | 'resource-version-changed',
-  ) {
-    super(`mutation '${mutationId}' is stale: ${reason}`);
-    this.name = 'StaleMutationError';
-  }
-}
-
 
 export interface PhaseRecord {
   readonly phase: TransactionPhase | RecoveryPhase;
@@ -183,6 +138,7 @@ export interface PrivilegedBoundaryPorts {
     plan: ActionPlan,
     context: RuntimeContext,
     snapshot: MutationSnapshot,
+    transactionId: string,
   ) => Promise<RecoveryResult>;
 }
 
@@ -467,6 +423,18 @@ export class PrivilegedMutationBoundary {
       // --- apply -----------------------------------------------------------
       if (cancelled()) return this.cancelledOutcome(phases, 'apply', startedAt, snapshot);
       if (timeout()) return this.timedOutOutcome(phases, 'apply', startedAt, snapshot);
+      // The boundary owns mutation-attempt identity, so it also announces the
+      // transaction. Emitted after the safety gate and before any apply, which
+      // is the causal order the taxonomy declares.
+      await this.ports.events.emit('runtime.transaction.created', {
+        correlationId: context.correlationId,
+        transactionId,
+      });
+      await this.ports.events.emit('runtime.execution.started', {
+        correlationId: context.correlationId,
+        transactionId,
+        actionId: plan.selectedAction.id,
+      });
       await this.ports.events.emit('runtime.mutation.applying', {
         correlationId: context.correlationId,
         transactionId,
@@ -477,6 +445,12 @@ export class PrivilegedMutationBoundary {
       try {
         execution = await this.ports.executor.execute(plan, context);
       } catch (error) {
+        await this.ports.events.emit('runtime.execution.failed', {
+          correlationId: context.correlationId,
+          transactionId,
+          actionId: plan.selectedAction.id,
+          error: error instanceof Error ? error.message : 'apply-threw',
+        });
         // Partial failure: the mutation was attempted, so it must be compensated.
         return this.failurePath(
           phases,
@@ -485,12 +459,19 @@ export class PrivilegedMutationBoundary {
           snapshot,
           [error instanceof Error ? error.message : 'apply-threw'],
           startedAt,
+          transactionId,
         );
       }
       const applied = execution.status === 'success' || execution.status === 'skipped';
       this.record(phases, 'apply', applied ? 'passed' : 'failed', [], startedAt);
 
       if (!applied) {
+        await this.ports.events.emit('runtime.execution.failed', {
+          correlationId: context.correlationId,
+          transactionId,
+          actionId: plan.selectedAction.id,
+          status: execution.status,
+        });
         // A failed apply is a partial-failure candidate: compensate and verify.
         return this.failurePath(
           phases,
@@ -499,6 +480,7 @@ export class PrivilegedMutationBoundary {
           snapshot,
           [`apply-status:${execution.status}`],
           startedAt,
+          transactionId,
           execution,
         );
       }
@@ -516,6 +498,7 @@ export class PrivilegedMutationBoundary {
           snapshot,
           [...verification.reasons],
           startedAt,
+          transactionId,
           execution,
         );
       }
@@ -555,11 +538,15 @@ export class PrivilegedMutationBoundary {
     snapshot: MutationSnapshot,
     reasons: readonly string[],
     startedAt: number,
+    transactionId: string,
     execution?: ActionExecution,
   ): Promise<TransactionOutcome> {
-    const transactionId = nextId('transaction');
     const partialFailure = execution !== undefined;
 
+    await this.ports.events.emit('runtime.safety.rollback.started', {
+      correlationId: context.correlationId,
+      transactionId,
+    });
     const compensation = await this.ports.compensate(plan, context, snapshot);
     this.record(
       phases,
@@ -567,6 +554,12 @@ export class PrivilegedMutationBoundary {
       compensation.compensated ? 'passed' : 'failed',
       compensation.reasons,
       startedAt,
+    );
+    await this.ports.events.emit(
+      compensation.compensated
+        ? 'runtime.safety.rollback.completed'
+        : 'runtime.safety.rollback.failed',
+      { correlationId: context.correlationId, transactionId, reasons: compensation.reasons },
     );
 
     const rollbackVerification = await this.ports.verifyRollback(plan, context, snapshot);
@@ -596,7 +589,7 @@ export class PrivilegedMutationBoundary {
       });
     }
 
-    const recovery = await this.ports.recover(plan, context, snapshot);
+    const recovery = await this.ports.recover(plan, context, snapshot, transactionId);
     this.record(
       phases,
       'recover',
@@ -734,8 +727,10 @@ export function createPrivilegedMutationBoundary(ports: {
   readonly safetyKernel: SafetyRollbackRecoveryKernel;
   readonly validator: RuntimeActionValidator;
   readonly adapters: RuntimeAdapterRegistry;
+  readonly policyArbitrator?: RuntimePolicyArbitrator;
 }): PrivilegedMutationBoundary {
   const executor = ports.executor;
+  const policyArbitrator = ports.policyArbitrator ?? new RuntimePolicyArbitrator();
   return new PrivilegedMutationBoundary(
     {
       executor,
@@ -751,9 +746,15 @@ export function createPrivilegedMutationBoundary(ports: {
         } as MutationSnapshot;
       },
       policy: async (plan: ActionPlan, context: RuntimeContext) => {
-        const result = await ports.validator.validate(plan, context, false);
+        // The boundary's policy phase is a policy gate, not a cycle-admission
+        // gate. `RuntimeActionValidator.validate` additionally enforces
+        // deadline, adapter support, action budget and the runtime's
+        // single-flight lock, all of which the owning cycle already applied
+        // before entering this boundary. Re-running it here made every
+        // mutation conflict with the caller's own lock and blocked it.
+        const result = await policyArbitrator.evaluate(plan, context);
         return {
-          allowed: result.valid,
+          allowed: result.allowed,
           reasons: result.reasons,
           requiredCapabilities: plan.requiredCapabilities,
         };
@@ -776,10 +777,35 @@ export function createPrivilegedMutationBoundary(ports: {
         const result = await verifier.verify(plan, execution, context);
         return { verified: result.status === 'success', reasons: result.status === 'success' ? [] : ['rollback-verification-failed'] };
       },
-      recover: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
-        const recovery = await ports.safetyKernel.recover(plan, 'verification failed', context);
+      recover: async (
+        plan: ActionPlan,
+        context: RuntimeContext,
+        _snapshot: MutationSnapshot,
+        transactionId: string,
+      ) => {
+        await ports.events.emit('runtime.recovery.started', {
+          correlationId: context.correlationId,
+          transactionId,
+          reason: 'verification failed',
+        });
+        const recovery = await ports.safetyKernel.recover(
+          plan,
+          'verification failed',
+          context,
+          transactionId,
+        );
         const recovered = recovery.status === 'success';
-        return { recovered, reasons: recovered ? [] : [recovery.reason], strategy: 'rollback' };
+        await ports.events.emit('runtime.recovery.completed', {
+          correlationId: context.correlationId,
+          transactionId,
+          status: recovery.status,
+          strategy: 'rollback',
+        });
+        return {
+          recovered,
+          reasons: recovered ? [] : [recovery.reason],
+          strategy: 'rollback',
+        };
       },
     },
     {

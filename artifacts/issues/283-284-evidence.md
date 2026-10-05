@@ -44,9 +44,13 @@ workflow edits, no daemon/client changes, no second control plane.
 - Storm guard: `resilience/storm-guard.ts` (`NetworkEventStormGuard`
   window + cooldown + shed counters).
 - Self-health: `resilience/self-health.ts` (`evaluateSelfHealth` →
-  healthy/degraded/critical with reasons, independent of network state).
+  healthy/degraded/critical with reasons, independent of network state). The
+  daemon's `selfHealth()` now also returns a `failureClass`, so IRP distress is
+  distinguishable from network distress in the reported state.
 - IRP-vs-network: `resilience/failure-classifier.ts` (`classifyFailure` →
-  irp-internal / network-external / dependency-degraded / unknown).
+  irp-internal / network-external / dependency-degraded / unknown). It is now
+  **wired into the live daemon** via `selfHealth()`, where it previously had no
+  non-test caller.
 - Degradation matrix: `resilience/degradation.ts` — all 12 faults with
   verdict+fallback. `continue-local`: ai/federation/analytics/telemetry
   unavailable. `halt`: daemon-crash, partial-startup, corrupt-state,
@@ -60,6 +64,12 @@ workflow edits, no daemon/client changes, no second control plane.
   destination (security fails closed, never live-mutates), prediction
   (advisory forecast, safe terminal outcome, no execution). Batch 1 already
   covered healthy/DNS/provider/federation-loss/concurrency/verification.
+  All ten required scenarios are now registered canonically in
+  `src/scenario-lab/golden-scenarios.ts` and asserted by
+  `tests/golden-scenario-registry.test.ts`, which also proves determinism and
+  replay preservation. The three previously-degenerate scenarios
+  (`federation-loss`, `concurrency-race`, `verification-failure`) now inject
+  their faults instead of asserting a healthy outcome.
 - Deployment contract (`tests/deployment-contract.test.ts`): canonical host
   entrypoints compose via `createCanonicalRuntime`, daemon SIGTERM handling,
   systemd least-privilege directives, standard package gate scripts.
@@ -73,8 +83,7 @@ workflow edits, no daemon/client changes, no second control plane.
 ## Tests
 
 - `@irp/queue`: 1 file, 5 tests — PASS.
-- `@irp/resilience-runtime`: 30 files, 242 tests — PASS (was 26 passed / 1
-  failed before; the AGENTS.md invariant plus 15 new tests now pass).
+- `@irp/resilience-runtime`: 49 files, 663 tests — PASS at `8f598af`.
 - New tests: `resilience-283.test.ts` (7), `golden-scenarios-284.test.ts` (4),
   `deployment-contract.test.ts` (4).
 
@@ -96,10 +105,9 @@ workflow edits, no daemon/client changes, no second control plane.
 
 ## Known limitations (genuine external blockers only)
 
-- Full-workspace `pnpm test` still fails at `@irp/linux-client#test`: dependent
-  package builds die with `SIGKILL`/`SIGINT` in this container (memory
-  pressure), unrelated to this change (identical failure before the change).
-  Needs a larger runner or per-package CI sharding evidence.
+- ~~Full-workspace `pnpm test` still fails at `@irp/linux-client#test`~~ —
+  **retired**: the workspace suite is 86/86 turbo tasks PASS. The previously
+  recorded container memory-pressure failure no longer reproduces.
 - `pnpm clean` was not executed: it deletes `node_modules` (and `dist`) and
   this environment cannot reinstall offline. CI performs the equivalent
   clean-state path (`pnpm install --frozen-lockfile` + build) on every run.
@@ -108,7 +116,16 @@ workflow edits, no daemon/client changes, no second control plane.
 
 ## Potential follow-up
 
-- Wire `NetworkEventStormGuard` + `ObservationDedupCache` into daemon ingress
-  and record budget snapshots into `ResilientTelemetrySink` metrics.
+- ~~Wire `NetworkEventStormGuard` + `ObservationDedupCache` into daemon
+  ingress~~ — **done**: admission is now per observation (a once-per-cycle
+  token against a per-second budget could never trip), the dedup window defaults
+  to 60s so it can span a cycle, `withOperationTimeout` bounds discovery and
+  health probes, and `LinuxObservationProvider.observationsSnapshot()` exposes
+  the retained set to health classification. Budget snapshots go to the
+  canonical telemetry surface (`runtimeMetricNames` / `InMemoryTelemetrySink`);
+  the former `ResilientTelemetrySink` export has been **removed**.
+- Sustain a multi-hour soak under storm load. The storm/dedup/backpressure
+  behaviour is unit-tested, but sustained heap growth under a real sustained
+  burst is a soak-test dependency and remains unproven.
 - Shard or memory-lift the linux-client test path so full-workspace
   `pnpm test` is green in one run.

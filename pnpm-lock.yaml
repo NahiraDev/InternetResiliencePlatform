@@ -920,6 +920,9 @@ importers:
       '@irp/utils':
         specifier: workspace:*
         version: link:../utils
+      pg:
+        specifier: ^8.23.0
+        version: 8.23.0
     devDependencies:
       '@types/node':
         specifier: ^26.6.3

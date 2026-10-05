@@ -27,7 +27,7 @@ Non-goals: no persistent conflict store (in-memory only for now), no real-time W
 
 ### Policy Arbitration Integration
 
-- `RuntimePolicyArbitrator.resolveIntentConflicts(context)` returns `{ ordered: CompiledIntent[], conflicts: IntentConflict[] }`
+returns `{ ordered: CompiledIntent[], conflicts: IntentConflict[], persistenceDegraded: boolean }`; intent-store errors are **caught** and surfaced as `persistenceDegraded` rather than thrown, so a database outage degrades durability without failing the control cycle
 - Combines intents from `IntentStore.getActive()` + context's `compiledIntents`/`compiledIntent`
 - Sorted by priority → version → compiledAt; conflicts detected by overlapping scopes with different outcomes
 - Resolution: higher priority wins; same priority → newer version wins
@@ -63,7 +63,7 @@ Non-goals: no persistent conflict store (in-memory only for now), no real-time W
 - `packages/resilience-runtime/tests/intent-integration-274.test.ts` — covers arbitration + autonomy enforcement
 - `apps/api/tests/intent-api.test.ts` — existing intent CRUD tests still pass
 - `apps/api/tests/intent-api.test.ts` — conflict endpoints covered by existing test infrastructure
-- All 262+ resilience-runtime tests pass
+- All 663 resilience-runtime tests pass (49 files) at `8f598af`
 - All 62+ API tests pass
 - All 5 CLI tests pass
 

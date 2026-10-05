@@ -8,7 +8,7 @@
 - **Current execution gate:** GitHub issue #272 and workstreams #273–#284, plus Linux runtime gate #254. These are the active post-Phase-78 integration/evidence workstreams.
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Current main baseline reviewed:** `6dd19a7936932c23c4b4115bb298991dabfa7cc2`.
+- **Current main baseline reviewed:** `8f598afbcc001e57c27f7917a9b871e21fe86a61`.
 - **Latest implementation merge observed on this baseline:** PR #303.
 - **Release state:** Phase 71 external release certification remains open because the required real tagged GitHub Release, published platform artifact inspection and checksum evidence are not yet satisfied.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.

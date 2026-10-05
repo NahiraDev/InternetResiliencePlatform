@@ -54,32 +54,98 @@ export interface CanonicalRuntimeComposition {
 const runtimeModeFor = (executionMode: CanonicalExecutionMode) =>
   executionMode === 'real' ? ('live' as const) : ('simulation' as const);
 
+/** Parses a required-positive-integer setting, or returns the default. */
+const positiveIntegerSetting = (
+  raw: string | undefined,
+  fallback: number,
+  name: string,
+  max = Number.MAX_SAFE_INTEGER,
+): number => {
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const parsed = Number(raw.trim());
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > max) {
+    throw new Error(`${name} must be an integer between 1 and ${max}, received '${raw}'`);
+  }
+  return parsed;
+};
+
 /**
- * Creates a PostgresIntentStore from environment variables.
- * Expected env vars:
- * - IRP_INTENT_DB_HOST
- * - IRP_INTENT_DB_PORT (default: 5432)
- * - IRP_INTENT_DB_NAME
- * - IRP_INTENT_DB_USER
- * - IRP_INTENT_DB_PASSWORD
- * - IRP_INTENT_DB_SSL (optional, default: false)
- * - IRP_INTENT_DB_MAX (optional, default: 10)
+ * Parses an optional boolean setting. Accepts the forms operators actually use
+ * and rejects anything else, rather than silently treating `1`/`yes` as false.
  */
-export const createPostgresIntentStore = async (): Promise<IntentStore | undefined> => {
-  const host = process.env.IRP_INTENT_DB_HOST;
-  if (!host) return undefined;
+const booleanSetting = (
+  raw: string | undefined,
+  fallback: boolean,
+  name: string,
+): boolean => {
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const normalized = raw.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  throw new Error(`${name} must be a boolean, received '${raw}'`);
+};
+
+export interface PersistenceSettings {
+  readonly host: string;
+  readonly port: number;
+  readonly database: string;
+  readonly user: string;
+  readonly password: string;
+  readonly ssl: boolean;
+  readonly max: number;
+}
+
+/**
+ * Reads and validates intent-persistence settings from the environment.
+ *
+ * Returns `undefined` when persistence is not configured, which is the default:
+ * Postgres is an optional capability, never a requirement for local autonomy.
+ * Malformed settings throw so a host fails closed at startup rather than
+ * discovering a NaN port after a cycle is already running.
+ */
+export const readPersistenceSettings = (
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): PersistenceSettings | undefined => {
+  const host = env.IRP_INTENT_DB_HOST;
+  if (host === undefined || host.trim() === '') return undefined;
+  const settings: PersistenceSettings = {
+    host,
+    port: positiveIntegerSetting(env.IRP_INTENT_DB_PORT, 5432, 'IRP_INTENT_DB_PORT', 65_535),
+    database: env.IRP_INTENT_DB_NAME ?? 'irp',
+    user: env.IRP_INTENT_DB_USER ?? 'irp',
+    password: env.IRP_INTENT_DB_PASSWORD ?? '',
+    ssl: booleanSetting(env.IRP_INTENT_DB_SSL, false, 'IRP_INTENT_DB_SSL'),
+    max: positiveIntegerSetting(env.IRP_INTENT_DB_MAX, 10, 'IRP_INTENT_DB_MAX'),
+  };
+  if (!settings.database.trim() || !settings.user.trim()) {
+    throw new Error('IRP_INTENT_DB_NAME and IRP_INTENT_DB_USER must not be blank');
+  }
+  return settings;
+};
+
+/**
+ * Creates a PostgresIntentStore from validated environment settings.
+ * Returns `undefined` when persistence is not configured.
+ */
+export const createPostgresIntentStore = async (
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<IntentStore | undefined> => {
+  const settings = readPersistenceSettings(env);
+  if (settings === undefined) return undefined;
 
   const config: PostgresConfig = {
-    host,
-    port: parseInt(process.env.IRP_INTENT_DB_PORT ?? '5432', 10),
-    database: process.env.IRP_INTENT_DB_NAME ?? 'irp',
-    user: process.env.IRP_INTENT_DB_USER ?? 'irp',
-    password: process.env.IRP_INTENT_DB_PASSWORD ?? '',
-    ssl: process.env.IRP_INTENT_DB_SSL === 'true',
-    max: parseInt(process.env.IRP_INTENT_DB_MAX ?? '10', 10),
+    host: settings.host,
+    port: settings.port,
+    database: settings.database,
+    user: settings.user,
+    password: settings.password,
+    ssl: settings.ssl,
+    max: settings.max,
   };
-
+  // Validate before opening a pool: malformed settings must fail closed at
+  // startup, not after a connection attempt.
   const store = new PostgresIntentStore(config);
+  store.assertValidConfig();
   await store.initialize();
   return store;
 };
@@ -102,16 +168,22 @@ export const createCanonicalRuntime = (
   // One knowledge boundary and one learning closure per composed runtime. These
   // are owned here so a host cannot construct a private, divergent copy.
   const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
+  const canonicalLearningLoop =
+    learningLoop ??
+    new OutcomeLearningLoop(
+      learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore },
+    );
 
   const runtime = new ResilienceRuntime(observationProviders, {
     ...runtimeOptions,
     ...(intentStore !== undefined ? { intentStore } : {}),
     knowledgeStore: canonicalKnowledgeStore,
+    // The loop is injected, not merely returned: the runtime must be able to
+    // step it, otherwise the learning closure is decorative.
+    learningLoop: canonicalLearningLoop,
   });
   const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
   for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
-  const canonicalLearningLoop =
-    learningLoop ?? new OutcomeLearningLoop(learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore });
 
   return Object.freeze({
     executionMode,
@@ -128,51 +200,16 @@ export const createCanonicalRuntime = (
 };
 
 /**
- * Async version that auto-creates PostgresIntentStore from environment variables.
- * Use this when you need durable intent persistence.
+ * Async composition that opts into durable intent persistence when it is
+ * configured. It delegates to `createCanonicalRuntime` so there is exactly one
+ * composition authority.
  */
 export const createCanonicalRuntimeWithPostgres = async (
   options: CanonicalRuntimeCompositionOptions,
 ): Promise<CanonicalRuntimeComposition> => {
-  const {
-    executionMode,
-    observationProviders = [],
-    fabric,
-    fabricDiscoveryProviders = [],
-    intentStore,
-    knowledgeStore,
-    learningLoop,
-    learningLoopOptions,
-    ...runtimeOptions
-  } = options;
-
-  // Auto-create PostgresIntentStore from env if not provided
-  const resolvedIntentStore = intentStore ?? (await createPostgresIntentStore());
-  const canonicalKnowledgeStore = knowledgeStore ?? new KnowledgeStore();
-
-  const runtime = new ResilienceRuntime(observationProviders, {
-    ...runtimeOptions,
-    ...(resolvedIntentStore !== undefined ? { intentStore: resolvedIntentStore } : {}),
-    knowledgeStore: canonicalKnowledgeStore,
-  });
-  const connectivityFabric = fabric ?? new ProgrammableConnectivityFabric();
-  for (const provider of fabricDiscoveryProviders) connectivityFabric.registerProvider(provider);
-
-  // One knowledge boundary and one learning closure per composed runtime. These
-  // are owned here so a host cannot construct a private, divergent copy.
-  const canonicalLearningLoop =
-    learningLoop ?? new OutcomeLearningLoop(learningLoopOptions ?? { knowledgeStore: canonicalKnowledgeStore });
-
-  return Object.freeze({
-    executionMode,
-    runtime,
-    fabric: connectivityFabric,
-    knowledgeStore: canonicalKnowledgeStore,
-    learningLoop: canonicalLearningLoop,
-    discoverFabricResources: (discoveryOptions = {}) =>
-      connectivityFabric.discover(discoveryOptions),
-    selectFabricResource: (request = {}) => connectivityFabric.select(request),
-    runCycle: (input: CanonicalRuntimeCycleInput = {}) =>
-      runtime.runCycle({ ...input, mode: runtimeModeFor(executionMode) }),
+  const intentStore = options.intentStore ?? (await createPostgresIntentStore());
+  return createCanonicalRuntime({
+    ...options,
+    ...(intentStore !== undefined ? { intentStore } : {}),
   });
 };

@@ -114,7 +114,13 @@ export class PostgresIntentStore implements IntentStore {
 
   constructor(private readonly config: PostgresConfig) {}
 
-  async initialize(): Promise<void> {
+  /**
+   * Validates the configuration without touching the network.
+   *
+   * Exposed separately from `initialize` so a host can fail closed on malformed
+   * persistence settings before it constructs a store or starts a cycle.
+   */
+  assertValidConfig(): void {
     if (!this.config.host.trim() || !this.config.database.trim() || !this.config.user.trim()) {
       throw new Error('PostgresIntentStore requires host, database, and user');
     }
@@ -127,7 +133,13 @@ export class PostgresIntentStore implements IntentStore {
     ) {
       throw new Error(`PostgresIntentStore requires max >= 1, received ${this.config.max}`);
     }
-    // Dynamic import to avoid requiring pg as a hard dependency
+  }
+
+  async initialize(): Promise<void> {
+    this.assertValidConfig();
+    // Dynamic import so `pg` stays an optional peer: the type-only import above
+    // is erased at compile time, and the runtime driver is loaded only when a
+    // host actually opts into durable intent persistence.
     const pg = await import('pg');
     const { Pool } = pg;
     this.pool = new Pool({

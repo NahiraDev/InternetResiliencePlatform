@@ -7,7 +7,7 @@ import type {
   PolicySnapshot,
   ResiliencePolicy,
 } from '../domain/types.js';
-export const defaultRuntimeConfiguration: RuntimeConfiguration = {
+const defaultRuntimeConfiguration: RuntimeConfiguration = {
   enabled: true,
   mode: 'safe',
   cycleIntervalMs: 30000,

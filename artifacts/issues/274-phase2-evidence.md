@@ -10,7 +10,7 @@ Make intent durable across process restarts and provide a canonical store interf
 
 - `packages/resilience-runtime/src/intent/postgres-store.ts` (new) — `PostgresIntentStore` implementing `IntentStore` interface
 - `packages/resilience-runtime/src/intent/index.ts` — export `PostgresIntentStore`, `PostgresConfig`
-- `packages/resilience-runtime/src/canonical-runtime-composition.ts` — add `createPostgresIntentStore()` factory, `createCanonicalRuntimeWithPostgres()` async constructor
+add `readPersistenceSettings()`/`PersistenceSettings`, a `createPostgresIntentStore()` factory
 - `packages/resilience-runtime/tests/postgres-store-274.test.ts` (new) — 11 tests covering schema init, upsert, get, getActive, delete, lifecycle filtering
 - `packages/resilience-runtime/src/intent/index.ts` — export new types
 
@@ -30,7 +30,10 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
 
 ### Canonical Composition Integration
 
-- `createPostgresIntentStore()` reads env vars:
+- `readPersistenceSettings(env)` validates and returns `PersistenceSettings`, or `undefined` when
+  `IRP_INTENT_DB_HOST` is unset (persistence is optional by design, never a requirement for local
+  autonomy); `createPostgresIntentStore()` consumes it and malformed settings throw at startup.
+  Reads env vars:
   - `IRP_INTENT_DB_HOST` (required)
   - `IRP_INTENT_DB_PORT` (default 5432, validated 1–65535)
   - `IRP_INTENT_DB_NAME` (default `irp`, required non-empty)
@@ -39,7 +42,9 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
   - `IRP_INTENT_DB_SSL` (optional, default false)
   - `IRP_INTENT_DB_MAX` (default 10, validated >= 1)
   - invalid settings throw before the driver is loaded.
-- `createCanonicalRuntimeWithPostgres()` — async constructor that auto-creates store from env
+- `createCanonicalRuntimeWithPostgres()` — async **delegator** that resolves the store from env and
+  returns `createCanonicalRuntime({...})`, so there is exactly one composition authority; the
+  learning loop is injected through the same options
 - `createCanonicalRuntime` remains synchronous for backward compatibility
 - Daemon/CLI continue to work with synchronous `createCanonicalRuntime`
 
@@ -92,5 +97,6 @@ Non-goals: no schema migration tooling (handled by application), no etcd/Consul 
 - Add schema migration versioning (e.g., `migrations/` directory + runner)
 - Implement `EtcdIntentStore` / `ConsulIntentStore` for Kubernetes-native deployments
 - Add telemetry metrics for store operations (latency, errors, pool saturation)
-- Add `IntentStore` metrics to `ResilientTelemetrySink`
+- Add `IntentStore` metrics to the canonical telemetry surface (`runtimeMetricNames` /
+  `InMemoryTelemetrySink`). The former `ResilientTelemetrySink` export has been **removed**.
 - Add database-level advisory locks for distributed coordination

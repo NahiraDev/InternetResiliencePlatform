@@ -180,6 +180,45 @@ describe('Issue #275: Programmable Connectivity Fabric, Resources & Capabilities
       };
 
       fabric.reconcileRoutingGraph(failed as never);
+      // A failed resource recovers through RECOVERING; the direct FAILED ->
+      // HEALTHY hop stays illegal, so the transition table is still enforced.
+      const recovered = fabric.reconcileRoutingGraph(healthy as never);
+      const resource = recovered.resources.find((r) => r.kind === 'ApplicationPath');
+      expect(resource?.state).toBe('HEALTHY');
+      expect(resource?.metadata.recoveredFrom).toBe('FAILED');
+    });
+
+    it('still rejects a genuinely illegal transition', async () => {
+      const fabric = new ProgrammableConnectivityFabric();
+      const quarantined = gateway({
+        id: 'fabric:applicationpath:direct',
+        kind: 'ApplicationPath',
+        owner: '@irp/routing:NetworkPathGraph',
+        capabilities: [],
+      });
+      // UNKNOWN -> DEGRADED is legal, DEGRADED -> QUARANTINED is legal, and
+      // QUARANTINED -> HEALTHY is not: quarantine needs explicit recovery.
+      fabric.registerProvider(
+        provider('quarantine-a', '@irp/routing:NetworkPathGraph', [
+          { ...quarantined, state: 'DEGRADED' },
+        ]),
+      );
+      await fabric.discover();
+      fabric.registerProvider(
+        provider('quarantine-b', '@irp/routing:NetworkPathGraph', [
+          { ...quarantined, state: 'QUARANTINED' },
+        ]),
+      );
+      await fabric.discover();
+
+      const healthy = {
+        version: 1,
+        builtAt: iso(),
+        nodes: [
+          { id: 'path:direct', kind: 'path' as const, state: 'available' as const, metadata: {} },
+        ],
+        edges: [],
+      };
       expect(() => fabric.reconcileRoutingGraph(healthy as never)).toThrow(
         IllegalFabricStateTransitionError,
       );

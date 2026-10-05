@@ -4,7 +4,7 @@
  * external dependency; identical seeds must yield identical scenarios.
  */
 
-export const hashSeed = (seed: string): number => {
+const hashSeed = (seed: string): number => {
   let hash = 0x811c9dc5;
   for (let index = 0; index < seed.length; index++) {
     hash ^= seed.charCodeAt(index);

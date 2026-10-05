@@ -50,6 +50,8 @@ import {
 import { MetricsRegistry } from '@irp/telemetry';
 import { compileNetworkIntent } from './intent/compiler.js';
 import { RuntimePolicyArbitrator } from './policy/policy.js';
+import { OutcomeLearningLoop } from './learning/outcome-learning-loop.js';
+import { verifyOutcome, type OutcomeProbe } from './verification/outcome-verification.js';
 import { ACTION_CLASS } from './intent/arbitration.js';
 import type { IntentStore } from './intent/arbitration.js';
 import type { NetworkIntent } from '@irp/core';
@@ -74,6 +76,18 @@ export interface ResilienceRuntimeOptions {
   intentStore?: IntentStore;
   /** Canonical knowledge boundary for outcome-driven ranking. */
   knowledgeStore?: KnowledgeStore;
+  /**
+   * Canonical outcome learning loop. Defaults to a loop bound to the runtime's
+   * knowledge store, so the learning closure is never orphaned.
+   */
+  learningLoop?: OutcomeLearningLoop;
+  /**
+   * Real destination/service/application probes used to verify mutation
+   * outcomes. Learning is activated only from these probes: with no probes the
+   * outcome is recorded as unverified evidence and strategy selection is
+   * unchanged (issue #279 task 10).
+   */
+  outcomeProbes?: readonly OutcomeProbe[];
 }
 
 export class ResilienceRuntime {
@@ -114,6 +128,8 @@ export class ResilienceRuntime {
   private readonly transactionEngine: ActionTransactionEngine;
   private readonly mutationBoundary: PrivilegedMutationBoundary;
   readonly knowledgeStore: KnowledgeStore | undefined;
+  readonly learningLoop: OutcomeLearningLoop;
+  readonly outcomeProbes: readonly OutcomeProbe[];
   private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private readonly policyArbitrator: RuntimePolicyArbitrator;
@@ -139,6 +155,9 @@ export class ResilienceRuntime {
     this.validator = new RuntimeActionValidator(undefined, this.adapters);
     this.decisionProvider = options.decisionProvider ?? new CanonicalDecisionProvider();
     this.decisionOrchestrator = new DecisionOrchestrator(this.decisionProvider);
+    // One policy authority for the cycle and for the privileged boundary, so the
+    // boundary cannot resolve policy through a second engine.
+    this.policyArbitrator = new RuntimePolicyArbitrator(options.intentStore);
     this.transactionEngine = new ActionTransactionEngine(
       new CoordinatedActionExecutor(this.adapters),
       this.events,
@@ -146,7 +165,6 @@ export class ResilienceRuntime {
 
     // PrivilegedMutationBoundary ports wired to existing components
     this.safetyKernel = new SafetyRollbackRecoveryKernel(
-      this.transactionEngine,
       this.events,
       new FailoverRecoveryProvider(this.adapters, this.networkControlPlane),
       options.safetyKernel,
@@ -157,9 +175,18 @@ export class ResilienceRuntime {
       safetyKernel: this.safetyKernel,
       validator: this.validator,
       adapters: this.adapters,
+      policyArbitrator: this.policyArbitrator,
     });
     this.knowledgeStore = options.knowledgeStore;
-    this.policyArbitrator = new RuntimePolicyArbitrator(options.intentStore);
+    // The learning loop is never optional: an unprovided loop is created bound
+    // to this runtime's knowledge store, so outcome evidence always reaches a
+    // canonical owner instead of a caller-held object.
+    this.learningLoop =
+      options.learningLoop ??
+      new OutcomeLearningLoop(
+        this.knowledgeStore !== undefined ? { knowledgeStore: this.knowledgeStore } : {},
+      );
+    this.outcomeProbes = options.outcomeProbes ?? [];
   }
   capabilities() {
     return this.adapters.list();
@@ -242,7 +269,8 @@ export class ResilienceRuntime {
       });
     }
     await this.state.transition('arbitrating', context.correlationId);
-    const { ordered, conflicts } = await this.policyArbitrator.resolveIntentConflicts(context);
+    const { ordered, conflicts, persistenceDegraded } =
+      await this.policyArbitrator.resolveIntentConflicts(context);
     if (conflicts.length > 0) {
       await this.events.emit('runtime.arbitration.conflict', {
         correlationId: context.correlationId,
@@ -252,7 +280,18 @@ export class ResilienceRuntime {
           reason: c.reason,
           resolution: c.resolution,
         })),
+        // Durable journal status travels with the event so a reader can tell a
+        // resolved conflict from one that could not be recorded remotely.
+        persistenceDegraded,
       });
+      if (persistenceDegraded) {
+        // Local arbitration is still authoritative; only durability is reduced.
+        this.counters = {
+          ...this.counters,
+          degradedTotal: this.counters.degradedTotal + 1,
+        };
+        this.recordMetric('runtime_degraded_total', this.counters.degradedTotal);
+      }
     }
     const orderedIntents = ordered;
     context = createRuntimeContext({ ...context, compiledIntents: orderedIntents });
@@ -411,8 +450,11 @@ export class ResilienceRuntime {
 
       if (context.mode === 'simulation') {
         outcome = 'simulated';
-      } else if (this.knowledgeStore !== undefined && this.mutationBoundary !== undefined) {
-        // Use privileged mutation boundary for canonical composition
+      } else {
+        // Every non-simulation mutation is a privileged mutation. The boundary is
+        // constructed in every composition, so there is no alternate executor and
+        // no knowledge-store-dependent branch: the legacy safety-kernel execution
+        // path is retained only as the boundary's internal safety port.
         try {
           runtimeTransactionId = nextId('transaction');
           const mutationRequest = {
@@ -464,6 +506,13 @@ export class ResilienceRuntime {
               reason: boundaryReasons.join('; ') || 'privileged boundary recovered mutation',
             };
             outcome = 'recovered';
+            await this.learnFromOutcome({
+              plan,
+              context,
+              execution,
+              transactionId: boundaryResult.transactionId,
+              rollback: true,
+            });
             await this.state.transition('observing', context.correlationId);
           } else {
             await this.events.emit('runtime.execution.completed', {
@@ -480,12 +529,24 @@ export class ResilienceRuntime {
             });
             if (verification.status === 'failed') {
               await this.state.transition('recovering', context.correlationId);
-              recovery = await this.safetyKernel.recover(plan, 'verification failed', context);
+              recovery = await this.safetyKernel.recover(
+                plan,
+                'verification failed',
+                context,
+                boundaryResult.transactionId,
+              );
               outcome = 'degraded';
               await this.state.transition('degraded', context.correlationId);
             } else
               outcome =
                 execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
+            await this.learnFromOutcome({
+              plan,
+              context,
+              execution,
+              transactionId: boundaryResult.transactionId,
+              rollback: recovery !== undefined,
+            });
           }
         } catch (error) {
           if (error instanceof SafetyViolationError) {
@@ -506,50 +567,6 @@ export class ResilienceRuntime {
           }
           throw error;
         }
-      } else {
-        // Fallback to legacy safety kernel path when no knowledge store
-        try {
-          runtimeTransactionId = nextId('transaction');
-          execution = (await this.safetyKernel.execute(plan, context, input.idempotencyKey)).execution;
-        } catch (error) {
-          if (error instanceof SafetyViolationError) {
-            return this.recordBlocked(
-              context,
-              before,
-              observations,
-              found,
-              evaluatedCandidates,
-              plan,
-              start,
-              {
-                ...validation,
-                valid: false,
-                reasons: [...validation.reasons, ...error.assessment.reasons],
-              },
-            );
-          }
-          throw error;
-        }
-        await this.events.emit('runtime.execution.completed', {
-          correlationId: context.correlationId,
-          transactionId: runtimeTransactionId,
-          status: execution.status,
-        });
-        await this.state.transition('verifying', context.correlationId);
-        verification = await verifier.verify(plan, execution, context);
-        await this.events.emit('runtime.verification.completed', {
-          correlationId: context.correlationId,
-          transactionId: runtimeTransactionId,
-          status: verification.status,
-        });
-        if (verification.status === 'failed') {
-          await this.state.transition('recovering', context.correlationId);
-          recovery = await this.safetyKernel.recover(plan, 'verification failed', context);
-          outcome = 'degraded';
-          await this.state.transition('degraded', context.correlationId);
-        } else
-          outcome =
-            execution.status === 'success' && !execution.simulated ? 'success' : 'simulated';
       }
       const record = createDecisionRecord({
         context,
@@ -607,6 +624,64 @@ export class ResilienceRuntime {
       this.validator.release(lockKey);
     }
   }
+  /**
+   * Closes the loop: verify the real outcome, then let the canonical learning
+   * loop record it.
+   *
+   * Learning is driven only by `verifyOutcome`, which reports `outcomeVerified`
+   * false when no real destination/service/application probe ran. An unverified
+   * outcome therefore becomes evidence without changing strategy selection,
+   * failure memory or intensity. Probe failure must never fail the cycle, so the
+   * whole step is defensive.
+   */
+  private async learnFromOutcome(input: {
+    readonly plan: ActionPlan;
+    readonly context: RuntimeContext;
+    readonly execution: ActionExecution | undefined;
+    readonly transactionId: string;
+    readonly rollback: boolean;
+  }): Promise<void> {
+    try {
+      const verification = await verifyOutcome({
+        correlationId: input.context.correlationId,
+        planId: input.plan.id,
+        transactionId: input.transactionId,
+        mutationId: input.plan.selectedAction.id,
+        expectedPostconditions: input.plan.expectedPostconditions,
+        actionStatus: input.execution?.status ?? 'unknown',
+        probes: this.outcomeProbes,
+        rollbackVerification: input.rollback,
+      });
+      const update = this.learningLoop.learn({
+        verification,
+        transactionId: input.transactionId,
+        mutationId: input.plan.selectedAction.id,
+        ...(typeof input.plan.metadata.strategyId === 'string'
+          ? { strategyId: input.plan.metadata.strategyId }
+          : {}),
+        rollback: input.rollback,
+      });
+      await this.events.emit('runtime.outcome.verified', {
+        correlationId: input.context.correlationId,
+        transactionId: input.transactionId,
+        outcomeVerified: verification.outcomeVerified,
+        probes: verification.probeResults.length,
+        learned: update.applied,
+        rationale: update.rationale,
+      });
+      await this.events.emit('runtime.learning.applied', {
+        correlationId: input.context.correlationId,
+        transactionId: input.transactionId,
+        evidenceId: update.evidenceId,
+        applied: update.applied,
+        rationale: update.rationale,
+      });
+    } catch {
+      // A learning or probe failure must never escalate into a control failure:
+      // the mutation outcome is already recorded and committed upstream.
+    }
+  }
+
   private async recordBlocked(
     context: RuntimeContext,
     before: RuntimeState,

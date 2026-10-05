@@ -175,8 +175,30 @@ export const scoreCandidate = (
 };
 
 /**
- * Ranks candidates against intent-derived objectives. Ties fall back to the
- * previous deterministic ordering so behaviour stays reproducible.
+ * A total, content-derived ordering key for a candidate.
+ *
+ * The final tie-break must not depend on a process-global id counter: candidate
+ * ids are minted in call order, so two runs over the same inputs could order
+ * identical candidates differently. Every field here is derived from the
+ * candidate's own content, so the ordering is a pure function of the inputs.
+ */
+const candidateOrderKey = (candidate: CandidateAction): string =>
+  [
+    candidate.intent,
+    [...candidate.requiredCapabilities].sort().join('+'),
+    [...candidate.dependencies].sort().join('+'),
+    [...candidate.postconditions].sort().join('+'),
+    candidate.expectedBenefit.toFixed(6),
+    candidate.risk.toFixed(6),
+    candidate.confidence.toFixed(6),
+    candidate.rollbackStrategy,
+  ].join('|');
+
+/**
+ * Ranks candidates against intent-derived objectives.
+ *
+ * The comparator is total over candidate content, so the result does not depend
+ * on the input order.
  */
 export const rankByObjectives = (
   candidates: readonly CandidateAction[],
@@ -192,5 +214,6 @@ export const rankByObjectives = (
         b.candidate.expectedBenefit - a.candidate.expectedBenefit ||
         a.candidate.risk - b.candidate.risk ||
         a.candidate.intent.localeCompare(b.candidate.intent) ||
+        candidateOrderKey(a.candidate).localeCompare(candidateOrderKey(b.candidate)) ||
         a.candidate.id.localeCompare(b.candidate.id),
     );

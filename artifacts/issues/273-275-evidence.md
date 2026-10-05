@@ -31,13 +31,13 @@ discovery arguments, ownership conflict detection, capability registry class, an
 
 | #   | Gap found                                                                                                                                       | Fix                                                                                                                                               |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `FabricCapabilityRegistry` was **never read by `select()`** — task 5's registry was decorative; selection trusted resource-local claims         | New `FabricCapabilityAuthority` (`fabric-authority.ts`) with `authorize`/`authorizeAll`; `select()` now consults it                               |
+| 1   | `FabricCapabilityRegistry` was **never read by `select()`** (later removed entirely; only `FabricCapabilityAuthority` remains)
 | 2   | No legal-transition rules for the 11 states — a resource could jump `FAILED -> HEALTHY`                                                         | `FABRIC_STATE_TRANSITIONS` + `assertFabricStateTransition` + `IllegalFabricStateTransitionError` (`fabric-lifecycle.ts`)                          |
 | 3   | Discovery was not freshness-aware; stale evidence accumulated forever                                                                           | `evaluateFabricFreshness`, `partitionByFreshness`, `freshnessReport()`, explicit `pruneExpired()`                                                 |
 | 4   | "Failure-domain diversity" was a boolean _"has one preferred domain"_ — cannot distinguish independent paths from two paths through one carrier | `sharesFailureDomain`, `selectDiverseResources` (greedy maximal-disjoint), `countDistinctFailureDomains`; `select()` returns `diversity` evidence |
 | 5   | No ownership index/query                                                                                                                        | `ownershipIndex()`, `resourcesOwnedBy()`                                                                                                          |
-| 6   | Platform compatibility declared on capabilities but never enforced                                                                              | `platform` on `FabricSelectionRequest`, enforced via registry                                                                                     |
-| 7   | Safety ceiling and runtime-authority requirement absent                                                                                         | `maximumSafety`, `requireRuntimeAuthority` enforced via registry                                                                                  |
+`platform` on `FabricSelectionRequest`, enforced via `FabricCapabilityAuthority.authorizeAll()`, which also fails closed on `scope-mismatch`
+`maximumSafety`, `requireRuntimeAuthority` enforced via `FabricCapabilityAuthority.authorizeAll()`
 
 ### Deliberate non-change
 
@@ -52,7 +52,7 @@ explicit `pruneExpired()` operation.
 2. Unified identity/state/health/confidence/freshness/trust/capacity/cost/ownership/failure-domain/lifecycle — already present, asserted.
 3. Canonicalize 11 states — already present + explicit state machine.
 4. Bounded/cancellable/incremental/freshness-aware discovery — bounds and cancellation already present; freshness now explicit.
-5. Unified capability registry — **now enforceable** (was decorative).
+5. Unified capability authority — **now enforceable** (was decorative). The duplicate `FabricCapabilityRegistry` class has since been removed entirely, so `FabricCapabilityAuthority` is the only enforcer.
 6. Reconcile `NetworkPathGraph` into fabric graph — already present, asserted.
 7. True failure-domain diversity — **now real** (was a boolean approximation).
 8. Explicit non-duplicated ownership — index/query added; conflict already rejected.
@@ -88,11 +88,13 @@ than shipped, because a noisy archaeology report is worse than none:
    `gateway.failover.started` (event name) → 121 bogus findings.
    Replaced with **ground truth**: capabilities are read from the _executed_
    canonical adapter registry (`dist/adapter-registry.js`), and consumers are
-   located by exact literal search. Result: 11 real capabilities.
+   located by exact literal search. Result: 15 real capabilities — 8 from the executed canonical adapter registry (`dist/adapter-registry.js`) plus 10 source-declared capabilities read from `platform/capabilities.ts`.
 2. **Orphan module detection** did not follow barrel re-export chains, so every
    module exported only via `resilience/index.ts` or `platform/index.ts` looked
    orphaned → 14 bogus findings. Now resolves transitively from the root
-   barrel. Result: 0 orphans.
+barrel, **plus** a runtime-value export detector (a module exported only through the barrel
+   is still reachable; a symbol nothing references is not). Result: 0 orphan tests, 0 orphan
+   modules, 9 orphan exports.
 3. **Graph entrypoint reconciliation** assumed `entrypoints` were bare paths,
    but the execution graph stores descriptive labels such as
    `"apps/daemon/src/index.ts RuntimeScheduler"` → 3 bogus CRITICAL findings.
@@ -140,7 +142,9 @@ than shipped, because a noisy archaeology report is worse than none:
 #273:
 
 - "No major capability lacks a known owner/consumer/runtime path" — **met**:
-  capability matrix is 0 without implementation, 0 without owner, 0 without consumer.
+capability matrix is 0 without implementation and 0 without owner, but **4 lack a literal
+  consumer** (`gateway.select`, `observability.read`, `tunnel.execute`, `tunnel.rotate`) and are
+  recorded as MINOR drift rather than silently closed.
 - "No undocumented production mutation authority remains" — **met**: 0 authority violations; both entrypoints compose canonically; no direct `ResilienceRuntime` construction.
 - "Architecture maps are evidence-backed and regenerated after implementation" — **met**: 20/20 graph nodes reconciled, 0 unresolvable owners; `integration-graph` and `full-system-assurance` regenerated.
 - "Findings are linked to concrete source/tests/runtime evidence" — **met**: every drift finding carries evidence paths, owner, fix and verification command.
@@ -175,7 +179,9 @@ than shipped, because a noisy archaeology report is worse than none:
 - 23 duplicate contracts remain registered as MINOR drift; resolving them is a
   cross-package contract migration requiring integration review, not a cleanup.
 - 6 phase documents still carry unsubstantiated implementation claims.
-- The capability matrix reads `dist/`; it must run after `build` (as `validate`
+- The capability matrix prefers `dist/adapter-registry.js` and falls back to the source-declared
+  registry when `dist/` is unavailable; both sources are reported separately rather than
+  conflated.
   already does via its `turbo build --dry` + archaeology sequencing).
 - Live runtime-lab soak / device runs still require CI runners and hardware.
 - No CI run has yet executed against this change; **no GitHub issue can be

@@ -67,12 +67,12 @@ Non-goals: no new authorities, no CI workflow edits, no daemon/client changes, n
 
 All test suites pass:
 
-- `@irp/resilience-runtime`: 271 tests pass
+- `@irp/resilience-runtime`: 663 tests pass (49 files) at `8f598af`
 - `@irp/connectivity`: 11 tests pass
 - `@irp/routing`: 24 tests pass
 - `@irp/core`: 8 tests pass
 - `@irp/events`: 0 tests (no tests defined)
-- Full workspace: 86 test files, 260+ tests pass
+- Full workspace `pnpm test` — **86/86 turbo tasks** PASS
 
 ## CI/runtime evidence (this session)
 
@@ -83,7 +83,7 @@ All test suites pass:
 - `node scripts/architecture-guards.cjs` — PASS
 - `node scripts/integration-graph.mjs` — PASS (43 components, 93 edges)
 - `node scripts/full-system-assurance.mjs` — PASS (222 phases, 338 source files, 0 gaps)
-- Full workspace `pnpm test` — 86 test files, 260+ tests PASS
+- Full workspace `pnpm test` — **86/86 turbo tasks** PASS; 135 `*.test.ts` files across the workspace (`@irp/resilience-runtime`: 49 files / 663 tests). Note `86` here counts turbo *tasks*, not test files.
 
 ## Known limitations
 
@@ -92,7 +92,7 @@ All test suites pass:
 - No real-time conflict notification (WebSocket/SSE).
 - Conflict objects lack unique IDs — individual lookup returns 404.
 - `DatabaseIntentStore` conflict methods are stubs (log warning, return empty).
-- Full-workspace `pnpm test` still OOM-`SIGKILL`s on `@irp/linux-client` in this container (pre-existing, unrelated).
+- ~~Full-workspace `pnpm test` still OOM-`SIGKILL`s on `@irp/linux-client`~~ — retired; the workspace suite is green.
 - Live runtime-lab soak / device runs need CI runners/hardware.
 - GitHub issues #274 (and related #272, #280, #282, #283, #284) must be closed by a maintainer with `gh`/web access.
 

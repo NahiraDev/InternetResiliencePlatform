@@ -67,12 +67,17 @@ export const assertFabricStateTransition = (
   if (!isLegalFabricTransition(from, to)) throw new IllegalFabricStateTransitionError(from, to);
 };
 
-/** States from which a resource may serve selection. */
+/**
+ * States from which a resource may serve selection.
+ *
+ * RECOVERING and RESTRICTED are deliberately excluded. A resource that is still
+ * recovering has not re-established its outcome, and a policy-restricted
+ * resource is not permitted to carry traffic; selecting either would let an
+ * unverified or disallowed path reach the data plane.
+ */
 export const SELECTABLE_FABRIC_STATES: ReadonlySet<FabricResourceState> = new Set([
   'HEALTHY',
   'DEGRADED',
-  'RECOVERING',
-  'RESTRICTED',
 ]);
 
 export interface FreshnessReport {

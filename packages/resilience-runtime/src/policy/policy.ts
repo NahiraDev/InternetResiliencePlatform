@@ -54,8 +54,21 @@ export class RuntimePolicyArbitrator {
   ): Promise<{
     readonly ordered: readonly CompiledIntent[];
     readonly conflicts: readonly IntentConflict[];
+    /**
+     * True when the conflict journal could not be persisted. Arbitration itself
+     * remains authoritative; only the durable record is missing.
+     */
+    readonly persistenceDegraded: boolean;
   }> {
-    const activeIntents = await this.intentStore.getActive();
+    let activeIntents: readonly CompiledIntent[] = [];
+    let storeDegraded = false;
+    try {
+      activeIntents = await this.intentStore.getActive();
+    } catch {
+      // An optional remote store must never disable local autonomy. The
+      // in-context intents are still arbitrated; the store is simply unavailable.
+      storeDegraded = true;
+    }
     // Prefer compiledIntents (plural) which already includes compiledIntent, avoid duplication
     const contextIntents =
       context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
@@ -63,10 +76,14 @@ export class RuntimePolicyArbitrator {
     const arbitration = arbitrateIntents(allIntents, new Date());
     // Persist arbitration conflicts wherever the runtime persists intents, so
     // the conflict journal is durable rather than event-only.
-    if (arbitration.conflicts.length > 0) {
-      await this.intentStore.recordConflicts?.(arbitration.conflicts);
+    if (arbitration.conflicts.length > 0 && this.intentStore.recordConflicts !== undefined) {
+      try {
+        await this.intentStore.recordConflicts(arbitration.conflicts);
+      } catch {
+        storeDegraded = true;
+      }
     }
-    return arbitration;
+    return { ...arbitration, persistenceDegraded: storeDegraded };
   }
 
   /** Resolves policy conflicts between two snapshots. */

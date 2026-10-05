@@ -20,6 +20,39 @@ describe('Architecture invariants (section 109)', () => {
     expect(runtime).toContain('CoordinatedActionExecutor');
   });
 
+  it('has no legacy live execution fallback outside the privileged boundary', () => {
+    // The safety kernel is retained only as the boundary's internal safety port.
+    // It must expose no execution method, and the cycle must never call one.
+    const kernel = read('packages/resilience-runtime/src/safety/safety-kernel.ts');
+    expect(kernel).not.toMatch(/^\s{2}(async\s+)?execute\s*\(/m);
+    expect(kernel).not.toContain('ActionTransactionEngine');
+    const runtime = read('packages/resilience-runtime/src/runtime.ts');
+    expect(runtime).not.toContain('safetyKernel.execute');
+    // The boundary is unconditional for every non-simulation mutation: there is
+    // no knowledge-store- or capability-dependent alternate executor branch.
+    expect(runtime).not.toMatch(/mutationBoundary\s*!==\s*undefined/);
+    expect(runtime).not.toMatch(/else\s+if\s*\([^)]*knowledgeStore[^)]*\)\s*\{\s*\/\/\s*Use privileged/);
+  });
+
+  it('emits only taxonomy-conformant events with required identity', async () => {
+    const { EVENT_TAXONOMY } = await import('../src/events/event-taxonomy.js');
+    const runtime = read('packages/resilience-runtime/src/runtime.ts');
+    const stateMachine = read('packages/resilience-runtime/src/state/state-machine.ts');
+    const safety = read('packages/resilience-runtime/src/safety/safety-kernel.ts');
+    const boundary = read('packages/resilience-runtime/src/transactions/privileged-boundary.ts');
+    const sources = { runtime, stateMachine, safety, boundary };
+
+    const emitted = new Set<string>();
+    for (const source of Object.values(sources)) {
+      for (const match of source.matchAll(/emit\(\s*'([a-z][a-zA-Z0-9._-]*)'/g)) {
+        emitted.add(match[1]);
+      }
+    }
+    expect(emitted.size).toBeGreaterThan(0);
+    const unknown = [...emitted].filter((name) => !EVENT_TAXONOMY.some((d) => d.type === name));
+    expect(unknown).toEqual([]);
+  });
+
   it('API cannot bypass safety (LIVE_MODE_DISABLED)', () => {
     const api = read('apps/api/src/index.ts');
     expect(api).toContain('LIVE_MODE_DISABLED');

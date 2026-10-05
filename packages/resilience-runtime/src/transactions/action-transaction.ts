@@ -87,6 +87,7 @@ export class ActionTransactionEngine {
 
       await this.events.emit('runtime.transaction.duplicate', {
         correlationId: context.correlationId,
+        transactionId: execution.id,
         idempotencyKey,
         actionId: execution.actionId,
         concurrent: true,
