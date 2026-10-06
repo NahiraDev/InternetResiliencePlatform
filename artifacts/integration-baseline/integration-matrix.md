@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-10-06T00:02:51.142Z
+Generated: 2026-10-06T00:53:30.339Z
 Commit: unknown
 
 ## Component status
@@ -147,6 +147,7 @@ Commit: unknown
 | @irp/daemon | @irp/network | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/resilience-runtime | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/routing | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/daemon | @irp/security | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/daemon | @irp/tunnel | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 
 ## Closed loop

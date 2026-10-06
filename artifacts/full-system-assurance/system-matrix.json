@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-06T00:02:51.807Z",
+  "generatedAt": "2026-10-06T00:53:31.078Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -860,6 +860,7 @@
         "@irp/shared"
       ],
       "downstreamDependencies": [
+        "apps/daemon",
         "packages/plugin-api",
         "packages/plugin-config",
         "packages/plugin-sandbox"
@@ -1135,6 +1136,7 @@
         "@irp/network",
         "@irp/resilience-runtime",
         "@irp/routing",
+        "@irp/security",
         "@irp/tunnel"
       ],
       "downstreamDependencies": [],
@@ -5100,5 +5102,5 @@
       "fail"
     ]
   },
-  "reportSha256": "d5b3e363d782b2d7fafc79c550ba775999e80f2ecf8cf3958d606ae801f59713"
+  "reportSha256": "cee29adea31a1ea95031be9a72c68a067fb4ebd94bcc26ad2e5bda296471ca2b"
 }

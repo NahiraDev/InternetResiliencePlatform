@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T00:06:09.733Z",
+  "generatedAt": "2026-10-06T00:53:29.087Z",
   "packages": [
     {
       "group": "apps",
@@ -191,6 +191,7 @@
         "@irp/plugin-sdk",
         "@irp/resilience-runtime",
         "@irp/routing",
+        "@irp/security",
         "@irp/tunnel"
       ],
       "sourceFiles": 7,

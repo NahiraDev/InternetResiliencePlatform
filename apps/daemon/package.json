@@ -22,6 +22,7 @@
     "@irp/network": "workspace:*",
     "@irp/resilience-runtime": "workspace:*",
     "@irp/routing": "workspace:*",
+    "@irp/security": "workspace:*",
     "@irp/tunnel": "workspace:*"
   },
   "devDependencies": {

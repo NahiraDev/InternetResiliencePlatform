@@ -31,6 +31,14 @@ import {
   type RuntimeContext,
   type RuntimeSchedulerConfig,
 } from '@irp/resilience-runtime';
+import {
+  NetworkSecurityProtectionEngine,
+  type TrafficProtectionPolicy,
+  type ObservedNetworkState,
+  type Phase18KillSwitch,
+  createTrafficProtectionPolicy,
+  protectionProfileDefaults,
+} from '@irp/security';
 import { AutoOptimizationHost } from './auto-optimization-host.js';
 import { PluginHost } from './plugin-host.js';
 
@@ -392,6 +400,12 @@ export class RuntimeDaemonHost {
   // Advisory-only: recommendations cannot execute through this host. Any
   // mutation must enter ResilienceRuntime's canonical safety/transaction path.
   readonly autoOptimization = new AutoOptimizationHost();
+  
+  // Network security protection engine (Phase 18)
+  readonly securityEngine: NetworkSecurityProtectionEngine;
+  readonly trafficProtectionPolicy: TrafficProtectionPolicy;
+  readonly killSwitchAdapter: Phase18KillSwitch;
+  
   readonly scheduler: RuntimeScheduler;
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {
@@ -403,6 +417,94 @@ export class RuntimeDaemonHost {
       executionBudgetMs: 10_000,
       ...config,
     });
+
+    // Initialize traffic protection policy (Phase 18)
+    this.trafficProtectionPolicy = createTrafficProtectionPolicy({
+      version: 'daemon-runtime',
+      securityProfile: 'secure',
+      ...protectionProfileDefaults('secure'),
+      requireTunnel: process.env.IRP_TUNNEL_ENABLED === '1',
+      requireSecureDns: true,
+      killSwitchRequired: process.env.IRP_TUNNEL_ENABLED === '1',
+      blockOnDnsLeak: true,
+      blockOnRouteLeak: true,
+      blockOnTunnelFailure: true,
+    });
+
+    // Create event bus adapter for security engine
+    const securityEventBus: { publish: (event: { id: string; type: string; aggregateId: string; occurredAt: Date; payload: Readonly<Record<string, unknown>>; metadata?: Record<string, string> }) => Promise<void> } = {
+      publish: async (event) => {
+        await this.runtime.events.emit(event.type, event.payload);
+      },
+    };
+
+    // Create metrics adapter for security engine
+    const securityMetrics: { record: (name: string, value: number, labels?: Record<string, string>) => void } = {
+      record: (name: string, value: number, _labels?: Record<string, string>) => {
+        this.runtime.telemetry.increment(name, value);
+      },
+    };
+
+    // Create kill switch adapter that wraps the tunnel's nftables kill switch
+    const tunnelKillSwitch = this.tunnelPlane.configured
+      ? this.tunnelPlane.getKillSwitch()
+      : undefined;
+    this.killSwitchAdapter = tunnelKillSwitch
+      ? {
+          prepare: async () => {
+            const status = await tunnelKillSwitch.status('daemon-tunnel');
+            if (status === 'enabled') return 'enabled' as const;
+            if (status === 'disabled') return 'disabled' as const;
+            return 'unavailable' as const;
+          },
+          enable: async () => {
+            const activeTunnel = this.tunnelPlane.activeTunnel;
+            if (activeTunnel) {
+              await tunnelKillSwitch.enable(activeTunnel);
+              return 'enabled' as const;
+            }
+            return 'failed' as const;
+          },
+          disable: async () => {
+            const activeTunnel = this.tunnelPlane.activeTunnel;
+            if (activeTunnel) {
+              await tunnelKillSwitch.disable(activeTunnel);
+              return 'disabled' as const;
+            }
+            return 'unavailable' as const;
+          },
+          status: async () => {
+            const activeTunnel = this.tunnelPlane.activeTunnel;
+            if (activeTunnel) {
+              const status = await tunnelKillSwitch.status(activeTunnel);
+              if (status === 'enabled') return 'enabled' as const;
+              if (status === 'disabled') return 'disabled' as const;
+              return 'degraded' as const;
+            }
+            return 'disabled' as const;
+          },
+          validate: async () => {
+            const activeTunnel = this.tunnelPlane.activeTunnel;
+            if (!activeTunnel) return false;
+            const status = await tunnelKillSwitch.status(activeTunnel);
+            return status === 'enabled';
+          },
+        }
+      : {
+          prepare: async () => 'unavailable' as const,
+          enable: async () => 'failed' as const,
+          disable: async () => 'unavailable' as const,
+          status: async () => 'unavailable' as const,
+          validate: async () => false,
+        };
+
+    // Initialize network security protection engine
+    this.securityEngine = new NetworkSecurityProtectionEngine(
+      securityEventBus,
+      securityMetrics,
+      this.killSwitchAdapter,
+      undefined, // platform adapter
+    );
   }
   private async evaluatePathEvidence(
     context: RuntimeContext,
@@ -571,7 +673,7 @@ export class RuntimeDaemonHost {
     });
     return { ...health, failureClass };
   }
-  health() {
+  async health() {
     return {
       lifecycle: this.lifecycle,
       scheduler: this.scheduler.status(),
@@ -601,7 +703,107 @@ export class RuntimeDaemonHost {
       },
       platform: this.platformNegotiation(),
       capabilities: this.runtime.capabilities(),
+      security: await this.buildSecurityStatus(),
     };
+  }
+
+  private async buildSecurityStatus() {
+    const observed = this.buildObservedNetworkState();
+    const validation = await this.securityEngine.validateProtection({
+      policy: this.trafficProtectionPolicy,
+      observed,
+    });
+    return {
+      state: validation.state,
+      protected: validation.protected,
+      violations: validation.violations.map((v: { type: string; severity: string; reason: string }) => ({
+        type: v.type,
+        severity: v.severity,
+        reason: v.reason,
+      })),
+      killSwitch: {
+        required: this.trafficProtectionPolicy.killSwitchRequired,
+        status: observed.killSwitchState,
+      },
+      tunnel: {
+        required: this.trafficProtectionPolicy.requireTunnel,
+        status: observed.tunnelState,
+      },
+      dns: {
+        required: this.trafficProtectionPolicy.requireSecureDns,
+        status: observed.dnsTransport,
+        throughTunnel: observed.dnsThroughTunnel,
+      },
+      timestamp: validation.timestamp,
+    };
+  }
+
+  private buildObservedNetworkState(): ObservedNetworkState {
+    const activeSource = this.connectivity.getActiveSource();
+    const activeInterfaces = activeSource?.interfaceName ? [activeSource.interfaceName] : [];
+    const activeRoutes = activeSource
+      ? [
+          {
+            destination: '0.0.0.0/0',
+            ...(activeSource.interfaceName !== undefined ? { interface: activeSource.interfaceName } : {}),
+            route: activeSource.gateway ?? '',
+            tunnel: this.tunnelPlane.activeTunnel ?? '',
+            securityProfile: 'secure' as const,
+            state: 'protected' as const,
+            family: 'ipv4' as const,
+          },
+        ]
+      : [];
+    const dnsStatus = this.dns.status();
+    const dnsResolvers = dnsStatus.providers.map((p) => p.provider.id);
+    const dnsTransport = dnsStatus.activeProviderId ?? 'unknown';
+    const tunnelState = this.tunnelPlane.activeTunnel ? 'connected' : 'disconnected';
+    const killSwitchState = this.tunnelPlane.activeTunnel ? 'enabled' : 'disabled';
+
+    const defaultRoute = activeRoutes[0] ?? {
+      destination: '0.0.0.0/0',
+      route: '',
+      tunnel: '',
+      securityProfile: 'secure' as const,
+      state: 'protected' as const,
+      family: 'ipv4' as const,
+    };
+
+    const baseObserved: Omit<ObservedNetworkState, 'dnsInterface' | 'defaultRoute' | 'tunnelId'> = {
+      activeInterfaces,
+      activeRoutes,
+      dnsResolvers,
+      dnsTransport,
+      dnsThroughTunnel: this.tunnelPlane.activeTunnel !== undefined,
+      tunnelState,
+      ipv4Enabled: true,
+      ipv6Enabled: true,
+      killSwitchState,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (activeSource?.interfaceName !== undefined && defaultRoute && this.tunnelPlane.activeTunnel) {
+      return { ...baseObserved, dnsInterface: activeSource.interfaceName, defaultRoute, tunnelId: this.tunnelPlane.activeTunnel };
+    }
+    if (activeSource?.interfaceName !== undefined && defaultRoute) {
+      return { ...baseObserved, dnsInterface: activeSource.interfaceName, defaultRoute };
+    }
+    if (activeSource?.interfaceName !== undefined && this.tunnelPlane.activeTunnel) {
+      return { ...baseObserved, dnsInterface: activeSource.interfaceName, tunnelId: this.tunnelPlane.activeTunnel };
+    }
+    if (defaultRoute && this.tunnelPlane.activeTunnel) {
+      return { ...baseObserved, defaultRoute, tunnelId: this.tunnelPlane.activeTunnel };
+    }
+    if (activeSource?.interfaceName !== undefined) {
+      return { ...baseObserved, dnsInterface: activeSource.interfaceName };
+    }
+    if (defaultRoute) {
+      return { ...baseObserved, defaultRoute };
+    }
+    if (this.tunnelPlane.activeTunnel) {
+      return { ...baseObserved, tunnelId: this.tunnelPlane.activeTunnel };
+    }
+    return baseObserved;
   }
 }
 

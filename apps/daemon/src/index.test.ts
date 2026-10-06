@@ -15,9 +15,9 @@ describe('daemon factory', () => {
 });
 
 describe('RuntimeDaemonHost', () => {
-  it('binds the canonical network control plane with gateway selection and tunnel planes', () => {
+  it('binds the canonical network control plane with gateway selection and tunnel planes', async () => {
     const host = createRuntimeDaemonHost();
-    const health = host.health();
+    const health = await host.health();
     expect(health.lifecycle).toBe('created');
     expect(health.gatewaySelection.configured).toBe(false);
     expect(health.tunnel.configured).toBe(false);
@@ -26,9 +26,9 @@ describe('RuntimeDaemonHost', () => {
     expect(health.capabilities).toEqual(expect.any(Array));
   });
 
-  it('advertises negotiated Linux capabilities in daemon health', () => {
+  it('advertises negotiated Linux capabilities in daemon health', async () => {
     const host = createRuntimeDaemonHost();
-    const health = host.health();
+    const health = await host.health();
     expect(health.platform.platform).toBe('linux');
     expect(health.platform.granted).toContain('dns.write');
     expect(host.platformNegotiation(['unsupported.capability']).denied).toEqual([

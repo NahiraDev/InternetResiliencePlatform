@@ -1,5 +1,5 @@
 import type { TunnelConfiguration, TunnelProvider, TunnelProviderRegistry } from '@irp/tunnel';
-import { TunnelManager } from '@irp/tunnel';
+import { TunnelManager, NftablesKillSwitch, type KillSwitch } from '@irp/tunnel';
 import type { CanonicalTunnelControlPlane } from '../canonical-network-adapter.js';
 
 export interface TunnelRegistryControlPlaneOptions {
@@ -7,6 +7,10 @@ export interface TunnelRegistryControlPlaneOptions {
   providerId?: string;
   configuration?: TunnelConfiguration;
   maxTunnels?: number;
+  killSwitchOptions?: {
+    tunnelInterface?: string;
+    allowedUdpPorts?: number[];
+  };
 }
 
 export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
@@ -16,6 +20,7 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
   private readonly provider: TunnelProvider | undefined;
   private readonly enabled: boolean;
   private activeTunnelId: string | undefined;
+  readonly killSwitch: KillSwitch;
 
   constructor(
     private readonly registry: TunnelProviderRegistry,
@@ -29,6 +34,18 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
       maxConcurrentConnects: 1,
     });
     this.provider = this.providerId ? this.registry.get(this.providerId) : undefined;
+    const killSwitchOptions: { tunnelInterface?: string; allowedUdpPorts?: number[] } = {};
+    if (options.killSwitchOptions?.tunnelInterface !== undefined) {
+      killSwitchOptions.tunnelInterface = options.killSwitchOptions.tunnelInterface;
+    }
+    if (options.killSwitchOptions?.allowedUdpPorts !== undefined) {
+      killSwitchOptions.allowedUdpPorts = options.killSwitchOptions.allowedUdpPorts;
+    }
+    this.killSwitch = new NftablesKillSwitch(killSwitchOptions);
+  }
+
+  getKillSwitch(): KillSwitch {
+    return this.killSwitch;
   }
 
   get configured(): boolean {
