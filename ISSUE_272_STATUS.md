@@ -4,13 +4,21 @@
 
 **Current Status: ALL LOCAL GATES GREEN** - The repository is in a fully verified state with all local gates passing.
 
+> **Clean-state re-verification (2026-10-06):** the full suite was re-run from `pnpm clean`
+> on baseline `7f8e805…` (latest merge PR #324). All 9 core gates and 5 extended evidence
+> gates passed (exit 0); `pnpm typecheck` reported 0 cached, confirming a genuine clean
+> recompile. Full evidence: `artifacts/issues/clean-state-validation-evidence.md`.
+> This covers the local validation task only. The external gates in #323 (remote CI on
+> node 24, Linux `CAP_NET_ADMIN` runtime gate, data-plane soak, tagged release evidence)
+> remain open and are not established by local runs.
+
 ## Current State Summary
 
 ### ✅ All Local Gates PASS
 
 | Gate | Status | Details |
 |------|--------|---------|
-| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 818 files |
+| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 819 files |
 | `pnpm run validate:docs` | ✅ PASS | 147 Markdown/MDX files |
 | `pnpm run architecture:check` | ✅ PASS | Architecture contract validation |
 | `pnpm run architecture:guards` | ✅ PASS | All architecture guards pass |
@@ -19,8 +27,8 @@
 | `pnpm run architecture:archaeology` | ✅ PASS | 45 packages, 29 minor drift findings |
 | `pnpm run integration:graph` | ✅ PASS | 43 components, 93 edges |
 | `pnpm run full-system:matrix` | ✅ PASS | 222 components, 380 source files |
-| `pnpm test` | ✅ PASS | 86 test files, 663+ tests passing |
-| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 818 files |
+| `pnpm test` | ✅ PASS | 86/86 tasks; 136 test files repo-wide |
+| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 819 files |
 
 ### Test Results Summary
 - `@irp/resilience-runtime`: 49 test files, 663 tests ✅
@@ -79,7 +87,7 @@ All evidence artifacts are current and up-to-date in `artifacts/`:
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 818 files |
+| `pnpm run validate` | ✅ PASS | 43 packages, 15 workflows, 819 files |
 | `pnpm run validate:docs` | ✅ PASS | 147 MDX files |
 | `pnpm run architecture:check` | ✅ PASS | Contract validation |
 | `pnpm run architecture:guards` | ✅ PASS | All guards pass |
@@ -93,7 +101,7 @@ All evidence artifacts are current and up-to-date in `artifacts/`:
 | `pnpm run validate:docs` | ✅ PASS | 147 MDX files |
 | `pnpm run architecture:guards` | ✅ PASS | All guards pass |
 | `pnpm run audit:deep` | ✅ PASS | 0 findings |
-| `pnpm test` | ✅ PASS | 86 test files, 663+ tests |
+| `pnpm test` | ✅ PASS | 86/86 tasks; 136 test files repo-wide |
 
 ## Required Actions for #272 Closure
 
