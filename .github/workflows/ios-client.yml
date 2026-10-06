@@ -140,7 +140,7 @@ jobs:
         run: |
           set -euo pipefail
           echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
-          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100 || true
-          xcrun simctl list devices || true
-          xcodebuild -version || true
-          ls /Applications | grep -i xcode || true
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100
+          xcrun simctl list devices
+          xcodebuild -version
+          ls /Applications | grep -i xcode || echo "No Xcode installations found"
