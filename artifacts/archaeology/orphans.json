@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T00:53:29.595Z",
+  "generatedAt": "2026-10-06T00:54:52.381Z",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
