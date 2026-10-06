@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T20:48:44.928Z",
+  "generatedAt": "2026-10-06T21:21:31.545Z",
   "contractAuthorities": {
     "runtime": "@irp/resilience-runtime",
     "decision": "@irp/resilience-runtime",

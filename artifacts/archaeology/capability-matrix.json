@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-06T20:48:44.670Z",
-  "source": "canonical adapter registry (source-declared)",
+  "generatedAt": "2026-10-06T21:21:31.293Z",
+  "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
       "adapterId": "network-intelligence",
@@ -11,7 +11,10 @@
       ],
       "supportedActions": [
         "health_reprobe"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "connectivity",
@@ -21,7 +24,10 @@
       ],
       "supportedActions": [
         "connectivity_failover"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "dns",
@@ -34,7 +40,10 @@
       ],
       "supportedActions": [
         "dns_switch"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "routing",
@@ -44,7 +53,10 @@
       ],
       "supportedActions": [
         "route_change"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "tunnel",
@@ -54,7 +66,10 @@
       ],
       "supportedActions": [
         "tunnel_switch"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "failover",
@@ -65,7 +80,10 @@
       "supportedActions": [
         "recovery",
         "rollback"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": true
     },
     {
       "adapterId": "kernel",
@@ -75,7 +93,10 @@
       ],
       "supportedActions": [
         "route_change"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     },
     {
       "adapterId": "plugin",
@@ -85,7 +106,10 @@
       ],
       "supportedActions": [
         "provider_switch"
-      ]
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
     }
   ],
   "sourceDeclaredCapabilities": [
