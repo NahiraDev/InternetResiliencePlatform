@@ -4,7 +4,7 @@
 
 - **Commit SHA:** `c9e9045` (before changes)
 - **Branch:** `main`
-- **Final commit SHA:** `eb4c841`
+- **Final commit SHA:** `47f9ab7`
 - **Repository:** https://github.com/NahiraDev/InternetResiliencePlatform
 
 ### Key Findings Discovered
@@ -134,7 +134,7 @@
 | `pnpm --filter @irp/linux-client build` | PASS |
 | `pnpm --filter @irp/linux-client typecheck` | PASS |
 | `pnpm --filter @irp/linux-client lint` | PASS |
-| `pnpm --filter @irp/linux-client test` | PASS (51/51) |
+| `pnpm --filter @irp/linux-client test` | PASS (53 passed, 2 skipped) |
 | `pnpm typecheck` | PASS (79 tasks) |
 | `pnpm lint` | PASS (79 tasks) |
 | `pnpm test` | PASS (86 tasks) |
@@ -166,9 +166,9 @@
 | `linux-production-runtime.test.ts` | 9 | Wiring (real kernel/contract/providers) |
 | `linux-route-discovery.test.ts` | 5 | Real Linux (actual `ip -j route show`) |
 | `linux-host-connectivity-provider.test.ts` | 7 | Real Linux + unit (interface discovery) |
-| `runtime-executor-integration.test.ts` | 5 | Integration (full path with fake runner) |
+| `runtime-executor-integration.test.ts` | 8 | Integration (full path + canonical adapter) |
 | `index.test.ts` | 6 | Existing (simulation mode) |
-| `linux-route-mutation.integration.test.ts` | 2 | BLOCKED_EXTERNAL (no CAP_NET_ADMIN) |
+| `linux-route-mutation.integration.test.ts` | 2 | BLOCKED_EXTERNAL (no CAP_NET_ADMIN, skipped) |
 
 ## F. Remaining Blockers
 
@@ -218,15 +218,19 @@
 - [x] No canonical authority was duplicated.
 - [x] Final validation was run from the final code state.
 
-### EXIT GATE RESULT: **PASS (with documented external blocker)**
+### EXIT GATE RESULT: **FAIL — BLOCKED_EXTERNAL**
 
-All 20 mandatory criteria are satisfied. The one item marked `[~]` has comprehensive evidence through unit tests (17), integration tests (5), and real Linux observation tests (12), with the real route mutation in an isolated namespace blocked by the absence of `CAP_NET_ADMIN` in this sandbox — a genuine external environment limitation, not an implementation gap. The production executor code is identical to the real path, the integration test code is ready, and the systemd unit grants `CAP_NET_ADMIN` for production deployment.
+All 20 mandatory criteria are satisfied except one: real or isolated Linux execution evidence for the critical mutation path. Comprehensive evidence exists through unit tests (18), integration tests with fake runner (8), and real Linux observation tests (12), but real route mutation in an isolated network namespace requires `CAP_NET_ADMIN`, which is unavailable in this sandbox.
+
+The production executor code is identical to the real path, the integration test code is ready, and the systemd unit grants `CAP_NET_ADMIN` for production deployment. Running the real mutation test in a privileged Linux environment (CI runner as root, or systemd service with configured capabilities) will complete the final criterion.
+
+**Implementation: COMPLETE. Non-privileged evidence: COMPLETE. Real mutation evidence: BLOCKED_EXTERNAL.**
 
 ---
 
 ## Handoff Contract for Work Package 2
 
-**Final commit SHA:** `eb4c841`
+**Final commit SHA:** `47f9ab7`
 
 **Validation evidence:** All 20 validation commands pass from final code state (see Section E).
 
