@@ -7,7 +7,7 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 - Current implementation baseline: **Phase 78 — Closed-Loop Control Foundation is implemented on main**. Its bounded closed-loop controller is part of the canonical @irp/resilience-runtime path.
 - Current execution tracker: GitHub issue **#272** and workstreams **#273–#284**, plus Linux runtime gate **#254**. These workstreams are the active post-Phase-78 integration/evidence backlog; do not create or treat Phase 79+ as the execution roadmap unless the canonical tracker is explicitly revised.
 - Main branch: `main`
-- Current main commit reviewed: `8f598afbcc001e57c27f7917a9b871e21fe86a61`.
+- Current main commit reviewed: `51979d36bc3cf1de302d4cb166685d2475d79950`. At that commit iOS Full Client and the Public Runtime Lab soak were failing remotely; fixes and the ordered release path are in `docs/release/RELEASE_GATE_ROADMAP.md`.
 - Latest implementation merge observed on this baseline: **PR #303**.
 - Phase 71 status: implementation/release contract work exists, but external release certification remains open. There is no published GitHub Release to use as certification evidence.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
