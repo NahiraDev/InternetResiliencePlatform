@@ -130,7 +130,35 @@ async function waitForHttp(url, expectedStatuses = [200]) {
   return { ok: false, error: lastError };
 }
 
-async function runApiE2E(pkg) {
+async function runApplicationIntegrations(pkg, byName) {
+  // Applications (API, daemon) are proven by a real process start, so importing the
+  // application entry here would start a second instance. Instead, prove that every
+  // workspace dependency the running process relies on loads in a clean runtime.
+  const integrations = [];
+  for (const targetName of pkg.workspaceDeps.filter((name) => byName.has(name))) {
+    const target = byName.get(targetName);
+    if (!target?.entryPath || !existsSync(target.entryPath)) {
+      integrations.push({
+        target: targetName,
+        state: 'unavailable',
+        reason: 'dependency entry not built',
+      });
+      continue;
+    }
+    const check = await runNode('await import(process.argv[1])', [
+      new URL(`file://${target.entryPath}`).href,
+    ]);
+    integrations.push({
+      target: targetName,
+      state: check.ok ? 'integrated' : 'failed',
+      exitCode: check.exitCode,
+      error: check.stderr || undefined,
+    });
+  }
+  return integrations;
+}
+
+async function runApiE2E(pkg, byName) {
   const started = performance.now();
   if (!pkg.entryPath || !existsSync(pkg.entryPath))
     return { state: 'failed', mode: 'http-e2e', error: `entry not found at ${pkg.entryPath}` };
@@ -184,6 +212,7 @@ async function runApiE2E(pkg) {
         'GET /api/v1/version',
         'GET /api/v1/metrics',
       ],
+      integrations: await runApplicationIntegrations(pkg, byName),
     };
   } catch (error) {
     return {
@@ -201,7 +230,7 @@ async function runApiE2E(pkg) {
   }
 }
 
-async function runDaemonE2E(pkg) {
+async function runDaemonE2E(pkg, byName) {
   const started = performance.now();
   if (!pkg.entryPath || !existsSync(pkg.entryPath))
     return {
@@ -239,6 +268,7 @@ async function runDaemonE2E(pkg) {
       mode: 'process-e2e',
       latencyMs: Math.round(performance.now() - started),
       checks: ['process-start', 'process-stays-running'],
+      integrations: await runApplicationIntegrations(pkg, byName),
     };
   } catch (error) {
     return {
@@ -313,8 +343,8 @@ const byName = new Map(catalog.map((pkg) => [pkg.name, pkg]));
 const results = [];
 
 for (const pkg of catalog) {
-  if (pkg.name === '@irp/api') results.push(await runApiE2E(pkg));
-  else if (pkg.name === '@irp/daemon') results.push(await runDaemonE2E(pkg));
+  if (pkg.name === '@irp/api') results.push(await runApiE2E(pkg, byName));
+  else if (pkg.name === '@irp/daemon') results.push(await runDaemonE2E(pkg, byName));
   else results.push(await runLibraryImport(pkg, byName));
 }
 

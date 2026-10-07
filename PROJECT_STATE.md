@@ -8,7 +8,7 @@
 - **Current execution gate:** GitHub issue #272 and workstreams #273–#284, plus Linux runtime gate #254. These are the active post-Phase-78 integration/evidence workstreams.
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Current main baseline reviewed:** `8f598afbcc001e57c27f7917a9b871e21fe86a61`.
+- **Current main baseline reviewed:** `51979d36bc3cf1de302d4cb166685d2475d79950` (2026-10-07). The ordered path to release is `docs/release/RELEASE_GATE_ROADMAP.md`.
 - **Latest implementation merge observed on this baseline:** PR #303.
 - **Release state:** Phase 71 external release certification remains open because the required real tagged GitHub Release, published platform artifact inspection and checksum evidence are not yet satisfied.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
@@ -122,6 +122,7 @@ For networking automation, every mutation must be policy-checked, bounded, obser
 ## Canonical evidence locations
 
 - Current state: this file.
+- Release path and blockers: `docs/release/RELEASE_GATE_ROADMAP.md`.
 - Current post-70 roadmap: `docs/roadmap/MASTER_ROADMAP_V2.md`.
 - Historical 0–70 roadmap: `ROADMAP.md` and `docs/architecture/product-roadmap-70-phases.md`.
 - Current phase records: `docs/phases/`.
