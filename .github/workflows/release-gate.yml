@@ -84,6 +84,10 @@ jobs:
             exit 1
           }
 
+          # Release scope for today's first public release:
+          # Linux + macOS + Windows + Android + iOS source/developer bundle.
+          # The iOS full-client/network-integration gates remain active separately
+          # but are explicitly deferred and must not manufacture a false release-green.
           workflows=(
             "ci.yml"
             "system-assurance.yml"
@@ -93,8 +97,6 @@ jobs:
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
-            "ios-client.yml"
-            "ios-network-integration.yml"
             "macos-client.yml"
             "windows-client.yml"
           )
