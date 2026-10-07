@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-07T01:55:10.668Z",
+  "generatedAt": "2026-10-06T21:11:02.597Z",
   "overall": "healthy",
   "totals": {
     "packages": 43,
@@ -15,80 +15,13 @@
       "directory": "apps/api",
       "state": "executed",
       "mode": "http-e2e",
-      "latencyMs": 838,
+      "latencyMs": 836,
       "checks": [
         "process-start",
         "GET /api/v1/health",
         "GET /api/v1/live",
         "GET /api/v1/version",
         "GET /api/v1/metrics"
-      ],
-      "integrations": [
-        {
-          "target": "@irp/auth",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/config",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/core",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/database",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/dns",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/events",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/historical-analysis",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/logger",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/metrics",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/network",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/queue",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/resilience-runtime",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/telemetry",
-          "state": "integrated",
-          "exitCode": 0
-        }
       ]
     },
     {
@@ -96,7 +29,7 @@
       "directory": "packages/auth",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 110,
+      "latencyMs": 143,
       "exitCode": 0,
       "integrations": [
         {
@@ -111,7 +44,7 @@
       "directory": "packages/auto-optimization",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 647,
+      "latencyMs": 847,
       "exitCode": 0,
       "integrations": [
         {
@@ -126,7 +59,7 @@
       "directory": "apps/cli",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 2745,
+      "latencyMs": 3697,
       "exitCode": 0,
       "integrations": [
         {
@@ -171,7 +104,7 @@
       "directory": "packages/config",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 96,
+      "latencyMs": 145,
       "exitCode": 0,
       "integrations": []
     },
@@ -180,7 +113,7 @@
       "directory": "packages/connectivity",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 462,
+      "latencyMs": 581,
       "exitCode": 0,
       "integrations": [
         {
@@ -215,7 +148,7 @@
       "directory": "packages/core",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 263,
+      "latencyMs": 341,
       "exitCode": 0,
       "integrations": [
         {
@@ -240,72 +173,10 @@
       "directory": "apps/daemon",
       "state": "executed",
       "mode": "process-e2e",
-      "latencyMs": 5005,
+      "latencyMs": 5006,
       "checks": [
         "process-start",
         "process-stays-running"
-      ],
-      "integrations": [
-        {
-          "target": "@irp/auto-optimization",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/config",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/connectivity",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/core",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/logger",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/plugin-manager",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/plugin-sdk",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/network",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/resilience-runtime",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/routing",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/security",
-          "state": "integrated",
-          "exitCode": 0
-        },
-        {
-          "target": "@irp/tunnel",
-          "state": "integrated",
-          "exitCode": 0
-        }
       ]
     },
     {
@@ -313,7 +184,7 @@
       "directory": "packages/database",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 44,
+      "latencyMs": 67,
       "exitCode": 0,
       "integrations": []
     },
@@ -322,7 +193,7 @@
       "directory": "packages/dns",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 37,
+      "latencyMs": 45,
       "exitCode": 0,
       "integrations": []
     },
@@ -331,7 +202,7 @@
       "directory": "packages/events",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 100,
+      "latencyMs": 138,
       "exitCode": 0,
       "integrations": [
         {
@@ -346,7 +217,7 @@
       "directory": "packages/failover",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 29,
+      "latencyMs": 47,
       "exitCode": 0,
       "integrations": []
     },
@@ -355,7 +226,7 @@
       "directory": "packages/gateway-registry",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 32,
+      "latencyMs": 49,
       "exitCode": 0,
       "integrations": []
     },
@@ -364,7 +235,7 @@
       "directory": "packages/historical-analysis",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 71,
+      "latencyMs": 117,
       "exitCode": 0,
       "integrations": [
         {
@@ -379,7 +250,7 @@
       "directory": "packages/internet-intelligence-agent",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 31,
+      "latencyMs": 36,
       "exitCode": 0,
       "integrations": []
     },
@@ -388,7 +259,7 @@
       "directory": "packages/kernel",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 29,
+      "latencyMs": 45,
       "exitCode": 0,
       "integrations": []
     },
@@ -397,7 +268,7 @@
       "directory": "packages/linux-client",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 663,
+      "latencyMs": 880,
       "exitCode": 0,
       "integrations": [
         {
@@ -412,7 +283,7 @@
       "directory": "packages/logger",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 43,
+      "latencyMs": 73,
       "exitCode": 0,
       "integrations": []
     },
@@ -421,7 +292,7 @@
       "directory": "packages/macos-client",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 62,
+      "latencyMs": 64,
       "exitCode": 0,
       "integrations": []
     },
@@ -430,7 +301,7 @@
       "directory": "packages/metrics",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 24,
+      "latencyMs": 33,
       "exitCode": 0,
       "integrations": []
     },
@@ -439,7 +310,7 @@
       "directory": "packages/network",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 55,
+      "latencyMs": 63,
       "exitCode": 0,
       "integrations": []
     },
@@ -448,7 +319,7 @@
       "directory": "packages/network-intelligence",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 63,
+      "latencyMs": 101,
       "exitCode": 0,
       "integrations": []
     },
@@ -457,7 +328,7 @@
       "directory": "packages/plugin-api",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 76,
+      "latencyMs": 108,
       "exitCode": 0,
       "integrations": [
         {
@@ -477,7 +348,7 @@
       "directory": "packages/plugin-config",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 92,
+      "latencyMs": 126,
       "exitCode": 0,
       "integrations": [
         {
@@ -497,7 +368,7 @@
       "directory": "packages/plugin-events",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 46,
+      "latencyMs": 68,
       "exitCode": 0,
       "integrations": [
         {
@@ -512,7 +383,7 @@
       "directory": "packages/plugin-loader",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 88,
+      "latencyMs": 130,
       "exitCode": 0,
       "integrations": [
         {
@@ -532,7 +403,7 @@
       "directory": "packages/plugin-manager",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 233,
+      "latencyMs": 312,
       "exitCode": 0,
       "integrations": [
         {
@@ -567,7 +438,7 @@
       "directory": "packages/plugin-registry",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 48,
+      "latencyMs": 67,
       "exitCode": 0,
       "integrations": [
         {
@@ -582,7 +453,7 @@
       "directory": "packages/plugin-runtime",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 258,
+      "latencyMs": 335,
       "exitCode": 0,
       "integrations": [
         {
@@ -622,7 +493,7 @@
       "directory": "packages/plugin-samples",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 55,
+      "latencyMs": 61,
       "exitCode": 0,
       "integrations": [
         {
@@ -637,7 +508,7 @@
       "directory": "packages/plugin-sandbox",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 120,
+      "latencyMs": 187,
       "exitCode": 0,
       "integrations": [
         {
@@ -662,7 +533,7 @@
       "directory": "packages/plugin-sdk",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 24,
+      "latencyMs": 42,
       "exitCode": 0,
       "integrations": []
     },
@@ -671,7 +542,7 @@
       "directory": "packages/queue",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 98,
+      "latencyMs": 165,
       "exitCode": 0,
       "integrations": [
         {
@@ -686,7 +557,7 @@
       "directory": "packages/resilience-runtime",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 4273,
+      "latencyMs": 6272,
       "exitCode": 0,
       "integrations": [
         {
@@ -756,7 +627,7 @@
       "directory": "packages/routing",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 658,
+      "latencyMs": 855,
       "exitCode": 0,
       "integrations": [
         {
@@ -791,7 +662,7 @@
       "directory": "packages/sdk",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 62,
+      "latencyMs": 85,
       "exitCode": 0,
       "integrations": [
         {
@@ -806,7 +677,7 @@
       "directory": "packages/security",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 139,
+      "latencyMs": 188,
       "exitCode": 0,
       "integrations": [
         {
@@ -826,7 +697,7 @@
       "directory": "packages/shared",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 76,
+      "latencyMs": 97,
       "exitCode": 0,
       "integrations": []
     },
@@ -835,7 +706,7 @@
       "directory": "packages/telemetry",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 633,
+      "latencyMs": 999,
       "exitCode": 0,
       "integrations": [
         {
@@ -855,7 +726,7 @@
       "directory": "packages/tunnel",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 396,
+      "latencyMs": 622,
       "exitCode": 0,
       "integrations": [
         {
@@ -880,7 +751,7 @@
       "directory": "packages/types",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 22,
+      "latencyMs": 36,
       "exitCode": 0,
       "integrations": []
     },
@@ -889,7 +760,7 @@
       "directory": "packages/utils",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 23,
+      "latencyMs": 42,
       "exitCode": 0,
       "integrations": []
     },
@@ -898,7 +769,7 @@
       "directory": "packages/windows-client",
       "state": "executed",
       "mode": "runtime-import",
-      "latencyMs": 28,
+      "latencyMs": 53,
       "exitCode": 0,
       "integrations": []
     }

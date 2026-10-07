@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-07T01:55:12.812Z",
+  "generatedAt": "2026-10-06T21:08:27.881Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -13,7 +13,7 @@
     "docs/phases",
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
-  "componentCount": 223,
+  "componentCount": 222,
   "sourceFileCount": 380,
   "components": [
     {
@@ -1569,25 +1569,6 @@
     {
       "componentId": ".github::workflows::release-gate.yml",
       "path": ".github/workflows/release-gate.yml",
-      "type": "workflow",
-      "capability": "release-engineering",
-      "executable": false,
-      "entrypoint": null,
-      "buildCommand": null,
-      "testCommand": null,
-      "sourceFiles": 0,
-      "upstreamDependencies": [],
-      "downstreamDependencies": [],
-      "owningPhases": [],
-      "realEnvironment": {
-        "status": "NOT_APPLICABLE",
-        "evidenceRequired": false
-      },
-      "evidenceId": null
-    },
-    {
-      "componentId": ".github::workflows::release.yml",
-      "path": ".github/workflows/release.yml",
       "type": "workflow",
       "capability": "release-engineering",
       "executable": false,
@@ -5121,5 +5102,5 @@
       "fail"
     ]
   },
-  "reportSha256": "6390b3fe581bd88a24ac1ec35f3bfb13de262a3dbd93fa23dff29917228e5ca0"
+  "reportSha256": "89691d07c344df26a2f5f86f352c8be747577f6fcecd93c6ab956f4008434358"
 }

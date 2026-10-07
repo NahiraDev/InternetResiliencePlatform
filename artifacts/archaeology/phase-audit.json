@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:13.929Z",
+  "generatedAt": "2026-10-06T21:21:31.593Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -571,7 +571,7 @@
       "citesEvidence": true,
       "hasTestEvidence": true,
       "pinnedShas": [
-        "8f598afbcc001e57c27f7917a9b871e21fe86a61"
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
       ],
       "stalePins": [],
       "evidenceClass": "evidence-backed"
@@ -709,6 +709,20 @@
       "evidenceClass": "descriptive"
     },
     {
+      "file": "artifacts/issues/clean-state-validation-evidence.md",
+      "kind": "issue-evidence",
+      "number": null,
+      "beyondPhase78": false,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": false,
+      "pinnedShas": [
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
+      ],
+      "stalePins": [],
+      "evidenceClass": "claim-with-citation"
+    },
+    {
       "file": "PROJECT_STATE.md",
       "kind": "coordination-record",
       "number": null,
@@ -717,11 +731,13 @@
       "citesEvidence": true,
       "hasTestEvidence": false,
       "pinnedShas": [
-        "51979d36bc3cf1de302d4cb166685d2475d79950"
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
       ],
       "stalePins": [],
-      "behindHead": [],
-      "evidenceClass": "descriptive"
+      "behindHead": [
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
+      ],
+      "evidenceClass": "behind-head"
     },
     {
       "file": ".github/ACTIVE_WORK.md",
@@ -732,17 +748,19 @@
       "citesEvidence": true,
       "hasTestEvidence": false,
       "pinnedShas": [
-        "51979d36bc3cf1de302d4cb166685d2475d79950"
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
       ],
       "stalePins": [],
-      "behindHead": [],
-      "evidenceClass": "descriptive"
+      "behindHead": [
+        "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
+      ],
+      "evidenceClass": "behind-head"
     }
   ],
   "summary": {
-    "total": 60,
+    "total": 61,
     "phaseDocuments": 45,
-    "issueEvidenceDocuments": 13,
+    "issueEvidenceDocuments": 14,
     "beyondPhase78": [
       "docs/phases/phase-79.md",
       "docs/phases/phase-80.md"
@@ -758,6 +776,19 @@
     "evidenceBacked": 16,
     "coordinationRecords": 2,
     "staleReferences": [],
-    "behindHeadRecords": []
+    "behindHeadRecords": [
+      {
+        "file": "PROJECT_STATE.md",
+        "behindHead": [
+          "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
+        ]
+      },
+      {
+        "file": ".github/ACTIVE_WORK.md",
+        "behindHead": [
+          "7f8e80559df67fcf43f8fbfc3962b2064b98a185"
+        ]
+      }
+    ]
   }
 }

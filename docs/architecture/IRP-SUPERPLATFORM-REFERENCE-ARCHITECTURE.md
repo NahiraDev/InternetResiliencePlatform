@@ -4,7 +4,7 @@
 
 > **Status:** Canonical architectural contract
 > **Applies to:** `main` and every future implementation agent
-> **Current verified main baseline:** `8f598afbcc001e57c27f7917a9b871e21fe86a61` (merge of PR #296)
+> **Current verified main baseline:** `7f8e80559df67fcf43f8fbfc3962b2064b98a185` (latest implementation merge: PR #324)
 > **Product identity:** Autonomous Internet Superplatform / Network Operating System / Programmable Connectivity Fabric
 >
 > This document is the architectural north star. Future agents MUST extend this architecture rather than invent a competing architecture, control plane, roadmap, state model, or ownership model.
@@ -995,7 +995,7 @@ This table is an ownership contract, not a statement that every row is fully mat
 
 ## 29. Current main reality
 
-As of `8f598afbcc001e57c27f7917a9b871e21fe86a61`:
+As of `7f8e80559df67fcf43f8fbfc3962b2064b98a185`:
 
 ### Established
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:13.369Z",
+  "generatedAt": "2026-10-06T21:21:31.107Z",
   "packages": [
     {
       "group": "apps",
@@ -882,8 +882,8 @@
     "workspacePackages": 43,
     "nativeClients": 2,
     "packagesWithoutTests": 0,
-    "workflows": 16,
-    "docs": 148,
+    "workflows": 15,
+    "docs": 147,
     "phaseDocs": 45
   },
   "infrastructure": {
@@ -899,7 +899,6 @@
       ".github/workflows/macos-client.yml",
       ".github/workflows/public-runtime-lab.yml",
       ".github/workflows/release-gate.yml",
-      ".github/workflows/release.yml",
       ".github/workflows/repository-deep-audit.yml",
       ".github/workflows/runtime-lab.yml",
       ".github/workflows/system-assurance.yml",
@@ -967,8 +966,7 @@
       "compose.yaml",
       "docker-publish.yml",
       "fly.toml",
-      "release-gate.yml",
-      "release.yml"
+      "release-gate.yml"
     ],
     "docs": [
       "docs/README.md",
@@ -1104,7 +1102,6 @@
       "docs/reference/README.md",
       "docs/reference/packages.md",
       "docs/regional-validation.md",
-      "docs/release/RELEASE_GATE_ROADMAP.md",
       "docs/release/debian-device-acceptance.md",
       "docs/release/full-system-assurance.md",
       "docs/release/integration-baseline.md",
