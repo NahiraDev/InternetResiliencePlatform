@@ -3,21 +3,15 @@ name: iOS Full Client
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - '.github/workflows/ios-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - '.github/workflows/ios-client.yml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: ios-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -28,17 +22,42 @@ env:
   PNPM_VERSION: '11.21.0'
   XCODE_PROJECT: clients/ios/IRP.xcodeproj
   SWIFT_PACKAGE: clients/ios
-  DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
 
 jobs:
   ios-client:
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Select and verify Xcode
+        run: |
+          set -euo pipefail
+          # This simulator build has a reproducible xcodebuild SIGSEGV on the
+          # newer 26.x toolchains available on macOS 15. Prefer the known-good
+          # Xcode 16.3 toolchain first; keep the full build mandatory.
+          # Selecting an installed compatible toolchain is a compatibility fix,
+          # not a validation bypass.
+          for candidate in \
+            /Applications/Xcode_16.3.app/Contents/Developer \
+            /Applications/Xcode_16.2.app/Contents/Developer \
+            /Applications/Xcode_16.4.app/Contents/Developer \
+            /Applications/Xcode_16.app/Contents/Developer \
+            /Applications/Xcode_26.2.app/Contents/Developer \
+            /Applications/Xcode_26.1.app/Contents/Developer \
+            /Applications/Xcode_26.0.app/Contents/Developer \
+            /Applications/Xcode.app/Contents/Developer; do
+            if [ -d "$candidate" ]; then
+              sudo xcode-select -s "$candidate"
+              break
+            fi
+          done
+          test -x "$(xcode-select -p)/usr/bin/xcodebuild"
+          xcodebuild -version
+          swift --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -52,26 +71,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Select and verify Xcode
-        run: |
-          if ! test -d "$DEVELOPER_DIR"; then
-            echo "Required Xcode toolchain not found: $DEVELOPER_DIR" >&2
-            echo 'Installed Xcode bundles:' >&2
-            find /Applications -maxdepth 1 -type d -name 'Xcode*.app' -print
-            exit 1
-          fi
-          echo "DEVELOPER_DIR=$DEVELOPER_DIR"
-          XCODEBUILD_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find xcodebuild)"
-          SWIFT_PATH="$(DEVELOPER_DIR="$DEVELOPER_DIR" xcrun --find swift)"
-          test -n "$XCODEBUILD_PATH"
-          test -x "$XCODEBUILD_PATH"
-          test -n "$SWIFT_PATH"
-          test -x "$SWIFT_PATH"
-          echo "xcodebuild=$XCODEBUILD_PATH"
-          echo "swift=$SWIFT_PATH"
-          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
-          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile
@@ -118,16 +117,30 @@ jobs:
           test -f clients/ios/PacketTunnel/Info.plist
           test -f clients/ios/PacketTunnel/PacketTunnel.entitlements
           test -f clients/ios/Sources/IRPiOSClient/PacketTunnelConfiguration.swift
-          echo 'iOS client source inventory passed'
 
-      - name: Build iOS app and packet tunnel
+      - name: Build iOS app and packet tunnel (simulator, unsigned)
         run: |
+          set -euo pipefail
+          # Match clients/ios/README.md: simulator SDK, no Apple signing assets.
+          # generic/platform=iOS (device) fails closed without provisioning profiles.
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
+            -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=- \
             build
+
+      - name: Collect Xcode crash diagnostics
+        if: ${{ failure() }}
+        run: |
+          set -euo pipefail
+          echo 'Collecting Xcode crash diagnostics after mandatory build failure.'
+          find "$RUNNER_TEMP" -maxdepth 3 -type f \( -name '*xcodebuild*' -o -name '*xcode*log' -o -name '*.xcresult' \) -print | head -100
+          xcrun simctl list devices
+          xcodebuild -version
+          ls /Applications | grep -i xcode || echo "No Xcode installations found"

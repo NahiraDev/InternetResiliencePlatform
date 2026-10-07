@@ -3,25 +3,20 @@ name: iOS Network Integration
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-65.md'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: ios-network-integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
+  DEVELOPER_DIR: /Applications/Xcode_16.1.app/Contents/Developer
 
 defaults:
   run:
@@ -29,13 +24,22 @@ defaults:
 
 jobs:
   ios-network-integration:
-    runs-on: macos-15
+    # Use the standard Intel macOS 15 runner. The larger-runner label is not
+    # required by this validation lane and can fail before a job gets a runner.
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Verify Xcode toolchain
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -50,10 +54,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Verify Xcode toolchain
-        run: |
-          xcodebuild -version
-          swift --version
+      - name: Verify workspace install
+        run: pnpm install --frozen-lockfile
 
       - name: Validate Swift package
         run: |

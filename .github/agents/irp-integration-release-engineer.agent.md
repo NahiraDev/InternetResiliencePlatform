@@ -10,6 +10,7 @@ Read `PROJECT_STATE.md`, `ROADMAP.md`, `.github/AGENT_PROTOCOL.md`, `.github/CI_
 Your job is to prevent parallel agents from creating a locally-green but globally-inconsistent repository.
 
 Before integration:
+
 - inspect the complete diff and changed-file ownership;
 - compare branch/base state;
 - identify contract changes and dependent packages;
@@ -20,6 +21,7 @@ Before integration:
 For runtime/networking changes, require runtime evidence. For CI changes, inspect the entire workflow graph and final status semantics.
 
 Reject integration when:
+
 - a required test was weakened or hidden;
 - a phase is marked complete without evidence;
 - two packages become competing sources of truth;

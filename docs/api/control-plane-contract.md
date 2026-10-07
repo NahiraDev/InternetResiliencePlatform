@@ -8,29 +8,29 @@ Each API resource must be classified as `implemented`, `verified`, `pending-veri
 
 ## Resource domains
 
-| Domain | Purpose | Current product track |
-| --- | --- | --- |
-| Authentication | Identity and sessions | Core / existing API |
-| Devices | Enrollment, capability and revocation | Client platform |
-| Runtime | Current resilience/autopilot state | Existing API |
-| Probes | Regional measurement evidence | Federation |
-| Analytics | Historical and aggregate network intelligence | Analytics |
-| Gateways | Gateway inventory and health | Gateway |
-| Tunnels | Transport lifecycle and health | Tunnel |
-| Providers | Provider capabilities and lifecycle | Provider abstraction |
-| Policies | Safety and network-control policy | Control plane |
-| Telemetry | Metrics, events and diagnostics | Observability |
-| Administration | RBAC, organizations and operational control | Control plane |
-| Notifications | Alerts and client-facing events | Product UI |
+| Domain         | Purpose                                       | Current product track |
+| -------------- | --------------------------------------------- | --------------------- |
+| Authentication | Identity and sessions                         | Core / existing API   |
+| Devices        | Enrollment, capability and revocation         | Client platform       |
+| Runtime        | Current resilience/autopilot state            | Existing API          |
+| Probes         | Regional measurement evidence                 | Federation            |
+| Analytics      | Historical and aggregate network intelligence | Analytics             |
+| Gateways       | Gateway inventory and health                  | Gateway               |
+| Tunnels        | Transport lifecycle and health                | Tunnel                |
+| Providers      | Provider capabilities and lifecycle           | Provider abstraction  |
+| Policies       | Safety and network-control policy             | Control plane         |
+| Telemetry      | Metrics, events and diagnostics               | Observability         |
+| Administration | RBAC, organizations and operational control   | Control plane         |
+| Notifications  | Alerts and client-facing events               | Product UI            |
 
 ## Phase 56 unified product boundary
 
 The canonical client entry point is the versioned `/api/v1` surface. Phase 56 adds two discovery resources:
 
-| Endpoint | Auth | Purpose |
-| --- | --- | --- |
-| `GET /api/v1/product/capabilities` | None | Public version/capability manifest. |
-| `GET /api/v1/product/context` | Bearer | Principal-specific capabilities authorized by the existing RBAC layer. |
+| Endpoint                           | Auth   | Purpose                                                                |
+| ---------------------------------- | ------ | ---------------------------------------------------------------------- |
+| `GET /api/v1/product/capabilities` | None   | Public version/capability manifest.                                    |
+| `GET /api/v1/product/context`      | Bearer | Principal-specific capabilities authorized by the existing RBAC layer. |
 
 The capability manifest declares operation kind, supported methods/paths, authentication mode, required permissions and implementation status. `product.context` filters that contract using the authenticated principal; it never grants a capability.
 

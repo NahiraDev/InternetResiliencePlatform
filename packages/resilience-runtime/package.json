@@ -16,17 +16,31 @@
   },
   "dependencies": {
     "@irp/connectivity": "workspace:*",
+    "@irp/core": "workspace:*",
     "@irp/events": "workspace:*",
     "@irp/failover": "workspace:*",
+    "@irp/gateway-registry": "workspace:*",
+    "@irp/historical-analysis": "workspace:*",
     "@irp/internet-intelligence-agent": "workspace:*",
     "@irp/network-intelligence": "workspace:*",
     "@irp/routing": "workspace:*",
-    "@irp/telemetry": "workspace:*"
+    "@irp/telemetry": "workspace:*",
+    "@irp/tunnel": "workspace:*",
+    "@irp/utils": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26.3.0",
+    "@types/node": "^26.6.3",
+    "@types/pg": "8.23.1",
+    "@vitest/coverage-v8": "^5.0.2",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8",
-    "@vitest/coverage-v8": "^4.1.11"
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "pg": "^8.23.0"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    }
   }
 }

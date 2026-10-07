@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-07T01:55:14.213Z",
+  "vitestIncludeGlobs": [
+    "packages/resilience-runtime/tests/**/*.test.ts"
+  ],
+  "orphanTests": [],
+  "orphanModules": [],
+  "orphanExports": [
+    {
+      "symbol": "ActionCatalog",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "ActionConflictError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "ActionValidationError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "AutopilotDomainError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "autopilotTransitions",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "CircuitBreakerOpenError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "defaultAutopilotPolicy",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "FAILURE_LAYERS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/learning/adaptive-control.ts"
+    },
+    {
+      "symbol": "PolicyDeniedError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "SafetyGateError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "SINKS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/security/secrets.ts"
+    }
+  ],
+  "duplicateContracts": [
+    {
+      "name": "AddressFamily",
+      "declaredIn": [
+        "packages/network-intelligence/src/identity/IdentityAssurance.ts",
+        "packages/routing/src/index.ts",
+        "packages/tunnel/src/index.ts"
+      ]
+    },
+    {
+      "name": "AgentRecommendation",
+      "declaredIn": [
+        "packages/internet-intelligence-agent/src/types.ts",
+        "packages/network-intelligence/src/decision/InternetIntelligenceBridge.ts"
+      ]
+    },
+    {
+      "name": "CircuitBreakerState",
+      "declaredIn": [
+        "packages/dns/src/index.ts",
+        "packages/resilience-runtime/src/autopilot/autopilot.ts"
+      ]
+    },
+    {
+      "name": "DecisionEvaluator",
+      "declaredIn": [
+        "packages/network-intelligence/src/decision/DecisionEvaluator.ts",
+        "packages/network-intelligence/src/decision/NetworkDecisionEngine.ts"
+      ]
+    },
+    {
+      "name": "DomainEvent",
+      "declaredIn": [
+        "packages/core/src/index.ts",
+        "packages/shared/src/index.ts"
+      ]
+    },
+    {
+      "name": "EndpointRegistry",
+      "declaredIn": [
+        "packages/security/src/index.ts",
+        "packages/telemetry/src/endpoint-registry.ts"
+      ]
+    },
+    {
+      "name": "EventHandler",
+      "declaredIn": [
+        "packages/core/src/index.ts",
+        "packages/events/src/index.ts"
+      ]
+    },
+    {
+      "name": "FailureEvidence",
+      "declaredIn": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/resilience/failure-classifier.ts"
+      ]
+    },
+    {
+      "name": "GLOBAL_PROVIDER_METADATA",
+      "declaredIn": [
+        "packages/dns/src/provider-catalog.ts",
+        "packages/dns/src/provider-registry.ts"
+      ]
+    },
+    {
+      "name": "HealthState",
+      "declaredIn": [
+        "packages/network-intelligence/src/decision/NetworkDecisionEngine.ts",
+        "packages/types/src/index.ts"
+      ]
+    },
+    {
+      "name": "InternetEvidence",
+      "declaredIn": [
+        "packages/internet-intelligence-agent/src/types.ts",
+        "packages/network-intelligence/src/decision/InternetIntelligenceBridge.ts"
+      ]
+    },
+    {
+      "name": "IRANIAN_PROVIDER_METADATA",
+      "declaredIn": [
+        "packages/dns/src/provider-catalog.ts",
+        "packages/dns/src/provider-registry.ts"
+      ]
+    },
+    {
+      "name": "ManualOverrideMode",
+      "declaredIn": [
+        "packages/connectivity/src/index.ts",
+        "packages/failover/src/index.ts"
+      ]
+    },
+    {
+      "name": "NetworkSnapshot",
+      "declaredIn": [
+        "packages/linux-client/src/index.ts",
+        "packages/network-intelligence/src/models/NetworkSnapshot.ts"
+      ]
+    },
+    {
+      "name": "nowIso",
+      "declaredIn": [
+        "packages/resilience-runtime/src/domain/ids.ts",
+        "packages/utils/src/index.ts"
+      ]
+    },
+    {
+      "name": "PolicySnapshot",
+      "declaredIn": [
+        "packages/resilience-runtime/src/domain/types.ts",
+        "packages/security/src/index.ts"
+      ]
+    },
+    {
+      "name": "Principal",
+      "declaredIn": [
+        "packages/auth/src/index.ts",
+        "packages/kernel/src/index.ts",
+        "packages/security/src/index.ts"
+      ]
+    },
+    {
+      "name": "ProviderHealth",
+      "declaredIn": [
+        "packages/dns/src/index.ts",
+        "packages/tunnel/src/index.ts"
+      ]
+    },
+    {
+      "name": "RecoveryPlan",
+      "declaredIn": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ]
+    },
+    {
+      "name": "RegistryRecord",
+      "declaredIn": [
+        "packages/kernel/src/index.ts",
+        "packages/plugin-registry/src/index.ts"
+      ]
+    },
+    {
+      "name": "RuntimeContext",
+      "declaredIn": [
+        "packages/core/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ]
+    },
+    {
+      "name": "RuntimeState",
+      "declaredIn": [
+        "packages/core/src/index.ts",
+        "packages/resilience-runtime/src/domain/types.ts"
+      ]
+    },
+    {
+      "name": "Scheduler",
+      "declaredIn": [
+        "packages/core/src/index.ts",
+        "packages/network-intelligence/src/core/Scheduler.ts"
+      ]
+    }
+  ],
+  "persistenceModels": [],
+  "summary": {
+    "orphanTests": 0,
+    "orphanModules": 0,
+    "orphanExports": 11,
+    "duplicateContracts": 23,
+    "unreferencedPersistenceModels": 0
+  }
+}

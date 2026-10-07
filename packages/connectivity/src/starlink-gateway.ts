@@ -68,10 +68,7 @@ export class ExternalStarlinkGatewayProvider implements ConnectivityProvider {
   private readonly profiles: readonly StarlinkGatewayProfile[];
   private readonly probeGateway: StarlinkGatewayProbe;
 
-  constructor(
-    profiles: readonly StarlinkGatewayProfile[],
-    probeGateway: StarlinkGatewayProbe,
-  ) {
+  constructor(profiles: readonly StarlinkGatewayProfile[], probeGateway: StarlinkGatewayProbe) {
     this.validateProfiles(profiles);
     this.profiles = profiles.map((profile) => ({
       ...profile,
@@ -126,7 +123,12 @@ export class ExternalStarlinkGatewayProvider implements ConnectivityProvider {
     const health = await this.probeGateway.probe(profile);
     return health.status === 'unhealthy'
       ? { ok: false, resourceId, state: 'failed', error: 'Starlink gateway health check failed' }
-      : { ok: true, resourceId, state: health.status === 'healthy' ? 'active' : 'degraded', metadata: { operation: 'verify-external-gateway' } };
+      : {
+          ok: true,
+          resourceId,
+          state: health.status === 'healthy' ? 'active' : 'degraded',
+          metadata: { operation: 'verify-external-gateway' },
+        };
   }
 
   async disconnect(resourceId: string): Promise<ConnectivityOperationResult> {
@@ -155,7 +157,12 @@ export class ExternalStarlinkGatewayProvider implements ConnectivityProvider {
       providerId: this.id,
       id: profile.id,
       type: this.type,
-      state: health.status === 'healthy' ? 'active' : health.status === 'degraded' ? 'degraded' : 'unavailable',
+      state:
+        health.status === 'healthy'
+          ? 'active'
+          : health.status === 'degraded'
+            ? 'degraded'
+            : 'unavailable',
       addresses: [],
       dnsServers: [],
       capabilities: this.capabilities(),
@@ -175,7 +182,9 @@ export class ExternalStarlinkGatewayProvider implements ConnectivityProvider {
 
   private requireProfile(resourceId?: string): StarlinkGatewayProfile {
     if (!resourceId) throw new Error('Starlink gateway resourceId is required');
-    const profile = this.profiles.find((candidate) => candidate.id === resourceId && candidate.enabled !== false);
+    const profile = this.profiles.find(
+      (candidate) => candidate.id === resourceId && candidate.enabled !== false,
+    );
     if (!profile) throw new Error(`Unknown Starlink gateway resource: ${resourceId}`);
     return profile;
   }
@@ -187,8 +196,12 @@ export class ExternalStarlinkGatewayProvider implements ConnectivityProvider {
       if (ids.has(profile.id)) throw new Error(`Duplicate Starlink gateway id: ${profile.id}`);
       ids.add(profile.id);
       if (!profile.name.trim()) throw new Error(`Starlink gateway ${profile.id} name is required`);
-      if (!profile.endpoint.trim()) throw new Error(`Starlink gateway ${profile.id} endpoint is required`);
-      if (profile.priority !== undefined && (!Number.isInteger(profile.priority) || profile.priority < 0)) {
+      if (!profile.endpoint.trim())
+        throw new Error(`Starlink gateway ${profile.id} endpoint is required`);
+      if (
+        profile.priority !== undefined &&
+        (!Number.isInteger(profile.priority) || profile.priority < 0)
+      ) {
         throw new Error(`Starlink gateway ${profile.id} priority must be a non-negative integer`);
       }
     }

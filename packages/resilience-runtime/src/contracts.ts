@@ -5,7 +5,7 @@ import type {
   RuntimeMode,
   RuntimeSnapshot,
 } from './domain/types.js';
-export const RUNTIME_API_SCHEMA_VERSION = 1;
+const RUNTIME_API_SCHEMA_VERSION = 1;
 export type RuntimeApiStatus = 'ok' | 'error';
 export interface RuntimeEnvelope<T> {
   schemaVersion: number;

@@ -12,7 +12,11 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: irp-release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '24'
@@ -22,6 +26,7 @@ jobs:
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       release_tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -36,6 +41,7 @@ jobs:
           INPUT_TAG: ${{ inputs.release_tag }}
           REF_NAME: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           else
@@ -46,10 +52,44 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Using release tag: $TAG"
 
-  android:
-    name: Android APK
+  gate:
+    name: Require green Release Gate
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
+
+      - name: Verify Release Gate passed for the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "Tag $RELEASE_TAG resolves to $sha"
+          # Fail closed: a release may only be cut from a commit whose Release Gate
+          # (CI, System Assurance, runtime labs, CodeQL, deep audit and every client
+          # workflow) has completed successfully.
+          passed="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/release-gate.yml/runs?head_sha=${sha}&per_page=50" \
+            --jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length')"
+          if [ "$passed" -lt 1 ]; then
+            echo "No successful Release Gate run exists for $sha. Refusing to publish." >&2
+            exit 1
+          fi
+          echo "Release Gate: PASS for $sha"
+
+  android:
+    name: Android APK
+    needs: [prepare, gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: clients/android
@@ -60,13 +100,13 @@ jobs:
           ref: ${{ needs.prepare.outputs.release_tag }}
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.10'
 
@@ -77,6 +117,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           APK="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
           test -n "$APK"
           cp "$APK" "${GITHUB_WORKSPACE}/IRP-Android-debug-${RELEASE_TAG}.apk"
@@ -85,13 +126,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: IRP-Android-debug
-          path: IRP-Android-debug-${{ needs.prepare.outputs.release_tag }}.apk
+          path: ${{ github.workspace }}/IRP-Android-debug-${{ needs.prepare.outputs.release_tag }}.apk
           if-no-files-found: error
 
   linux:
     name: Linux bundle
-    needs: prepare
+    needs: [prepare, gate]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -121,6 +163,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-Linux
           cp -R packages/linux-client/dist release/IRP-Linux/dist
           cp packages/linux-client/package.json release/IRP-Linux/package.json
@@ -135,8 +178,9 @@ jobs:
 
   macos:
     name: macOS bundle
-    needs: prepare
+    needs: [prepare, gate]
     runs-on: macos-15
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -166,6 +210,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-macOS/launchd
           cp -R packages/macos-client/dist release/IRP-macOS/dist
           cp packages/macos-client/package.json release/IRP-macOS/package.json
@@ -181,8 +226,9 @@ jobs:
 
   windows:
     name: Windows bundle
-    needs: prepare
+    needs: [prepare, gate]
     runs-on: windows-2025
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash
@@ -215,6 +261,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
           cp packages/windows-client/package.json release/IRP-Windows/package.json
@@ -229,8 +276,9 @@ jobs:
 
   ios-source:
     name: iOS developer bundle
-    needs: prepare
-    runs-on: macos-15
+    needs: [prepare, gate]
+    runs-on: macos-14
+    timeout-minutes: 20
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -239,6 +287,7 @@ jobs:
 
       - name: Verify Swift package
         run: |
+          set -euo pipefail
           swift test --package-path clients/ios
           swift build --package-path clients/ios
 
@@ -256,8 +305,11 @@ jobs:
 
   publish:
     name: Create GitHub Release
-    needs: [prepare, android, linux, macos, windows, ios-source]
+    needs: [prepare, gate, android, linux, macos, windows, ios-source]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v7
@@ -278,6 +330,7 @@ jobs:
 
       - name: Validate Phase 71 release contract
         run: |
+          set -euo pipefail
           node scripts/phase71-release.mjs "${{ needs.prepare.outputs.release_tag }}" release-assets
 
       - name: Generate SHA-256 checksums
@@ -293,6 +346,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
+          set -euo pipefail
           gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \

@@ -12,13 +12,7 @@
     "soakIterations": 200,
     "maxRecoverySteps": 8
   },
-  "platforms": [
-    "linux",
-    "macos",
-    "windows",
-    "ios",
-    "android"
-  ],
+  "platforms": ["linux", "macos", "windows", "ios", "android"],
   "requiredControls": [
     "accessibility",
     "localization",

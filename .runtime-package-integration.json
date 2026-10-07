@@ -1,0 +1,906 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T01:55:10.668Z",
+  "overall": "healthy",
+  "totals": {
+    "packages": 43,
+    "runtime": 43,
+    "executed": 43,
+    "failed": 0,
+    "degraded": 0
+  },
+  "packages": [
+    {
+      "package": "@irp/api",
+      "directory": "apps/api",
+      "state": "executed",
+      "mode": "http-e2e",
+      "latencyMs": 838,
+      "checks": [
+        "process-start",
+        "GET /api/v1/health",
+        "GET /api/v1/live",
+        "GET /api/v1/version",
+        "GET /api/v1/metrics"
+      ],
+      "integrations": [
+        {
+          "target": "@irp/auth",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/config",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/core",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/database",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/dns",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/historical-analysis",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/logger",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/metrics",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/network",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/queue",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/resilience-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/auth",
+      "directory": "packages/auth",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 110,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/auto-optimization",
+      "directory": "packages/auto-optimization",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 647,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/resilience-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/cli",
+      "directory": "apps/cli",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 2745,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/config",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/core",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/logger",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/network",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/dns",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/resilience-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/config",
+      "directory": "packages/config",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 96,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/connectivity",
+      "directory": "packages/connectivity",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 462,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/kernel",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/network",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/core",
+      "directory": "packages/core",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 263,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/config",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/logger",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/dns",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/daemon",
+      "directory": "apps/daemon",
+      "state": "executed",
+      "mode": "process-e2e",
+      "latencyMs": 5005,
+      "checks": [
+        "process-start",
+        "process-stays-running"
+      ],
+      "integrations": [
+        {
+          "target": "@irp/auto-optimization",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/config",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/connectivity",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/core",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/logger",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-manager",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/network",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/resilience-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/routing",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/security",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/tunnel",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/database",
+      "directory": "packages/database",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 44,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/dns",
+      "directory": "packages/dns",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 37,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/events",
+      "directory": "packages/events",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 100,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/failover",
+      "directory": "packages/failover",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 29,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/gateway-registry",
+      "directory": "packages/gateway-registry",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 32,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/historical-analysis",
+      "directory": "packages/historical-analysis",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 71,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/database",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/internet-intelligence-agent",
+      "directory": "packages/internet-intelligence-agent",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 31,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/kernel",
+      "directory": "packages/kernel",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 29,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/linux-client",
+      "directory": "packages/linux-client",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 663,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/resilience-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/logger",
+      "directory": "packages/logger",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 43,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/macos-client",
+      "directory": "packages/macos-client",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 62,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/metrics",
+      "directory": "packages/metrics",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 24,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/network",
+      "directory": "packages/network",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 55,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/network-intelligence",
+      "directory": "packages/network-intelligence",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 63,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/plugin-api",
+      "directory": "packages/plugin-api",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 76,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/security",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-config",
+      "directory": "packages/plugin-config",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 92,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/security",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-events",
+      "directory": "packages/plugin-events",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 46,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-loader",
+      "directory": "packages/plugin-loader",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 88,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-registry",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-manager",
+      "directory": "packages/plugin-manager",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 233,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-runtime",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-loader",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-registry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-samples",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-registry",
+      "directory": "packages/plugin-registry",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 48,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-runtime",
+      "directory": "packages/plugin-runtime",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 258,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-api",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-config",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-registry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-sandbox",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-samples",
+      "directory": "packages/plugin-samples",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 55,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-sandbox",
+      "directory": "packages/plugin-sandbox",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 120,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/plugin-sdk",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/security",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/plugin-samples",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/plugin-sdk",
+      "directory": "packages/plugin-sdk",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 24,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/queue",
+      "directory": "packages/queue",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 98,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/resilience-runtime",
+      "directory": "packages/resilience-runtime",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 4273,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/connectivity",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/core",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/failover",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/gateway-registry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/historical-analysis",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/internet-intelligence-agent",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/network-intelligence",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/routing",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/tunnel",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/utils",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/routing",
+      "directory": "packages/routing",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 658,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/connectivity",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/kernel",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/sdk",
+      "directory": "packages/sdk",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 62,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/kernel",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/security",
+      "directory": "packages/security",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 139,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/auth",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/shared",
+      "directory": "packages/shared",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 76,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/telemetry",
+      "directory": "packages/telemetry",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 633,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/metrics",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/types",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/tunnel",
+      "directory": "packages/tunnel",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 396,
+      "exitCode": 0,
+      "integrations": [
+        {
+          "target": "@irp/events",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/shared",
+          "state": "integrated",
+          "exitCode": 0
+        },
+        {
+          "target": "@irp/telemetry",
+          "state": "integrated",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "package": "@irp/types",
+      "directory": "packages/types",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 22,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/utils",
+      "directory": "packages/utils",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 23,
+      "exitCode": 0,
+      "integrations": []
+    },
+    {
+      "package": "@irp/windows-client",
+      "directory": "packages/windows-client",
+      "state": "executed",
+      "mode": "runtime-import",
+      "latencyMs": 28,
+      "exitCode": 0,
+      "integrations": []
+    }
+  ]
+}

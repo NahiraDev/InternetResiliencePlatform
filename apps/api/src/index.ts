@@ -47,11 +47,22 @@ import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
 import {
-  ResilienceRuntime,
-  NetworkAutopilot,
-  createAutopilotPolicy,
+  createCanonicalRuntime,
+  explainDecision,
+  negotiatePlatformCapabilities,
   runtimeEnvelope,
+  type Observation,
+  type ObservationProvider,
 } from '@irp/resilience-runtime';
+import { registerIntentRoutes } from './intent-api.js';
+import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
+import {
+  generateSpeedInsightsScript,
+  injectSpeedInsightsIntoHtml,
+  defaultSpeedInsightsConfig,
+  type SpeedInsightsConfig,
+} from './speed-insights.js';
+import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } from './analytics.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type User = Entity & {
@@ -191,6 +202,13 @@ const resolveJwtSecret = () => {
     throw new Error('JWT_SECRET is required for production or staging API runtime.');
   return 'development-secret-development-secret-32';
 };
+const bootstrapAdminEmails = (): string[] =>
+  (process.env.IRP_BOOTSTRAP_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+const isBootstrapAdminEmail = (email: string): boolean =>
+  bootstrapAdminEmails().includes(email.toLowerCase());
 const permissions = [
   'users:read',
   'users:write',
@@ -343,7 +361,11 @@ export const buildServer = async (): Promise<FastifyInstance> => {
       route,
     });
   });
-  await app.register(cors);
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  await app.register(cors, allowedOrigins.length > 0 ? { origin: allowedOrigins } : { origin: false });
   await app.register(helmet);
   await app.register(swagger, {
     openapi: {
@@ -398,6 +420,113 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   app.get('/api/v1/metrics', async (_r, reply) =>
     reply.type(prometheusContentType()).send(await renderPrometheusMetrics()),
   );
+
+  // Vercel Analytics & Speed Insights Example Endpoint
+  // This demonstrates how Web Analytics and Speed Insights can be integrated if this API serves HTML
+  // Note: These tools measure client-side metrics, so they're only useful for HTML responses
+  app.get('/api/v1/speed-insights/example', async (_request, reply) => {
+    const exampleHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vercel Analytics & Speed Insights Integration</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.6;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vercel Analytics & Speed Insights Integration</h1>
+  <div class="success">
+    <strong>✓ Active:</strong> This page has both Web Analytics and Speed Insights enabled.
+    Open your browser's developer console to see debug information about tracked events.
+  </div>
+  <div class="note">
+    <strong>Note:</strong> These integrations measure client-side metrics in the browser.
+    For backend API monitoring, use OpenTelemetry and Prometheus metrics already configured in this project.
+  </div>
+  
+  <h2>Web Analytics</h2>
+  <p>Vercel Web Analytics tracks:</p>
+  <ul>
+    <li><strong>Page Views</strong> - Automatic tracking of page visits</li>
+    <li><strong>Custom Events</strong> - Track user interactions (Pro/Enterprise plans)</li>
+    <li><strong>Unique Visitors</strong> - User engagement metrics</li>
+    <li><strong>Geographic Distribution</strong> - Where your users are located</li>
+  </ul>
+  <pre><code>// Client-side page view tracking (automatic):
+import { injectAnalyticsIntoHtml } from './analytics.js';
+const withAnalytics = injectAnalyticsIntoHtml(html);
+
+// Server-side custom event tracking:
+import { trackServerEvent } from './analytics.js';
+await trackServerEvent('user_registered', { userId: '123' });</code></pre>
+
+  <h2>Speed Insights</h2>
+  <p>Vercel Speed Insights tracks real user performance metrics:</p>
+  <ul>
+    <li><strong>LCP</strong> (Largest Contentful Paint) - Loading performance</li>
+    <li><strong>FID</strong> (First Input Delay) - Interactivity</li>
+    <li><strong>CLS</strong> (Cumulative Layout Shift) - Visual stability</li>
+    <li><strong>TTFB</strong> (Time to First Byte) - Server response time</li>
+    <li><strong>FCP</strong> (First Contentful Paint) - Initial render</li>
+  </ul>
+  <pre><code>// For programmatic HTML injection:
+import { injectSpeedInsightsIntoHtml } from './speed-insights.js';
+const withInsights = injectSpeedInsightsIntoHtml(html, {
+  sampleRate: 1.0,
+  debug: true
+});</code></pre>
+
+  <h2>Backend API Monitoring</h2>
+  <p>For monitoring this API's performance, use:</p>
+  <ul>
+    <li><strong>OpenTelemetry</strong> - Distributed tracing (already configured)</li>
+    <li><strong>Prometheus Metrics</strong> - Available at <a href="/api/v1/metrics">/api/v1/metrics</a></li>
+    <li><strong>Health Checks</strong> - Available at <a href="/api/v1/health">/api/v1/health</a></li>
+    <li><strong>Server-Side Events</strong> - Custom event tracking via Vercel Analytics</li>
+  </ul>
+</body>
+</html>`;
+
+    // Inject Speed Insights and Web Analytics into the example page
+    let htmlWithInsights = injectSpeedInsightsIntoHtml(exampleHtml, {
+      ...defaultSpeedInsightsConfig,
+      route: '/api/v1/speed-insights/example',
+    });
+
+    // Also inject Web Analytics for page view tracking
+    htmlWithInsights = injectAnalyticsIntoHtml(htmlWithInsights, {
+      ...defaultAnalyticsConfig,
+    });
+
+    return reply.type('text/html').send(htmlWithInsights);
+  });
+
   const recordNetworkTelemetry = (
     snapshot: Awaited<ReturnType<NetworkMonitoringService['runOnce']>>,
   ) => {
@@ -594,31 +723,84 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 `,
     );
   });
-  const resilienceRuntime = new ResilienceRuntime();
+  const runtimeObservationProvider: ObservationProvider = {
+    id: 'api-network-monitor',
+    async collect(context) {
+      const snapshot = await networkMonitor.runOnce();
+      const observations: Observation[] = snapshot.measurements.map((measurement) => {
+        const healthy = measurement.success;
+        return {
+          id: `api-${measurement.probeType}-${context.correlationId}`,
+          schemaVersion: 1,
+          createdAt: measurement.timestamp,
+          correlationId: context.correlationId,
+          source: 'irp-api-network-monitor',
+          metadata: measurement.metadata,
+          category: 'network',
+          metric: `${measurement.probeType}_health`,
+          value: healthy ? (measurement.latency ?? 1) : null,
+          timestamp: measurement.timestamp,
+          freshnessMs: 0,
+          confidence: healthy ? 0.9 : 0.8,
+          severity: healthy ? 'info' : 'critical',
+          status: healthy ? 'healthy' : 'failed',
+        };
+      });
+      return {
+        providerId: 'api-network-monitor',
+        collectedAt: new Date().toISOString(),
+        errors: [],
+        observations,
+      };
+    },
+  };
+  const resilienceRuntime = createCanonicalRuntime({
+    executionMode: 'simulation',
+    observationProviders: [runtimeObservationProvider],
+    runtimeId: 'api-runtime',
+  }).runtime;
   const runtimeResponse = <T>(request: FastifyRequest, data: T) =>
     runtimeEnvelope(data, request.headers['x-correlation-id']?.toString() ?? request.id);
 
-  const autopilot = new NetworkAutopilot(
-    [],
-    createAutopilotPolicy({
-      enabled: process.env.AUTOPILOT_ENABLED === 'true',
-      mode:
-        (process.env.AUTOPILOT_MODE as
-          ReturnType<typeof createAutopilotPolicy>['mode'] | undefined) ?? 'OBSERVE_ONLY',
-    }),
-  );
+  registerIntentRoutes(app, {
+    ...(process.env.DATABASE_URL ? { database: db } : {}),
+    onActivated: (intent) =>
+      resilienceRuntime.runIntent(intent, {
+        mode: 'simulation',
+        correlationId: `intent-${intent.id}-v${intent.version}`,
+        idempotencyKey: `intent-${intent.id}-v${intent.version}`,
+      }),
+  });
+
+  // The legacy /autopilot API remains a compatibility surface, but it must not
+  // instantiate NetworkAutopilot: that class owns a historical, parallel
+  // decision state machine. All live control-loop state is projected from the
+  // canonical ResilienceRuntime below.
+  const canonicalAutopilotStatus = async () => {
+    const snapshot = await resilienceRuntime.getRuntimeSnapshot();
+    return {
+      source: 'resilience-runtime',
+      mode: snapshot.mode,
+      state: snapshot.state,
+      health: snapshot.health,
+      counters: snapshot.counters,
+      deprecated: true,
+    };
+  };
   app.get('/api/v1/autopilot/status', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.status());
+    return runtimeResponse(request, await canonicalAutopilotStatus());
   });
   app.get('/api/v1/autopilot/runs', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.listRuns());
+    return runtimeResponse(request, await resilienceRuntime.decisions.list());
   });
   app.get('/api/v1/autopilot/runs/:id', async (request) => {
     await requirePermission(request, 'autopilot.read');
     const params = z.object({ id: z.string().min(1) }).parse(request.params);
-    const run = autopilot.getRun(params.id);
+    const run = (await resilienceRuntime.decisions.list()).find(
+      (decision) => decision.decisionId === params.id,
+    );
     if (!run) throw new NotFoundAppError('autopilot run');
     return runtimeResponse(request, run);
   });
@@ -631,59 +813,85 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
         forceVerificationFailure: z.boolean().default(false),
       })
       .parse(request.body ?? {});
-    return runtimeResponse(request, await autopilot.run(body));
+    return runtimeResponse(
+      request,
+      await resilienceRuntime.runCycle({
+        mode: 'simulation',
+        correlationId: `api-autopilot-${request.id}`,
+        idempotencyKey: `api-autopilot-${request.id}-${body.dryRun ? 'dry' : 'run'}-${body.shadow ? 'shadow' : 'active'}`,
+      }),
+    );
   });
   app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    return runtimeResponse(request, {
-      id: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'cancel-requested',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot run '${id}' cannot be cancelled through the legacy API; canonical runtime cycles are bounded and API cycles are synchronous simulations.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/approve', async (request) => {
     await requirePermission(request, 'autopilot.approve');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'approved',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be approved through the legacy API; use a policy-governed runtime plan.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/reject', async (request) => {
     await requirePermission(request, 'autopilot.approve');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'rejected',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be rejected through the legacy API; use a policy-governed runtime plan.`,
+    );
   });
   app.post('/api/v1/autopilot/actions/:id/rollback', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    return runtimeResponse(request, {
-      actionId: z.object({ id: z.string() }).parse(request.params).id,
-      status: 'rollback-requested',
-    });
+    const id = z.object({ id: z.string() }).parse(request.params).id;
+    throw new ConflictAppError(
+      `Autopilot action '${id}' cannot be rolled back through the legacy API; rollback is owned by the canonical transaction/recovery path.`,
+    );
   });
   app.get('/api/v1/autopilot/policies', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.policies());
+    return runtimeResponse(request, (await resilienceRuntime.getRuntimeSnapshot()).policySnapshot);
   });
   app.get('/api/v1/autopilot/actions', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, autopilot.actions());
+    return runtimeResponse(
+      request,
+      (await resilienceRuntime.decisions.list()).flatMap((decision) =>
+        decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
+      ),
+    );
   });
   app.get('/api/v1/autopilot/health', async (request) => {
     await requirePermission(request, 'autopilot.read');
+    const snapshot = await resilienceRuntime.getRuntimeSnapshot();
     return runtimeResponse(request, {
-      status: autopilot.status().circuitBreaker === 'OPEN' ? 'degraded' : 'healthy',
-      autopilot: autopilot.status(),
+      status: snapshot.health.status === 'failed' ? 'degraded' : 'healthy',
+      autopilot: {
+        source: 'resilience-runtime',
+        circuitBreaker: 'NOT_APPLICABLE',
+        state: snapshot.state,
+        health: snapshot.health,
+        counters: snapshot.counters,
+        deprecated: true,
+      },
     });
   });
   app.get('/api/v1/autopilot/circuit-breaker', async (request) => {
     await requirePermission(request, 'autopilot.read');
-    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+    return runtimeResponse(request, {
+      state: 'NOT_APPLICABLE',
+      reason:
+        'canonical ResilienceRuntime uses validation locks and bounded cycles, not a legacy circuit breaker',
+    });
   });
   app.post('/api/v1/autopilot/circuit-breaker/reset', async (request) => {
     await requirePermission(request, 'autopilot.admin');
-    autopilot.resetCircuitBreaker();
-    return runtimeResponse(request, { state: autopilot.status().circuitBreaker });
+    return runtimeResponse(request, {
+      state: 'NOT_APPLICABLE',
+      reason: 'there is no legacy autopilot circuit breaker to reset',
+    });
   });
 
   app.get('/api/v1/runtime/status', async (request) => {
@@ -710,6 +918,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     await requirePermission(request, 'runtime.read');
     return runtimeResponse(request, await resilienceRuntime.decisions.list());
   });
+  app.get('/api/v1/runtime/decisions/:id/explanation', async (request) => {
+    await requirePermission(request, 'runtime.read');
+    const params = z.object({ id: z.string().min(1) }).parse(request.params);
+    const decision = (await resilienceRuntime.decisions.list()).find(
+      (candidate) => candidate.decisionId === params.id,
+    );
+    if (!decision) throw new NotFoundAppError('runtime decision');
+    return runtimeResponse(request, explainDecision(decision));
+  });
   app.get('/api/v1/runtime/incidents', async (request) => {
     await requirePermission(request, 'runtime.read');
     return runtimeResponse(request, await resilienceRuntime.incidents.list());
@@ -721,6 +938,31 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   app.get('/api/v1/runtime/capabilities', async (request) => {
     await requirePermission(request, 'runtime.inspect');
     return runtimeResponse(request, resilienceRuntime.capabilities());
+  });
+  // Read-only negotiation view. It reports which platform capabilities this
+  // deployment actually supports; it never grants or performs an operation, so
+  // exposing it does not make the API an execution authority.
+  app.get('/api/v1/runtime/platform-capabilities', async (request) => {
+    await requirePermission(request, 'runtime.inspect');
+    const rawQuery = (request.query ?? {}) as Readonly<Record<string, unknown>>;
+    const requested = String(rawQuery['capabilities'] ?? '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+    return runtimeResponse(
+      request,
+      negotiatePlatformCapabilities(
+        // The API host runs the same negotiated contract as every other host.
+        process.platform === 'darwin'
+          ? 'macos'
+          : process.platform === 'win32'
+            ? 'windows'
+            : process.platform === 'android'
+              ? 'android'
+              : 'linux',
+        [...resilienceRuntime.capabilities().map((adapter) => adapter.adapterId), ...requested],
+      ),
+    );
   });
   app.post('/api/v1/runtime/cycle', async (request, reply) => {
     const input = runtimeCycleSchema.parse(request.body ?? {});
@@ -780,7 +1022,8 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     return ok(snapshot);
   });
 
-  app.post('/api/v1/auth/register', async (request, reply) => {
+  const authRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 10, windowMs: 60_000 }));
+  app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
     const input = registerSchema.parse(request.body);
     if (users.find((u) => u.email === input.email))
       throw new ConflictAppError('Email is already registered.');
@@ -790,18 +1033,24 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       name: input.name,
       passwordHash: hashPassword(input.password),
       status: 'active',
-      roles: ['platform_admin'],
-      permissions,
+      roles: isBootstrapAdminEmail(input.email) ? ['platform_admin'] : ['member'],
+      permissions: isBootstrapAdminEmail(input.email) ? permissions : [],
       createdAt: now(),
       updatedAt: now(),
     });
     await events.publish(createDomainEvent('user.registered', user.id, { email: user.email }));
+
+    // Track user registration in Vercel Analytics
+    await trackServerEvent('user_registered', {
+      status: user.status,
+    });
+
     return reply.code(201).send(created(publicUser(user) as never));
   });
-  app.post('/api/v1/auth/login', async (request) => {
+  app.post('/api/v1/auth/login', { preHandler: authRateLimit }, async (request) => {
     const input = loginSchema.parse(request.body);
     const user = users.find((u) => u.email === input.email);
-    if (!user || !verifyPassword(input.password, user.passwordHash))
+    if (!user || user.status !== 'active' || !verifyPassword(input.password, user.passwordHash))
       throw new UnauthorizedAppError('Invalid credentials');
     const session: Session = {
       id: crypto.randomUUID(),
@@ -818,6 +1067,12 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       type: 'access',
       ttlSeconds: 900,
     });
+
+    // Track successful login in Vercel Analytics
+    await trackServerEvent('user_login', {
+      method: 'password',
+    });
+
     const refreshToken = jwt.sign({
       sub: user.id,
       roles: user.roles,
@@ -828,20 +1083,38 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     });
     return ok({ accessToken, refreshToken, expiresIn: 900, user: publicUser(user) });
   });
-  app.post('/api/v1/auth/refresh', async (request) => {
+  app.post('/api/v1/auth/refresh', { preHandler: authRateLimit }, async (request) => {
     const token = z.object({ refreshToken: z.string() }).parse(request.body).refreshToken;
     const claims = jwt.verify(token, 'refresh');
     const user = users.get(claims.sub);
-    if (!user || !claims.sessionId || !sessions.has(claims.sessionId))
+    const session = claims.sessionId ? sessions.get(claims.sessionId) : undefined;
+    const sessionExpired = session ? Date.now() >= Date.parse(session.expiresAt) : true;
+    if (!user || user.status !== 'active' || !session || session.revokedAt || sessionExpired)
       throw new UnauthorizedAppError();
+    sessions.delete(session.id);
+    const rotated: Session = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      refreshToken: crypto.randomUUID(),
+      expiresAt: new Date(Date.now() + 30 * 86400_000).toISOString(),
+    };
+    sessions.set(rotated.id, rotated);
     return ok({
       accessToken: jwt.sign({
         sub: user.id,
         roles: user.roles,
         scopes: user.permissions,
-        sessionId: claims.sessionId,
+        sessionId: rotated.id,
         type: 'access',
         ttlSeconds: 900,
+      }),
+      refreshToken: jwt.sign({
+        sub: user.id,
+        roles: user.roles,
+        scopes: user.permissions,
+        sessionId: rotated.id,
+        type: 'refresh',
+        ttlSeconds: 30 * 86400,
       }),
       expiresIn: 900,
     });
@@ -849,8 +1122,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   app.post('/api/v1/auth/logout', async (request) => {
     const p = await requireAuth(request);
     const sid = String(p.metadata?.sessionId ?? '');
-    const s = sessions.get(sid);
-    if (s) s.revokedAt = now();
+    sessions.delete(sid);
     return ok({ loggedOut: true });
   });
   app.post('/api/v1/auth/password-reset/request', async (request) => {
@@ -993,6 +1265,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
   });
   return app;
 };
+
+// Export Speed Insights utilities for use in other modules
+export {
+  generateSpeedInsightsScript,
+  injectSpeedInsightsIntoHtml,
+  defaultSpeedInsightsConfig,
+  type SpeedInsightsConfig,
+};
+
 if (process.argv[1]?.endsWith('index.js')) {
   const config = loadConfig();
   const server = await buildServer();

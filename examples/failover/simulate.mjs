@@ -38,15 +38,18 @@ const context = {
   requiredCapabilities: ['internet'],
   candidates,
   historicalObservations: Object.fromEntries(
-    candidates.map((candidate) => [candidate.id, [
-      {
-        timestamp: candidate.timestamp,
-        latencyMs: candidate.metrics.latencyMs,
-        availabilityRatio: candidate.metrics.availabilityRatio,
-        reliabilityRatio: candidate.metrics.reliabilityRatio,
-        uptimeRatio: candidate.metrics.reliabilityRatio,
-      },
-    ]]),
+    candidates.map((candidate) => [
+      candidate.id,
+      [
+        {
+          timestamp: candidate.timestamp,
+          latencyMs: candidate.metrics.latencyMs,
+          availabilityRatio: candidate.metrics.availabilityRatio,
+          reliabilityRatio: candidate.metrics.reliabilityRatio,
+          uptimeRatio: candidate.metrics.reliabilityRatio,
+        },
+      ],
+    ]),
   ),
 };
 
@@ -62,12 +65,18 @@ const decision = await engine.simulateDecision({
   now: context.timestamp,
 });
 
-console.log(JSON.stringify({
-  selectedCandidate: decision.selectedCandidate?.id ?? null,
-  score: decision.score,
-  confidence: decision.confidence,
-  status: decision.status,
-  policyValidation: decision.policyValidation,
-  securityValidation: decision.securityValidation,
-  applied: false,
-}, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      selectedCandidate: decision.selectedCandidate?.id ?? null,
+      score: decision.score,
+      confidence: decision.confidence,
+      status: decision.status,
+      policyValidation: decision.policyValidation,
+      securityValidation: decision.securityValidation,
+      applied: false,
+    },
+    null,
+    2,
+  ),
+);

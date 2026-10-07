@@ -1,24 +1,9 @@
-import {
-  createHmac,
-  randomBytes,
-  randomUUID,
-  timingSafeEqual,
-} from 'node:crypto';
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 
-export type RemoteClientPlatform =
-  | 'android'
-  | 'ios'
-  | 'linux'
-  | 'macos'
-  | 'windows'
-  | 'unknown';
+export type RemoteClientPlatform = 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'unknown';
 
 export type RemoteClientScope =
-  | 'runtime.read'
-  | 'runtime.inspect'
-  | 'autopilot.read'
-  | 'measurements.read'
-  | 'platform.status';
+  'runtime.read' | 'runtime.inspect' | 'autopilot.read' | 'measurements.read' | 'platform.status';
 
 export const DEFAULT_REMOTE_CLIENT_SCOPES: readonly RemoteClientScope[] = [
   'runtime.read',
@@ -97,7 +82,8 @@ export class DeviceCredentialService {
   private readonly credentials = new Map<string, DeviceCredential>();
 
   constructor(private readonly secretKey: string) {
-    if (secretKey.length < 32) throw new Error('Device credential key must be at least 32 characters.');
+    if (secretKey.length < 32)
+      throw new Error('Device credential key must be at least 32 characters.');
   }
 
   issue(input: {
@@ -196,7 +182,12 @@ export class RotatingRefreshTokenStore {
     if (secretKey.length < 32) throw new Error('Refresh token key must be at least 32 characters.');
   }
 
-  issue(subject: string, scopes: readonly string[], ttlSeconds = DEFAULT_REFRESH_TTL_SECONDS, now = new Date()): RotatedRefreshToken {
+  issue(
+    subject: string,
+    scopes: readonly string[],
+    ttlSeconds = DEFAULT_REFRESH_TTL_SECONDS,
+    now = new Date(),
+  ): RotatedRefreshToken {
     if (!subject.trim()) throw new Error('Refresh token subject is required.');
     if (!Number.isInteger(ttlSeconds) || ttlSeconds < 300 || ttlSeconds > 180 * 24 * 60 * 60)
       throw new Error('Invalid refresh token TTL.');
@@ -218,7 +209,8 @@ export class RotatingRefreshTokenStore {
     const candidateDigest = digest(normalizeSecret(token), this.secretKey);
     for (const record of this.records.values()) {
       if (!safeEqual(candidateDigest, record.tokenDigest)) continue;
-      if (record.revokedAt || record.usedAt || Date.parse(record.expiresAt) <= now.getTime()) return null;
+      if (record.revokedAt || record.usedAt || Date.parse(record.expiresAt) <= now.getTime())
+        return null;
       record.usedAt = now.toISOString();
       const replacementTokenId = randomUUID();
       const replacementToken = `irp_rt_${randomBytes(48).toString('base64url')}`;
@@ -286,7 +278,12 @@ export class SecurityAuditLog {
     if (!Number.isInteger(maxEvents) || maxEvents < 1) throw new Error('Invalid audit log size.');
   }
 
-  record(input: Omit<SecurityAuditEvent, 'id' | 'at' | 'metadata'> & { metadata?: Record<string, unknown>; at?: string }): SecurityAuditEvent {
+  record(
+    input: Omit<SecurityAuditEvent, 'id' | 'at' | 'metadata'> & {
+      metadata?: Record<string, unknown>;
+      at?: string;
+    },
+  ): SecurityAuditEvent {
     const event: SecurityAuditEvent = {
       id: randomUUID(),
       at: input.at ?? new Date().toISOString(),
@@ -298,15 +295,18 @@ export class SecurityAuditLog {
       metadata: sanitizeSecurityMetadata(input.metadata),
     };
     this.events.push(event);
-    if (this.events.length > this.maxEvents) this.events.splice(0, this.events.length - this.maxEvents);
+    if (this.events.length > this.maxEvents)
+      this.events.splice(0, this.events.length - this.maxEvents);
     return event;
   }
 
   list(limit = this.maxEvents): readonly SecurityAuditEvent[] {
-    return this.events.slice(Math.max(0, this.events.length - Math.min(limit, this.maxEvents))).map((event) => ({
-      ...event,
-      metadata: { ...event.metadata },
-    }));
+    return this.events
+      .slice(Math.max(0, this.events.length - Math.min(limit, this.maxEvents)))
+      .map((event) => ({
+        ...event,
+        metadata: { ...event.metadata },
+      }));
   }
 }
 

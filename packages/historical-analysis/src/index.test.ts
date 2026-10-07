@@ -64,7 +64,9 @@ describe('@irp/historical-analysis', () => {
     expect(report.summary.averageLatencyMs).toBe(35);
     expect(report.summary.p95LatencyMs).toBe(48.5);
     expect(report.trends.find((trend) => trend.metric === 'latency')?.direction).toBe('worsening');
-    expect(report.trends.find((trend) => trend.metric === 'availability')?.direction).toBe('worsening');
+    expect(report.trends.find((trend) => trend.metric === 'availability')?.direction).toBe(
+      'worsening',
+    );
     expect(report.series).toHaveLength(1);
     expect(report.series[0]!.probeType).toBe('https');
   });
@@ -82,9 +84,12 @@ describe('@irp/historical-analysis', () => {
   });
 
   it('rejects invalid ranges and measurements', async () => {
-    expect(() => new InMemoryHistoricalMeasurementStore([
-      { timestamp: 'not-a-date', probeType: 'https', success: true },
-    ])).toThrow('invalid ISO timestamp');
+    expect(
+      () =>
+        new InMemoryHistoricalMeasurementStore([
+          { timestamp: 'not-a-date', probeType: 'https', success: true },
+        ]),
+    ).toThrow('invalid ISO timestamp');
 
     const store = new InMemoryHistoricalMeasurementStore();
     await expect(store.query({ from: at(2), to: at(1) })).rejects.toThrow(

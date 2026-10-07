@@ -6,7 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Release gate: restored the `IRP Release` workflow with a fail-closed check that the tagged commit has a passing Release Gate.
+- Release gate: iOS Full Client now builds against the generic iOS Simulator destination instead of a simulator runtime that is not installed on the runner.
+- Release gate: Public Runtime Lab soak retries transport-level errors from the Quick Tunnel in a bounded way while still failing on persistent errors and non-200 readiness.
+- Integration baseline: API and daemon runtime reports now record verified workspace integrations, so `pnpm integration:baseline` passes.
+- Security: raised the `@fastify/static` override to 10.1.5 (authorization bypass via non-canonical paths).
+- Docs: download page matches the Phase 71 asset names and documents `SHA256SUMS.txt` verification.
+
 ### Added
+
+- `docs/release/RELEASE_GATE_ROADMAP.md`: ordered path from current `main` to Phase 71 certification, production certification and the post-v1 roadmap.
 
 - Phase 45 Network Identity & Destination Policy Assurance with explicit egress and destination evidence contracts.
 - Strict identity evidence validation for IPv4/IPv6, declared address family, resolved destination addresses, timestamps, ASN metadata and destination ports.

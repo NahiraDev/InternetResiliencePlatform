@@ -1,10 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import { randomUUID } from 'node:crypto';
-import type { EventBus } from '@irp/events';
 import type { KernelRuntime, Principal } from '@irp/kernel';
 import type { MonitoringSnapshot, NetworkHealthScore } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import type { DomainEvent } from '@irp/shared';
 
 export type ConnectivityProviderType =
   | 'ethernet'
@@ -211,7 +209,6 @@ export interface PolicyDecision {
   constraints?: string[];
 }
 export interface ConnectivityManagerOptions {
-  events?: EventBus;
   kernel?: KernelRuntime;
   principal?: Principal;
   metrics?: MetricsRegistry;
@@ -952,13 +949,6 @@ export class ConnectivityManager {
     return p;
   }
   private async audit(type: string, payload: Record<string, unknown>): Promise<void> {
-    await this.options.events?.publish({
-      id: randomUUID(),
-      type,
-      aggregateId: 'connectivity',
-      occurredAt: new Date(),
-      payload,
-    } as DomainEvent);
     this.options.kernel?.context(this.options.principal).logger.info(type, payload);
   }
   private metric(name: string, value: number, labels?: Record<string, string>): void {

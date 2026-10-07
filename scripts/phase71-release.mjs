@@ -30,7 +30,9 @@ if (entries.length === 0) {
 for (const asset of manifest.assets) {
   const matches = entries.filter((name) => new RegExp(asset.pattern).test(name));
   if (matches.length !== 1) {
-    fail(`${asset.platform} requires exactly one ${asset.kind} asset; found ${matches.length}: ${matches.join(', ') || 'none'}`);
+    fail(
+      `${asset.platform} requires exactly one ${asset.kind} asset; found ${matches.length}: ${matches.join(', ') || 'none'}`,
+    );
   }
   const filePath = join(assetsDir, matches[0]);
   const fileStat = await stat(filePath);
@@ -51,7 +53,9 @@ const expected = new Set([
   ...manifest.assets.map((asset) => new RegExp(asset.pattern)),
   /^SHA256SUMS\.txt$/,
 ]);
-const unexpected = entries.filter((name) => ![...expected].some((pattern) => pattern.test(basename(name))));
+const unexpected = entries.filter(
+  (name) => ![...expected].some((pattern) => pattern.test(basename(name))),
+);
 if (unexpected.length > 0) {
   fail(`unexpected release assets: ${unexpected.join(', ')}`);
 }

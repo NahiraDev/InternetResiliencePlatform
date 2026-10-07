@@ -1,31 +1,104 @@
+import {
+  FailoverRecoveryEngine,
+  type FailureDomain,
+  type FailureSeverity,
+  type RecoveryAdapters,
+} from '@irp/failover';
+import type { TransitionReason } from '@irp/connectivity';
 import { deepFreeze, nextId, nowIso } from '../domain/ids.js';
-import type { ActionPlan, RecoveryPlan, RuntimeContext } from '../domain/types.js';
-import { RuntimeAdapterRegistry, createDefaultRuntimeAdapterRegistry } from '../adapter-registry.js';
+import type { ActionIntent, ActionPlan, RecoveryPlan, RuntimeContext } from '../domain/types.js';
+import type { CanonicalNetworkControlPlane } from '../canonical-network-adapter.js';
+import {
+  RuntimeAdapterRegistry,
+  createDefaultRuntimeAdapterRegistry,
+} from '../adapter-registry.js';
+
+type ConnectivityTransitionTrigger =
+  'policy' | 'health' | 'manual' | 'provider' | 'recovery' | 'simulation';
+
+const TRANSITION_REASONS = new Set<TransitionReason>([
+  'active-source-failed',
+  'health-degraded',
+  'policy-requested',
+  'manual-request',
+  'preferred-source-recovered',
+  'better-source-available',
+  'critical-connectivity-loss',
+  'provider-disabled',
+  'provider-recovered',
+  'candidate-activation-failed',
+  'candidate-verification-failed',
+]);
+
+const TRANSITION_TRIGGERS = new Set<ConnectivityTransitionTrigger>([
+  'policy',
+  'health',
+  'manual',
+  'provider',
+  'recovery',
+  'simulation',
+]);
+
+const canonicalTransitionReason = (reason?: string): TransitionReason =>
+  reason && TRANSITION_REASONS.has(reason as TransitionReason)
+    ? (reason as TransitionReason)
+    : 'critical-connectivity-loss';
+
+const canonicalTransitionTrigger = (trigger?: string): ConnectivityTransitionTrigger =>
+  trigger && TRANSITION_TRIGGERS.has(trigger as ConnectivityTransitionTrigger)
+    ? (trigger as ConnectivityTransitionTrigger)
+    : 'recovery';
 
 export class FailoverRecoveryProvider {
   constructor(
     private readonly adapters: RuntimeAdapterRegistry = createDefaultRuntimeAdapterRegistry(),
+    private readonly controlPlane?: CanonicalNetworkControlPlane,
   ) {}
 
   async recover(plan: ActionPlan, reason: string, context: RuntimeContext): Promise<RecoveryPlan> {
-    // Security-triggered recovery must fail closed rather than attempting a mutation.
     if (reason.toLowerCase().includes('security')) {
-      return deepFreeze({
-        id: nextId('recovery'),
-        schemaVersion: 1,
-        createdAt: nowIso(),
-        correlationId: context.correlationId,
-        source: '@irp/failover-adapter',
-        metadata: { delegated: false, attempted: false },
-        delegatedTo: 'failover',
-        status: 'failed',
-        reason: `${reason}; security recovery is fail-closed`,
-      });
+      return this.failed(context, `${reason}; security recovery is fail-closed`, false);
     }
 
-    // Recovery is a subsystem concern. Do not require the adapter that executed
-    // the failed action to also implement rollback; delegate to the failover
-    // recovery adapter instead.
+    if (
+      this.controlPlane &&
+      (plan.selectedAction.intent === 'connectivity_failover' ||
+        plan.selectedAction.intent === 'route_change')
+    ) {
+      try {
+        const engine = new FailoverRecoveryEngine(this.buildRecoveryAdapters(this.controlPlane));
+        const failure = this.toFailure(plan.selectedAction.intent, reason, context);
+        const recovered = await engine.recover(failure);
+        const succeeded =
+          recovered.steps.length > 0 &&
+          recovered.steps.every((step) => step.status === 'succeeded');
+        return deepFreeze({
+          id: nextId('recovery'),
+          schemaVersion: 1,
+          createdAt: nowIso(),
+          correlationId: context.correlationId,
+          source: '@irp/failover',
+          metadata: {
+            delegated: true,
+            attempted: true,
+            engineState: engine.getState(),
+            recoveryPlanId: recovered.id,
+            selectedActions: recovered.steps.map((step) => step.action),
+            stepStatuses: recovered.steps.map((step) => step.status),
+          },
+          delegatedTo: 'failover',
+          status: succeeded ? 'success' : recovered.steps.length === 0 ? 'degraded' : 'failed',
+          reason,
+        });
+      } catch (error) {
+        return this.failed(
+          context,
+          `${reason}; canonical failover execution failed: ${error instanceof Error ? error.message : String(error)}`,
+          true,
+        );
+      }
+    }
+
     const actionAdapter = this.adapters.findForAction(
       plan.selectedAction.intent,
       plan.requiredCapabilities,
@@ -34,21 +107,16 @@ export class FailoverRecoveryProvider {
       actionAdapter?.descriptor.recoverySupport && actionAdapter.rollback
         ? actionAdapter
         : this.adapters.findForAction('recovery', []);
-    const rollbackSupported = Boolean(recoveryAdapter?.descriptor.recoverySupport && recoveryAdapter.rollback);
+    const rollbackSupported = Boolean(
+      recoveryAdapter?.descriptor.recoverySupport && recoveryAdapter.rollback,
+    );
 
-    if (!rollbackSupported) {
-      return deepFreeze({
-        id: nextId('recovery'),
-        schemaVersion: 1,
-        createdAt: nowIso(),
-        correlationId: context.correlationId,
-        source: '@irp/failover-adapter',
-        metadata: { delegated: false, attempted: false },
-        delegatedTo: 'failover',
-        status: 'failed',
-        reason: `${reason}; no executable failover rollback adapter is available`,
-      });
-    }
+    if (!rollbackSupported)
+      return this.failed(
+        context,
+        `${reason}; no executable failover rollback adapter is available`,
+        false,
+      );
 
     try {
       const rollback = await recoveryAdapter!.rollback!(plan, context);
@@ -71,17 +139,95 @@ export class FailoverRecoveryProvider {
         reason,
       });
     } catch (error) {
-      return deepFreeze({
-        id: nextId('recovery'),
-        schemaVersion: 1,
-        createdAt: nowIso(),
-        correlationId: context.correlationId,
-        source: '@irp/failover-adapter',
-        metadata: { delegated: true, attempted: true },
-        delegatedTo: 'failover',
-        status: 'failed',
-        reason: `${reason}; rollback failed: ${error instanceof Error ? error.message : String(error)}`,
-      });
+      return this.failed(
+        context,
+        `${reason}; rollback failed: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+      );
     }
+  }
+
+  private buildRecoveryAdapters(controlPlane: CanonicalNetworkControlPlane): RecoveryAdapters {
+    return {
+      connectivity: {
+        getAvailableSources: () => controlPlane.connectivity.getAvailableSources(),
+        switchSource: (resourceId, recoveryReason, trigger) =>
+          controlPlane.connectivity.switchSource(
+            resourceId,
+            canonicalTransitionReason(recoveryReason),
+            canonicalTransitionTrigger(trigger),
+          ),
+      },
+      routing: {
+        simulateRouting: (routingContext) =>
+          controlPlane.routing.simulateRouting(
+            routingContext as Parameters<
+              CanonicalNetworkControlPlane['routing']['simulateRouting']
+            >[0],
+          ),
+        applyPlan: (routingPlan) => controlPlane.routing.applyPlan(routingPlan as never),
+      },
+      validate: async (step) => step.status !== 'failed',
+    };
+  }
+
+  private toFailure(intent: ActionIntent, reason: string, context: RuntimeContext) {
+    const domain = this.failureDomain(intent);
+    const severity = (domain === 'connectivity' ? 'critical' : 'major') as FailureSeverity;
+    return {
+      id: nextId('failure'),
+      domain,
+      component: intent,
+      type: 'transient' as const,
+      severity,
+      confidence: 'high' as const,
+      confidenceScore: 95,
+      detectedAt: nowIso(),
+      source: 'resilience-runtime',
+      evidence: [
+        {
+          signalId: nextId('signal'),
+          source: 'resilience-runtime',
+          message: reason,
+          observedAt: nowIso(),
+          weight: 50,
+        },
+      ],
+      impact: {
+        affectedDomains: [domain],
+        affectedComponents: [intent],
+        downstreamComponents: ['resilience-runtime'],
+        serviceImpact: 'degraded' as const,
+        estimatedBlastRadius: 0.5,
+      },
+      state: 'confirmed' as const,
+      correlationId: context.correlationId,
+    };
+  }
+
+  private failureDomain(intent: ActionIntent): FailureDomain {
+    switch (intent) {
+      case 'connectivity_failover':
+      case 'provider_switch':
+        return 'connectivity';
+      case 'route_change':
+        return 'route';
+      default:
+        return 'platform';
+    }
+  }
+
+  private failed(context: RuntimeContext, reason: string, attempted: boolean): RecoveryPlan {
+    return deepFreeze({
+      id: nextId('recovery'),
+      schemaVersion: 1,
+      createdAt: nowIso(),
+      correlationId: context.correlationId,
+      source: '@irp/failover-adapter',
+      metadata: { delegated: attempted, attempted },
+      delegatedTo: 'failover',
+      status: 'failed',
+      reason,
+    });
   }
 }

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-07T01:55:13.390Z",
+  "traces": [
+    {
+      "entrypoint": "apps/daemon/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "reachesSafetyKernel": false,
+      "reachesVerification": true
+    },
+    {
+      "entrypoint": "packages/linux-client/src/index.ts",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "reachesSafetyKernel": false,
+      "reachesVerification": true
+    }
+  ],
+  "mutationSites": [
+    {
+      "marker": "coordinated-executor",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "direct-route-mutation",
+      "path": "apps/daemon/src/index.ts"
+    },
+    {
+      "marker": "transaction-engine",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    }
+  ],
+  "verificationSites": [
+    {
+      "marker": "destination-verification",
+      "path": "apps/daemon/src/index.ts"
+    },
+    {
+      "marker": "destination-verification",
+      "path": "packages/resilience-runtime/src/canonical-network-adapter.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "apps/daemon/src/auto-optimization-host.test.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/adapter-registry.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/domain/types.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/e2e-validation.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/planning/planner.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/verification/outcome-verification.ts"
+    },
+    {
+      "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/verification/verification.ts"
+    },
+    {
+      "marker": "runtime-action-verifier",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "runtime-action-verifier",
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
+    },
+    {
+      "marker": "runtime-action-verifier",
+      "path": "packages/resilience-runtime/src/verification/verification.ts"
+    },
+    {
+      "marker": "verify-call",
+      "path": "packages/resilience-runtime/src/runtime.ts"
+    },
+    {
+      "marker": "verify-call",
+      "path": "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
+    }
+  ],
+  "summary": {
+    "entrypoints": 2,
+    "mutationSites": 3,
+    "verificationSites": 15,
+    "everyEntrypointComposesCanonically": true,
+    "noDirectRuntimeConstruction": true
+  }
+}

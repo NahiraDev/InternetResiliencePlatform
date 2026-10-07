@@ -1,0 +1,189 @@
+/**
+ * Multi-intent arbitration + policy conflict resolution for issue #274 (Section C).
+ * Single source of truth for intent arbitration and policy conflict resolution.
+ * No new authority — pure functions consumed by the canonical runtime.
+ */
+
+import type { PolicySnapshot, CompiledIntent, IntentConflict } from '../domain/types.js';
+import { isAutonomyPermitted } from '@irp/core';
+
+// `IntentConflict` is declared once, in domain/types.ts, and re-exported here
+// so existing importers keep working without a second competing definition.
+export type { IntentConflict };
+
+export interface PolicyConflict {
+  readonly policyA: PolicySnapshot;
+  readonly policyB: PolicySnapshot;
+  readonly reason: string;
+  readonly resolution: 'union' | 'intersection' | 'hierarchical';
+}
+
+/**
+ * Arbitrates between multiple compiled intents.
+ * Returns the ordered list of intents that may proceed, plus any conflicts.
+ */
+export const arbitrateIntents = (
+  intents: readonly CompiledIntent[],
+  now = new Date(),
+): {
+  readonly ordered: readonly CompiledIntent[];
+  readonly conflicts: readonly IntentConflict[];
+} => {
+  // Filter to only effective intents
+  const effective = intents.filter((intent) => {
+    const from = intent.effectiveFrom ? Date.parse(intent.effectiveFrom) : Number.NEGATIVE_INFINITY;
+    const expires = intent.expiresAt ? Date.parse(intent.expiresAt) : Number.POSITIVE_INFINITY;
+    const timestamp = now.getTime();
+    return timestamp >= from && timestamp < expires;
+  });
+
+  // Sort by priority (critical > high > normal > low), then by version (newer wins), then by created time
+  const priorityOrder: Record<string, number> = {
+    critical: 4,
+    high: 3,
+    normal: 2,
+    low: 1,
+  };
+  const ordered = effective.slice().sort((a, b) => {
+    const pa = priorityOrder[a.priority] ?? 0;
+    const pb = priorityOrder[b.priority] ?? 0;
+    if (pa !== pb) return pb - pa;
+    if (a.version !== b.version) return b.version - a.version;
+    return new Date(b.compiledAt).getTime() - new Date(a.compiledAt).getTime();
+  });
+
+  // Detect conflicts: overlapping scopes with different desired outcomes
+  const conflicts: IntentConflict[] = [];
+  for (let i = 0; i < ordered.length; i++) {
+    for (let j = i + 1; j < ordered.length; j++) {
+      const a = ordered[i]!;
+      const b = ordered[j]!;
+      if (scopesOverlap(a, b) && a.desiredOutcome !== b.desiredOutcome) {
+        // Higher priority supersedes; if same priority, newer version supersedes
+        const resolution =
+          a.priority === b.priority
+            ? a.version > b.version
+              ? 'supersede-b'
+              : 'supersede-a'
+            : (priorityOrder[a.priority] ?? 0) > (priorityOrder[b.priority] ?? 0)
+              ? 'supersede-b'
+              : 'supersede-a';
+        conflicts.push({
+          intentA: a,
+          intentB: b,
+          reason: `Overlapping scope with different outcomes: ${a.desiredOutcome} vs ${b.desiredOutcome}`,
+          resolution,
+        });
+      }
+    }
+  }
+
+  return { ordered: Object.freeze(ordered), conflicts: Object.freeze(conflicts) };
+};
+
+const scopesOverlap = (a: CompiledIntent, b: CompiledIntent): boolean => {
+  const aKeys = new Set(Object.keys(a.scope));
+  for (const key of Object.keys(b.scope)) {
+    if (aKeys.has(key)) return true;
+  }
+  return false;
+};
+
+/**
+ * Policy-conflict resolution now lives in {@link PolicyRegistry}. Snapshot-level
+ * callers should use `RuntimePolicyArbitrator.resolvePolicyConflicts`, which
+ * delegates to that canonical implementation.
+ */
+
+/**
+ * Enforces intent autonomy at the mutation boundary.
+ * Throws if the action class exceeds the intent's autonomy level.
+ */
+export const enforceAutonomy = (
+  intent: CompiledIntent,
+  actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk',
+): void => {
+  if (!isAutonomyPermitted(intent, actionClass)) {
+    throw new Error(
+      `Autonomy violation: intent ${intent.intentId} (autonomy=${intent.autonomy}) ` +
+        `does not permit action class ${actionClass}`,
+    );
+  }
+};
+
+/**
+ * Maps action intents to autonomy action classes for enforcement.
+ */
+export const ACTION_CLASS: Readonly<
+  Record<string, 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk'>
+> = Object.freeze({
+  noop: 'read',
+  health_reprobe: 'advise',
+  dns_switch: 'safe_mutate',
+  provider_switch: 'safe_mutate',
+  route_change: 'autonomous',
+  tunnel_switch: 'autonomous',
+  connectivity_failover: 'autonomous',
+  recovery: 'high_risk',
+  rollback: 'high_risk',
+  degraded_mode: 'autonomous',
+});
+
+/**
+ * Canonical intent store interface — for durable persistence of intents.
+ * Implementations provide the actual storage (DB, etcd, etc.).
+ */
+export interface IntentStore {
+  readonly get: (id: string) => Promise<CompiledIntent | undefined>;
+  readonly getActive: (at?: Date) => Promise<readonly CompiledIntent[]>;
+  readonly put: (intent: CompiledIntent) => Promise<void>;
+  readonly delete: (id: string) => Promise<void>;
+  /**
+   * Durable arbitration-conflict journal. Optional so read-only stores stay
+   * valid; the canonical arbitrator calls it when present, so conflicts are
+   * persisted wherever the runtime persists intents.
+   */
+  readonly recordConflicts?: (conflicts: readonly IntentConflict[]) => Promise<void>;
+}
+
+/**
+ * In-memory intent store for testing and simulation.
+ */
+export class InMemoryIntentStore implements IntentStore {
+  private readonly store = new Map<string, CompiledIntent>();
+  private readonly conflicts: IntentConflict[] = [];
+
+  async get(id: string): Promise<CompiledIntent | undefined> {
+    return this.store.get(id);
+  }
+
+  async getActive(at = new Date()): Promise<readonly CompiledIntent[]> {
+    const all = Array.from(this.store.values());
+    return all.filter((intent) => {
+      const from = intent.effectiveFrom
+        ? Date.parse(intent.effectiveFrom)
+        : Number.NEGATIVE_INFINITY;
+      const expires = intent.expiresAt ? Date.parse(intent.expiresAt) : Number.POSITIVE_INFINITY;
+      const timestamp = at.getTime();
+      return timestamp >= from && timestamp < expires;
+    });
+  }
+
+  async put(intent: CompiledIntent): Promise<void> {
+    this.store.set(intent.intentId, intent);
+  }
+
+  async delete(id: string): Promise<void> {
+    this.store.delete(id);
+  }
+
+  async recordConflicts(conflicts: readonly IntentConflict[]): Promise<void> {
+    for (const conflict of conflicts) {
+      this.conflicts.push(conflict);
+    }
+  }
+
+  async listConflicts(): Promise<readonly IntentConflict[]> {
+    return Object.freeze([...this.conflicts]);
+  }
+}

@@ -108,10 +108,12 @@ const parseTelemetryHeaders = (value: string | undefined): Record<string, string
   const headers: Record<string, string> = {};
   for (const part of value.split(',')) {
     const separator = part.indexOf('=');
-    if (separator <= 0) throw new Error('OTEL_EXPORTER_OTLP_HEADERS must contain comma-separated key=value pairs');
+    if (separator <= 0)
+      throw new Error('OTEL_EXPORTER_OTLP_HEADERS must contain comma-separated key=value pairs');
     const key = part.slice(0, separator).trim();
     const headerValue = part.slice(separator + 1).trim();
-    if (!key || !headerValue) throw new Error('OTEL_EXPORTER_OTLP_HEADERS contains an empty key or value');
+    if (!key || !headerValue)
+      throw new Error('OTEL_EXPORTER_OTLP_HEADERS contains an empty key or value');
     headers[key] = headerValue;
   }
   return headers;

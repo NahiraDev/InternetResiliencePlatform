@@ -22,7 +22,11 @@ export interface WindowsSystemAdapter {
 
 async function command(file: string, args: string[], timeout = 5_000): Promise<string> {
   try {
-    const result = await execFileAsync(file, args, { timeout, maxBuffer: 512 * 1024, windowsHide: true });
+    const result = await execFileAsync(file, args, {
+      timeout,
+      maxBuffer: 512 * 1024,
+      windowsHide: true,
+    });
     return result.stdout.trim();
   } catch (error) {
     return `unavailable: ${error instanceof Error ? error.message : String(error)}`;
@@ -46,7 +50,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
     const [interfaces, routes, dns] = await Promise.all([
       command('ipconfig', ['/all']),
       command('route', ['print']),
-      command('netsh', ['interface', 'ip', 'show', 'dns']),
+      command('netsh', ['interface', 'ipv4', 'show', 'dnsservers']),
     ]);
     return { interfaces, routes, dns, capturedAt: new Date().toISOString(), platform: 'win32' };
   }

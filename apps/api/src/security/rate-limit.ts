@@ -71,10 +71,7 @@ export const defaultRateLimitKey = (request: FastifyRequest): string => {
   return request.ip || request.socket.remoteAddress || 'unknown';
 };
 
-export const rateLimitPreHandler = (
-  limiter: InMemoryRateLimiter,
-  key = defaultRateLimitKey,
-) => {
+export const rateLimitPreHandler = (limiter: InMemoryRateLimiter, key = defaultRateLimitKey) => {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const decision = limiter.check(key(request));
     const resetSeconds = Math.max(1, Math.ceil((decision.resetAt - Date.now()) / 1000));

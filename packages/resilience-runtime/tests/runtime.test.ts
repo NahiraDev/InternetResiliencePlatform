@@ -26,7 +26,9 @@ import {
   SubsystemDecisionAdapter,
   type Observation,
   type CandidateAction,
+  type TelemetrySink,
 } from '../src/index.js';
+import { validateEvent } from '../src/events/event-taxonomy.js';
 const obs = (
   id: string,
   category = 'dns',
@@ -98,11 +100,17 @@ describe('Phase 22 resilience runtime', () => {
   it('blocks terminal transitions', async () => {
     await expect(new RuntimeStateMachine('stopped').transition('idle')).rejects.toThrow('Illegal');
   });
-  it('emits blocked events', async () => {
+  it('emits taxonomy-conformant terminal state events', async () => {
     const e = new InMemoryEventSink();
     const sm = new RuntimeStateMachine('planning', e);
     await sm.transition('blocked');
-    expect(e.events.map((x) => x.event)).toContain('runtime.blocked');
+    const names = e.events.map((x) => x.event);
+    expect(names).toContain('runtime.state.blocked');
+    // Every emitted name must be a real taxonomy entry, otherwise the evidence
+    // is rejected and silently dropped from the incident trace.
+    for (const name of names) {
+      expect(validateEvent(name, { correlationId: 'c' }).valid).toBe(true);
+    }
   });
   it('creates immutable contexts', () => {
     const c = createRuntimeContext({ mode: 'safe' });
@@ -266,6 +274,22 @@ describe('Phase 22 resilience runtime', () => {
         )
       ).alternatives,
     ).toHaveLength(1));
+  it('retains policy-denied candidates while selecting the next policy-allowed strategy', async () => {
+    const context = trusted();
+    const plan = await new DeterministicPlanner().plan(
+      [
+        candidate('route_change', 0.99, ['route.write']),
+        candidate('dns_switch', 0.9, ['dns.write']),
+      ],
+      context,
+    );
+
+    expect(plan.selectedAction.intent).toBe('dns_switch');
+    expect(plan.policyResult.allowed).toBe(true);
+    expect(plan.alternatives).toHaveLength(1);
+    expect(plan.alternatives[0]?.intent).toBe('route_change');
+    expect(plan.alternatives[0]?.rejectionReasons).toContain('action route_change is not allowed');
+  });
   it('records rejection reasons', async () =>
     expect(
       (
@@ -478,6 +502,26 @@ describe('Phase 22 resilience runtime', () => {
     const r = await rt.cycle({ mode: 'simulation' });
     expect(r.outcome).toBe('blocked');
   });
+  it('records the canonical policy rejection while selecting an allowed alternative', async () => {
+    const rt = new ResilienceRuntime([], {
+      decisionProvider: {
+        async decide() {
+          return [
+            candidate('route_change', 0.99, ['route.write']),
+            candidate('dns_switch', 0.9, ['dns.write']),
+          ];
+        },
+      },
+    });
+
+    const record = await rt.cycle(trusted());
+
+    expect(record.outcome).toBe('simulated');
+    expect(record.selectedPlan?.selectedAction.intent).toBe('dns_switch');
+    expect(
+      record.candidates.find((item) => item.intent === 'route_change')?.rejectionReasons,
+    ).toContain('action route_change is not allowed');
+  });
   it('produces snapshot', async () => {
     const rt = new ResilienceRuntime();
     expect((await rt.getRuntimeSnapshot()).health.status).toBe('unknown');
@@ -486,6 +530,42 @@ describe('Phase 22 resilience runtime', () => {
     const t = new InMemoryTelemetrySink();
     t.increment('runtime_cycles_total');
     expect(t.snapshot().runtime_cycles_total).toBe(1);
+  });
+  it('continues local control when external telemetry fails', async () => {
+    const failingSink: TelemetrySink = {
+      increment: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+      observe: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+      snapshot: () => {
+        throw new Error('telemetry exporter unavailable');
+      },
+    };
+    const failingRegistry = {
+      record: () => {
+        throw new Error('telemetry registry unavailable');
+      },
+    } as never;
+    const rt = new ResilienceRuntime([], {
+      telemetrySink: failingSink,
+      telemetryRegistry: failingRegistry,
+    });
+
+    const result = await rt.cycle({
+      mode: 'simulation',
+      securityContext: { trusted: true },
+      capabilitySnapshot: createCapabilitySnapshot([], true),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy('simulation'),
+        allowedActions: ['noop'],
+        simulationOnly: false,
+      }),
+    });
+
+    expect(result).toBeDefined();
+    expect(rt.telemetry.snapshot().runtime_telemetry_failures_total).toBeGreaterThan(0);
   });
   it('emits events', async () => {
     const e = new InMemoryEventSink();
@@ -505,6 +585,64 @@ describe('Phase 22 resilience runtime', () => {
       }),
     });
     expect(await rt.decisions.list()).toHaveLength(1);
+  });
+  it('projects the exact governing policy snapshot to canonical runtime consumers', async () => {
+    const rt = new ResilienceRuntime();
+    const policySnapshot = createPolicySnapshot({
+      ...defaultPolicy('simulation'),
+      allowedActions: ['noop'],
+      actionBudget: 7,
+      simulationOnly: false,
+    });
+    const capabilitySnapshot = createCapabilitySnapshot([], true);
+
+    const result = await rt.cycle({
+      mode: 'simulation',
+      securityContext: { trusted: true },
+      capabilitySnapshot,
+      policySnapshot,
+    });
+    const snapshot = await rt.getRuntimeSnapshot();
+
+    expect(result.runtimeContext.policySnapshot).toEqual(policySnapshot);
+    expect(result.runtimeContext.capabilitySnapshot).toEqual(capabilitySnapshot);
+    expect(snapshot.policySnapshot).toEqual(policySnapshot);
+    expect(snapshot.policySnapshot.id).toBe(policySnapshot.id);
+  });
+  it('carries an active intent through the canonical runtime decision record', async () => {
+    const rt = new ResilienceRuntime();
+    const result = await rt.runIntent(
+      {
+        id: 'intent-runtime',
+        version: 1,
+        status: 'active',
+        priority: 10,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        spec: {
+          outcome: 'Maintain stable access to github.com',
+          target: { destination: 'github.com' },
+          constraints: { 'objective.latency': '0.9' },
+        },
+      },
+      {
+        mode: 'simulation',
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+        policySnapshot: createPolicySnapshot({
+          ...defaultPolicy('simulation'),
+          allowedActions: ['noop'],
+          simulationOnly: false,
+        }),
+      },
+    );
+
+    expect(result.runtimeContext.compiledIntent?.intentId).toBe('intent-runtime');
+    expect(result.runtimeContext.compiledIntent?.target.destination).toBe('github.com');
+    expect(result.runtimeContext.compiledIntents?.map((intent) => intent.intentId)).toEqual([
+      'intent-runtime',
+    ]);
+    expect(result.candidates[0]?.metadata.intent).toMatchObject({ id: 'intent-runtime' });
   });
   it('runtime records incidents', async () => {
     const rt = new ResilienceRuntime([new StaticObservationProvider('p', [obs('s', 'security')])]);

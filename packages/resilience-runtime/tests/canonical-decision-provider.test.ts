@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ObservationBatch, RuntimeContext } from '../src/domain/types.js';
 import { CanonicalDecisionProvider } from '../src/canonical-decision-provider.js';
+import { compileNetworkIntent } from '../src/intent/compiler.js';
+import { createNetworkIntent } from '@irp/core';
 
 const context = (observations: ObservationBatch): RuntimeContext => ({
   runtimeId: 'test-runtime',
@@ -113,5 +115,90 @@ describe('CanonicalDecisionProvider', () => {
     const result = await provider.decide([], context(batch({ internet_reachable: true })));
     expect(result).toHaveLength(1);
     expect(result[0]?.intent).toBe('noop');
+  });
+
+  it('carries a compiled intent into candidate metadata without granting execution authority', async () => {
+    const intent = {
+      ...createNetworkIntent({
+        id: 'intent-destination',
+        spec: { outcome: 'Maintain access', target: { destination: 'github.com' } },
+      }),
+      status: 'active' as const,
+    };
+    const result = await new CanonicalDecisionProvider().decide([], {
+      ...context(batch({ internet_reachable: true })),
+      compiledIntent: compileNetworkIntent(intent),
+    });
+
+    expect(result[0]?.intent).toBe('noop');
+    expect(result[0]?.metadata).toMatchObject({
+      intent: { id: 'intent-destination', desiredOutcome: 'Maintain access' },
+      destination: 'github.com',
+    });
+  });
+
+  it('mounts routing path evidence before canonical policy and execution', async () => {
+    const provider = new CanonicalDecisionProvider(undefined, {
+      pathEvidence: {
+        evaluate: async () => ({
+          destination: 'github.com',
+          recommendation: 'switch',
+          currentPathId: 'path:direct-a',
+          selectedPathId: 'path:tunnel-b',
+          currentScore: 35,
+          selectedScore: 90,
+          candidatePaths: [
+            {
+              id: 'path:direct-a',
+              type: 'direct',
+              score: 35,
+              state: 'degraded',
+              failureDomains: ['isp-a'],
+            },
+            {
+              id: 'path:tunnel-b',
+              type: 'tunnel',
+              score: 90,
+              state: 'available',
+              failureDomains: ['provider-b'],
+            },
+          ],
+          diverseAlternativeCount: 1,
+          confidence: 0.9,
+          expectedBenefit: 0.55,
+          risk: 0.2,
+          explanation: ['selected tunnel-b by score'],
+        }),
+      },
+    });
+    const result = await provider.decide(
+      [
+        {
+          id: 'incident-2',
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+          correlationId: 'test-correlation',
+          source: 'test',
+          metadata: {},
+          rootCause: 'network path degradation',
+          affectedComponents: ['route'],
+          confidence: 0.9,
+          evidence: ['direct path degraded'],
+          correlationReason: 'test',
+          classification: 'primary_failure',
+        },
+      ],
+      context(batch({ internet_reachable: false, packet_loss_percent: 0.4 })),
+    );
+
+    expect(result.find((candidate) => candidate.intent === 'route_change')?.metadata).toMatchObject(
+      {
+        pathEvidence: {
+          selectedPathId: 'path:tunnel-b',
+          diverseAlternativeCount: 1,
+        },
+        pathId: 'path:tunnel-b',
+      },
+    );
   });
 });

@@ -18,7 +18,8 @@ export interface InternetIntelligenceMonitorOptions {
 export class InternetIntelligenceMonitor {
   private readonly intervalMs: number;
   private readonly runImmediately: boolean;
-  private readonly onRecommendation: ((recommendation: AgentRecommendation) => void | Promise<void>) | undefined;
+  private readonly onRecommendation:
+    ((recommendation: AgentRecommendation) => void | Promise<void>) | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
   private running: Promise<AgentRecommendation | null> | undefined;
 

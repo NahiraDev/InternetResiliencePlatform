@@ -5,6 +5,7 @@ const active: RuntimeState[] = [
   'idle',
   'observing',
   'analyzing',
+  'arbitrating',
   'planning',
   'validating',
   'executing',
@@ -13,12 +14,13 @@ const active: RuntimeState[] = [
   'degraded',
   'blocked',
 ];
-export const legalTransitions: Readonly<Record<RuntimeState, readonly RuntimeState[]>> = {
+const legalTransitions: Readonly<Record<RuntimeState, readonly RuntimeState[]>> = {
   idle: ['observing', 'stopped', 'failed'],
   observing: ['analyzing', 'stopped', 'failed'],
-  analyzing: ['planning', 'stopped', 'failed'],
+  analyzing: ['arbitrating', 'stopped', 'failed'],
+  arbitrating: ['planning', 'stopped', 'failed'],
   planning: ['validating', 'blocked', 'stopped', 'failed'],
-  validating: ['executing', 'observing', 'blocked', 'stopped', 'failed'],
+  validating: ['executing', 'verifying', 'observing', 'blocked', 'stopped', 'failed'],
   executing: ['verifying', 'recovering', 'stopped', 'failed'],
   verifying: ['observing', 'degraded', 'recovering', 'stopped', 'failed'],
   recovering: ['verifying', 'degraded', 'failed'],
@@ -58,9 +60,12 @@ export class RuntimeStateMachine {
     // state that observers were never told about.
     await this.events?.emit('runtime.state.changed', transition);
     this.state = to;
-    if (to === 'blocked') await this.events?.emit('runtime.blocked', transition);
-    if (to === 'degraded') await this.events?.emit('runtime.degraded', transition);
-    if (to === 'failed') await this.events?.emit('runtime.failed', transition);
+    // Terminal-state notices use taxonomy-conformant names so they stay valid
+    // trace evidence; an unnamed event would be rejected by the taxonomy and
+    // would silently drop the outcome from the incident trace.
+    if (to === 'blocked') await this.events?.emit('runtime.state.blocked', transition);
+    if (to === 'degraded') await this.events?.emit('runtime.state.degraded', transition);
+    if (to === 'failed') await this.events?.emit('runtime.state.failed', transition);
     return transition;
   }
   async fail(correlationId = 'state') {

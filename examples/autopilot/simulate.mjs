@@ -39,13 +39,15 @@ const context = {
   historicalObservations: Object.fromEntries(
     candidates.map((candidate) => [
       candidate.id,
-      [{
-        timestamp,
-        latencyMs: candidate.metrics.latencyMs,
-        availabilityRatio: candidate.metrics.availabilityRatio,
-        reliabilityRatio: candidate.metrics.reliabilityRatio,
-        uptimeRatio: candidate.metrics.reliabilityRatio,
-      }],
+      [
+        {
+          timestamp,
+          latencyMs: candidate.metrics.latencyMs,
+          availabilityRatio: candidate.metrics.availabilityRatio,
+          reliabilityRatio: candidate.metrics.reliabilityRatio,
+          uptimeRatio: candidate.metrics.reliabilityRatio,
+        },
+      ],
     ]),
   ),
 };

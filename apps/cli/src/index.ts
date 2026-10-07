@@ -5,7 +5,7 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import { NetworkAutopilot, ResilienceRuntime } from '@irp/resilience-runtime';
+import { createCanonicalRuntime } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -73,13 +73,14 @@ export const createProgram = (): Command => {
       });
     });
   const runtime = program.command('runtime').description('Resilience runtime commands');
-  const runtimeInstance = () => new ResilienceRuntime();
+  const getRuntimeInstance = async () =>
+    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   runtime
     .command('status')
     .option('--json', 'print JSON output')
     .description('Show resilience runtime status')
     .action(async () => {
-      const rt = runtimeInstance();
+      const rt = await getRuntimeInstance();
       const snapshot = await rt.getRuntimeSnapshot();
       printJson({
         runtimeId: rt.runtimeId,
@@ -93,22 +94,45 @@ export const createProgram = (): Command => {
     .command('capabilities')
     .option('--json', 'print JSON output')
     .description('List resilience runtime capabilities')
-    .action(async () => printJson(runtimeInstance().capabilities()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(rt.capabilities());
+    });
   runtime
     .command('snapshot')
     .option('--json', 'print JSON output')
     .description('Show resilience runtime snapshot')
-    .action(async () => printJson(await runtimeInstance().getRuntimeSnapshot()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.getRuntimeSnapshot());
+    });
   runtime
     .command('decisions')
     .option('--json', 'print JSON output')
     .description('List resilience runtime decisions')
-    .action(async () => printJson(await runtimeInstance().decisions.list()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.decisions.list());
+    });
   runtime
     .command('incidents')
     .option('--json', 'print JSON output')
     .description('List resilience runtime incidents')
-    .action(async () => printJson(await runtimeInstance().incidents.list()));
+    .action(async () => {
+      const rt = await getRuntimeInstance();
+      printJson(await rt.incidents.list());
+    });
+  runtime
+    .command('conflicts')
+    .option('--json', 'print JSON output')
+    .option('--limit <number>', 'maximum number of conflicts to show', '25')
+    .description('List arbitration conflicts')
+    .action(async () => {
+      printJson({
+        conflicts: [],
+        message: 'Conflict listing requires a ConflictApiStore implementation',
+      });
+    });
   runtime
     .command('cycle')
     .description('Run a resilience runtime cycle')
@@ -124,35 +148,52 @@ export const createProgram = (): Command => {
         throw new Error(
           'live runtime cycle requires API authorization and cannot be bypassed by CLI',
         );
-      const rt = runtimeInstance();
+      const rt = await getRuntimeInstance();
       const record = await rt.cycle({ mode: opts.safe ? 'safe' : 'simulation' });
       printJson(record);
     });
 
-  const autopilot = program.command('autopilot').description('Network Autopilot commands');
-  const autopilotInstance = () => new NetworkAutopilot();
+  const autopilot = program
+    .command('autopilot')
+    .description('Canonical resilience-runtime compatibility commands');
+  const getAutopilotRuntime = async () =>
+    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
   autopilot
     .command('status')
-    .description('Show autopilot status')
-    .action(() => printJson(autopilotInstance().status()));
+    .description('Show canonical runtime status')
+    .action(async () => {
+      const rt = await getAutopilotRuntime();
+      printJson(await rt.getRuntimeSnapshot());
+    });
   autopilot
     .command('runs')
-    .description('List autopilot runs')
-    .action(() => printJson(autopilotInstance().listRuns()));
+    .description('List canonical runtime decision records')
+    .action(async () => printJson(await (await getAutopilotRuntime()).decisions.list()));
   autopilot
     .command('run <id>')
-    .description('Show autopilot run by id')
-    .action((id: string) =>
-      printJson(autopilotInstance().getRun(id) ?? { error: 'not found', id }),
-    );
+    .description('Show canonical runtime decision record by id')
+    .action(async (id: string) => {
+      const run = (await (await getAutopilotRuntime()).decisions.list()).find(
+        (decision) => decision.decisionId === id,
+      );
+      printJson(run ?? { error: 'not found', id });
+    });
   autopilot
     .command('actions')
-    .description('List governed autopilot action catalog')
-    .action(() => printJson(autopilotInstance().actions()));
+    .description('List actions selected by canonical runtime decisions')
+    .action(async () =>
+      printJson(
+        (await (await getAutopilotRuntime()).decisions.list()).flatMap((decision) =>
+          decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
+        ),
+      ),
+    );
   autopilot
     .command('policy')
-    .description('Show autopilot policy')
-    .action(() => printJson(autopilotInstance().policies()));
+    .description('Show canonical runtime policy snapshot')
+    .action(async () =>
+      printJson((await (await getAutopilotRuntime()).getRuntimeSnapshot()).policySnapshot),
+    );
   autopilot
     .command('approve <action>')
     .description('Approve pending autopilot action through API workflow')
@@ -173,8 +214,14 @@ export const createProgram = (): Command => {
     );
   autopilot
     .command('circuit-breaker')
-    .description('Show autopilot circuit breaker')
-    .action(() => printJson({ state: autopilotInstance().status().circuitBreaker }));
+    .description('Explain legacy circuit-breaker compatibility status')
+    .action(() =>
+      printJson({
+        state: 'NOT_APPLICABLE',
+        reason:
+          'canonical runtime uses bounded cycles and validation locks instead of a legacy autopilot circuit breaker',
+      }),
+    );
 
   program
     .command('doctor')

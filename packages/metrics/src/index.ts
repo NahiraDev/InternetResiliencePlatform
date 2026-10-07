@@ -44,15 +44,18 @@ const MAX_LABELS = 16;
 const MAX_LABEL_VALUE_LENGTH = 256;
 
 const assertFiniteTimestamp = (timestamp: number) => {
-  if (!Number.isFinite(timestamp) || timestamp <= 0) throw new Error('Metric timestamp must be a positive finite number');
+  if (!Number.isFinite(timestamp) || timestamp <= 0)
+    throw new Error('Metric timestamp must be a positive finite number');
 };
 
 const assertLabels = (labels: Readonly<Record<string, string>>) => {
   const entries = Object.entries(labels);
-  if (entries.length > MAX_LABELS) throw new Error(`Metric labels exceed the maximum of ${MAX_LABELS}`);
+  if (entries.length > MAX_LABELS)
+    throw new Error(`Metric labels exceed the maximum of ${MAX_LABELS}`);
   for (const [name, value] of entries) {
     if (!LABEL_NAME.test(name)) throw new Error(`Invalid metric label name: ${name}`);
-    if (value.length > MAX_LABEL_VALUE_LENGTH) throw new Error(`Metric label value exceeds ${MAX_LABEL_VALUE_LENGTH} characters: ${name}`);
+    if (value.length > MAX_LABEL_VALUE_LENGTH)
+      throw new Error(`Metric label value exceeds ${MAX_LABEL_VALUE_LENGTH} characters: ${name}`);
   }
 };
 
@@ -63,10 +66,16 @@ const normalizeLabels = (labels?: Readonly<Record<string, string>>) => {
   return Object.freeze(normalized);
 };
 
-const sameLabels = (expected: Readonly<Record<string, string>> | undefined, actual: Readonly<Record<string, string>>) => {
+const sameLabels = (
+  expected: Readonly<Record<string, string>> | undefined,
+  actual: Readonly<Record<string, string>>,
+) => {
   if (!expected) return true;
   const expectedEntries = Object.entries(expected);
-  return expectedEntries.length <= Object.keys(actual).length && expectedEntries.every(([key, value]) => actual[key] === value);
+  return (
+    expectedEntries.length <= Object.keys(actual).length &&
+    expectedEntries.every(([key, value]) => actual[key] === value)
+  );
 };
 
 const clonePoint = (point: MetricPoint): MetricPoint => ({
@@ -78,11 +87,17 @@ export class MetricRegistry {
   private readonly definitions = new Map<string, MetricDefinition>();
 
   register(definition: MetricDefinition): MetricDefinition {
-    if (!METRIC_NAME.test(definition.name)) throw new Error(`Invalid metric name: ${definition.name}`);
-    if (!definition.description.trim()) throw new Error(`Metric description is required: ${definition.name}`);
+    if (!METRIC_NAME.test(definition.name))
+      throw new Error(`Invalid metric name: ${definition.name}`);
+    if (!definition.description.trim())
+      throw new Error(`Metric description is required: ${definition.name}`);
     const existing = this.definitions.get(definition.name);
     if (existing) {
-      if (existing.type !== definition.type || existing.unit !== definition.unit || existing.description !== definition.description) {
+      if (
+        existing.type !== definition.type ||
+        existing.unit !== definition.unit ||
+        existing.description !== definition.description
+      ) {
         throw new Error(`Metric definition conflict: ${definition.name}`);
       }
       return existing;
@@ -131,8 +146,12 @@ export class RetainedMetricStore {
     const from = query.from ?? Number.NEGATIVE_INFINITY;
     const to = query.to ?? Number.POSITIVE_INFINITY;
     if (from > to) throw new Error('Metrics query from must be <= to');
-    const limit = query.limit === undefined ? this.policy.maxSamples : Math.min(query.limit, this.policy.maxSamples);
-    if (!Number.isInteger(limit) || limit <= 0) throw new Error('Metrics query limit must be a positive integer');
+    const limit =
+      query.limit === undefined
+        ? this.policy.maxSamples
+        : Math.min(query.limit, this.policy.maxSamples);
+    if (!Number.isInteger(limit) || limit <= 0)
+      throw new Error('Metrics query limit must be a positive integer');
     return this.points
       .filter((point) => point.timestamp >= from && point.timestamp <= to)
       .filter((point) => !query.name || point.name === query.name)
@@ -158,14 +177,17 @@ export class RetainedMetricStore {
       return;
     }
     if (firstFresh > 0) this.points = this.points.slice(firstFresh);
-    if (this.points.length > this.policy.maxSamples) this.points = this.points.slice(-this.policy.maxSamples);
+    if (this.points.length > this.policy.maxSamples)
+      this.points = this.points.slice(-this.policy.maxSamples);
   }
 
   private normalizePolicy(policy: Partial<RetentionPolicy>): RetentionPolicy {
     const maxSamples = policy.maxSamples ?? DEFAULT_RETENTION.maxSamples;
     const maxAgeMs = policy.maxAgeMs ?? DEFAULT_RETENTION.maxAgeMs;
-    if (!Number.isInteger(maxSamples) || maxSamples < 1) throw new Error('Retention maxSamples must be a positive integer');
-    if (!Number.isFinite(maxAgeMs) || maxAgeMs < 1) throw new Error('Retention maxAgeMs must be a positive finite number');
+    if (!Number.isInteger(maxSamples) || maxSamples < 1)
+      throw new Error('Retention maxSamples must be a positive integer');
+    if (!Number.isFinite(maxAgeMs) || maxAgeMs < 1)
+      throw new Error('Retention maxAgeMs must be a positive finite number');
     return { maxSamples, maxAgeMs };
   }
 }
@@ -189,11 +211,16 @@ export class InternalMetricsBus {
     value: number,
     options: { timestamp?: number; labels?: Readonly<Record<string, string>> } = {},
   ): MetricPoint {
-    const definition = typeof definitionOrName === 'string' ? this.registry.get(definitionOrName) : this.registry.register(definitionOrName);
+    const definition =
+      typeof definitionOrName === 'string'
+        ? this.registry.get(definitionOrName)
+        : this.registry.register(definitionOrName);
     if (!definition) throw new Error(`Metric is not registered: ${definitionOrName}`);
     if (!Number.isFinite(value)) throw new Error(`Metric value must be finite: ${definition.name}`);
-    if (definition.type === 'counter' && value < 0) throw new Error(`Counter values cannot be negative: ${definition.name}`);
-    if (definition.type === 'histogram' && value < 0) throw new Error(`Histogram observations cannot be negative: ${definition.name}`);
+    if (definition.type === 'counter' && value < 0)
+      throw new Error(`Counter values cannot be negative: ${definition.name}`);
+    if (definition.type === 'histogram' && value < 0)
+      throw new Error(`Histogram observations cannot be negative: ${definition.name}`);
     const timestamp = options.timestamp ?? Date.now();
     assertFiniteTimestamp(timestamp);
     const point: MetricPoint = Object.freeze({
@@ -230,4 +257,5 @@ export class InternalMetricsBus {
   }
 }
 
-export const createMetricsPlatform = (options: { retention?: Partial<RetentionPolicy> } = {}) => new InternalMetricsBus(options);
+export const createMetricsPlatform = (options: { retention?: Partial<RetentionPolicy> } = {}) =>
+  new InternalMetricsBus(options);

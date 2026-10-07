@@ -22,9 +22,11 @@ Observe → Measure → Detect → Diagnose → Decide
 
 ## Current implementation truth
 
-The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** is the active post-v1 delivery phase.
+The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** remains the active implementation gate until its external tagged-release certification evidence is satisfied.
 
-The Linux primary-device contract is now explicit: the Debian-based Linux client is the first device release target, and its build, test, package and runtime gates are release-critical. iOS build failures remain visible and are not suppressed, but they do not block Linux-first delivery.
+The post-v1 roadmap is now governed by [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md). Phase 72 is **Control-Plane Architecture Completion**, not signed mobile distribution. Phase 72 has an architecture ownership/dependency contract on its dedicated branch, but it must not be certified while the Phase 71 external release gate remains open.
+
+The Linux primary-device contract is explicit: the Debian-based Linux client is the first device release target, and its build, test, package and runtime gates are release-critical. iOS build failures remain visible and are not suppressed, but they do not block Linux-first delivery.
 
 A capability is not considered production-ready merely because source code exists; it must pass the applicable validation, test, build, runtime, security, device and integration gates.
 
@@ -42,9 +44,21 @@ The current roadmap is organized into these tracks:
 - **61–63:** Linux/macOS/Windows Full Clients
 - **64–68:** iOS/Android Full Clients and native networking
 - **69–70:** Production Hardening & v1.0 Certification
-- **71–74:** Post-v1 distribution, signed mobile delivery, native installers and controlled updates
+- **71:** Cross-Platform Distribution & GitHub Releases
+- **72–78:** Unified Control Plane architecture, state, contracts, decision, transactions, safety/recovery and closed-loop foundation
+- **79–85:** Intent & Policy
+- **86–92:** Connectivity Fabric
+- **93–99:** Advanced Routing & Recovery
+- **100–106:** Telemetry & Network Intelligence
+- **107–113:** Security & Trust
+- **114–120:** Fleet & Distributed Control
+- **121–127:** Intelligence, Simulation & Production
+- **128–134:** Data Plane & Traffic Engineering
+- **135–140:** Platform APIs & Extensibility
+- **141–145:** Privacy, Governance & Compliance
+- **146–150:** Reliability, Scale & Disaster Recovery
 
-See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/architecture/post-v1-distribution-roadmap.md`](docs/architecture/post-v1-distribution-roadmap.md) for the post-v1 delivery sequence.
+See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md) for the current Phase 72–150 planning authority. The former distribution document is explicitly archived and must not be used as current phase numbering.
 
 ## Downloads
 
@@ -92,7 +106,10 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 - [Architecture documentation](docs/architecture/README.md)
 - [Product architecture](docs/architecture/product-architecture.md)
 - [70-phase product plan](docs/architecture/product-roadmap-70-phases.md)
-- [Post-v1 distribution roadmap](docs/architecture/post-v1-distribution-roadmap.md)
+- [Current roadmap V2](docs/roadmap/MASTER_ROADMAP_V2.md)
+- [Control-plane ownership contract](docs/architecture/control-plane-ownership.md)
+- [Phase 72 downstream dependency contract](docs/architecture/control-plane-phase72-dependencies.md)
+- [Archived distribution roadmap](docs/architecture/post-v1-distribution-roadmap.md)
 - [Documentation audit](docs/audits/documentation-audit-2026-08-23.md)
 - [Historical phase evidence matrix](docs/audits/phase-history-evidence-matrix.md)
 - [Operational documentation](docs/operations/)
@@ -135,8 +152,8 @@ apps/                 Application entry points
 packages/             Reusable IRP packages
 packages/linux-client/ Debian/Linux Full Client and systemd integration
 clients/ios/          Native iOS Full Client and Network Extension boundary
-examples/             Capability-oriented runnable examples
-ops/                  Operational, release and deployment contracts
-scripts/              Repository validation and automation
-docs/                 Product, architecture, phase and operational documentation
+examples/              Capability-oriented runnable examples
+ops/                   Operational, release and deployment contracts
+scripts/               Repository validation and automation
+docs/                  Product, architecture, phase and operational documentation
 ```

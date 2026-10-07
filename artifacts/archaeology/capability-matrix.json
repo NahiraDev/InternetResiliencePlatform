@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-07T01:55:13.495Z",
+  "source": "canonical adapter registry (executed)",
+  "registryAdapters": [
+    {
+      "adapterId": "network-intelligence",
+      "subsystem": "network-intelligence",
+      "capabilities": [
+        "network.observe"
+      ],
+      "supportedActions": [
+        "health_reprobe"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "connectivity",
+      "subsystem": "connectivity",
+      "capabilities": [
+        "connectivity.failover"
+      ],
+      "supportedActions": [
+        "connectivity_failover"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "dns",
+      "subsystem": "dns",
+      "capabilities": [
+        "dns_plain",
+        "dns_doh",
+        "dns_dot",
+        "dns.write"
+      ],
+      "supportedActions": [
+        "dns_switch"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "routing",
+      "subsystem": "routing",
+      "capabilities": [
+        "route.write"
+      ],
+      "supportedActions": [
+        "route_change"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "tunnel",
+      "subsystem": "tunnel",
+      "capabilities": [
+        "tunnel.write"
+      ],
+      "supportedActions": [
+        "tunnel_switch"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "failover",
+      "subsystem": "failover",
+      "capabilities": [
+        "recovery.execute"
+      ],
+      "supportedActions": [
+        "recovery",
+        "rollback"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": true
+    },
+    {
+      "adapterId": "kernel",
+      "subsystem": "kernel",
+      "capabilities": [
+        "kernel.route"
+      ],
+      "supportedActions": [
+        "route_change"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    },
+    {
+      "adapterId": "plugin",
+      "subsystem": "plugin",
+      "capabilities": [
+        "plugin.action"
+      ],
+      "supportedActions": [
+        "provider_switch"
+      ],
+      "supportsLive": false,
+      "verificationSupport": true,
+      "recoverySupport": false
+    }
+  ],
+  "sourceDeclaredCapabilities": [
+    {
+      "capability": "dns.write",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "connectivity.failover",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "route.write",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "gateway.select",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.rotate",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.execute",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "tunnel.execute",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    },
+    {
+      "capability": "observability.read",
+      "owner": "@irp/resilience-runtime",
+      "declaredIn": "packages/resilience-runtime/src/platform/capabilities.ts"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability": "connectivity.failover",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#connectivity",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:connectivity"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#connectivity",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "dns_doh",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:dns"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "dns_dot",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:dns"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "dns_plain",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:dns"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#dns"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "dns.write",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#dns",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/daemon",
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:dns"
+      ],
+      "consumers": [
+        "apps/daemon/src/index.test.ts",
+        "apps/daemon/src/index.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapters/adapters.ts",
+        "packages/resilience-runtime/src/autopilot/autopilot.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "runtimePaths": [
+        "apps/daemon/src/index.test.ts",
+        "apps/daemon/src/index.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#dns",
+        "packages/resilience-runtime/src/adapters/adapters.ts",
+        "packages/resilience-runtime/src/autopilot/autopilot.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "gateway.select",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
+      "capability": "kernel.route",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#kernel"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:kernel"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#kernel"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "network.observe",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#network-intelligence"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:network-intelligence"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#network-intelligence",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "observability.read",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
+      "capability": "plugin.action",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#plugin"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:plugin"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#plugin"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "recovery.execute",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#failover"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:failover"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#failover"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "route.write",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#routing",
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:routing"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#routing",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-network-adapter.ts",
+        "packages/resilience-runtime/src/platform/capabilities.ts",
+        "packages/resilience-runtime/src/scenario-lab/scenario.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    },
+    {
+      "capability": "tunnel.execute",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
+      "capability": "tunnel.rotate",
+      "implementations": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "owners": [
+        "@irp/resilience-runtime"
+      ],
+      "consumers": [],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/platform/capabilities.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": false
+    },
+    {
+      "capability": "tunnel.write",
+      "implementations": [
+        "packages/resilience-runtime/src/adapter-registry.ts#tunnel"
+      ],
+      "owners": [
+        "@irp/resilience-runtime",
+        "@irp/resilience-runtime:tunnel"
+      ],
+      "consumers": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-tunnel-adapter.ts"
+      ],
+      "runtimePaths": [
+        "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapter-registry.ts#tunnel",
+        "packages/resilience-runtime/src/canonical-decision-provider.ts",
+        "packages/resilience-runtime/src/canonical-tunnel-adapter.ts"
+      ],
+      "hasImplementation": true,
+      "hasOwner": true,
+      "hasConsumer": true
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "withoutImplementation": [],
+    "withoutOwner": [],
+    "withoutConsumer": [
+      "gateway.select",
+      "observability.read",
+      "tunnel.execute",
+      "tunnel.rotate"
+    ]
+  }
+}

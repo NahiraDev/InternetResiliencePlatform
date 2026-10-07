@@ -10,13 +10,13 @@ A user should be able to open the GitHub Releases page from a phone or computer 
 
 ## Distribution targets
 
-| Platform | Release artifact | Current boundary |
-|---|---|---|
-| Android | `IRP-Android-debug-vX.Y.Z.apk` | Debug APK for development/testing. Production signing remains Phase 72. |
-| Linux | `IRP-Linux-vX.Y.Z.tar.gz` | Built Linux client bundle containing the compiled client distribution. |
-| macOS | `IRP-macOS-vX.Y.Z.tar.gz` | Built macOS client bundle containing the compiled distribution and launchd contract. |
-| Windows | `IRP-Windows-vX.Y.Z.zip` | Built Windows client bundle containing the compiled client distribution. |
-| iOS | `IRP-iOS-source-vX.Y.Z.zip` | Source/developer bundle only until an Apple-signed distribution path is configured. |
+| Platform | Release artifact               | Current boundary                                                                     |
+| -------- | ------------------------------ | ------------------------------------------------------------------------------------ |
+| Android  | `IRP-Android-debug-vX.Y.Z.apk` | Debug APK for development/testing. Production signing remains Phase 72.              |
+| Linux    | `IRP-Linux-vX.Y.Z.tar.gz`      | Built Linux client bundle containing the compiled client distribution.               |
+| macOS    | `IRP-macOS-vX.Y.Z.tar.gz`      | Built macOS client bundle containing the compiled distribution and launchd contract. |
+| Windows  | `IRP-Windows-vX.Y.Z.zip`       | Built Windows client bundle containing the compiled client distribution.             |
+| iOS      | `IRP-iOS-source-vX.Y.Z.zip`    | Source/developer bundle only until an Apple-signed distribution path is configured.  |
 
 The release pipeline must never label an unsigned iOS bundle as an installable iOS application.
 

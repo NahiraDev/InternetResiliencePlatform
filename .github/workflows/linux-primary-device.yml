@@ -33,7 +33,7 @@ jobs:
       - name: Install CI prerequisites
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv libatomic1 nodejs
+          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils dpkg systemd systemd-sysv libatomic1
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -53,14 +53,16 @@ jobs:
 
       - name: Install Node.js runtime for Debian contract
         run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl gnupg
+          curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/nodesource_setup_24.x
+          bash /tmp/nodesource_setup_24.x
+          apt-get install -y --no-install-recommends nodejs
           node --version
           command -v node
-          test "$(node -p 'process.versions.node.split(".")[0]')" = '24'
-          node_bin="$(command -v node)"
-          if [ "$node_bin" != "/usr/bin/node" ]; then
-            ln -sf "$node_bin" /usr/bin/node
-          fi
-          test "$(/usr/bin/node -p 'process.versions.node.split(".")[0]')" = '24'
+          dpkg-query -W -f='${Version}\n' nodejs
+          node --version | grep -Eq '^v24\.'
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
@@ -75,26 +77,28 @@ jobs:
       - name: Build Debian package
         run: |
           pnpm linux:package
-          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb
-          test -f dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+          test -f dist/linux/irp-linux-client_0.1.1_amd64.deb
+          test -f dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Verify Debian package metadata
         run: |
-          dpkg-deb --info dist/linux/irp-linux-client_0.1.0_amd64.deb
-          dpkg-deb --contents dist/linux/irp-linux-client_0.1.0_amd64.deb
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Package | grep -Fx 'irp-linux-client'
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Architecture | grep -Fx 'amd64'
-          dpkg-deb --field dist/linux/irp-linux-client_0.1.0_amd64.deb Depends | grep -F 'nodejs'
+          dpkg-deb --info dist/linux/irp-linux-client_0.1.1_amd64.deb
+          dpkg-deb --contents dist/linux/irp-linux-client_0.1.1_amd64.deb
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Package | grep -Fx 'irp-linux-client'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Architecture | grep -Fx 'amd64'
+          dpkg-deb --field dist/linux/irp-linux-client_0.1.1_amd64.deb Depends | grep -F 'nodejs'
 
       - name: Verify checksum
-        run: sha256sum -c dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+        run: sha256sum -c dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
 
       - name: Install Debian package
         run: |
-          dpkg -i dist/linux/irp-linux-client_0.1.0_amd64.deb
+          dpkg -i dist/linux/irp-linux-client_0.1.1_amd64.deb
           dpkg-query -W -f='${Status}\n' irp-linux-client | grep -Fx 'install ok installed'
           test -f /usr/lib/irp/linux-client/dist/index.js
+          test -f /usr/lib/irp/linux-client/dist/main.js
           test -f /usr/lib/systemd/system/irp-linux-client.service
+          test -d /usr/lib/irp/linux-client/node_modules
           id irp
           getent group irp
 
@@ -112,32 +116,87 @@ jobs:
           grep -Fx 'NoNewPrivileges=true' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'ProtectSystem=strict' /usr/lib/systemd/system/irp-linux-client.service
           grep -Fx 'ProtectHome=true' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fq 'dist/main.js' /usr/lib/systemd/system/irp-linux-client.service
+          grep -Fq 'WorkingDirectory=/usr/lib/irp/linux-client' /usr/lib/systemd/system/irp-linux-client.service
 
       - name: Run installed Linux client smoke test
         run: |
-          /usr/bin/node /usr/lib/irp/linux-client/dist/index.js &
-          client_pid=$!
-          trap 'kill "$client_pid" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error http://127.0.0.1:17861/ >/tmp/irp-linux-client.html; then
-              break
-            fi
-            if ! kill -0 "$client_pid" 2>/dev/null; then
-              echo 'IRP Linux client exited before becoming ready.' >&2
-              exit 1
-            fi
-            sleep 0.25
-          done
-          test -s /tmp/irp-linux-client.html
-          grep -Fq 'IRP Linux Client' /tmp/irp-linux-client.html
-          grep -Fq 'Linux Full Client' /tmp/irp-linux-client.html
+          set -euo pipefail
+
+          # postinst may start the unit; stop it so this smoke owns the port.
+          systemctl stop irp-linux-client.service 2>/dev/null || true
+          systemctl reset-failed irp-linux-client.service 2>/dev/null || true
+
+          cd /usr/lib/irp/linux-client
+
+          echo '=== package layout ==='
+          ls -la
+          echo '=== node_modules/@irp ==='
+          ls -la node_modules/@irp || true
+          echo '=== package.json ==='
+          cat package.json
+
+          /usr/bin/node --check dist/index.js
+          /usr/bin/node --check dist/main.js
+
+          # In-process smoke: load the installed graph, start the HTTP surface,
+          # assert the contract HTML, then stop cleanly. Avoids background PID races.
+          /usr/bin/node --input-type=module <<'SMOKE'
+          import { runLinuxClient } from './dist/index.js';
+
+          const server = await runLinuxClient();
+          try {
+            const response = await fetch('http://127.0.0.1:17861/');
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            const body = await response.text();
+            if (!body.includes('IRP Linux Client')) {
+              throw new Error('response missing IRP Linux Client');
+            }
+            if (!body.includes('Linux Full Client')) {
+              throw new Error('response missing Linux Full Client');
+            }
+
+            const health = await fetch('http://127.0.0.1:17861/health');
+            if (!health.ok) {
+              throw new Error(`health HTTP ${health.status}`);
+            }
+            const status = await health.json();
+            const requiredSubsystems = [
+              'network-intelligence',
+              'connectivity',
+              'dns',
+              'routing',
+              'tunnel',
+              'failover',
+              'kernel',
+              'plugin',
+            ];
+            const observed = new Set(
+              status.capabilityStatus?.map((entry) => entry.subsystem) ?? [],
+            );
+            for (const subsystem of requiredSubsystems) {
+              if (!observed.has(subsystem)) {
+                throw new Error(`missing Linux capability status evidence: ${subsystem}`);
+              }
+            }
+            if (status.runtime?.mode !== 'simulation') {
+              throw new Error(`unexpected smoke mode: ${status.runtime?.mode}`);
+            }
+            console.log('linux-client-runtime-integration-ok');
+            console.log(JSON.stringify(status, null, 2));
+          } finally {
+            await server.stop();
+          }
+          SMOKE
 
       - name: Upload Debian package evidence
         uses: actions/upload-artifact@v7.0.1
         with:
           name: irp-linux-debian-primary-device-${{ github.sha }}
           path: |
-            dist/linux/irp-linux-client_0.1.0_amd64.deb
-            dist/linux/irp-linux-client_0.1.0_amd64.deb.sha256
+            dist/linux/irp-linux-client_0.1.1_amd64.deb
+            dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
           if-no-files-found: error
           retention-days: 14

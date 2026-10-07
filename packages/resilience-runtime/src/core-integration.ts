@@ -9,9 +9,7 @@ import type {
 } from './ports/ports.js';
 import { RuntimeAdapterRegistry } from './adapter-registry.js';
 
-export type CoreIntegrationIssueCode =
-  | 'missing-live-adapter'
-  | 'duplicate-observation-provider';
+export type CoreIntegrationIssueCode = 'missing-live-adapter' | 'duplicate-observation-provider';
 
 export interface CoreIntegrationIssue {
   readonly code: CoreIntegrationIssueCode;
@@ -50,11 +48,11 @@ export const inspectCoreIntegration = (
   const issues: CoreIntegrationIssue[] = [];
 
   const observationProviderIds = composition.observations.map((provider) => provider.id);
-  const duplicateIds = [...new Set(
-    observationProviderIds.filter(
-      (id, index) => observationProviderIds.indexOf(id) !== index,
+  const duplicateIds = [
+    ...new Set(
+      observationProviderIds.filter((id, index) => observationProviderIds.indexOf(id) !== index),
     ),
-  )];
+  ];
 
   for (const id of duplicateIds) {
     issues.push({

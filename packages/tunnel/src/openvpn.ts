@@ -151,7 +151,9 @@ export class OpenVPNProvider implements TunnelProvider {
       throw tunnelErrors.auth('OpenVPN requires authenticated client configuration');
     }
     if (!config.credentialRef) {
-      throw tunnelErrors.configuration('OpenVPN requires a credential reference for the client configuration');
+      throw tunnelErrors.configuration(
+        'OpenVPN requires a credential reference for the client configuration',
+      );
     }
 
     const createdAt = new Date().toISOString();
@@ -232,7 +234,11 @@ export class OpenVPNProvider implements TunnelProvider {
 
       const health = await this.waitForHealthy(tunnel);
       if (health.status !== 'healthy') {
-        await this.stopRuntime(tunnel.id, pid, Math.min(this.commandTimeoutMs, this.startupTimeoutMs));
+        await this.stopRuntime(
+          tunnel.id,
+          pid,
+          Math.min(this.commandTimeoutMs, this.startupTimeoutMs),
+        );
         throw new TunnelError(
           'OpenVPN process started but did not provide healthy tunnel evidence before the startup deadline',
           'OpenVPNHealthCheckFailed',
@@ -265,7 +271,9 @@ export class OpenVPNProvider implements TunnelProvider {
   }
 
   async disconnect(connection: TunnelConnection, timeoutMs: number): Promise<void> {
-    const entry = [...this.runtime.entries()].find(([, value]) => value.connectionId === connection.id);
+    const entry = [...this.runtime.entries()].find(
+      ([, value]) => value.connectionId === connection.id,
+    );
     if (!entry) return;
 
     const [tunnelId, runtime] = entry;
@@ -335,10 +343,19 @@ export class OpenVPNProvider implements TunnelProvider {
       if (Number.isSafeInteger(pid) && pid > 1 && isProcessAlive(pid)) return pid;
       await delay(this.pollIntervalMs);
     }
-    throw new TunnelError('OpenVPN did not publish a live process id before the startup deadline', 'OpenVPNStartupTimeout', 'dependencyFailure', true);
+    throw new TunnelError(
+      'OpenVPN did not publish a live process id before the startup deadline',
+      'OpenVPNStartupTimeout',
+      'dependencyFailure',
+      true,
+    );
   }
 
-  private async stopRuntime(tunnelId: string, pid: number, timeoutMs = this.commandTimeoutMs): Promise<void> {
+  private async stopRuntime(
+    tunnelId: string,
+    pid: number,
+    timeoutMs = this.commandTimeoutMs,
+  ): Promise<void> {
     if (!isProcessAlive(pid)) return;
     try {
       process.kill(pid, 'SIGTERM');
@@ -357,28 +374,48 @@ export class OpenVPNProvider implements TunnelProvider {
         process.kill(pid, 'SIGKILL');
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
-          throw new TunnelError('OpenVPN process could not be terminated', 'OpenVPNStopFailed', 'dependencyFailure', true, { tunnelId });
+          throw new TunnelError(
+            'OpenVPN process could not be terminated',
+            'OpenVPNStopFailed',
+            'dependencyFailure',
+            true,
+            { tunnelId },
+          );
         }
       }
     }
   }
 
   private assertTunnel(tunnel: Tunnel): void {
-    if (tunnel.providerId !== this.id) throw tunnelErrors.configuration('Tunnel is not owned by OpenVPN provider');
-    if (tunnel.endpoint.protocol !== 'openvpn') throw tunnelErrors.unsupported('Tunnel endpoint is not OpenVPN');
-    if (tunnel.configuration.authentication.type === 'none') throw tunnelErrors.auth('OpenVPN requires authenticated client configuration');
-    if (!tunnel.configuration.credentialRef) throw tunnelErrors.auth('OpenVPN tunnel is missing client configuration credential reference');
+    if (tunnel.providerId !== this.id)
+      throw tunnelErrors.configuration('Tunnel is not owned by OpenVPN provider');
+    if (tunnel.endpoint.protocol !== 'openvpn')
+      throw tunnelErrors.unsupported('Tunnel endpoint is not OpenVPN');
+    if (tunnel.configuration.authentication.type === 'none')
+      throw tunnelErrors.auth('OpenVPN requires authenticated client configuration');
+    if (!tunnel.configuration.credentialRef)
+      throw tunnelErrors.auth(
+        'OpenVPN tunnel is missing client configuration credential reference',
+      );
   }
 }
 
 function assertPositiveInteger(value: number, name: string): void {
-  if (!Number.isInteger(value) || value <= 0) throw new Error(`OpenVPN ${name} must be a positive integer`);
+  if (!Number.isInteger(value) || value <= 0)
+    throw new Error(`OpenVPN ${name} must be a positive integer`);
 }
 
 function validateClientConfig(config: string): void {
-  if (!config.trim() || config.length > 1024 * 1024) throw tunnelErrors.configuration('OpenVPN client configuration is empty or too large');
-  if (/^\s*(script-security|up|down|route-up|route-pre-down|client-connect|client-disconnect|tls-verify|learn-address)\b/im.test(config)) {
-    throw tunnelErrors.policy('OpenVPN client configuration contains executable script hooks that are not permitted');
+  if (!config.trim() || config.length > 1024 * 1024)
+    throw tunnelErrors.configuration('OpenVPN client configuration is empty or too large');
+  if (
+    /^\s*(script-security|up|down|route-up|route-pre-down|client-connect|client-disconnect|tls-verify|learn-address)\b/im.test(
+      config,
+    )
+  ) {
+    throw tunnelErrors.policy(
+      'OpenVPN client configuration contains executable script hooks that are not permitted',
+    );
   }
 }
 
@@ -398,13 +435,20 @@ function parseClientStats(status: string): Pick<TunnelHealth, 'throughputBps'> {
 }
 
 function sanitizeOutput(value: string): string {
-  return value.replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED_CERTIFICATE]').slice(0, 2048);
+  return value
+    .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, '[REDACTED_CERTIFICATE]')
+    .slice(0, 2048);
 }
 
 function sanitizeOpenVPNError(error: unknown): Error {
   if (error instanceof TunnelError) return error;
   const message = error instanceof Error ? error.message : 'OpenVPN operation failed';
-  return new TunnelError(sanitizeOutput(message), 'OpenVPNOperationFailed', 'dependencyFailure', true);
+  return new TunnelError(
+    sanitizeOutput(message),
+    'OpenVPNOperationFailed',
+    'dependencyFailure',
+    true,
+  );
 }
 
 function cloneEndpoint(endpoint: Endpoint): Endpoint {

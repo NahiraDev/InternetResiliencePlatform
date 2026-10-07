@@ -51,12 +51,10 @@ export const evaluateSlo = (window: SloWindow, target: SloTarget): SloEvaluation
     throw new Error('maxAverageLatencyMs must be non-negative');
   }
 
-  const availability = window.totalRequests === 0
-    ? 1
-    : window.successfulRequests / window.totalRequests;
-  const averageLatencyMs = window.latencySamples === 0
-    ? 0
-    : window.totalLatencyMs / window.latencySamples;
+  const availability =
+    window.totalRequests === 0 ? 1 : window.successfulRequests / window.totalRequests;
+  const averageLatencyMs =
+    window.latencySamples === 0 ? 0 : window.totalLatencyMs / window.latencySamples;
   const errorBudget = 1 - target.availability;
   const errorRate = 1 - availability;
   const errorBudgetRemaining = clamp(errorBudget - errorRate, -1, errorBudget);

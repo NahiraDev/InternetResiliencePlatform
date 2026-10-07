@@ -14,7 +14,10 @@ if (!url) {
 let attempt = 0;
 while (Date.now() < deadline) {
   attempt += 1;
-  const client = new Client({ connectionString: url, connectionTimeoutMillis: Math.min(intervalMs, 5_000) });
+  const client = new Client({
+    connectionString: url,
+    connectionTimeoutMillis: Math.min(intervalMs, 5_000),
+  });
   try {
     await client.connect();
     await client.query('select 1');
@@ -22,10 +25,21 @@ while (Date.now() < deadline) {
     console.log(JSON.stringify({ level: 'info', msg: 'database readiness confirmed', attempt }));
     process.exit(0);
   } catch (error) {
-    try { await client.end(); } catch {}
-    console.log(JSON.stringify({ level: 'warn', msg: 'database not ready', attempt, error: error instanceof Error ? error.message : String(error) }));
+    try {
+      await client.end();
+    } catch {}
+    console.log(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'database not ready',
+        attempt,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 }
-console.error(JSON.stringify({ level: 'error', msg: 'database readiness timed out', timeoutMs, attempt }));
+console.error(
+  JSON.stringify({ level: 'error', msg: 'database readiness timed out', timeoutMs, attempt }),
+);
 process.exit(1);

@@ -1,5 +1,9 @@
 import { analyzeInternetEvidence } from './analyzer.js';
-import type { AgentRecommendation, InternetEvidence, InternetIntelligenceAgentOptions } from './types.js';
+import type {
+  AgentRecommendation,
+  InternetEvidence,
+  InternetIntelligenceAgentOptions,
+} from './types.js';
 
 export class InternetIntelligenceAgent {
   private readonly history: InternetEvidence[] = [];
@@ -17,7 +21,8 @@ export class InternetIntelligenceAgent {
     const current = sanitizeEvidence(evidence);
     const baseline = analyzeInternetEvidence(current, this.history);
     this.history.push(current);
-    if (this.history.length > this.maxHistory) this.history.splice(0, this.history.length - this.maxHistory);
+    if (this.history.length > this.maxHistory)
+      this.history.splice(0, this.history.length - this.maxHistory);
 
     if (!this.llm || baseline.confidence < this.minConfidence) return baseline;
     const advised = await this.llm.analyze({ current, history: this.history, baseline });
@@ -31,12 +36,15 @@ export class InternetIntelligenceAgent {
 }
 
 function sanitizeEvidence(input: InternetEvidence): InternetEvidence {
-  const numeric = (value: number | null) => value === null || Number.isFinite(value) ? value : null;
+  const numeric = (value: number | null) =>
+    value === null || Number.isFinite(value) ? value : null;
   return Object.freeze({
     timestamp: new Date(input.timestamp).toISOString(),
     latencyMs: numeric(input.latencyMs),
     jitterMs: numeric(input.jitterMs),
-    packetLossRatio: Number.isFinite(input.packetLossRatio) ? Math.min(1, Math.max(0, input.packetLossRatio)) : 1,
+    packetLossRatio: Number.isFinite(input.packetLossRatio)
+      ? Math.min(1, Math.max(0, input.packetLossRatio))
+      : 1,
     dnsLookupMs: numeric(input.dnsLookupMs),
     httpResponseMs: numeric(input.httpResponseMs),
     httpsHandshakeMs: numeric(input.httpsHandshakeMs),
@@ -44,7 +52,9 @@ function sanitizeEvidence(input: InternetEvidence): InternetEvidence {
     ipv6Connectivity: Boolean(input.ipv6Connectivity),
     gatewayReachable: Boolean(input.gatewayReachable),
     internetReachable: Boolean(input.internetReachable),
-    qualityScore: Number.isFinite(input.qualityScore) ? Math.min(100, Math.max(0, input.qualityScore)) : 0,
+    qualityScore: Number.isFinite(input.qualityScore)
+      ? Math.min(100, Math.max(0, input.qualityScore))
+      : 0,
     ...(input.destination ? { destination: input.destination.slice(0, 255) } : {}),
     ...(input.resolver ? { resolver: input.resolver.slice(0, 255) } : {}),
     ...(input.region ? { region: input.region.slice(0, 64) } : {}),

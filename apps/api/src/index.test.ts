@@ -3,6 +3,7 @@ import { buildServer } from './index.js';
 
 describe('phase 5 core API', () => {
   it('registers, authenticates, and protects organization resources', async () => {
+    process.env.IRP_BOOTSTRAP_ADMIN_EMAILS = 'cto@example.com';
     const app = await buildServer();
     const register = await app.inject({
       method: 'POST',
@@ -41,6 +42,7 @@ describe('phase 5 core API', () => {
     });
     expect(workspace.statusCode).toBe(201);
     await app.close();
+    delete process.env.IRP_BOOTSTRAP_ADMIN_EMAILS;
   }, 15000);
 });
 
@@ -57,6 +59,71 @@ describe('phase 6 network intelligence API', () => {
     expect(measurements.statusCode).toBe(200);
     expect(measurements.json().data.length).toBeGreaterThan(0);
     await app.close();
+  }, 15000);
+});
+
+describe('canonical autopilot compatibility API', () => {
+  it('projects the bounded canonical runtime and never instantiates a legacy action engine', async () => {
+    process.env.IRP_BOOTSTRAP_ADMIN_EMAILS = 'autopilot@example.com';
+    const app = await buildServer();
+    const register = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: { email: 'autopilot@example.com', name: 'Autopilot', password: 'Production12345' },
+    });
+    expect(register.statusCode).toBe(201);
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'autopilot@example.com', password: 'Production12345' },
+    });
+    expect(login.statusCode).toBe(200);
+    const token = login.json().data.accessToken;
+
+    const status = await app.inject({
+      method: 'GET',
+      url: '/api/v1/autopilot/status',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json().data).toMatchObject({
+      source: 'resilience-runtime',
+      deprecated: true,
+    });
+
+    const run = await app.inject({
+      method: 'POST',
+      url: '/api/v1/autopilot/runs',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { dryRun: false, shadow: false },
+    });
+    expect(run.statusCode).toBe(200);
+    expect(run.json().data).toMatchObject({
+      decisionId: expect.any(String),
+      runtimeContext: { correlationId: expect.stringMatching(/^api-autopilot-/) },
+    });
+
+    const explanation = await app.inject({
+      method: 'GET',
+      url: `/api/v1/runtime/decisions/${run.json().data.decisionId}/explanation`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(explanation.statusCode).toBe(200);
+    expect(explanation.json().data).toMatchObject({
+      decisionId: run.json().data.decisionId,
+      outcome: expect.any(String),
+      explanation: expect.any(Array),
+    });
+
+    const actions = await app.inject({
+      method: 'POST',
+      url: '/api/v1/autopilot/actions/example/approve',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(actions.statusCode).toBe(409);
+    expect(actions.json().error.code).toBe('CONFLICT');
+    await app.close();
+    delete process.env.IRP_BOOTSTRAP_ADMIN_EMAILS;
   }, 15000);
 });
 
@@ -102,6 +169,51 @@ describe('phase 21.3 stabilization API', () => {
     expect(data.dns.source).toBe('LIVE');
     expect(data.decision.mode).toBe('deterministic');
     expect(data.eventBus.scope).toBe('in-process');
+    await app.close();
+  }, 15000);
+});
+
+describe('security review fixes', () => {
+  it('registers unprivileged members by default and denies protected resources', async () => {
+    const app = await buildServer();
+    const register = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'member@example.com', name: 'Member', password: 'Production12345' } });
+    expect(register.statusCode).toBe(201);
+    expect(register.json().data.roles).toEqual(['member']);
+    expect(register.json().data.permissions).toEqual([]);
+    const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'member@example.com', password: 'Production12345' } });
+    expect(login.statusCode).toBe(200);
+    const token = login.json().data.accessToken;
+    const denied = await app.inject({ method: 'GET', url: '/api/v1/organizations', headers: { authorization: `Bearer ${token}` } });
+    expect(denied.statusCode).toBe(403);
+    await app.close();
+  }, 15000);
+
+  it('rotates refresh tokens and rejects replayed or logged-out tokens', async () => {
+    const app = await buildServer();
+    await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'rotate@example.com', name: 'Rotate', password: 'Production12345' } });
+    const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'rotate@example.com', password: 'Production12345' } });
+    const first = login.json().data.refreshToken;
+    const refreshed = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: first } });
+    expect(refreshed.statusCode).toBe(200);
+    const replay = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: first } });
+    expect(replay.statusCode).toBe(401);
+    const rotated = refreshed.json().data.refreshToken;
+    const access = refreshed.json().data.accessToken;
+    const logout = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { authorization: `Bearer ${access}` } });
+    expect(logout.statusCode).toBe(200);
+    const afterLogout = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: rotated } });
+    expect(afterLogout.statusCode).toBe(401);
+    await app.close();
+  }, 15000);
+
+  it('rate limits repeated auth attempts per client IP', async () => {
+    const app = await buildServer();
+    let limited = false;
+    for (let attempt = 0; attempt < 15 && !limited; attempt += 1) {
+      const response = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'nobody@example.com', password: 'NotARealPassword1' } });
+      if (response.statusCode === 429) limited = true;
+    }
+    expect(limited).toBe(true);
     await app.close();
   }, 15000);
 });

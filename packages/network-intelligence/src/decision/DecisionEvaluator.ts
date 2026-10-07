@@ -30,7 +30,8 @@ export class DecisionEvaluator {
       if (!outcome) continue;
 
       comparable += 1;
-      const interventionRecommended = decision.recommendedAction !== 'remain' && decision.recommendedAction !== 'none';
+      const interventionRecommended =
+        decision.recommendedAction !== 'remain' && decision.recommendedAction !== 'none';
       const actuallyFailed = outcome.failed === true;
       const actuallyHealthy = outcome.healthy === true && !actuallyFailed;
 

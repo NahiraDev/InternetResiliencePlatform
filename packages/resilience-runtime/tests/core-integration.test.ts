@@ -41,6 +41,8 @@ describe('core integration evidence gate', () => {
       adapters,
     });
 
-    expect(report.issues.some((issue) => issue.code === 'duplicate-observation-provider')).toBe(true);
+    expect(report.issues.some((issue) => issue.code === 'duplicate-observation-provider')).toBe(
+      true,
+    );
   });
 });

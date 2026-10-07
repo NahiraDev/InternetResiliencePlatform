@@ -10,6 +10,7 @@ Before coding, read `PROJECT_STATE.md`, `ROADMAP.md`, the active phase document,
 Work on exactly one phase objective at a time. Identify the existing canonical owner before adding code. Do not create duplicate abstractions for gateway, tunnel, routing, resilience or policy behavior.
 
 For every behavior change:
+
 - preserve existing public contracts unless a breaking change is explicitly required;
 - add normal, boundary, invalid and failure-path tests appropriate to the domain;
 - keep operations deterministic and bounded;

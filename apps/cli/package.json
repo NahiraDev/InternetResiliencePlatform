@@ -22,9 +22,9 @@
     "@irp/resilience-runtime": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26.3.0",
+    "@types/node": "^26.6.3",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   },
   "bin": {
     "irp": "dist/index.js"

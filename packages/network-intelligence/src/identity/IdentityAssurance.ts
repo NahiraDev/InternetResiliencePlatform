@@ -58,20 +58,30 @@ export interface IdentityAssuranceResult {
 }
 
 const isNonEmpty = (value: string): boolean => value.trim().length > 0;
-const normalizeHostname = (hostname: string): string => hostname.trim().toLowerCase().replace(/\.$/, '');
-const unique = (values: readonly string[]): string[] => [...new Set(values.map((value) => value.trim()).filter(isNonEmpty))];
+const normalizeHostname = (hostname: string): string =>
+  hostname.trim().toLowerCase().replace(/\.$/, '');
+const unique = (values: readonly string[]): string[] => [
+  ...new Set(values.map((value) => value.trim()).filter(isNonEmpty)),
+];
 
 const validateEvidence = (evidence: IdentityEvidence): void => {
   const egressIp = evidence.egress.ip.trim();
   if (!isNonEmpty(egressIp)) throw new Error('egress ip is required');
   const egressFamily = isIP(egressIp);
   if (egressFamily === 0) throw new Error('egress ip must be a valid IPv4 or IPv6 address');
-  if ((evidence.egress.family === 'ipv4' && egressFamily !== 4) || (evidence.egress.family === 'ipv6' && egressFamily !== 6)) {
+  if (
+    (evidence.egress.family === 'ipv4' && egressFamily !== 4) ||
+    (evidence.egress.family === 'ipv6' && egressFamily !== 6)
+  ) {
     throw new Error('egress ip does not match the declared address family');
   }
   if (!isNonEmpty(evidence.egress.source)) throw new Error('egress source is required');
-  if (!Number.isFinite(Date.parse(evidence.egress.observedAt))) throw new Error('egress observedAt must be a valid timestamp');
-  if (evidence.egress.asn !== undefined && (!Number.isInteger(evidence.egress.asn) || evidence.egress.asn < 0)) {
+  if (!Number.isFinite(Date.parse(evidence.egress.observedAt)))
+    throw new Error('egress observedAt must be a valid timestamp');
+  if (
+    evidence.egress.asn !== undefined &&
+    (!Number.isInteger(evidence.egress.asn) || evidence.egress.asn < 0)
+  ) {
     throw new Error('egress asn must be a non-negative integer');
   }
   if (evidence.egress.organization !== undefined && !isNonEmpty(evidence.egress.organization)) {
@@ -81,12 +91,19 @@ const validateEvidence = (evidence: IdentityEvidence): void => {
   const destinationHostname = normalizeHostname(evidence.destination.hostname);
   if (!destinationHostname) throw new Error('destination hostname is required');
   if (!isNonEmpty(evidence.destination.source)) throw new Error('destination source is required');
-  if (!Number.isFinite(Date.parse(evidence.destination.observedAt))) throw new Error('destination observedAt must be a valid timestamp');
-  if (evidence.destination.addresses.length === 0) throw new Error('destination addresses are required');
+  if (!Number.isFinite(Date.parse(evidence.destination.observedAt)))
+    throw new Error('destination observedAt must be a valid timestamp');
+  if (evidence.destination.addresses.length === 0)
+    throw new Error('destination addresses are required');
   if (evidence.destination.addresses.some((address) => isIP(address.trim()) === 0)) {
     throw new Error('destination addresses must contain valid IPv4 or IPv6 addresses');
   }
-  if (evidence.destination.port !== undefined && (!Number.isInteger(evidence.destination.port) || evidence.destination.port < 1 || evidence.destination.port > 65535)) {
+  if (
+    evidence.destination.port !== undefined &&
+    (!Number.isInteger(evidence.destination.port) ||
+      evidence.destination.port < 1 ||
+      evidence.destination.port > 65535)
+  ) {
     throw new Error('destination port must be between 1 and 65535');
   }
 };
@@ -102,7 +119,12 @@ export const assessIdentityPolicy = (
       status: 'insufficient-data',
       egress: null,
       destination: null,
-      findings: [{ code: 'missing-evidence', message: 'independent egress and destination identity evidence is required' }],
+      findings: [
+        {
+          code: 'missing-evidence',
+          message: 'independent egress and destination identity evidence is required',
+        },
+      ],
       evaluatedAt,
     };
   }
@@ -113,16 +135,26 @@ export const assessIdentityPolicy = (
   const destinationAge = now.getTime() - Date.parse(evidence.destination.observedAt);
   const maxAge = policy.maxEvidenceAgeMs ?? 5 * 60_000;
 
-  if (!Number.isFinite(maxAge) || maxAge < 0) throw new Error('maxEvidenceAgeMs must be a non-negative finite number');
+  if (!Number.isFinite(maxAge) || maxAge < 0)
+    throw new Error('maxEvidenceAgeMs must be a non-negative finite number');
   if (egressAge < 0 || destinationAge < 0 || egressAge > maxAge || destinationAge > maxAge) {
-    findings.push({ code: 'stale-evidence', message: `identity evidence is outside the ${maxAge}ms freshness window` });
+    findings.push({
+      code: 'stale-evidence',
+      message: `identity evidence is outside the ${maxAge}ms freshness window`,
+    });
   }
   if (evidence.confidence === 'insufficient') {
-    findings.push({ code: 'insufficient-confidence', message: 'evidence confidence is insufficient for policy assurance' });
+    findings.push({
+      code: 'insufficient-confidence',
+      message: 'evidence confidence is insufficient for policy assurance',
+    });
   }
 
   if (policy.requiredEgressSource && evidence.egress.source !== policy.requiredEgressSource) {
-    findings.push({ code: 'egress-source-mismatch', message: 'egress evidence source does not satisfy the required independent source' });
+    findings.push({
+      code: 'egress-source-mismatch',
+      message: 'egress evidence source does not satisfy the required independent source',
+    });
   }
 
   const allowedIps = unique(policy.allowedEgressIps ?? []);
@@ -131,9 +163,14 @@ export const assessIdentityPolicy = (
   if (allowedIps.length > 0 || allowedAsns.length > 0 || allowedOrganizations.length > 0) {
     const ipMatch = allowedIps.includes(evidence.egress.ip);
     const asnMatch = evidence.egress.asn !== undefined && allowedAsns.includes(evidence.egress.asn);
-    const organizationMatch = evidence.egress.organization !== undefined && allowedOrganizations.includes(evidence.egress.organization);
+    const organizationMatch =
+      evidence.egress.organization !== undefined &&
+      allowedOrganizations.includes(evidence.egress.organization);
     if (!ipMatch && !asnMatch && !organizationMatch) {
-      findings.push({ code: 'egress-not-allowed', message: 'observed egress identity does not satisfy the allowed egress policy' });
+      findings.push({
+        code: 'egress-not-allowed',
+        message: 'observed egress identity does not satisfy the allowed egress policy',
+      });
     }
   }
 
@@ -142,14 +179,26 @@ export const assessIdentityPolicy = (
   const allowedAddresses = unique(policy.allowedDestinationAddresses ?? []);
   if (allowedHostnames.length > 0 || allowedAddresses.length > 0) {
     const hostnameMatch = allowedHostnames.includes(destinationHostname);
-    const addressMatch = evidence.destination.addresses.some((address) => allowedAddresses.includes(address));
+    const addressMatch = evidence.destination.addresses.some((address) =>
+      allowedAddresses.includes(address),
+    );
     if (!hostnameMatch && !addressMatch) {
-      findings.push({ code: 'destination-not-allowed', message: 'observed destination identity does not satisfy the destination policy' });
+      findings.push({
+        code: 'destination-not-allowed',
+        message: 'observed destination identity does not satisfy the destination policy',
+      });
     }
   }
 
-  const blocking = findings.some((finding) => finding.code === 'egress-not-allowed' || finding.code === 'destination-not-allowed' || finding.code === 'egress-source-mismatch');
-  const insufficient = findings.some((finding) => finding.code === 'stale-evidence' || finding.code === 'insufficient-confidence');
+  const blocking = findings.some(
+    (finding) =>
+      finding.code === 'egress-not-allowed' ||
+      finding.code === 'destination-not-allowed' ||
+      finding.code === 'egress-source-mismatch',
+  );
+  const insufficient = findings.some(
+    (finding) => finding.code === 'stale-evidence' || finding.code === 'insufficient-confidence',
+  );
 
   return {
     status: blocking ? 'non-compliant' : insufficient ? 'insufficient-data' : 'compliant',

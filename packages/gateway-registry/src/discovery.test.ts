@@ -7,7 +7,12 @@ const gateway = (id: string, updatedAt = '2026-08-24T00:00:00.000Z'): GatewayMet
   name: id,
   endpoint: { host: `${id}.example.test`, port: 443, family: 'dual' },
   ownership: { ownerId: 'owner-1', managedBy: 'control-plane' },
-  capabilities: { tunnelProtocols: ['wireguard'], addressFamilies: ['dual'], transports: ['udp'], features: [] },
+  capabilities: {
+    tunnelProtocols: ['wireguard'],
+    addressFamilies: ['dual'],
+    transports: ['udp'],
+    features: [],
+  },
   lifecycle: 'registered',
   trust: 'pending',
   tags: ['regional'],
@@ -19,10 +24,16 @@ describe('gateway discovery', () => {
   it('registers discovered gateways and updates existing metadata', async () => {
     const registry = new InMemoryGatewayRegistry();
     registry.register(gateway('gw-existing'));
-    const discovery = new GatewayDiscovery(registry, { staleAfterMs: 60_000, now: () => Date.parse('2026-08-24T00:00:10.000Z') });
+    const discovery = new GatewayDiscovery(registry, {
+      staleAfterMs: 60_000,
+      now: () => Date.parse('2026-08-24T00:00:10.000Z'),
+    });
 
     const result = await discovery.refresh({
-      discover: async () => [gateway('gw-existing'), { ...gateway('gw-new'), region: 'ir-central' }],
+      discover: async () => [
+        gateway('gw-existing'),
+        { ...gateway('gw-new'), region: 'ir-central' },
+      ],
     });
 
     expect(result.discovered).toBe(2);
@@ -47,7 +58,10 @@ describe('gateway discovery', () => {
   it('reports previously known gateways as stale without changing lifecycle', async () => {
     const registry = new InMemoryGatewayRegistry();
     registry.register(gateway('gw-old'));
-    const discovery = new GatewayDiscovery(registry, { staleAfterMs: 60_000, now: () => Date.parse('2026-08-24T00:02:00.000Z') });
+    const discovery = new GatewayDiscovery(registry, {
+      staleAfterMs: 60_000,
+      now: () => Date.parse('2026-08-24T00:02:00.000Z'),
+    });
 
     const result = await discovery.refresh({ discover: async () => [] });
 

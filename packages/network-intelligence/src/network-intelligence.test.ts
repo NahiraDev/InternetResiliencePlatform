@@ -117,7 +117,11 @@ describe('sampling', () => {
   it('builds immutable snapshots from providers', async () => {
     const sampler = new NetworkSampler(
       { ping, dns, http },
-      { ...samplerOptions(), networkTypeDetector: () => 'wifi' as const, now: () => '2026-01-01T00:00:00.000Z' },
+      {
+        ...samplerOptions(),
+        networkTypeDetector: () => 'wifi' as const,
+        now: () => '2026-01-01T00:00:00.000Z',
+      },
     );
     const snap = await sampler.sample(new AbortController().signal);
     expect(snap.publicIp).toBe('203.0.113.1');
@@ -170,7 +174,11 @@ describe('monitor history and events', () => {
     };
     const dynamicHttp: HTTPProvider = {
       async request() {
-        return { responseMs: sample === 0 ? 50 : 200, statusCode: sample === 1 ? 503 : 204, bytes: 10 };
+        return {
+          responseMs: sample === 0 ? 50 : 200,
+          statusCode: sample === 1 ? 503 : 204,
+          bytes: 10,
+        };
       },
       async tlsHandshake() {
         return { handshakeMs: 20, authorized: true };
@@ -182,9 +190,13 @@ describe('monitor history and events', () => {
         return { mbps: sample === 0 ? 50 : 5 };
       },
     };
-    const now = () => (sample === 0 ? new Date(Date.now() - 10_000).toISOString() : new Date().toISOString());
+    const now = () =>
+      sample === 0 ? new Date(Date.now() - 10_000).toISOString() : new Date().toISOString();
     const monitor = new NetworkMonitor(
-      new NetworkSampler({ ping: dynamicPing, dns, http: dynamicHttp }, { ...samplerOptions(), pingAttempts: 2, now }),
+      new NetworkSampler(
+        { ping: dynamicPing, dns, http: dynamicHttp },
+        { ...samplerOptions(), pingAttempts: 2, now },
+      ),
       {
         ...DEFAULT_MONITOR_OPTIONS,
         maxHistoryMs: 1_000,
@@ -219,7 +231,12 @@ describe('scheduler', () => {
     vi.useFakeTimers();
     try {
       let release: (() => void) | undefined;
-      const task = vi.fn(() => new Promise<void>((resolve) => { release = resolve; }));
+      const task = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      );
       const scheduler = new Scheduler(task, { intervalMs: 10, runImmediately: true });
       scheduler.start(new AbortController().signal);
       scheduler.start(new AbortController().signal);
@@ -238,7 +255,10 @@ describe('scheduler', () => {
   });
 
   it('starts and stops an interval', () => {
-    const scheduler = new Scheduler(async () => undefined, { intervalMs: 10, runImmediately: false });
+    const scheduler = new Scheduler(async () => undefined, {
+      intervalMs: 10,
+      runImmediately: false,
+    });
     scheduler.start(new AbortController().signal);
     expect(scheduler.isRunning()).toBe(true);
     scheduler.stop();
@@ -254,14 +274,21 @@ describe('additional providers and metrics', () => {
     expect(await new PublicIPMetric(http, 'u').measure(signal)).toBe('203.0.113.1');
     expect(typeof (await new IPv4Metric().measure(signal))).toBe('boolean');
     expect(typeof (await new IPv6Metric().measure(signal))).toBe('boolean');
-    expect(await new MockablePingProvider().ping('x', signal)).toEqual({ latencyMs: 1, success: true });
+    expect(await new MockablePingProvider().ping('x', signal)).toEqual({
+      latencyMs: 1,
+      success: true,
+    });
     expect(await new NodeDNSProvider().lookup('localhost', signal)).toBeDefined();
   });
 
   it('covers the Node HTTP provider against a local HTTP server', async () => {
     const server = createServer((req, res) => {
       res.setHeader('content-type', 'application/json');
-      res.end(req.url === '/ip' ? JSON.stringify({ ip: '127.0.0.1', asn: 64501, org: 'Local Org' }) : 'hello');
+      res.end(
+        req.url === '/ip'
+          ? JSON.stringify({ ip: '127.0.0.1', asn: 64501, org: 'Local Org' })
+          : 'hello',
+      );
     });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     try {
@@ -271,7 +298,9 @@ describe('additional providers and metrics', () => {
       const provider = new NodeHTTPProvider();
       const signal = new AbortController().signal;
       expect((await provider.request(url, signal)).statusCode).toBe(200);
-      await expect(provider.tlsHandshake(url, signal)).rejects.toThrow('TLS handshake requires an https URL');
+      await expect(provider.tlsHandshake(url, signal)).rejects.toThrow(
+        'TLS handshake requires an https URL',
+      );
       expect((await provider.publicIp(`${url}/ip`, signal)).isp).toBe('Local Org');
       expect((await provider.bandwidth(url, signal)).mbps).toBeGreaterThan(0);
     } finally {
@@ -280,21 +309,47 @@ describe('additional providers and metrics', () => {
   });
 
   it('covers retry, timeout, and abort failures', async () => {
-    await expect(withTimeout(async () => new Promise((resolve) => setTimeout(resolve, 20)), 1)).rejects.toThrow();
-    await expect(retry(async () => { throw new Error('x'); }, { attempts: 2, delayMs: 0 })).rejects.toThrow('x');
+    await expect(
+      withTimeout(async () => new Promise((resolve) => setTimeout(resolve, 20)), 1),
+    ).rejects.toThrow();
+    await expect(
+      retry(
+        async () => {
+          throw new Error('x');
+        },
+        { attempts: 2, delayMs: 0 },
+      ),
+    ).rejects.toThrow('x');
 
     const controller = new AbortController();
-    const delayed = retry(async () => { throw new Error('delayed'); }, { attempts: 2, delayMs: 100 }, controller.signal);
+    const delayed = retry(
+      async () => {
+        throw new Error('delayed');
+      },
+      { attempts: 2, delayMs: 100 },
+      controller.signal,
+    );
     controller.abort();
     await expect(delayed).rejects.toThrow('Operation aborted');
-    await expect(retry(async () => { throw 'plain'; }, { attempts: 1, delayMs: 0 })).rejects.toThrow('plain');
+    await expect(
+      retry(
+        async () => {
+          throw 'plain';
+        },
+        { attempts: 1, delayMs: 0 },
+      ),
+    ).rejects.toThrow('plain');
     expect(new TimeoutError().name).toBe('TimeoutError');
   });
 
   it('emits metric change events and supports unsubscribe', async () => {
     let latency = 10;
     const handler = vi.fn();
-    const changingPing: PingProvider = { async ping() { return { latencyMs: latency, success: true }; } };
+    const changingPing: PingProvider = {
+      async ping() {
+        return { latencyMs: latency, success: true };
+      },
+    };
     const monitor = new NetworkMonitor(
       new NetworkSampler({ ping: changingPing, dns, http }, samplerOptions()),
       {

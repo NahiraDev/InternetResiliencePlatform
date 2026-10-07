@@ -456,6 +456,13 @@ class LockManager {
     return () => this.locks.delete(key);
   }
 }
+/**
+ * Historical compatibility model retained for replay/fixture consumers.
+ *
+ * @deprecated Use ResilienceRuntime (and BoundedClosedLoopController when
+ * bounded repetition is required). This model is not a privileged execution
+ * authority and production clients must project canonical runtime records.
+ */
 export class NetworkAutopilot {
   readonly events: EventSink;
   readonly telemetry: TelemetrySink;

@@ -57,15 +57,30 @@ const validateConfig = (config: OpenTelemetryConfig): void => {
     throw new Error('TELEMETRY_SAMPLE_RATIO must be between 0 and 1');
   const interval = config.exportIntervalMs ?? DEFAULT_EXPORT_INTERVAL_MS;
   const timeout = config.exportTimeoutMs ?? DEFAULT_EXPORT_TIMEOUT_MS;
-  if (!Number.isInteger(interval) || interval < MIN_EXPORT_INTERVAL_MS || interval > MAX_EXPORT_INTERVAL_MS)
-    throw new Error(`OTEL_EXPORT_INTERVAL_MS must be between ${MIN_EXPORT_INTERVAL_MS} and ${MAX_EXPORT_INTERVAL_MS}`);
-  if (!Number.isInteger(timeout) || timeout < MIN_EXPORT_TIMEOUT_MS || timeout > MAX_EXPORT_TIMEOUT_MS)
-    throw new Error(`OTEL_EXPORT_TIMEOUT_MS must be between ${MIN_EXPORT_TIMEOUT_MS} and ${MAX_EXPORT_TIMEOUT_MS}`);
+  if (
+    !Number.isInteger(interval) ||
+    interval < MIN_EXPORT_INTERVAL_MS ||
+    interval > MAX_EXPORT_INTERVAL_MS
+  )
+    throw new Error(
+      `OTEL_EXPORT_INTERVAL_MS must be between ${MIN_EXPORT_INTERVAL_MS} and ${MAX_EXPORT_INTERVAL_MS}`,
+    );
+  if (
+    !Number.isInteger(timeout) ||
+    timeout < MIN_EXPORT_TIMEOUT_MS ||
+    timeout > MAX_EXPORT_TIMEOUT_MS
+  )
+    throw new Error(
+      `OTEL_EXPORT_TIMEOUT_MS must be between ${MIN_EXPORT_TIMEOUT_MS} and ${MAX_EXPORT_TIMEOUT_MS}`,
+    );
   if (timeout >= interval)
     throw new Error('OTEL_EXPORT_TIMEOUT_MS must be smaller than OTEL_EXPORT_INTERVAL_MS');
 };
 
-const withSignalPath = (endpoint: string | undefined, signal: 'traces' | 'metrics'): string | undefined => {
+const withSignalPath = (
+  endpoint: string | undefined,
+  signal: 'traces' | 'metrics',
+): string | undefined => {
   if (!endpoint) return undefined;
   const normalized = endpoint.replace(/\/+$/, '');
   return normalized.endsWith(`/v1/${signal}`) ? normalized : `${normalized}/v1/${signal}`;
@@ -94,7 +109,10 @@ const createTraceExporter = (config: OpenTelemetryConfig): OTLPTraceExporter | u
 class MetricsBridge {
   private readonly counterInstruments = new Map<string, Counter>();
   private readonly histogramInstruments = new Map<string, Histogram>();
-  private readonly gauges = new Map<string, { value: number; attributes: Record<string, string> }>();
+  private readonly gauges = new Map<
+    string,
+    { value: number; attributes: Record<string, string> }
+  >();
   private readonly gaugeInstruments = new Map<string, ObservableGauge>();
   private readonly meter = metrics.getMeter('irp.internal-metrics', '0.1.0');
 
@@ -137,7 +155,8 @@ class MetricsBridge {
     const instrument = this.meter.createObservableGauge(definition.name, options);
     instrument.addCallback((observableResult) => {
       for (const [key, latest] of this.gauges) {
-        if (key.startsWith(`${definition.name}|`)) observableResult.observe(latest.value, latest.attributes);
+        if (key.startsWith(`${definition.name}|`))
+          observableResult.observe(latest.value, latest.attributes);
       }
     });
     this.gaugeInstruments.set(definition.name, instrument);

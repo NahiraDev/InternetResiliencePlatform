@@ -66,14 +66,14 @@ Providers are adapters/plugins. Eligibility requires authentication, capability 
 
 ## Product surfaces
 
-| Surface | Role |
-| --- | --- |
-| Core Agent | Autonomous network intelligence and execution |
-| Gateway | Managed authorized network endpoint |
-| Probe | Independent evidence source |
-| Web Control Center | Administrative and control UI |
-| Linux/macOS/Windows | Full desktop clients |
-| iOS/Android | Full mobile clients |
-| CLI/API | Automation and operator interfaces |
+| Surface             | Role                                          |
+| ------------------- | --------------------------------------------- |
+| Core Agent          | Autonomous network intelligence and execution |
+| Gateway             | Managed authorized network endpoint           |
+| Probe               | Independent evidence source                   |
+| Web Control Center  | Administrative and control UI                 |
+| Linux/macOS/Windows | Full desktop clients                          |
+| iOS/Android         | Full mobile clients                           |
+| CLI/API             | Automation and operator interfaces            |
 
 See [`current-architecture.md`](../current-architecture.md) and the detailed subsystem documents in this directory for implementation-specific architecture.

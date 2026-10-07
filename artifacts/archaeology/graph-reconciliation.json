@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-07T01:55:14.214Z",
+  "graphs": [
+    {
+      "graph": "docs/architecture/system-integration-map.json",
+      "schemaVersion": 1,
+      "nodeCount": 20,
+      "nodesChecked": 20,
+      "unreferencedNodes": 0,
+      "entrypointDrift": [],
+      "nodes": [
+        {
+          "node": "clients",
+          "declaredOwner": "clients/* and apps/cli",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "clients/*",
+            "apps/cli"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "api",
+          "declaredOwner": "apps/api",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "apps/api"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "intent",
+          "declaredOwner": "@irp/core NetworkIntent + @irp/resilience-runtime compiler",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "packages/core",
+            "packages/resilience-runtime"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "daemon",
+          "declaredOwner": "apps/daemon",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "apps/daemon"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "runtime",
+          "declaredOwner": "@irp/resilience-runtime",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/resilience-runtime"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "network-intelligence",
+          "declaredOwner": "@irp/network-intelligence",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/network-intelligence"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "internet-intelligence",
+          "declaredOwner": "@irp/internet-intelligence-agent",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/internet-intelligence-agent"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "historical-analysis",
+          "declaredOwner": "@irp/historical-analysis advisory port",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/historical-analysis"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "connectivity",
+          "declaredOwner": "@irp/connectivity",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/connectivity"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "routing",
+          "declaredOwner": "@irp/routing",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/routing"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "path-graph",
+          "declaredOwner": "@irp/routing NetworkPathGraph",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/routing"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "dns",
+          "declaredOwner": "@irp/core IntelligentDnsEngine and @irp/dns",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "packages/core",
+            "packages/dns"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "gateway",
+          "declaredOwner": "@irp/gateway-registry",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/gateway-registry"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "tunnel",
+          "declaredOwner": "@irp/tunnel",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/tunnel"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "failover",
+          "declaredOwner": "@irp/failover",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/failover"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "federation",
+          "declaredOwner": "@irp/resilience-runtime/federation",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "packages/resilience-runtime"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "security",
+          "declaredOwner": "@irp/auth and @irp/security",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "packages/auth",
+            "packages/security"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "telemetry",
+          "declaredOwner": "@irp/telemetry and runtime telemetry",
+          "declaredStatus": "CONNECTED",
+          "resolvedPaths": [
+            "packages/telemetry"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "database",
+          "declaredOwner": "@irp/database",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [
+            "packages/database"
+          ],
+          "resolvable": true
+        },
+        {
+          "node": "plugins",
+          "declaredOwner": "plugin packages and daemon PluginHost",
+          "declaredStatus": "PARTIALLY_CONNECTED",
+          "resolvedPaths": [],
+          "resolvable": true
+        }
+      ]
+    },
+    {
+      "graph": "docs/architecture/runtime-execution-graph.json",
+      "schemaVersion": 1,
+      "nodeCount": 0,
+      "nodesChecked": 0,
+      "unreferencedNodes": 0,
+      "entrypointDrift": [],
+      "nodes": []
+    },
+    {
+      "graph": "docs/architecture/failure-recovery-graph.json",
+      "schemaVersion": 1,
+      "nodeCount": 0,
+      "nodesChecked": 0,
+      "unreferencedNodes": 0,
+      "entrypointDrift": [],
+      "nodes": []
+    },
+    {
+      "graph": "docs/architecture/security-boundary-graph.json",
+      "schemaVersion": 1,
+      "nodeCount": 0,
+      "nodesChecked": 0,
+      "unreferencedNodes": 0,
+      "entrypointDrift": [],
+      "nodes": []
+    }
+  ],
+  "unreferenced": [],
+  "summary": {
+    "graphs": 4,
+    "nodesChecked": 20,
+    "unreferencedNodes": 0,
+    "entrypointDrift": 0
+  }
+}
