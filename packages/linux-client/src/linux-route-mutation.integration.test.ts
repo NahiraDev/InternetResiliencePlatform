@@ -17,6 +17,7 @@
 
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { execFile } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import {
   LinuxRouteExecutor,
@@ -31,14 +32,24 @@ const DUMMY_DEV = 'irp-test0';
 const TEST_CIDR = '10.99.99.0/24';
 const TEST_GW = '10.99.99.1';
 
-async function canCreateNamespace(): Promise<boolean> {
+// Check capability synchronously: route mutation requires CAP_NET_ADMIN.
+// In this sandbox, CapEff is 0x0 (no capabilities). We detect this by
+// checking if process is root or has CAP_NET_ADMIN.
+const hasNetAdmin = (() => {
   try {
-    await execFileAsync('ip', ['netns', 'add', NS_NAME], { timeout: 3_000 });
-    return true;
+    const status = readFileSync('/proc/self/status', 'utf8');
+    const capLine = status.match(/CapEff:\s+([0-9a-f]+)/i);
+    if (!capLine || !capLine[1]) return false;
+    const capEff = BigInt(parseInt(capLine[1], 16));
+    // CAP_NET_ADMIN is bit 12 (1 << 12 = 4096)
+    return (capEff & (1n << 12n)) !== 0n;
   } catch {
     return false;
   }
-}
+})();
+
+// Tests that require CAP_NET_ADMIN are skipped (not passed) when unavailable.
+const privileged = hasNetAdmin ? describe : describe.skip;
 
 async function setupNamespace(): Promise<void> {
   // Create a dummy interface and move it to the namespace
@@ -126,35 +137,20 @@ function makeRoutePlan(): RoutePlan {
   };
 }
 
-describe('Linux route mutation integration (network namespace)', () => {
-  let namespaceAvailable = false;
-
+privileged('Linux route mutation integration (network namespace)', () => {
   beforeAll(async () => {
-    namespaceAvailable = await canCreateNamespace();
-    if (namespaceAvailable) {
+    if (hasNetAdmin) {
       await setupNamespace();
     }
   });
 
   afterAll(async () => {
-    if (namespaceAvailable) {
+    if (hasNetAdmin) {
       await cleanupNamespace();
     }
   });
 
   it('performs real route add/replace/del through the production executor', async () => {
-    if (!namespaceAvailable) {
-      // EXTERNAL BLOCKER: This environment does not support network namespace
-      // creation (requires CAP_NET_ADMIN and writable /run/netns).
-      // The production executor code is identical to the real path — only the
-      // command runner boundary is exercised in unit tests with a fake runner.
-      // See linux-route-executor.test.ts for full coverage of apply/rollback/failure.
-      console.warn(
-        'SKIP: network namespace unavailable (CAP_NET_ADMIN required). ' +
-          'Production executor logic is covered by unit tests with fake command runner.',
-      );
-      return;
-    }
 
     const executor = new LinuxRouteExecutor(new ExecFileRouteCommandRunner(), {
       netns: NS_NAME,
@@ -184,12 +180,6 @@ describe('Linux route mutation integration (network namespace)', () => {
   });
 
   it('captures and restores prior route state on rollback', async () => {
-    if (!namespaceAvailable) {
-      console.warn(
-        'SKIP: network namespace unavailable (CAP_NET_ADMIN required).',
-      );
-      return;
-    }
 
     const executor = new LinuxRouteExecutor(new ExecFileRouteCommandRunner(), {
       netns: NS_NAME,

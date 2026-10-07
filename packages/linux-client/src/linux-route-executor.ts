@@ -219,6 +219,31 @@ function mutationArgs(
 }
 
 /**
+ * Checks whether a captured raw route entry can be exactly replayed via
+ * `ip route replace`. Rejects unsupported route shapes that the executor
+ * cannot restore deterministically.
+ *
+ * Supported: dst, gateway, dev, metric, src, scope, proto.
+ * Unsupported (causes rejection): multipath, onlink, mtu, advmss,
+ * hoplimit, flow, and any other iproute2 attributes we don't replay.
+ */
+function canRestoreRoute(raw: Record<string, unknown>): boolean {
+  // Multipath routes cannot be replayed exactly.
+  if (raw.multipath !== undefined) return false;
+  // onlink routes require special handling we don't support.
+  if (raw.onlink !== undefined) return false;
+  // MTU/advmss/hoplimit/flow are route attributes we don't replay.
+  if (raw.mtu !== undefined) return false;
+  if (raw.advmss !== undefined) return false;
+  if (raw.hoplimit !== undefined) return false;
+  if (raw.flow !== undefined) return false;
+  // prefsrc is handled via 'src' in restoreArgsFromRoute, but if it's
+  // present without a matching src field, we can't restore it.
+  if (raw.prefsrc !== undefined && raw.src === undefined) return false;
+ return true;
+}
+
+/**
  * Reconstructs `ip route replace` arguments from a captured raw route entry,
  * so rollback can restore the exact prior state.
  */
@@ -289,15 +314,23 @@ export class LinuxRouteExecutor {
     }
 
     const exists = rawRoutes.length > 0;
-    const restoreArgs =
-      exists && rawRoutes.length === 1
-        ? restoreArgsFromRoute(
-            rawRoutes[0] as Record<string, unknown>,
-            table,
-            family,
-            this.options,
-          )
-        : undefined;
+    // Check if the captured route can be exactly replayed for rollback.
+    // If not, we set restoreArgs to empty so applyRoutePlan will reject
+    // before mutation.
+    const singleRestorable =
+      exists &&
+      rawRoutes.length === 1 &&
+      typeof rawRoutes[0] === 'object' &&
+      rawRoutes[0] !== null &&
+      canRestoreRoute(rawRoutes[0] as Record<string, unknown>);
+    const restoreArgs = singleRestorable
+      ? restoreArgsFromRoute(
+          rawRoutes[0] as Record<string, unknown>,
+          table,
+          family,
+          this.options,
+        )
+      : undefined;
 
     // If multiple routes exist and we cannot replay them exactly, we still
     // capture the raw state for diagnostics, but rollback will refuse to

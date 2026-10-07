@@ -374,6 +374,32 @@ describe('LinuxRouteExecutor', () => {
       const replaceCall = runner.calls.find((c) => c.args.includes('replace'));
       expect(replaceCall).toBeUndefined();
     });
+
+    it('rejects apply when pre-mutation route has unsupported attributes (multipath, onlink, mtu)', async () => {
+      const plan = makePlan();
+      runner.setResult('show', 'default', {
+        stdout: JSON.stringify([
+          {
+            dst: 'default',
+            gateway: '10.0.0.1',
+            dev: 'eth0',
+            metric: 100,
+            multipath: [{ dev: 'eth0', gateway: '10.0.0.1' }],
+          },
+        ]),
+      });
+      runner.setResult('replace', 'default', { stdout: '', exitCode: 0 });
+
+      const result = await executor.applyRoutePlan(plan);
+
+      // Must reject because multipath routes cannot be replayed exactly.
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('cannot guarantee exact rollback');
+
+      // No mutation should have been run.
+      const replaceCall = runner.calls.find((c) => c.args.includes('replace'));
+      expect(replaceCall).toBeUndefined();
+    });
   });
 
   describe('verifyRoutePlan', () => {

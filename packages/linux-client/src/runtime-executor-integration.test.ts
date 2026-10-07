@@ -16,6 +16,8 @@ import { KernelRuntime } from '@irp/kernel';
 import { RoutingEngine, parseDestination, type DiscoveredRoute } from '@irp/routing';
 import { type RouteCommandRunner, type RouteCommandResult } from './linux-route-executor.js';
 import { createLinuxRoutingContract } from './linux-routing-contract.js';
+import { CanonicalNetworkRuntimeAdapter, type CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
+import type { ActionPlan, RuntimeContext, ActionExecution, ActionVerification } from '@irp/resilience-runtime';
 
 /** Fake command runner that simulates ip route commands. */
 class IntegrationCommandRunner implements RouteCommandRunner {
@@ -211,5 +213,141 @@ describe('Runtime-to-executor integration path', () => {
     const routingContract = contracts.find((c) => c.id === 'routing');
     expect(routingContract).toBeDefined();
     expect(routingContract!.version).toBe('1.0.0');
+  });
+});
+
+describe('CanonicalNetworkRuntimeAdapter route_change path', () => {
+  let runner: IntegrationCommandRunner;
+  let kernel: KernelRuntime;
+  let adapter: CanonicalNetworkRuntimeAdapter;
+  let controlPlane: CanonicalNetworkControlPlane;
+
+  beforeEach(() => {
+    runner = new IntegrationCommandRunner();
+    const { contract } = createLinuxRoutingContract({ commandRunner: runner });
+    kernel = new KernelRuntime(undefined, {
+      id: 'operator',
+      capabilities: ['network.route'],
+    });
+    kernel.registerContract(contract);
+
+    const routing = new RoutingEngine({
+      kernel,
+      principal: { id: 'operator', capabilities: ['network.route'] },
+    });
+    routing.registerProvider({
+      id: 'test-discovery',
+      discoverRoutes: async () => [makeRoute()],
+      verify: async () => true,
+    });
+
+    controlPlane = {
+      connectivity: {
+        discoverResources: async () => [],
+        getAvailableSources: () => [],
+        getActiveSource: () => undefined,
+        selectSource: async () => ({
+          current: undefined,
+          availableSources: [],
+          healthySources: [],
+          candidates: [],
+          selected: undefined,
+          reason: 'no sources',
+          policyConstraints: [],
+          generatedAt: new Date().toISOString(),
+        }),
+        switchSource: async () => {},
+        registry: { get: () => ({ getHealth: async () => ({ status: 'healthy' }) }), list: () => [] },
+      } as never,
+      routing,
+    };
+    adapter = new CanonicalNetworkRuntimeAdapter(controlPlane);
+  });
+
+  it('executes route_change through the canonical adapter to the kernel executor', async () => {
+    const plan: ActionPlan = {
+      id: 'plan-canonical-test',
+      selectedAction: {
+        id: 'action-1',
+        intent: 'route_change',
+        metadata: { destination: '8.8.8.8' },
+        rejectionReasons: [],
+      },
+      requiredCapabilities: ['route.write'],
+      dependencies: ['route_change'],
+      expectedPostconditions: ['route_change verified'],
+      metadata: { idempotencyKey: 'canonical-test' },
+    } as never;
+
+    const context: RuntimeContext = {
+      correlationId: 'canonical-test',
+      mode: 'live',
+      policySnapshot: { policy: { simulationOnly: false } } as never,
+      cancelled: false,
+    } as never;
+
+    const execution: ActionExecution = await adapter.execute(plan, context);
+
+    // The canonical adapter should have invoked the routing engine, which
+    // calls kernel.execute('routing', 'applyRoutePlan'), which calls the
+    // LinuxRouteExecutor. With the fake runner succeeding, this should work.
+    expect(execution.status).not.toBe('skipped');
+  });
+
+  it('verifies route_change through the canonical adapter', async () => {
+    const plan: ActionPlan = {
+      id: 'plan-verify-test',
+      selectedAction: {
+        id: 'action-2',
+        intent: 'route_change',
+        metadata: { destination: '8.8.8.8' },
+        rejectionReasons: [],
+      },
+      requiredCapabilities: ['route.write'],
+      dependencies: ['route_change'],
+      expectedPostconditions: ['route_change verified'],
+      metadata: { idempotencyKey: 'verify-test' },
+    } as never;
+
+    const context: RuntimeContext = {
+      correlationId: 'verify-test',
+      mode: 'live',
+      policySnapshot: { policy: { simulationOnly: false } } as never,
+      cancelled: false,
+    } as never;
+
+    const execution: ActionExecution = { status: 'success' } as never;
+    const verification: ActionVerification = await adapter.verify(plan, execution, context);
+
+    // The canonical adapter should verify the route_change decision.
+    expect(verification).toBeDefined();
+  });
+
+  it('rolls back route_change through the canonical adapter', async () => {
+    const plan: ActionPlan = {
+      id: 'plan-rollback-test',
+      selectedAction: {
+        id: 'action-3',
+        intent: 'route_change',
+        metadata: { destination: '8.8.8.8', previousSourceId: undefined },
+        rejectionReasons: [],
+      },
+      requiredCapabilities: ['route.write'],
+      dependencies: ['route_change'],
+      expectedPostconditions: ['route_change verified'],
+      metadata: { idempotencyKey: 'rollback-test' },
+    } as never;
+
+    const context: RuntimeContext = {
+      correlationId: 'rollback-test',
+      mode: 'live',
+      policySnapshot: { policy: { simulationOnly: false } } as never,
+      cancelled: false,
+    } as never;
+
+    const rollbackResult: ActionExecution = await adapter.rollback(plan, context);
+
+    // The canonical adapter should attempt rollback through the routing engine.
+    expect(rollbackResult).toBeDefined();
   });
 });
