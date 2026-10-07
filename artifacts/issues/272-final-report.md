@@ -1,7 +1,7 @@
 # Issue #272 — Final Report: Autonomous Network Superplatform Reconstruction
 
-Baseline reviewed: `8f598afbcc001e57c27f7917a9b871e21fe86a61` (recorded in `PROJECT_STATE.md` and
-`.github/ACTIVE_WORK.md`, which previously pinned stale ancestors).
+Baseline reviewed: `7f8e80559df67fcf43f8fbfc3962b2064b98a185` (latest implementation merge
+PR #324; recorded in `PROJECT_STATE.md` and `.github/ACTIVE_WORK.md`).
 
 This report is the required final deliverable for #272. It records what existed, what was missing, what
 was connected, what was replaced, what was removed as duplicate, what was verified, and what remains
@@ -243,7 +243,7 @@ All gates re-run uncached on the corrected tree:
 
 | Gate | Result |
 | --- | --- |
-| `pnpm validate` | passed — 43 packages, 15 workflows, 815 files |
+| `pnpm validate` | passed — 43 packages, 15 workflows, 819 files |
 | `pnpm validate:docs` | passed — 147 Markdown/MDX files |
 | `pnpm build` | 43/43 tasks, 0 cached |
 | `pnpm typecheck` | 79/79 tasks |
