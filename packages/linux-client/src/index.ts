@@ -13,6 +13,7 @@ import {
   type RuntimeContext,
   type RuntimeSnapshot,
 } from '@irp/resilience-runtime';
+import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane } from './linux-network-control-plane.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -172,6 +173,115 @@ export class LinuxClientRuntime {
   }
 }
 
+/**
+ * Production Linux client runtime.
+ *
+ * Unlike {@link LinuxClientRuntime} (which defaults to simulation), this
+ * runtime wires a real {@link KernelRuntime} with the production routing
+ * contract, a {@link RoutingEngine} with real Linux route discovery, and a
+ * {@link ConnectivityManager} with configured providers (including
+ * Starlink). It uses `executionMode: 'real'` and passes the
+ * {@link CanonicalNetworkControlPlane} into {@link createCanonicalRuntime}
+ * so the {@link CanonicalNetworkRuntimeAdapter} is registered with
+ * `supportsLive: true`.
+ *
+ * The production runtime does NOT bypass the canonical mutation boundary.
+ * All mutations still flow through the canonical runtime and its privileged
+ * mutation boundary before reaching the kernel routing contract and the
+ * Linux route executor.
+ */
+export class LinuxProductionRuntime {
+  readonly runtime: ResilienceRuntime;
+  private started = false;
+
+  readonly composition: CanonicalRuntimeComposition;
+  readonly controlPlane: LinuxNetworkControlPlane;
+
+  constructor(
+    system: Pick<LinuxSystemAdapter, 'snapshot'>,
+    options: {
+      readonly enableLiveRouteMutation?: boolean;
+      readonly netns?: string;
+      readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
+      readonly registerStarlink?: boolean;
+      readonly starlinkOptions?: { readonly target?: string; readonly grpcurlCommand?: string };
+      readonly composition?: CanonicalRuntimeComposition;
+    } = {},
+  ) {
+    this.controlPlane = createLinuxNetworkControlPlane({
+      ...(options.enableLiveRouteMutation !== undefined ? { enableLiveRouteMutation: options.enableLiveRouteMutation } : {}),
+      ...(options.netns ? { netns: options.netns } : {}),
+      ...(options.connectivityProviders ? { connectivityProviders: options.connectivityProviders } : {}),
+      ...(options.registerStarlink !== undefined ? { registerStarlink: options.registerStarlink } : {}),
+      ...(options.starlinkOptions ? { starlinkOptions: options.starlinkOptions } : {}),
+    });
+    this.composition =
+      options.composition ??
+      createCanonicalRuntime({
+        executionMode: 'real',
+        observationProviders: [new LinuxSnapshotObservationProvider(system)],
+        runtimeId: 'linux-production-runtime',
+        networkControlPlane: this.controlPlane.controlPlane,
+      });
+    this.runtime = this.composition.runtime;
+  }
+
+  async start(): Promise<void> {
+    if (this.started) return;
+    await this.composition.runCycle({
+      correlationId: 'linux-production-startup',
+      idempotencyKey: 'linux-production-startup',
+    });
+    this.started = true;
+  }
+
+  async status(): Promise<LinuxRuntimeStatus> {
+    const capabilities = this.runtime.capabilities();
+    return {
+      runtime: await this.runtime.getRuntimeSnapshot(),
+      capabilities,
+      capabilityStatus: capabilities.map((descriptor) => ({
+        adapterId: descriptor.adapterId,
+        subsystem: descriptor.subsystem,
+        status: descriptor.supportsLive ? 'live' : 'simulation-only',
+        supportsSafe: descriptor.supportsSafe,
+        supportsLive: descriptor.supportsLive,
+        verificationSupport: descriptor.verificationSupport,
+        recoverySupport: descriptor.recoverySupport,
+      })),
+    };
+  }
+
+  /**
+   * Exposes whether the production routing contract is registered and the
+   * canonical network adapter supports live execution.
+   */
+  getRouteMutationCapability(): {
+    readonly kernelId: string;
+    readonly routingContractRegistered: boolean;
+    readonly liveRouteMutationEnabled: boolean;
+    readonly capabilityStatus: readonly LinuxCapabilityStatus[];
+  } {
+    const capabilities = this.runtime.capabilities();
+    const routingAdapter = capabilities.find((c) => c.subsystem === 'routing' && c.supportsLive);
+    const connectivityAdapter = capabilities.find((c) => c.subsystem === 'connectivity' && c.supportsLive);
+    return {
+      kernelId: this.controlPlane.kernel.id,
+      routingContractRegistered: true,
+      liveRouteMutationEnabled: Boolean(routingAdapter?.supportsLive || connectivityAdapter?.supportsLive),
+      capabilityStatus: capabilities.map((descriptor) => ({
+        adapterId: descriptor.adapterId,
+        subsystem: descriptor.subsystem,
+        status: descriptor.supportsLive ? 'live' : 'simulation-only',
+        supportsSafe: descriptor.supportsSafe,
+        supportsLive: descriptor.supportsLive,
+        verificationSupport: descriptor.verificationSupport,
+        recoverySupport: descriptor.recoverySupport,
+      })),
+    };
+  }
+}
+
 const html = (
   snapshot: NetworkSnapshot,
   policy: ClientPolicy,
@@ -192,6 +302,12 @@ function escapeHtml(value: string): string {
     .replaceAll(String.fromCharCode(34), String.fromCharCode(38) + 'quot;');
 }
 
+/** Shared interface for runtime implementations usable by the server. */
+export interface LinuxRuntime {
+  start(): Promise<void>;
+  status(): Promise<LinuxRuntimeStatus>;
+}
+
 export class LinuxClientServer {
   private readonly server = createServer(
     (request, response) => void this.handle(request, response),
@@ -199,7 +315,7 @@ export class LinuxClientServer {
 
   constructor(
     private readonly system: LinuxSystemAdapter,
-    private readonly runtime = new LinuxClientRuntime(system),
+    private readonly runtime: LinuxRuntime = new LinuxClientRuntime(system),
   ) {}
 
   async start(port = 17861, host = '127.0.0.1'): Promise<void> {
@@ -251,7 +367,16 @@ export class LinuxClientServer {
 }
 
 export async function runLinuxClient(): Promise<LinuxClientServer> {
-  const server = new LinuxClientServer(new LinuxSystem());
+  // Production path: wire the real kernel, routing contract, connectivity
+  // providers, and canonical network adapter. Live route mutation requires
+  // CAP_NET_ADMIN; when not available, the runtime still observes real network
+  // state and registers providers, but route apply fails closed at the kernel
+  // executor boundary.
+  const system = new LinuxSystem();
+  const runtime = new LinuxProductionRuntime(system, {
+    enableLiveRouteMutation: true,
+  });
+  const server = new LinuxClientServer(system, runtime);
   await server.start();
   return server;
 }

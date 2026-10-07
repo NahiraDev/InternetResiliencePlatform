@@ -607,9 +607,21 @@ importers:
 
   packages/linux-client:
     dependencies:
+      '@irp/connectivity':
+        specifier: workspace:*
+        version: link:../connectivity
+      '@irp/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@irp/resilience-runtime':
         specifier: workspace:*
         version: link:../resilience-runtime
+      '@irp/routing':
+        specifier: workspace:*
+        version: link:../routing
+      '@irp/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
 
   packages/logger:
     dependencies:

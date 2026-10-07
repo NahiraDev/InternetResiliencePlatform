@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:14.213Z",
+  "generatedAt": "2026-10-07T17:51:06.920Z",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -94,6 +94,13 @@
       ]
     },
     {
+      "name": "DEFAULT_TIMEOUT_MS",
+      "declaredIn": [
+        "packages/linux-client/src/linux-route-discovery.ts",
+        "packages/linux-client/src/linux-route-executor.ts"
+      ]
+    },
+    {
       "name": "DomainEvent",
       "declaredIn": [
         "packages/core/src/index.ts",
@@ -140,6 +147,13 @@
       "declaredIn": [
         "packages/internet-intelligence-agent/src/types.ts",
         "packages/network-intelligence/src/decision/InternetIntelligenceBridge.ts"
+      ]
+    },
+    {
+      "name": "IP_BINARY",
+      "declaredIn": [
+        "packages/linux-client/src/linux-route-discovery.ts",
+        "packages/linux-client/src/linux-route-executor.ts"
       ]
     },
     {
@@ -233,7 +247,7 @@
     "orphanTests": 0,
     "orphanModules": 0,
     "orphanExports": 11,
-    "duplicateContracts": 23,
+    "duplicateContracts": 25,
     "unreferencedPersistenceModels": 0
   }
 }

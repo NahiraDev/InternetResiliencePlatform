@@ -14,14 +14,18 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
-    "pretypecheck": "pnpm -r --filter @irp/resilience-runtime... run build",
-    "pretest": "pnpm -r --filter @irp/resilience-runtime... run build",
-    "prebuild": "pnpm -r --filter @irp/resilience-runtime... run build"
+    "pretypecheck": "pnpm -r --filter @irp/resilience-runtime... --filter @irp/routing... --filter @irp/connectivity... --filter @irp/kernel... --filter @irp/telemetry... run build",
+    "pretest": "pnpm -r --filter @irp/resilience-runtime... --filter @irp/routing... --filter @irp/connectivity... --filter @irp/kernel... --filter @irp/telemetry... run build",
+    "prebuild": "pnpm -r --filter @irp/resilience-runtime... --filter @irp/routing... --filter @irp/connectivity... --filter @irp/kernel... --filter @irp/telemetry... run build"
   },
   "engines": {
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@irp/resilience-runtime": "workspace:*"
+    "@irp/connectivity": "workspace:*",
+    "@irp/kernel": "workspace:*",
+    "@irp/resilience-runtime": "workspace:*",
+    "@irp/routing": "workspace:*",
+    "@irp/telemetry": "workspace:*"
   }
 }

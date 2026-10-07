@@ -4,6 +4,7 @@
 | MINOR | duplicate-contract:AgentRecommendation | contract-duplication | packages/internet-intelligence-agent | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:CircuitBreakerState | contract-duplication | packages/dns | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:DecisionEvaluator | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:DEFAULT_TIMEOUT_MS | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:DomainEvent | contract-duplication | packages/core | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:EndpointRegistry | contract-duplication | packages/security | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:EventHandler | contract-duplication | packages/core | pnpm run architecture:archaeology |
@@ -11,6 +12,7 @@
 | MINOR | duplicate-contract:GLOBAL_PROVIDER_METADATA | contract-duplication | packages/dns | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:HealthState | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:InternetEvidence | contract-duplication | packages/internet-intelligence-agent | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:IP_BINARY | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:IRANIAN_PROVIDER_METADATA | contract-duplication | packages/dns | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:ManualOverrideMode | contract-duplication | packages/connectivity | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:NetworkSnapshot | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
