@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-07T17:59:57.638Z",
+  "generatedAt": "2026-10-07T18:09:42.927Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -14,7 +14,7 @@
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
   "componentCount": 223,
-  "sourceFileCount": 388,
+  "sourceFileCount": 391,
   "components": [
     {
       "componentId": "packages::auth",
@@ -342,7 +342,7 @@
       "entrypoint": "pnpm --dir packages/linux-client start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 11,
+      "sourceFiles": 14,
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/kernel",
@@ -5129,5 +5129,5 @@
       "fail"
     ]
   },
-  "reportSha256": "ed70e1ec7afc5f0e10bbc1b9d87f9bf6fbed793305663e6e49dd826fbbaa23b7"
+  "reportSha256": "7e321c8cfe203594ecf121596b309e522bc07b5adee7998fe39531d409863f25"
 }

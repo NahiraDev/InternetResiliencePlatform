@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T17:51:05.948Z",
+  "generatedAt": "2026-10-07T18:09:15.715Z",
   "packages": [
     {
       "group": "apps",
@@ -357,8 +357,8 @@
         "@irp/routing",
         "@irp/telemetry"
       ],
-      "sourceFiles": 11,
-      "testFiles": 5,
+      "sourceFiles": 14,
+      "testFiles": 7,
       "hasTests": true
     },
     {

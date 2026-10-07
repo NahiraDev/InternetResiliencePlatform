@@ -354,7 +354,7 @@ describe('LinuxRouteExecutor', () => {
       expect(rollbackResult.error).toContain('No snapshot');
     });
 
-    it('refuses to fake rollback when multiple prior routes exist', async () => {
+    it('rejects apply when multiple prior routes exist and rollback cannot be guaranteed', async () => {
       const plan = makePlan();
       runner.setResult('show', 'default', {
         stdout: JSON.stringify([
@@ -364,12 +364,15 @@ describe('LinuxRouteExecutor', () => {
       });
       runner.setResult('replace', 'default', { stdout: '', exitCode: 0 });
 
-      await executor.applyRoutePlan(plan);
+      const result = await executor.applyRoutePlan(plan);
 
-      const rollbackResult = await executor.rollbackRoutePlan(plan);
+      // Must reject before mutation when rollback cannot be guaranteed.
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('cannot guarantee exact rollback');
 
-      expect(rollbackResult.ok).toBe(false);
-      expect(rollbackResult.error).toContain('cannot replay exactly');
+      // No mutation command should have been run.
+      const replaceCall = runner.calls.find((c) => c.args.includes('replace'));
+      expect(replaceCall).toBeUndefined();
     });
   });
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T17:51:06.920Z",
+  "generatedAt": "2026-10-07T18:09:16.632Z",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -96,6 +96,7 @@
     {
       "name": "DEFAULT_TIMEOUT_MS",
       "declaredIn": [
+        "packages/linux-client/src/linux-host-connectivity-provider.ts",
         "packages/linux-client/src/linux-route-discovery.ts",
         "packages/linux-client/src/linux-route-executor.ts"
       ]
@@ -152,6 +153,7 @@
     {
       "name": "IP_BINARY",
       "declaredIn": [
+        "packages/linux-client/src/linux-host-connectivity-provider.ts",
         "packages/linux-client/src/linux-route-discovery.ts",
         "packages/linux-client/src/linux-route-executor.ts"
       ]

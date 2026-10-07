@@ -358,7 +358,18 @@ export class LinuxRouteExecutor {
   async applyRoutePlan(plan: RoutePlan): Promise<RouteApplyResult> {
     try {
       this.validatePlan(plan);
-      await this.captureSnapshot(plan);
+      const snapshot = await this.captureSnapshot(plan);
+
+      // If pre-state has multiple routes and we cannot replay them exactly,
+      // reject before mutation rather than making rollback impossible.
+      if (snapshot.exists && snapshot.restoreArgs.length === 0) {
+        return {
+          ok: false,
+          planId: plan.id,
+          error: `Pre-mutation state for ${snapshot.target} captured ${snapshot.rawRoutes.length} prior routes; cannot guarantee exact rollback — mutation rejected`,
+        };
+      }
+
       const target = targetFor(plan);
       const table = tableFor(plan);
       const family = familyFor(plan.destination);

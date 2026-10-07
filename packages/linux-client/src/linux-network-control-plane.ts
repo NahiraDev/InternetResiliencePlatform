@@ -32,6 +32,7 @@ import {
 import { MetricsRegistry } from '@irp/telemetry';
 import { createLinuxRoutingContract } from './linux-routing-contract.js';
 import { LinuxRouteDiscoveryProvider } from './linux-route-discovery.js';
+import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provider.js';
 import type { CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
 
 export interface LinuxNetworkControlPlaneOptions {
@@ -45,6 +46,12 @@ export interface LinuxNetworkControlPlaneOptions {
   readonly netns?: string;
   /** Additional connectivity providers to register. */
   readonly connectivityProviders?: readonly ConnectivityProvider[];
+  /**
+   * Whether to register the Linux host connectivity provider. Default: true.
+   * This discovers real network interfaces via `ip -j addr show` and exposes
+   * them as canonical ConnectivityResource[] in the ConnectivityManager.
+   */
+  readonly registerHostConnectivity?: boolean;
   /** Whether to register the Starlink dish provider. Default: true. */
   readonly registerStarlink?: boolean;
   /** Starlink provider options (target, grpcurl, etc.) */
@@ -108,6 +115,14 @@ export function createLinuxNetworkControlPlane(
   const connectivity = new ConnectivityManager({});
 
   const providers: ConnectivityProvider[] = [...connectivityProviders];
+
+  // Register Linux host connectivity provider (real network interfaces).
+  if (options.registerHostConnectivity !== false) {
+    const hostProvider = new LinuxHostConnectivityProvider({
+      ...(netns ? { netns } : {}),
+    });
+    providers.push(hostProvider);
+  }
 
   // Register Starlink dish provider (monitor/health-check only).
   if (options.registerStarlink !== false) {
