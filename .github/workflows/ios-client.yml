@@ -127,7 +127,7 @@ jobs:
             -project "$XCODE_PROJECT" \
             -scheme IRP \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             -jobs 1 \
             CODE_SIGNING_ALLOWED=NO \
