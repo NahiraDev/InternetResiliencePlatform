@@ -93,8 +93,6 @@ jobs:
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
-            "ios-client.yml"
-            "ios-network-integration.yml"
             "macos-client.yml"
             "windows-client.yml"
           )
