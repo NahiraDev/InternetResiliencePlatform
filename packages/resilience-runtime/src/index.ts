@@ -5,34 +5,12 @@ export * from './state/network-state.js';
 export * from './ports/ports.js';
 export * from './observations/observations.js';
 export * from './incidents/incidents.js';
-export * from './policy/index.js';
-export * from './events/event-taxonomy.js';
-export * from './events/evidence-sink.js';
-export * from './state/state-classification.js';
-export * from './persistence/degradable-persistence.js';
-export * from './verification/incident-trace.js';
-export * from './verification/outcome-verification.js';
-export * from './learning/adaptive-control.js';
-export * from './learning/strategy-outcome.js';
-export * from './learning/outcome-learning-loop.js';
-export * from './security/trust-boundaries.js';
-export * from './security/secrets.js';
-export * from './transactions/privileged-boundary.js';
-export * from './knowledge/knowledge-record.js';
-export * from './knowledge/arbitration.js';
-export * from './knowledge/knowledge-store.js';
-export * from './knowledge/failure-memory.js';
-export * from './knowledge/prediction.js';
-export * from './knowledge/knowledge-influence.js';
+export * from './policy/policy.js';
 export * from './planning/planner.js';
-export * from './planning/objectives.js';
-export * from './planning/reservation.js';
-export * from './planning/strategy-generator.js';
 export * from './validation/validation.js';
 export * from './execution/execution.js';
 export * from './verification/verification.js';
 export * from './recovery/recovery.js';
-export * from './safety/safety-kernel.js';
 export * from './decisions/records.js';
 export * from './replay/replay.js';
 export * from './stores/memory.js';
@@ -40,40 +18,14 @@ export * from './events/events.js';
 export * from './telemetry/telemetry.js';
 export * from './adapters/adapters.js';
 export * from './runtime.js';
-export * from './canonical-runtime-composition.js';
 export * from './contracts.js';
-export * from './contracts/control-plane.js';
 export * from './adapter-registry.js';
 export * from './observation-providers.js';
 export * from './scheduler.js';
-export * from './resilience/index.js';
-export * from './scenario-lab/index.js';
-export * from './platform/index.js';
 export * from './e2e-validation.js';
 export * from './federation/probe-federation.js';
-export * from './federation/federated-advisory.js';
 export * from './canonical-decision-provider.js';
-export * from './historical-advisory.js';
-export * from './decision-orchestration.js';
-export * from './transactions/action-transaction.js';
 export * from './canonical-network-adapter.js';
 export * from './core-integration.js';
-export * from './closed-loop.js';
-export {
-  arbitrateIntents,
-  type IntentConflict,
-  type PolicyConflict,
-  type IntentStore,
-  InMemoryIntentStore,
-  PostgresIntentStore,
-  type PostgresConfig,
-} from './intent/index.js';
-export * from './intent/compiler.js';
-export * from './intent/governance.js';
-export * from './gateway/gateway-registry-plane.js';
-export * from './tunnel/tunnel-control-plane.js';
-export * from './fabric.js';
-export * from './fabric-authority.js';
-export * from './fabric-lifecycle.js';
 
 export * from './autopilot/autopilot.js';
