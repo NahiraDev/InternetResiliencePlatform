@@ -257,6 +257,10 @@ export class ResilienceRuntime {
     input: Partial<RuntimeContext> & { idempotencyKey?: string } = {},
   ): Promise<Awaited<ReturnType<typeof createDecisionRecord>>> {
     const start = Date.now();
+    // Capture the mutation epoch at decision time (start of cycle), not at
+    // mutation time. This ensures a stale decision made against an older epoch
+    // is rejected when the epoch has advanced between decision and apply.
+    const decisionEpoch = this.mutationBoundary.currentEpoch();
     let context = createRuntimeContext(input);
     const before = this.state.current();
     this.counters = { ...this.counters, cyclesTotal: this.counters.cyclesTotal + 1 };
@@ -474,7 +478,7 @@ export class ResilienceRuntime {
             idempotencyKey: input.idempotencyKey ?? plan.selectedAction.id,
             resourceId: plan.dependencies.join('|') || plan.selectedAction.intent,
             transactionId: runtimeTransactionId,
-            epoch: this.mutationBoundary.currentEpoch(),
+            epoch: decisionEpoch,
             ...(plan.metadata?.aiAdvisoryOnly ? { ai: { rationale: String(plan.metadata.rationale) } } : {}),
           };
           const boundaryResult = await this.mutationBoundary.mutate(mutationRequest);
