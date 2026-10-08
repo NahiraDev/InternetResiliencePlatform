@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-08T14:59:07.933Z",
+  "generatedAt": "2026-10-08T15:01:54.594Z",
   "findings": [
     {
       "id": "duplicate-contract:AddressFamily",
@@ -15,7 +15,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:AgentRecommendation",
@@ -29,7 +29,7 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:CircuitBreakerState",
@@ -43,7 +43,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:DecisionEvaluator",
@@ -57,7 +57,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:DEFAULT_TIMEOUT_MS",
@@ -72,7 +72,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:DomainEvent",
@@ -86,7 +86,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:EndpointRegistry",
@@ -100,7 +100,7 @@
       "owner": "packages/security",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:EventHandler",
@@ -114,7 +114,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:FailureEvidence",
@@ -128,7 +128,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:GLOBAL_PROVIDER_METADATA",
@@ -142,7 +142,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:HealthState",
@@ -156,7 +156,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:InternetEvidence",
@@ -170,7 +170,7 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:IP_BINARY",
@@ -185,7 +185,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:IRANIAN_PROVIDER_METADATA",
@@ -199,7 +199,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:ManualOverrideMode",
@@ -213,7 +213,7 @@
       "owner": "packages/connectivity",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:NetworkSnapshot",
@@ -227,7 +227,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:nowIso",
@@ -241,7 +241,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:PolicySnapshot",
@@ -255,7 +255,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:Principal",
@@ -270,7 +270,7 @@
       "owner": "packages/auth",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:ProviderHealth",
@@ -284,7 +284,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:RecoveryPlan",
@@ -298,7 +298,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:RegistryRecord",
@@ -312,7 +312,7 @@
       "owner": "packages/kernel",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:RuntimeContext",
@@ -326,7 +326,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:RuntimeState",
@@ -340,7 +340,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "duplicate-contract:Scheduler",
@@ -354,7 +354,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-46.md",
@@ -367,7 +367,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-54.md",
@@ -380,7 +380,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-66.md",
@@ -393,7 +393,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-75.md",
@@ -406,7 +406,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-76.md",
@@ -419,7 +419,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-80.md",
@@ -432,7 +432,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "2026-10-08T14:59:07.933Z"
+      "registeredAt": "2026-10-08T15:01:54.594Z"
     }
   ],
   "summary": {
