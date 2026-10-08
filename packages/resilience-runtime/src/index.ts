@@ -40,7 +40,16 @@ export * from './events/events.js';
 export * from './telemetry/telemetry.js';
 export * from './adapters/adapters.js';
 export * from './runtime.js';
-export * from './canonical-runtime-composition.js';
+export {
+  createCanonicalRuntime,
+  createCanonicalRuntimeWithPostgres,
+  readPersistenceSettings,
+  createPostgresIntentStore,
+  type CanonicalExecutionMode,
+  type CanonicalRuntimeCompositionOptions,
+  type CanonicalRuntimeCycleInput,
+  type CanonicalRuntimeComposition,
+} from './canonical-runtime-composition.js';
 export * from './contracts.js';
 export * from './contracts/control-plane.js';
 export * from './adapter-registry.js';
