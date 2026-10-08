@@ -8,6 +8,7 @@ import {
 import { RoutingEngine } from '@irp/routing';
 import type { ActionPlan, RuntimeContext } from '../src/domain/types.js';
 import { CanonicalNetworkRuntimeAdapter } from '../src/canonical-network-adapter.js';
+import type { CanonicalDestinationOutcome } from '../src/canonical-network-adapter.js';
 
 const resource = (id: string, priority: number): ConnectivityResource => ({
   providerId: 'fake',
@@ -171,6 +172,7 @@ describe('CanonicalNetworkRuntimeAdapter', () => {
     const adapter = new CanonicalNetworkRuntimeAdapter({
       connectivity,
       routing: new RoutingEngine(),
+      verifyDestination: async () => ({ status: 'reachable' }) as CanonicalDestinationOutcome,
     });
 
     const execution = await adapter.execute(actionPlan('connectivity_failover'), context('live'));

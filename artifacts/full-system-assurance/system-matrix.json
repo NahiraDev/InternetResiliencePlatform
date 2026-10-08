@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-07T01:55:12.812Z",
+  "generatedAt": "2026-10-08T14:55:51.870Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -14,7 +14,7 @@
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
   "componentCount": 223,
-  "sourceFileCount": 380,
+  "sourceFileCount": 391,
   "components": [
     {
       "componentId": "packages::auth",
@@ -109,6 +109,7 @@
       ],
       "downstreamDependencies": [
         "apps/daemon",
+        "packages/linux-client",
         "packages/resilience-runtime",
         "packages/routing"
       ],
@@ -321,6 +322,7 @@
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/connectivity",
+        "packages/linux-client",
         "packages/routing",
         "packages/sdk"
       ],
@@ -340,9 +342,13 @@
       "entrypoint": "pnpm --dir packages/linux-client start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 3,
+      "sourceFiles": 14,
       "upstreamDependencies": [
-        "@irp/resilience-runtime"
+        "@irp/connectivity",
+        "@irp/kernel",
+        "@irp/resilience-runtime",
+        "@irp/routing",
+        "@irp/telemetry"
       ],
       "downstreamDependencies": [],
       "owningPhases": [],
@@ -815,6 +821,7 @@
       ],
       "downstreamDependencies": [
         "apps/daemon",
+        "packages/linux-client",
         "packages/resilience-runtime"
       ],
       "owningPhases": [],
@@ -928,6 +935,7 @@
         "apps/api",
         "apps/cli",
         "packages/connectivity",
+        "packages/linux-client",
         "packages/resilience-runtime",
         "packages/routing",
         "packages/tunnel"
@@ -5121,5 +5129,5 @@
       "fail"
     ]
   },
-  "reportSha256": "6390b3fe581bd88a24ac1ec35f3bfb13de262a3dbd93fa23dff29917228e5ca0"
+  "reportSha256": "117a8eee6469d2e689dbccf2a878afacacac12c262e82ff315115476c09573e0"
 }

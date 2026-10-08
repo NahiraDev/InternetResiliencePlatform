@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:13.495Z",
+  "generatedAt": "2026-10-08T14:59:06.914Z",
   "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
@@ -415,10 +415,12 @@
         "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
+        "@irp/linux-client",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:routing"
       ],
       "consumers": [
+        "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-network-adapter.ts",
@@ -426,6 +428,7 @@
         "packages/resilience-runtime/src/scenario-lab/scenario.ts"
       ],
       "runtimePaths": [
+        "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#routing",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",

@@ -20,6 +20,11 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 ReadWritePaths=/var/lib/irp
+# Route mutation requires CAP_NET_ADMIN. This is the minimal capability for
+# ip route add/replace/del operations through the canonical kernel executor.
+# No other host mutation authority is granted.
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
 
 [Install]
 WantedBy=multi-user.target

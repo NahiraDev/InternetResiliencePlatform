@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:13.657Z",
+  "generatedAt": "2026-10-08T14:59:07.081Z",
   "contractAuthorities": {
     "runtime": "@irp/resilience-runtime",
     "decision": "@irp/resilience-runtime",
@@ -41,6 +41,25 @@
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
       "role": "host-composition"
+    },
+    {
+      "path": "packages/linux-client/src/linux-network-control-plane.ts",
+      "owner": "@irp/linux-client",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "packages/linux-client/src/linux-route-executor.ts",
+      "owner": "@irp/linux-client",
+      "composesCanonicalRuntime": false,
+      "role": "privileged-mutation-boundary"
+    },
+    {
+      "path": "packages/linux-client/src/linux-routing-contract.ts",
+      "owner": "@irp/linux-client",
+      "composesCanonicalRuntime": false,
+      "role": "privileged-mutation-boundary"
     },
     {
       "path": "packages/resilience-runtime/src/canonical-runtime-composition.ts",
@@ -88,13 +107,13 @@
   ],
   "violations": [],
   "summary": {
-    "hosts": 11,
+    "hosts": 14,
     "violations": 0,
     "singleProductionAuthority": true,
     "authoritiesByRole": {
-      "host-composition": 5,
-      "safety-kernel-host": 3,
-      "privileged-mutation-boundary": 3
+      "host-composition": 6,
+      "privileged-mutation-boundary": 5,
+      "safety-kernel-host": 3
     },
     "authorityOwners": [
       "@irp/api",

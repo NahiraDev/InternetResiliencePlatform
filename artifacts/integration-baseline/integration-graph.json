@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:54:22.440Z",
+  "generatedAt": "2026-10-07T17:56:53.531Z",
   "commit": "unknown",
   "nodes": [
     {
@@ -729,7 +729,43 @@
     },
     {
       "source": "@irp/linux-client",
+      "target": "@irp/connectivity",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/linux-client",
+      "target": "@irp/kernel",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/linux-client",
       "target": "@irp/resilience-runtime",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/linux-client",
+      "target": "@irp/routing",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/linux-client",
+      "target": "@irp/telemetry",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",

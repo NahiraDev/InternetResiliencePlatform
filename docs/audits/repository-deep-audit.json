@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T01:54:17.048Z",
+  "generatedAt": "2026-10-08T14:55:51.339Z",
   "workspaceCount": 43,
   "workflowCount": 16,
   "findings": [],
@@ -205,8 +205,8 @@
     {
       "name": "@irp/linux-client",
       "path": "packages/linux-client/package.json",
-      "sourceFiles": 2,
-      "testFiles": 1,
+      "sourceFiles": 7,
+      "testFiles": 7,
       "scripts": [
         "build",
         "lint",

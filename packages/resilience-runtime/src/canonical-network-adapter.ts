@@ -170,8 +170,17 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     context: RuntimeContext,
     componentVerification: ActionVerification,
   ): Promise<ActionVerification> {
-    if (componentVerification.status !== 'success' || !this.controlPlane.verifyDestination)
+    if (componentVerification.status !== 'success') return componentVerification;
+
+    // In live mode, destination-level verification is mandatory. An
+    // unconfigured or unknown probe must fail the transaction (fail closed)
+    // rather than falling back to weaker component-level checks.
+    if (!this.controlPlane.verifyDestination) {
+      if (context.mode === 'live') {
+        return createAdapterVerification(plan, context, 'failed');
+      }
       return componentVerification;
+    }
 
     try {
       const outcome = await this.controlPlane.verifyDestination(

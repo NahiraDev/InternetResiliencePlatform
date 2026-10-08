@@ -6,6 +6,7 @@ import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
 import { createCanonicalRuntime } from '@irp/resilience-runtime';
+import type { DecisionRecord } from '@irp/resilience-runtime';
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -174,7 +175,7 @@ export const createProgram = (): Command => {
     .description('Show canonical runtime decision record by id')
     .action(async (id: string) => {
       const run = (await (await getAutopilotRuntime()).decisions.list()).find(
-        (decision) => decision.decisionId === id,
+        (decision: DecisionRecord) => decision.decisionId === id,
       );
       printJson(run ?? { error: 'not found', id });
     });
@@ -183,7 +184,7 @@ export const createProgram = (): Command => {
     .description('List actions selected by canonical runtime decisions')
     .action(async () =>
       printJson(
-        (await (await getAutopilotRuntime()).decisions.list()).flatMap((decision) =>
+        (await (await getAutopilotRuntime()).decisions.list()).flatMap((decision: DecisionRecord) =>
           decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
         ),
       ),
