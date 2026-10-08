@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-08T14:53:15.594Z",
+  "generatedAt": "2026-10-08T14:59:07.651Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -734,8 +734,10 @@
         "faac50bbfa7e0e728761061467b5455e3e3f6897"
       ],
       "stalePins": [],
-      "behindHead": [],
-      "evidenceClass": "descriptive"
+      "behindHead": [
+        "faac50bbfa7e0e728761061467b5455e3e3f6897"
+      ],
+      "evidenceClass": "behind-head"
     },
     {
       "file": ".github/ACTIVE_WORK.md",
@@ -775,6 +777,12 @@
     "coordinationRecords": 2,
     "staleReferences": [],
     "behindHeadRecords": [
+      {
+        "file": "PROJECT_STATE.md",
+        "behindHead": [
+          "faac50bbfa7e0e728761061467b5455e3e3f6897"
+        ]
+      },
       {
         "file": ".github/ACTIVE_WORK.md",
         "behindHead": [
