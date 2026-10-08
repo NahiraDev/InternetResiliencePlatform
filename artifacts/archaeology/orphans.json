@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T18:09:16.632Z",
+  "generatedAt": "2026-10-08T14:53:15.955Z",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
   "orphanTests": [],
-  "orphanModules": [],
+  "orphanModules": [
+    "packages/resilience-runtime/src/platform/index.ts",
+    "packages/resilience-runtime/src/resilience/index.ts",
+    "packages/resilience-runtime/src/scenario-lab/golden-scenarios.ts"
+  ],
   "orphanExports": [
     {
       "symbol": "ActionCatalog",
@@ -247,7 +251,7 @@
   "persistenceModels": [],
   "summary": {
     "orphanTests": 0,
-    "orphanModules": 0,
+    "orphanModules": 3,
     "orphanExports": 11,
     "duplicateContracts": 25,
     "unreferencedPersistenceModels": 0

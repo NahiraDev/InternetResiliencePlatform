@@ -88,6 +88,13 @@ export interface ResilienceRuntimeOptions {
    * unchanged (issue #279 task 10).
    */
   outcomeProbes?: readonly OutcomeProbe[];
+  /**
+   * Capabilities actually granted to the runtime actor, resolved from policy
+   * (not derived from the plan's requirements). When omitted, the runtime actor
+   * is denied all privileged mutation capabilities — the capability check fails
+   * closed rather than granting whatever the plan happens to require.
+   */
+  actorCapabilities?: readonly string[];
 }
 
 export class ResilienceRuntime {
@@ -130,6 +137,7 @@ export class ResilienceRuntime {
   readonly knowledgeStore: KnowledgeStore | undefined;
   readonly learningLoop: OutcomeLearningLoop;
   readonly outcomeProbes: readonly OutcomeProbe[];
+  readonly actorCapabilities: readonly string[];
   private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private readonly policyArbitrator: RuntimePolicyArbitrator;
@@ -187,6 +195,7 @@ export class ResilienceRuntime {
         this.knowledgeStore !== undefined ? { knowledgeStore: this.knowledgeStore } : {},
       );
     this.outcomeProbes = options.outcomeProbes ?? [];
+    this.actorCapabilities = options.actorCapabilities ?? [];
   }
   capabilities() {
     return this.adapters.list();
@@ -460,7 +469,7 @@ export class ResilienceRuntime {
           const mutationRequest = {
             plan,
             context,
-            actor: { actorId: this.runtimeId, boundary: 'canonical-runtime' as const, grantedCapabilities: plan.requiredCapabilities, verified: true },
+            actor: { actorId: this.runtimeId, boundary: 'canonical-runtime' as const, grantedCapabilities: this.actorCapabilities, verified: true },
             mutationId: `mut-${Date.now()}`,
             idempotencyKey: input.idempotencyKey ?? plan.selectedAction.id,
             resourceId: plan.dependencies.join('|') || plan.selectedAction.intent,

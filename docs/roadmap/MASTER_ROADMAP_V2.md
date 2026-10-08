@@ -6,7 +6,7 @@
 
 ## Governance
 
-This roadmap is the coordination contract for parallel contributors and AI agents. Before implementing a phase, contributors MUST check this document, `MASTER_ROADMAP.md`, `PROJECT_STATE.md`, active phase documents, and open PRs. A phase MUST NOT be implemented twice. Shared contracts and dependency boundaries MUST be preserved.
+This roadmap is the coordination contract for parallel contributors and AI agents. Before implementing a phase, contributors MUST check this document, `PROJECT_STATE.md`, active phase documents, and open PRs. A phase MUST NOT be implemented twice. Shared contracts and dependency boundaries MUST be preserved.
 
 The target architecture follows an intent-based closed loop: ingest/normalize intent, translate and orchestrate it, observe operational state, assess compliance, act safely, verify outcomes, and continuously correct drift. This is aligned conceptually with IRTF RFC 9315.
 
