@@ -181,8 +181,11 @@ jobs:
                 throw new Error(`missing Linux capability status evidence: ${subsystem}`);
               }
             }
-            if (status.runtime?.mode !== 'simulation') {
-              throw new Error(`unexpected smoke mode: ${status.runtime?.mode}`);
+            // Default mode is simulation; real mode is an explicit opt-in via
+            // IRP_EXECUTION_MODE=real. This smoke validates the default path.
+            const expectedMode = process.env.IRP_EXECUTION_MODE === 'real' ? 'live' : 'simulation';
+            if (status.runtime?.mode !== expectedMode) {
+              throw new Error(`unexpected smoke mode: ${status.runtime?.mode} (expected ${expectedMode})`);
             }
             console.log('linux-client-runtime-integration-ok');
             console.log(JSON.stringify(status, null, 2));

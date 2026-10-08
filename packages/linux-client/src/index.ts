@@ -201,6 +201,7 @@ export class LinuxProductionRuntime {
     system: Pick<LinuxSystemAdapter, 'snapshot'>,
     options: {
       readonly enableLiveRouteMutation?: boolean;
+      readonly executionMode?: import('@irp/resilience-runtime').CanonicalExecutionMode;
       readonly netns?: string;
       readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
       readonly registerStarlink?: boolean;
@@ -218,7 +219,7 @@ export class LinuxProductionRuntime {
     this.composition =
       options.composition ??
       createCanonicalRuntime({
-        executionMode: 'real',
+        executionMode: options.executionMode ?? 'real',
         observationProviders: [new LinuxSnapshotObservationProvider(system)],
         runtimeId: 'linux-production-runtime',
         networkControlPlane: this.controlPlane.controlPlane,
@@ -367,14 +368,19 @@ export class LinuxClientServer {
 }
 
 export async function runLinuxClient(): Promise<LinuxClientServer> {
-  // Production path: wire the real kernel, routing contract, connectivity
-  // providers, and canonical network adapter. Live route mutation requires
+  // Explicit mode config: simulation is the default; real mode is an opt-in
+  // via IRP_EXECUTION_MODE=real. Live route mutation additionally requires
   // CAP_NET_ADMIN; when not available, the runtime still observes real network
   // state and registers providers, but route apply fails closed at the kernel
   // executor boundary.
+  const executionMode =
+    process.env.IRP_EXECUTION_MODE === 'real'
+      ? ('real' as const)
+      : ('simulation' as const);
   const system = new LinuxSystem();
   const runtime = new LinuxProductionRuntime(system, {
-    enableLiveRouteMutation: true,
+    enableLiveRouteMutation: executionMode === 'real',
+    executionMode,
   });
   const server = new LinuxClientServer(system, runtime);
   await server.start();
