@@ -265,7 +265,10 @@ jobs:
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
           cp packages/windows-client/package.json release/IRP-Windows/package.json
-          powershell -NoProfile -Command "Compress-Archive -Path 'release/IRP-Windows' -DestinationPath ('IRP-Windows-' + $env:RELEASE_TAG + '.zip') -Force"
+          # This step runs under bash, so bash (not PowerShell) must expand the tag.
+          # `$env:RELEASE_TAG` inside the double-quoted string was expanded by bash
+          # as `$env` + ":RELEASE_TAG" and failed with "env: unbound variable".
+          powershell -NoProfile -Command "Compress-Archive -Path 'release/IRP-Windows' -DestinationPath 'IRP-Windows-${RELEASE_TAG}.zip' -Force"
 
       - name: Publish Windows asset
         uses: actions/upload-artifact@v7
