@@ -80,7 +80,13 @@ const rootPackageJson = {
   engines: { node: '>=24.0.0' },
 };
 await writeFile(join(outDir, 'package.json'), `${JSON.stringify(rootPackageJson, null, 2)}\n`);
-await writeFile(join(outDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+// protobufjs (via @opentelemetry) ships a postinstall build script; pnpm 11
+// fails the install when a build script is ignored, so allowlist it. pnpm 11
+// reads this from pnpm-workspace.yaml, not the package.json "pnpm" field.
+await writeFile(
+  join(outDir, 'pnpm-workspace.yaml'),
+  ["packages:", "  - 'packages/*'", '', 'allowBuilds:', '  protobufjs: true', ''].join('\n'),
+);
 
 console.log(`Packaged ${closure.size} workspace packages into ${outDir}:`);
 for (const [name] of closure) console.log(`  ${name}`);
