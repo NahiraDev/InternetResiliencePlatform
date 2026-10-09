@@ -164,10 +164,43 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
-          mkdir -p release/IRP-Linux
-          cp -R packages/linux-client/dist release/IRP-Linux/dist
-          cp packages/linux-client/package.json release/IRP-Linux/package.json
+          # Bundle the client with its installable runtime dependency closure so
+          # `node dist/main.js` works from the extracted bundle. `pnpm deploy
+          # --legacy` copies the package files and injects a real node_modules
+          # for the workspace dependencies (not symlinks).
+          pnpm --filter @irp/linux-client deploy --prod --legacy release/IRP-Linux
+          rm -f release/IRP-Linux/README.md
+          # The published bundle is the runtime, not the test suite.
+          rm -f release/IRP-Linux/dist/*.test.js \
+                release/IRP-Linux/dist/*.test.d.ts \
+                release/IRP-Linux/dist/*.integration.test.js \
+                release/IRP-Linux/dist/*.integration.test.d.ts
+          # Packaging guards: fail closed if the bundle is not runnable.
+          test -f release/IRP-Linux/dist/main.js
+          test -f release/IRP-Linux/package.json
+          test -d release/IRP-Linux/node_modules/@irp/resilience-runtime
           tar -C release -czf "IRP-Linux-${RELEASE_TAG}.tar.gz" IRP-Linux
+
+      - name: Smoke test Linux bundle
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/irp-linux-smoke && mkdir -p /tmp/irp-linux-smoke
+          tar -C /tmp/irp-linux-smoke -xzf "IRP-Linux-${RELEASE_TAG}.tar.gz"
+          node /tmp/irp-linux-smoke/IRP-Linux/dist/main.js &
+          CLIENT_PID=$!
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:17861/health >/tmp/irp-health.json 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/irp-health.json
+          grep -q '"runtime"' /tmp/irp-health.json
+          kill "$CLIENT_PID"
+          wait "$CLIENT_PID" 2>/dev/null || true
+          echo "Linux bundle smoke test: PASS"
 
       - name: Publish Linux asset
         uses: actions/upload-artifact@v7
@@ -215,7 +248,12 @@ jobs:
           cp -R packages/macos-client/dist release/IRP-macOS/dist
           cp packages/macos-client/package.json release/IRP-macOS/package.json
           cp packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist release/IRP-macOS/launchd/
+          # The launchd unit must point at the shipped entrypoint.
+          grep -q 'dist/index.js' release/IRP-macOS/launchd/com.nahiradev.irp.macos-client.plist
           tar -C release -czf "IRP-macOS-${RELEASE_TAG}.tar.gz" IRP-macOS
+          # Packaging guard: the tarball must contain the runtime and the unit.
+          tar -tzf "IRP-macOS-${RELEASE_TAG}.tar.gz" | grep -q 'IRP-macOS/dist/index.js'
+          tar -tzf "IRP-macOS-${RELEASE_TAG}.tar.gz" | grep -q 'IRP-macOS/launchd/'
 
       - name: Publish macOS asset
         uses: actions/upload-artifact@v7
@@ -265,10 +303,19 @@ jobs:
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
           cp packages/windows-client/package.json release/IRP-Windows/package.json
-          # This step runs under bash, so bash (not PowerShell) must expand the tag.
-          # `$env:RELEASE_TAG` inside the double-quoted string was expanded by bash
-          # as `$env` + ":RELEASE_TAG" and failed with "env: unbound variable".
-          powershell -NoProfile -Command "Compress-Archive -Path 'release/IRP-Windows' -DestinationPath 'IRP-Windows-${RELEASE_TAG}.zip' -Force"
+          # Compress-Archive writes backslash entry names, which extract badly
+          # with non-Windows tools. Python's zipfile writes forward slashes.
+          # This step runs under bash, so bash expands ${RELEASE_TAG} (the
+          # previous `$env:RELEASE_TAG` form failed with "env: unbound variable").
+          python -c "import shutil; shutil.make_archive('IRP-Windows-${RELEASE_TAG}', 'zip', 'release')"
+          # Packaging guard: forward-slash entry names and a runnable layout.
+          ZIP_NAME="IRP-Windows-${RELEASE_TAG}.zip" python - <<'PY'
+          import os, zipfile
+          names = zipfile.ZipFile(os.environ['ZIP_NAME']).namelist()
+          assert not any('\\' in n for n in names), names
+          assert 'IRP-Windows/dist/index.js' in names, names
+          assert 'IRP-Windows/package.json' in names, names
+          PY
 
       - name: Publish Windows asset
         uses: actions/upload-artifact@v7
@@ -297,7 +344,15 @@ jobs:
       - name: Package iOS source bundle
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-        run: zip -r "IRP-iOS-source-${RELEASE_TAG}.zip" clients/ios docs/phases/phase-65.md docs/phases/phase-66.md
+        run: |
+          set -euo pipefail
+          # Ship the tracked source only: the SwiftPM build/test products under
+          # clients/ios/.build are regenerated by anyone building the package
+          # and must not be distributed (v0.2.0 shipped ~6,400 such files).
+          zip -r "IRP-iOS-source-${RELEASE_TAG}.zip" clients/ios docs/phases/phase-65.md docs/phases/phase-66.md -x 'clients/ios/.build/*'
+          # Packaging guard: no generated build products in the bundle.
+          ! unzip -l "IRP-iOS-source-${RELEASE_TAG}.zip" | grep -q 'clients/ios/.build/'
+          unzip -l "IRP-iOS-source-${RELEASE_TAG}.zip" | grep -q 'clients/ios/Package.swift'
 
       - name: Publish iOS developer asset
         uses: actions/upload-artifact@v7
