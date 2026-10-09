@@ -4,6 +4,8 @@ import {
   compareVersions,
   computeWorkspaceClosure,
   extractExternalVersions,
+  extractImporterVersions,
+  selectPinnedVersions,
 } from './package-linux-bundle.mjs';
 
 const manifest = (name, dependencies = {}) => ({
@@ -86,5 +88,98 @@ describe('compareVersions', () => {
     expect(compareVersions('3.0.2', '3.0.3')).toBeLessThan(0);
     expect(compareVersions('10.3.1', '9.9.9')).toBeGreaterThan(0);
     expect(compareVersions('2.0.0', '2.0.0')).toBe(0);
+  });
+});
+
+describe('extractImporterVersions', () => {
+  it('reads each importer block with resolved dependency versions', () => {
+    const lockfile = [
+      'importers:',
+      '',
+      '  packages/telemetry:',
+      '    dependencies:',
+      '      prom-client:',
+      '        specifier: ^15.1.3',
+      '        version: 15.1.3',
+      "      '@irp/shared':",
+      '        specifier: workspace:^',
+      '        version: link:../shared',
+      '',
+      'packages:',
+      '',
+      '  prom-client@15.1.3:',
+      '    resolution: {integrity: sha512-…}',
+      '',
+    ].join('\n');
+
+    const importers = extractImporterVersions(lockfile);
+
+    expect(importers.get('packages/telemetry').get('prom-client')).toBe('15.1.3');
+    // Workspace links are excluded.
+    expect(importers.get('packages/telemetry').has('@irp/shared')).toBe(false);
+  });
+});
+
+describe('selectPinnedVersions', () => {
+  const repoVersions = new Map([
+    ['pino', new Set(['10.3.1'])],
+    ['es-module-lexer', new Set(['1.7.0', '3.0.2'])],
+  ]);
+
+  it('pins direct dependencies to the importer-resolved version', () => {
+    const importerVersions = new Map([
+      ['packages/telemetry', new Map([['pino', '10.3.1']])],
+    ]);
+
+    const { pins, problems } = selectPinnedVersions({
+      repoVersions,
+      importerVersions,
+      closureDirs: ['telemetry'],
+      bundleExternals: ['pino'],
+    });
+
+    expect(pins.pino).toBe('10.3.1');
+    expect(problems).toEqual([]);
+  });
+
+  it('fails when closure importers resolve different versions of one dependency', () => {
+    const importerVersions = new Map([
+      ['packages/telemetry', new Map([['es-module-lexer', '1.7.0']])],
+      ['packages/utils', new Map([['es-module-lexer', '3.0.2']])],
+    ]);
+
+    const { pins, problems } = selectPinnedVersions({
+      repoVersions,
+      importerVersions,
+      closureDirs: ['telemetry', 'utils'],
+      bundleExternals: ['es-module-lexer'],
+    });
+
+    expect(pins.esModuleLexer).toBeUndefined();
+    expect(problems[0]).toMatch(/resolve different versions/);
+  });
+
+  it('pins transitive single-version dependencies to the repository version', () => {
+    const importerVersions = new Map();
+
+    const { pins } = selectPinnedVersions({
+      repoVersions,
+      importerVersions,
+      closureDirs: ['telemetry'],
+      bundleExternals: ['pino'],
+    });
+
+    expect(pins.pino).toBe('10.3.1');
+  });
+
+  it('reports dependencies that are absent from the repository lockfile', () => {
+    const { problems } = selectPinnedVersions({
+      repoVersions,
+      importerVersions: new Map(),
+      closureDirs: ['telemetry'],
+      bundleExternals: ['left-pad'],
+    });
+
+    expect(problems[0]).toMatch(/left-pad: not present/);
   });
 });

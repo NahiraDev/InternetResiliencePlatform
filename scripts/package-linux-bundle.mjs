@@ -74,6 +74,74 @@ export const extractExternalVersions = (text) => {
   return versions;
 };
 
+/**
+ * Importer resolutions from a pnpm lockfile: importer path -> dependency name
+ * -> resolved version (workspace `link:` targets excluded).
+ */
+export const extractImporterVersions = (text) => {
+  const importers = new Map();
+  const section = text.split(/^importers:\n/m)[1] ?? '';
+  const endOfSection = section.split(/^\S/m)[0] ?? section;
+  for (const importerMatch of endOfSection.matchAll(/^ {2}(\S[^:\n]*):\n/gm)) {
+    const importerPath = importerMatch[1];
+    const blockStart = importerMatch.index + importerMatch[0].length;
+    const nextImporter = endOfSection.slice(blockStart).search(/^ {2}\S[^:\n]*:\n/gm);
+    const block = endOfSection.slice(
+      blockStart,
+      nextImporter === -1 ? undefined : blockStart + nextImporter,
+    );
+    const deps = new Map();
+    for (const depMatch of block.matchAll(/^ {6}(\S[^:\n]*):\n {8}specifier: .*\n {8}version: (.+)$/gm)) {
+      const version = depMatch[2].trim();
+      if (!version.startsWith('link:')) deps.set(depMatch[1], version);
+    }
+    if (deps.size > 0) importers.set(importerPath, deps);
+  }
+  return importers;
+};
+
+/**
+ * Pin selection for the bundle closure. Direct dependencies are pinned to the
+ * exact version the closure's own importers resolve in the repository
+ * lockfile. Transitive dependencies fall back to the repository-wide
+ * resolution (single version, or the highest when the repository resolves
+ * several). Returns problems that must fail the packaging when a dependency
+ * cannot be pinned safely.
+ */
+export const selectPinnedVersions = ({
+  repoVersions,
+  importerVersions,
+  closureDirs,
+  bundleExternals,
+}) => {
+  const pins = {};
+  const problems = [];
+  for (const name of bundleExternals) {
+    const importerSet = new Set();
+    for (const dir of closureDirs) {
+      const version = importerVersions.get(`packages/${dir}`)?.get(name);
+      if (version) importerSet.add(version);
+    }
+    if (importerSet.size === 1) {
+      pins[name] = [...importerSet][0];
+      continue;
+    }
+    if (importerSet.size > 1) {
+      problems.push(
+        `${name}: closure importers resolve different versions (${[...importerSet].join(', ')}) — a single override cannot pin it`,
+      );
+      continue;
+    }
+    const repoSet = repoVersions.get(name);
+    if (!repoSet) {
+      problems.push(`${name}: not present in the repository lockfile`);
+      continue;
+    }
+    pins[name] = [...repoSet].sort(compareVersions).pop();
+  }
+  return { pins, problems };
+};
+
 const main = async () => {
   const root = process.cwd();
   const outDir = process.argv[2];
@@ -170,15 +238,14 @@ const main = async () => {
   const repoVersions = extractExternalVersions(repositoryLock);
   const firstPass = extractExternalVersions(await readFile(bundleLockfile, 'utf-8'));
 
-  // Pin every external dependency to the exact version the repository lockfile
-  // resolved (semver ranges in the manifests can float past what CI tested).
-  // When the repository resolves multiple versions, pin to the highest one so
-  // the range cannot float past every version the repository tested.
-  const overrides = {};
-  for (const [name] of firstPass) {
-    const repoSet = repoVersions.get(name);
-    if (!repoSet) fail(`bundle dependency ${name} is not present in the repository lockfile`);
-    overrides[name] = [...repoSet].sort(compareVersions).pop();
+  const { pins: overrides, problems } = selectPinnedVersions({
+    repoVersions,
+    importerVersions: extractImporterVersions(repositoryLock),
+    closureDirs: [...closure.values()].map(({ dir }) => dir),
+    bundleExternals: firstPass.keys(),
+  });
+  if (problems.length > 0) {
+    fail(`cannot pin the bundle closure safely:\n  ${problems.join('\n  ')}`);
   }
   const workspaceYaml = await readFile(join(outDir, 'pnpm-workspace.yaml'), 'utf8');
   const overrideLines = Object.entries(overrides)

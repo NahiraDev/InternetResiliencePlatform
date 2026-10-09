@@ -80,7 +80,9 @@ final class IRPPacketTunnelProvider: NEPacketTunnelProvider {
                     completionHandler(error)
                     // Apple's API for stopping the tunnel from inside the
                     // provider; stopTunnel(with:) is reserved for the system.
-                    self.cancelTunnelWithError(nil)
+                    // The transport error is preserved so the system
+                    // diagnostic is not discarded.
+                    self.cancelTunnelWithError(error)
                 }
             }
         }
