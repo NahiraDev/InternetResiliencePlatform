@@ -222,6 +222,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test production certification report checksum
+        run: pnpm certification:test
+
       - name: Fresh coverage
         run: pnpm exec turbo run test --force -- --coverage
 
