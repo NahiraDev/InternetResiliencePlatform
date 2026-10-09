@@ -75,7 +75,7 @@ jobs:
               'com.apple.product-type.application',
               'com.apple.product-type.app-extension',
               'A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */',
-              'R10000010000000000000003 /* Embed Foundation Extensions */',
+              '510000010000000000000003 /* Embed Foundation Extensions */',
               'target = E10000010000000000000002;',
           ]
           missing = [item for item in required if item not in text]

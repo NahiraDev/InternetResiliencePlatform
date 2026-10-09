@@ -97,7 +97,7 @@ jobs:
               'name = IRPPacketTunnel;',
               'com.apple.product-type.application',
               'com.apple.product-type.app-extension',
-              'R10000010000000000000003 /* Embed Foundation Extensions */',
+              '510000010000000000000003 /* Embed Foundation Extensions */',
               'A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */',
           ]
           missing = [item for item in required if item not in text]
