@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-08T15:01:53.441Z",
+  "generatedAt": "2026-10-09T09:49:17.095Z",
   "packages": [
     {
       "group": "apps",
@@ -923,6 +923,7 @@
       "scripts/integration-baseline.mjs",
       "scripts/integration-graph.mjs",
       "scripts/operational-diagnostics.mjs",
+      "scripts/package-linux-bundle.mjs",
       "scripts/phase69-readiness.mjs",
       "scripts/phase70-certification.mjs",
       "scripts/phase71-release.mjs",

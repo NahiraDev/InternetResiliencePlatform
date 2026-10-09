@@ -10,7 +10,7 @@
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Current main baseline reviewed:** `faac50bbfa7e0e728761061467b5455e3e3f6897` (2026-10-08). The ordered path to release is `docs/release/RELEASE_GATE_ROADMAP.md`.
 - **Latest implementation merge observed on this baseline:** PRs #326, #327, #328 (clean-state evidence, Phase 73 unified network state, issue 323 clean-state validation).
-- **Release state:** Phase 71 external release certification remains open because the required real tagged GitHub Release, published platform artifact inspection and checksum evidence are not yet satisfied.
+- **Release state:** Phase 71 release-contract evidence now exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1) (2026-10-09, source `a2facc3`, run [37913149488](https://github.com/nimarahimloo/InternetResiliencePlatform/actions/runs/37913149488)) publishes exactly one versioned asset per platform with verified `SHA256SUMS.txt` and a green fail-closed Linux bundle smoke test; see `docs/phases/phase-71.md` and issue #1. v0.2.0 is marked prerelease (packaging defects). Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
 - **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` remains architectural reference material for Phases 72–150. It does not authorize starting Phase 79+ independently of the active issue/workstream tracker.
 

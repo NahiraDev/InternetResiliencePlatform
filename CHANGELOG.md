@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Release pipeline (PR #2, published as v0.2.1): the Windows bundle job no longer fails on `$env:RELEASE_TAG` being expanded by bash; Windows zips use forward-slash entry names; the iOS source zip no longer contains SwiftPM `.build/` products; the Linux bundle is now a self-contained installable pnpm mini-workspace with a fail-closed smoke test (`pnpm install` + `GET /health`); compiled test files are pruned from platform bundles; every platform packaging step has fail-closed content guards.
+- v0.2.0 is marked prerelease: its Linux bundle was not runnable outside the monorepo (workspace symlinks), its iOS zip shipped ~6,400 generated files and its Windows zip used backslash entry names.
+
 - Release gate: restored the `IRP Release` workflow with a fail-closed check that the tagged commit has a passing Release Gate.
 - Release gate: iOS Full Client now builds against the generic iOS Simulator destination instead of a simulator runtime that is not installed on the runner.
 - Release gate: Public Runtime Lab soak retries transport-level errors from the Quick Tunnel in a bounded way while still failing on persistent errors and non-200 readiness.
