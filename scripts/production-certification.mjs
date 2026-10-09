@@ -190,14 +190,12 @@ const evidenceSnapshot = {
 };
 
 await mkdir(outputDir, { recursive: true });
-await writeFile(
-  join(outputDir, 'certification-report.json'),
-  `${JSON.stringify(evidenceSnapshot, null, 2)}\n`,
-  'utf8',
-);
+// Hash the exact bytes written so `sha256sum -c` verifies the published report.
+const reportBytes = `${JSON.stringify(evidenceSnapshot, null, 2)}\n`;
+await writeFile(join(outputDir, 'certification-report.json'), reportBytes, 'utf8');
 await writeFile(
   join(outputDir, 'certification-report.sha256'),
-  `${sha256(JSON.stringify(evidenceSnapshot))}  certification-report.json\n`,
+  `${sha256(reportBytes)}  certification-report.json\n`,
   'utf8',
 );
 
