@@ -4,21 +4,21 @@ Internet Resilience Platform client downloads are published on GitHub Releases.
 
 ## Latest release
 
-**[Open the latest IRP Release](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/latest)**
+**[IRP Releases](https://github.com/nimarahimloo/InternetResiliencePlatform/releases)** (both published releases are developer previews, so `/releases/latest` does not resolve yet)
 
 Choose the asset matching your platform:
 
 | Platform      | Asset                     | Install/use                                                                                                                                                    |
 | ------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Android       | `IRP-Android-debug-*.apk` | Download the APK to the Android device and install it. Development/test installation may require allowing installation from the source used to obtain the APK. |
-| Linux         | `IRP-Linux-*.tar.gz`      | Requires Node.js >= 24 and pnpm >= 11.21.0. Extract the bundle, run `pnpm install` inside it (downloads the runtime dependencies; network access required), then start the client with `node packages/linux-client/dist/main.js`. It serves a status/health endpoint on `http://127.0.0.1:17861/health`. Default mode is simulation; set `IRP_EXECUTION_MODE=real` for live network control. |
+| Linux         | `IRP-Linux-*.tar.gz`      | Requires Node.js >= 24, pnpm >= 11.21.0 and npm registry access. Extract the bundle, run `pnpm install --frozen-lockfile` inside it (downloads the locked runtime dependencies), then start the client with `node packages/linux-client/dist/main.js`. It serves a status/health endpoint on `http://127.0.0.1:17861/health`. Default mode is simulation; set `IRP_EXECUTION_MODE=real` for live network control. |
 | macOS         | `IRP-macOS-*.tar.gz`      | Developer bundle: built client (`dist/`) plus its `launchd` unit (`launchd/com.nahiradev.irp.macos-client.plist`). Requires Node.js >= 24 on the target machine. |
 | Windows       | `IRP-Windows-*.zip`       | Developer bundle: built client (`dist/`) plus `package.json`. Requires Node.js >= 24 on the target machine. |
 | iPhone / iPad | `IRP-iOS-source-*.zip`    | **Developer/source bundle only.** An installable iOS `.ipa` is not published until Apple signing/provisioning is configured.                                   |
 
 ## Important
 
-The v0.2.x releases are developer previews: the Linux bundle is a runnable developer distribution, the macOS/Windows archives are built-client developer bundles (not signed installers), the Android asset is a debug APK, and the iOS asset is a source/developer bundle only. Production certification evidence (device tests, signed Android builds, regional validation) is tracked in the release roadmap and issue #3.
+The v0.2.x releases are developer previews: the Linux bundle is a reproducible, frozen-dependency developer distribution, the macOS/Windows archives are built-client developer bundles (not signed installers), the Android asset is a debug APK, and the iOS asset is a source/developer bundle only. Production certification evidence (device tests, signed Android builds, regional validation) is tracked in the release roadmap and issue #3.
 
 GitHub Releases are the distribution surface; the repository source tree is not presented as an end-user installer.
 

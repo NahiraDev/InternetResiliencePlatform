@@ -159,6 +159,9 @@ jobs:
       - name: Build Linux client
         run: pnpm --filter @irp/linux-client build
 
+      - name: Packaging regression tests
+        run: pnpm bundle:test
+
       - name: Fetch packaging script from workflow revision
         run: |
           set -euo pipefail
@@ -172,12 +175,12 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
-          # Bundle the client as a self-contained installable pnpm
-          # mini-workspace: the built client plus every transitive @irp
-          # workspace dependency. `pnpm deploy --legacy` was tried first and
-          # rejected: it leaves workspace dependencies as symlinks into the
-          # monorepo checkout, which are dead once the tarball is extracted
-          # (v0.2.0/v0.2.1 attempt 1 failed its own smoke test on this).
+          # Bundle the client as a reproducible installable pnpm mini-workspace:
+          # the built client plus every transitive @irp workspace dependency,
+          # a README, the LICENSE, and a lockfile generated from the same
+          # ranges the repository locks and verified against pnpm-lock.yaml.
+          # (pnpm deploy --legacy was rejected earlier: it leaves workspace
+          # dependencies as symlinks into the monorepo checkout.)
           node scripts/package-linux-bundle.mjs release/IRP-Linux
           # The published bundle is the runtime, not the test suite.
           find release/IRP-Linux -name '*.test.*' -delete
@@ -194,7 +197,7 @@ jobs:
           rm -rf /tmp/irp-linux-smoke && mkdir -p /tmp/irp-linux-smoke
           tar -C /tmp/irp-linux-smoke -xzf "IRP-Linux-${RELEASE_TAG}.tar.gz"
           cd /tmp/irp-linux-smoke/IRP-Linux
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           node packages/linux-client/dist/main.js &
           CLIENT_PID=$!
           for attempt in $(seq 1 30); do
@@ -414,7 +417,12 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
+          # v0.2.x is a developer preview: production certification criteria
+          # (device/runtime validation, signing, regional evidence) are not yet
+          # satisfied, so releases are published as prereleases. Flip this off
+          # only when the production certification matrix passes.
           gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \
+            --prerelease \
             --generate-notes
