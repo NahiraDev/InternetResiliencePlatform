@@ -9,8 +9,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: this workflow never writes to the repository (no gh/git
+# write commands, no GITHUB_TOKEN write usage) — read-only token.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
