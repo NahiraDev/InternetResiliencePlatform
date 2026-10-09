@@ -1,0 +1,60 @@
+name: IRP
+options:
+  bundleIdPrefix: com.nahiradev
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ALWAYS_SEARCH_USER_PATHS: NO
+    CLANG_ENABLE_MODULES: YES
+    SDKROOT: iphoneos
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  IRP:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes:
+          - "Info.plist"
+          - "IRP.entitlements"
+      - path: Sources/IRPiOSClient
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nahiradev.irp
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/IRP.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: IRPPacketTunnel
+        embed: true
+  IRPPacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: PacketTunnel
+        excludes:
+          - "Info.plist"
+          - "PacketTunnel.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nahiradev.irp.PacketTunnel
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        INFOPLIST_FILE: PacketTunnel/Info.plist
+        CODE_SIGN_ENTITLEMENTS: PacketTunnel/PacketTunnel.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  IRP:
+    build:
+      targets:
+        IRP: all
+        IRPPacketTunnel: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
