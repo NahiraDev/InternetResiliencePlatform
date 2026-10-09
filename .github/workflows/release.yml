@@ -159,26 +159,32 @@ jobs:
       - name: Build Linux client
         run: pnpm --filter @irp/linux-client build
 
+      - name: Fetch packaging script from workflow revision
+        run: |
+          set -euo pipefail
+          # The tag predates the packaging script; the workflow file itself is
+          # the dispatch revision, so pull the script from that exact SHA.
+          git fetch origin "${GITHUB_SHA}" --depth=1
+          git show FETCH_HEAD:scripts/package-linux-bundle.mjs > scripts/package-linux-bundle.mjs
+
       - name: Package Linux client
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
-          # Bundle the client with its installable runtime dependency closure so
-          # `node dist/main.js` works from the extracted bundle. `pnpm deploy
-          # --legacy` copies the package files and injects a real node_modules
-          # for the workspace dependencies (not symlinks).
-          pnpm --filter @irp/linux-client deploy --prod --legacy release/IRP-Linux
-          rm -f release/IRP-Linux/README.md
+          # Bundle the client as a self-contained installable pnpm
+          # mini-workspace: the built client plus every transitive @irp
+          # workspace dependency. `pnpm deploy --legacy` was tried first and
+          # rejected: it leaves workspace dependencies as symlinks into the
+          # monorepo checkout, which are dead once the tarball is extracted
+          # (v0.2.0/v0.2.1 attempt 1 failed its own smoke test on this).
+          node scripts/package-linux-bundle.mjs release/IRP-Linux
           # The published bundle is the runtime, not the test suite.
-          rm -f release/IRP-Linux/dist/*.test.js \
-                release/IRP-Linux/dist/*.test.d.ts \
-                release/IRP-Linux/dist/*.integration.test.js \
-                release/IRP-Linux/dist/*.integration.test.d.ts
-          # Packaging guards: fail closed if the bundle is not runnable.
-          test -f release/IRP-Linux/dist/main.js
-          test -f release/IRP-Linux/package.json
-          test -d release/IRP-Linux/node_modules/@irp/resilience-runtime
+          find release/IRP-Linux -name '*.test.js' -delete
+          find release/IRP-Linux -name '*.test.d.ts' -delete
+          # Packaging guards: fail closed if the bundle is not installable.
+          test -f release/IRP-Linux/packages/linux-client/dist/main.js
+          test -f release/IRP-Linux/pnpm-workspace.yaml
           tar -C release -czf "IRP-Linux-${RELEASE_TAG}.tar.gz" IRP-Linux
 
       - name: Smoke test Linux bundle
@@ -188,7 +194,9 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/irp-linux-smoke && mkdir -p /tmp/irp-linux-smoke
           tar -C /tmp/irp-linux-smoke -xzf "IRP-Linux-${RELEASE_TAG}.tar.gz"
-          node /tmp/irp-linux-smoke/IRP-Linux/dist/main.js &
+          cd /tmp/irp-linux-smoke/IRP-Linux
+          pnpm install --no-frozen-lockfile
+          node packages/linux-client/dist/main.js &
           CLIENT_PID=$!
           for attempt in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:17861/health >/tmp/irp-health.json 2>/dev/null; then
