@@ -87,25 +87,50 @@ jobs:
           test -f "$XCODE_PROJECT/project.pbxproj"
           xcodebuild -list -project "$XCODE_PROJECT"
 
+      - name: Regenerate Xcode project (XcodeGen)
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          (cd clients/ios && xcodegen generate)
+
       - name: Validate Xcode project metadata
         run: |
           python3 - <<'PY'
-          from pathlib import Path
-          text = Path('clients/ios/IRP.xcodeproj/project.pbxproj').read_text()
-          required = [
-              'name = IRP;',
-              'name = IRPPacketTunnel;',
-              'com.apple.product-type.application',
-              'com.apple.product-type.app-extension',
-              '510000010000000000000003 /* Embed Foundation Extensions */',
-              'A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */',
+          import json, subprocess
+          path = 'clients/ios/IRP.xcodeproj/project.pbxproj'
+          pb = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', path]))
+          objects = pb['objects']
+          targets = {
+              o['name']: o
+              for o in objects.values()
+              if o.get('isa') == 'PBXNativeTarget'
+          }
+          assert {'IRP', 'IRPPacketTunnel'} <= set(targets), sorted(targets)
+          assert targets['IRP']['productType'] == 'com.apple.product-type.application'
+          assert targets['IRPPacketTunnel']['productType'] == 'com.apple.product-type.app-extension'
+
+          def target_sources(target_name):
+              names = []
+              for phase_id in targets[target_name]['buildPhases']:
+                  phase = objects[phase_id]
+                  if phase.get('isa') != 'PBXSourcesBuildPhase':
+                      continue
+                  for file_id in phase['files']:
+                      file_ref = objects[objects[file_id]['fileRef']]
+                      names.append(file_ref.get('path') or file_ref.get('name'))
+              return names
+
+          app_phases = [objects[p] for p in targets['IRP']['buildPhases']]
+          embed_phases = [
+              p for p in app_phases
+              if p.get('isa') == 'PBXCopyFilesBuildPhase' and p.get('dstSubfolderSpec') == 13
           ]
-          missing = [item for item in required if item not in text]
-          if missing:
-              raise SystemExit(f'Missing Xcode project contract entries: {missing}')
-          if 'files = (A10000010000000000000009, A10000010000000000000006);' in text:
-              raise SystemExit('PacketTunnelConfiguration.swift must not be compiled by IRPPacketTunnel')
-          print('Xcode project metadata contract passed')
+          assert embed_phases, 'IRP must embed the foundation extension'
+
+          extension_sources = target_sources('IRPPacketTunnel')
+          assert 'PacketTunnelProvider.swift' in extension_sources, extension_sources
+          assert 'PacketTunnelConfiguration.swift' not in extension_sources
+          print('Xcode project metadata contract passed (semantic)')
           PY
 
       - name: Validate iOS client source inventory
