@@ -180,8 +180,7 @@ jobs:
           # (v0.2.0/v0.2.1 attempt 1 failed its own smoke test on this).
           node scripts/package-linux-bundle.mjs release/IRP-Linux
           # The published bundle is the runtime, not the test suite.
-          find release/IRP-Linux -name '*.test.js' -delete
-          find release/IRP-Linux -name '*.test.d.ts' -delete
+          find release/IRP-Linux -name '*.test.*' -delete
           # Packaging guards: fail closed if the bundle is not installable.
           test -f release/IRP-Linux/packages/linux-client/dist/main.js
           test -f release/IRP-Linux/pnpm-workspace.yaml
@@ -254,6 +253,7 @@ jobs:
           set -euo pipefail
           mkdir -p release/IRP-macOS/launchd
           cp -R packages/macos-client/dist release/IRP-macOS/dist
+          find release/IRP-macOS/dist -name '*.test.*' -delete
           cp packages/macos-client/package.json release/IRP-macOS/package.json
           cp packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist release/IRP-macOS/launchd/
           # The launchd unit must point at the shipped entrypoint.
@@ -310,6 +310,7 @@ jobs:
           set -euo pipefail
           mkdir -p release/IRP-Windows
           cp -R packages/windows-client/dist release/IRP-Windows/dist
+          find release/IRP-Windows/dist -name '*.test.*' -delete
           cp packages/windows-client/package.json release/IRP-Windows/package.json
           # Compress-Archive writes backslash entry names, which extract badly
           # with non-Windows tools. Python's zipfile writes forward slashes.

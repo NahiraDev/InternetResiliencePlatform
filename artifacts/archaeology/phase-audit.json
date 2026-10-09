@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-09T09:39:28.231Z",
+  "generatedAt": "2026-10-09T09:49:18.050Z",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -432,7 +432,9 @@
       "claimsImplementation": true,
       "citesEvidence": true,
       "hasTestEvidence": false,
-      "pinnedShas": [],
+      "pinnedShas": [
+        "a2facc37a6f8607554971d69b0cb89baf88b4cbb"
+      ],
       "stalePins": [],
       "evidenceClass": "claim-with-citation"
     },
