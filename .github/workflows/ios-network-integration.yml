@@ -100,10 +100,16 @@ jobs:
 
           app_phases = [objects[p] for p in targets['IRP']['buildPhases']]
           embed_phases = [
-              p for p in app_phases
-              if p.get('isa') == 'PBXCopyFilesBuildPhase' and p.get('dstSubfolderSpec') == 13
+              phase for phase in app_phases
+              if phase.get('isa') == 'PBXCopyFilesBuildPhase'
+              and any(
+                  objects.get(objects[f]['fileRef'], {}).get('explicitFileType')
+                  == 'wrapper.app-extension'
+                  or (objects.get(objects[f]['fileRef'], {}).get('path') or '').endswith('.appex')
+                  for f in phase.get('files', [])
+              )
           ]
-          assert embed_phases, 'IRP must embed the foundation extension'
+          assert embed_phases, 'IRP must embed the foundation extension (.appex) in a copy-files phase'
 
           # The app target must depend on the extension target.
           dependencies = [objects[d] for d in targets['IRP']['dependencies']]
