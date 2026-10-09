@@ -51,7 +51,7 @@ GitHub Actions supports workflow/job concurrency and environment protection; use
 
 The Release Gate validates the exact main commit and waits for all release-blocking workflow runs for that same SHA to complete successfully. A successful gate is the only prerequisite consumed by publication workflows.
 
-The Public Runtime Lab remains authoritative runtime/soak evidence, but it is intentionally not a release publication prerequisite because it depends on an ephemeral public Quick Tunnel and external network availability.
+The implemented Release Gate (`.github/workflows/release-gate.yml`) currently requires a successful Public Runtime Lab run on the exact main commit, so the lab is a de-facto publication prerequisite in the implemented contract; it depends on an ephemeral public Quick Tunnel and external network availability, which is why intermediate gate runs can time out while the soak is still running. Removing it from the gate would be a deliberate contract change requiring its own review — until then, this document describes that implemented behavior.
 
 ## Review checklist
 
