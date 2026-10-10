@@ -40,7 +40,8 @@
     "architecture:guards": "node scripts/architecture-guards.cjs",
     "architecture:archaeology": "node scripts/archaeology.mjs",
     "architecture:test": "vitest run scripts/architecture/validate-architecture.test.mjs",
-    "bundle:test": "vitest run scripts/package-linux-bundle.test.mjs"
+    "bundle:test": "vitest run scripts/package-linux-bundle.test.mjs",
+    "certification:test": "vitest run scripts/production-certification.test.mjs"
   },
   "dependencies": {
     "pg": "8.23.0"
