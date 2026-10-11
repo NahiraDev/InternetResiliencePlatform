@@ -42,16 +42,19 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Verify certified commit
+      - name: Verify CI-gated commit
+        id: source
         env:
           GH_TOKEN: ${{ github.token }}
-          CERTIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          GATED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           checked_out_sha="$(git rev-parse HEAD)"
           current_main_sha="$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
           test "$checked_out_sha" = "$current_main_sha"
-          test "$checked_out_sha" = "$CERTIFIED_SHA"
+          test "$checked_out_sha" = "$GATED_SHA"
+          echo "sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${checked_out_sha:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -69,7 +72,10 @@ jobs:
       - name: Install dependencies with frozen lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Validate certified source
+      - name: Test Docker publication policy
+        run: node --test scripts/docker-publication-policy.test.mjs
+
+      - name: Validate CI-gated source
         run: pnpm validate
 
       - name: Set up Docker Buildx
@@ -87,9 +93,22 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
-            type=sha
-            type=raw,value=latest
+            type=raw,value=sha-${{ steps.source.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ steps.source.outputs.sha }}
+            io.irp.publication.class=developer-preview
+
+      - name: Enforce developer-preview tag policy
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          export IMAGE="${REGISTRY}/${GITHUB_REPOSITORY,,}"
+          node scripts/docker-publication-policy.mjs
 
       - name: Build and push Docker image
         id: build
@@ -116,3 +135,20 @@ jobs:
             [ -n "${image_tag}" ] || continue
             cosign sign --yes "${image_tag}@${DIGEST}"
           done <<< "${TAGS}"
+
+      - name: Report signed developer-preview image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test -n "$DIGEST"
+          {
+            printf '## Developer-preview image\n\n'
+            printf 'Source commit: `%s`\n\n' "$SOURCE_SHA"
+            printf 'Published tags:\n```\n%s\n```\n\n' "$TAGS"
+            printf 'Signed image digest: `%s`\n\n' "$DIGEST"
+            printf 'Production certification: not established.\n'
+            printf 'Latest promotion: BLOCKED; no trusted production-certification authority is configured.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
