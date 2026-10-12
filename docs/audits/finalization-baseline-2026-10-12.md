@@ -51,3 +51,39 @@ Details: [`../security/wp2.2-remediation-report.md`](../security/wp2.2-remediati
 2. **Platform artifacts are not production deliverables.** v0.2.1 ships a debug Android APK, iOS source only (no signing/provisioning), and macOS/Windows archives that contain only `dist/index.js` plus a service manifest (2–3 KB, unsigned). There are no signing credentials in the repository or CI secrets.
 3. **Phases 79–150 have no acceptance contracts** and are governed as reference-only by `PROJECT_STATE.md`. They cannot be "completed" without first defining and authorizing each phase contract.
 4. **No Docker daemon in the authoring environment.** Image build, smoke and digest checks are taken from GitHub Actions runs; local runtime checks used an equivalent production tree.
+
+---
+
+# Baseline entry — 2026-10-13 (finalization continuation)
+
+**Local HEAD:** `103752f` (pushed to `origin/main`). **Dirty tree before this entry:** clean. **Purpose:** record the follow-up work completed after the 2026-10-12 baseline and PR #19 merge, plus corrections to earlier claims.
+
+## Work executed since the 2026-10-12 baseline
+
+| Item | Commit(s) | Result |
+| --- | --- | --- |
+| Issue #11 — daemon closed-loop integration | PR #19 merge `a4c901a`, tests strengthened in `103752f` | `BoundedClosedLoopController` wired into `apps/daemon/src/index.ts` entrypoint with validated `IRP_LOOP_*` env config; 8 deterministic tests pass |
+| Issue #15 — fail-closed image scan | PR #19 merge `a4c901a`, version fixed in `103752f` | Trivy scan by immutable digest added to `docker-publish.yml` (after push, before Cosign); fabricated `setup-trivy@v0.32.0` corrected to `v0.3.1` (verified against GitHub releases); blanket `--ignore-unfixed` removed |
+| Issue #16 — drop pnpm from runtime image | PR #19 merge `a4c901a` | `/pnpm` copy, writable-path, compose tmpfs, and smoke assertion removed; smoke asserts pnpm is absent |
+| Issue #17 — regional-validation workflow | PR #19 merge `a4c901a` | `.github/workflows/regional-validation.yml` added targeting `[self-hosted, linux, iran]`; never falls back to `ubuntu-latest` |
+| Issue #18 — artifact determinism (root cause) | `7f52eee`, `103752f` | Replaced wall-clock/HEAD-SHA `generatedAt`/`registeredAt` with a content-derived SHA-256 fingerprint (sorted tracked file list + per-file blob SHA, excluding `artifacts/`); certification report split into deterministic canonical `certification-report.json` (tracked) and run-specific `certification-run.json` (untracked); verified a fresh worktree of `103752f` stays clean after install + build + archaeology + certification |
+
+## Corrections to earlier claims
+
+1. The earlier issue #11 close comment cited tests that included a tautological assertion (`|| true`) and an abort test accepting every status. Both were replaced with deterministic assertions in `103752f`; see the corrective comment on issue #11. All 22 daemon tests now pass with exact expected outcomes.
+2. The earlier `setup-trivy@v0.32.0` reference in `docker-publish.yml` was a fabricated version. The action only publishes `v0.3.0`/`v0.3.1`; corrected in `103752f`.
+
+## CI status at time of writing
+
+Push workflows for `103752f` (CI, System Assurance, Runtime Lab, Public Runtime Lab, Linux Primary Device, CodeQL Advanced, Repository Deep Audit, Android/iOS/macOS/Windows clients) were launched at `21:42:43Z` and were still in flight when this entry was written. Earlier Release Gate runs on the merge commit `a4c901a` failed while `public-runtime-lab.yml` was still running; that workflow re-evaluates on each prerequisite completion and is expected to succeed once all push workflows complete on `103752f`.
+
+## New deliverables
+
+- `docs/audits/certification-evidence-register-2026-10-13.md` — per-item analysis of the 15 required certification evidence ids with obtainability classification and next executable actions.
+
+## Remaining blockers (unchanged in substance)
+
+1. Stable release remains blocked by repository policy: production certification is `PENDING` on all 15 required evidence items (see the new register for the per-item breakdown).
+2. Platform artifacts remain debug/source-only; no production signing.
+3. No self-hosted `[self-hosted, linux, iran]` runner is registered, so `regional-evidence` cannot be produced.
+4. No Docker daemon locally; image evidence must come from the `docker-publish.yml` run on the final SHA.
