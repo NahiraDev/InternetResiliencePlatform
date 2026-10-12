@@ -1,0 +1,86 @@
+@irp/api	Test Files	9 passed
+@irp/api	Tests	70 passed
+@irp/auth	Test Files	2 passed
+@irp/auth	Tests	14 passed
+@irp/auto-optimization	Test Files	1 passed
+@irp/auto-optimization	Tests	5 passed
+@irp/cli	Test Files	1 passed
+@irp/cli	Tests	2 passed
+@irp/config	Test Files	1 passed
+@irp/config	Tests	2 passed
+@irp/connectivity	Test Files	3 passed
+@irp/connectivity	Tests	13 passed
+@irp/core	Test Files	3 passed
+@irp/core	Tests	16 passed
+@irp/daemon	Test Files	4 passed
+@irp/daemon	Tests	13 passed
+@irp/database	Test Files	2 passed
+@irp/database	Tests	5 passed
+@irp/dns	Test Files	3 passed
+@irp/dns	Tests	26 passed
+@irp/events	Test Files	1 passed
+@irp/events	Tests	3 passed
+@irp/failover	Test Files	1 passed
+@irp/failover	Tests	10 passed
+@irp/gateway-registry	Test Files	8 passed
+@irp/gateway-registry	Tests	59 passed
+@irp/historical-analysis	Test Files	2 passed
+@irp/historical-analysis	Tests	10 passed
+@irp/internet-intelligence-agent	Test Files	2 passed
+@irp/internet-intelligence-agent	Tests	8 passed
+@irp/kernel	Test Files	2 passed
+@irp/kernel	Tests	11 passed
+@irp/linux-client	Test Files	6 passed | 1 skipped
+@irp/linux-client	Tests	53 passed | 2 skipped
+@irp/logger	Test Files	1 passed
+@irp/logger	Tests	2 passed
+@irp/macos-client	Test Files	1 passed
+@irp/macos-client	Tests	3 passed
+@irp/metrics	Test Files	1 passed
+@irp/metrics	Tests	8 passed
+@irp/network	Test Files	1 passed
+@irp/network	Tests	2 passed
+@irp/network-intelligence	Test Files	6 passed
+@irp/network-intelligence	Tests	41 passed
+@irp/plugin-api	Test Files	1 passed
+@irp/plugin-api	Tests	3 passed
+@irp/plugin-config	Test Files	1 passed
+@irp/plugin-config	Tests	2 passed
+@irp/plugin-events	Test Files	1 passed
+@irp/plugin-events	Tests	2 passed
+@irp/plugin-loader	Test Files	1 passed
+@irp/plugin-loader	Tests	2 passed
+@irp/plugin-manager	Test Files	1 passed
+@irp/plugin-manager	Tests	2 passed
+@irp/plugin-registry	Test Files	1 passed
+@irp/plugin-registry	Tests	3 passed
+@irp/plugin-runtime	Test Files	1 passed
+@irp/plugin-runtime	Tests	3 passed
+@irp/plugin-samples	Test Files	1 passed
+@irp/plugin-samples	Tests	2 passed
+@irp/plugin-sandbox	Test Files	1 passed
+@irp/plugin-sandbox	Tests	4 passed
+@irp/plugin-sdk	Test Files	1 passed
+@irp/plugin-sdk	Tests	3 passed
+@irp/queue	Test Files	1 passed
+@irp/queue	Tests	5 passed
+@irp/resilience-runtime	Test Files	49 passed
+@irp/resilience-runtime	Tests	661 passed
+@irp/routing	Test Files	2 passed
+@irp/routing	Tests	17 passed
+@irp/sdk	Test Files	1 passed
+@irp/sdk	Tests	7 passed
+@irp/security	Test Files	2 passed
+@irp/security	Tests	14 passed
+@irp/shared	Test Files	1 passed
+@irp/shared	Tests	2 passed
+@irp/telemetry	Test Files	6 passed
+@irp/telemetry	Tests	25 passed
+@irp/tunnel	Test Files	6 passed
+@irp/tunnel	Tests	41 passed
+@irp/types	Test Files	1 passed
+@irp/types	Tests	1 passed
+@irp/utils	Test Files	1 passed
+@irp/utils	Tests	2 passed
+@irp/windows-client	Test Files	1 passed
+@irp/windows-client	Tests	2 passed
