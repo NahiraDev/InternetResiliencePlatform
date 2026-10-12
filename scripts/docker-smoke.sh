@@ -72,8 +72,22 @@ docker exec "$api_container" sh -c '
     test -w "$path"
   done
   pnpm --version >/dev/null
-  pnpm exec prisma --version >/dev/null
+  # WP2.2b runtime contract: the Prisma CLI is invoked from the production
+  # dependency closure directly (never through pnpm run/exec, which would
+  # trigger a dependency status check and a runtime install).
+  node_modules/.bin/prisma --version >/dev/null
+  test -f packages/database/prisma/schema.prisma
+  test -d packages/database/prisma/migrations
+  # Dev/test tooling must not be present in the runtime dependency closure.
+  for pkg in vitest vite vite-node tinypool esbuild eslint turbo typescript-eslint prettier husky @vitest+coverage-v8; do
+    if ls -d "node_modules/.pnpm/${pkg}@"* >/dev/null 2>&1; then
+      echo "runtime image contains dev-only package: ${pkg}" >&2
+      exit 1
+    fi
+  done
 '
+# The runtime must never install packages at startup.
+! docker compose -f "$compose_file" logs --no-color api | grep -Eq 'pnpm install|Lockfile is up to date|Packages: [+-]|ERR_PNPM' >/dev/null
 secret_log_pattern='EACCES.*corepack|JWT_SECRET[[:space:]]*[:=]|DATABASE_URL[[:space:]]*[:=]|REMOTE_CLIENT_CREDENTIAL_KEY[[:space:]]*[:=]|REMOTE_CLIENT_REFRESH_KEY[[:space:]]*[:=]|POSTGRES_PASSWORD[[:space:]]*[:=]|"password"[[:space:]]*:[[:space:]]*"'
 ! docker compose -f "$compose_file" logs --no-color api | grep -Eiq "$secret_log_pattern" >/dev/null
 

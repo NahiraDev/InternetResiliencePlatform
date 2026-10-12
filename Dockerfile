@@ -10,6 +10,7 @@ RUN apt-get update \
 
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
+COPY .husky/install.mjs ./.husky/install.mjs
 COPY apps ./apps
 COPY packages ./packages
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
@@ -18,6 +19,23 @@ FROM deps AS build
 COPY . .
 RUN pnpm --filter @irp/database prisma:generate
 RUN pnpm build
+
+# WP2.2b: production dependency closure. Dependency installation happens only
+# here, at image-build time: every node_modules tree from the build stage is
+# discarded and a fresh production-only tree is installed from the frozen
+# lockfile and the already-populated store (--offline fails closed if anything
+# would be fetched). A fresh tree avoids pnpm's orphan retention
+# (modulesCacheMaxAge) and stale .bin shims that an in-place prune leaves
+# behind. NODE_ENV=production matches the runtime environment and makes the
+# root `prepare` hook skip husky (a dev-only tool). The runtime image receives
+# only this tree; dev/test tooling (vitest, vite, esbuild, eslint, turbo, ...)
+# is excluded. The Prisma CLI is a root production dependency so
+# `prisma migrate deploy` keeps working at startup without any install.
+FROM build AS prod-deps
+ENV NODE_ENV=production
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+  find /app -name node_modules -type d -prune -exec rm -rf {} + \
+  && pnpm install --frozen-lockfile --prod --offline
 
 FROM node:26-slim AS runtime
 ENV NODE_ENV=production \
@@ -33,10 +51,10 @@ RUN apt-get update \
   && mkdir -p /app/.local/share/pnpm /app/tmp \
   && chown -R irp:irp /app/.local /app/tmp
 COPY --from=base --chown=irp:irp /pnpm /pnpm
-COPY --from=build --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/turbo.json ./
-COPY --from=build --chown=irp:irp /app/node_modules ./node_modules
-COPY --from=build --chown=irp:irp /app/apps ./apps
-COPY --from=build --chown=irp:irp /app/packages ./packages
+COPY --from=prod-deps --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/turbo.json ./
+COPY --from=prod-deps --chown=irp:irp /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=irp:irp /app/apps ./apps
+COPY --from=prod-deps --chown=irp:irp /app/packages ./packages
 COPY --from=build --chown=irp:irp /app/config ./config
 COPY --from=build --chown=irp:irp /app/scripts ./scripts
 USER irp

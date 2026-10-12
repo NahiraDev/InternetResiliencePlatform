@@ -59,10 +59,19 @@ const run = (command, args, env = process.env) =>
 try {
   await run('node', ['scripts/wait-for-database.mjs']);
   log('info', 'database connection established');
-  await run('pnpm', ['--filter', '@irp/database', 'prisma:migrate:deploy'], {
-    ...process.env,
-    PRISMA_GENERATE_SKIP_AUTOINSTALL: '1',
-  });
+  // WP2.2b: invoke the Prisma CLI from the production dependency closure
+  // directly. Running it through `pnpm run`/`pnpm exec` triggers pnpm's
+  // dependency status check, which spawns `pnpm install --production` against
+  // the pruned runtime tree at container startup (and fails on a read-only
+  // root filesystem). The runtime must never install packages.
+  await run(
+    'node_modules/.bin/prisma',
+    ['migrate', 'deploy', '--schema', 'packages/database/prisma/schema.prisma'],
+    {
+      ...process.env,
+      PRISMA_GENERATE_SKIP_AUTOINSTALL: '1',
+    },
+  );
   log('info', 'database migrations verified');
 } catch (error) {
   fail('startup initialization failed', {
