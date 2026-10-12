@@ -11,9 +11,13 @@ const mockPool = {
 
 vi.mock('pg', () => ({
   default: {
-    Pool: vi.fn(() => mockPool),
+    Pool: vi.fn(function () {
+      return mockPool;
+    }),
   },
-  Pool: vi.fn(() => mockPool),
+  Pool: vi.fn(function () {
+    return mockPool;
+  }),
 }));
 
 describe('PostgresIntentStore (Phase 2: Persistence)', () => {
