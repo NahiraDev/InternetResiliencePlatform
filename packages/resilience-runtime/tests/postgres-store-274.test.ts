@@ -7,6 +7,7 @@ import { createNetworkIntent } from '@irp/core';
 const mockPool = {
   query: vi.fn(),
   end: vi.fn(),
+  on: vi.fn(),
 };
 
 vi.mock('pg', () => ({
@@ -46,6 +47,25 @@ describe('PostgresIntentStore (Phase 2: Persistence)', () => {
     expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining('CREATE TABLE IF NOT EXISTS intents'),
     );
+  });
+
+  it('handles idle-client pool errors instead of crashing the process', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      await store.initialize();
+      expect(mockPool.on).toHaveBeenCalledWith('error', expect.any(Function));
+      const onError = mockPool.on.mock.calls.find(([event]) => event === 'error')?.[1] as (
+        error: Error,
+      ) => void;
+      expect(() =>
+        onError(new Error('terminating connection due to administrator command')),
+      ).not.toThrow();
+      expect(stderr).toHaveBeenCalledWith(
+        expect.stringContaining('intent store idle client error'),
+      );
+    } finally {
+      stderr.mockRestore();
+    }
   });
 
   it('validates connection settings before loading the driver', async () => {
