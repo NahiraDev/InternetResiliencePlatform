@@ -225,19 +225,26 @@ if (runtimeUrl) {
   );
 }
 
-// Deterministic: use a content-derived fingerprint of the tracked source tree
-// (excluding artifacts/) so the same source tree always produces identical report
-// bytes, regardless of which commit the tree happens to be checked out on.
-const headSha = (await sourceContentHash()) ?? (await gitHeadSha()) ?? 'unknown';
+// Deterministic source fingerprint: the canonical tracked certification report
+// embeds a content-derived fingerprint of the tracked source tree (excluding
+// artifacts/) so the same source tree always produces identical report bytes,
+// regardless of which commit the tree happens to be checked out on.
+const sourceFingerprint = (await sourceContentHash()) ?? 'unknown';
+const headSha = (await gitHeadSha()) ?? 'unknown';
+const generatedAtIso = new Date().toISOString();
 
 const verdict = failures.length ? 'FAIL' : pending.length ? 'PENDING' : 'PASS';
+// `evidenceSnapshot` is the canonical, deterministic artifact (tracked in git).
+// `runEnvelope` is the per-run evidence (actual git HEAD, wall-clock timestamp,
+// node version) — written to a separate untracked file so the canonical report
+// is byte-stable for the same source tree.
 const evidenceSnapshot = {
   schemaVersion: 1,
-  // Deterministic: pin generatedAt to a content-derived fingerprint so the same
-  // source tree always produces identical report bytes (see sourceContentHash).
-  generatedAt: headSha,
+  // `sourceFingerprint` is the canonical content-derived identity used for
+  // determinism. `commitSha` and `generatedAt` are recorded in the run
+  // envelope (`certification-run.json`, untracked) instead.
+  sourceFingerprint,
   verdict,
-  commitSha: headSha,
   contractSha256: sha256(JSON.stringify(contract)),
   checks,
   runtimeEvidence,
@@ -258,6 +265,21 @@ await writeFile(
   `${sha256(reportBytes)}  certification-report.json\n`,
   'utf8',
 );
+// Run-specific evidence (not tracked, not deterministic): the actual git HEAD,
+// execution time, and node version. Written separately so the canonical report
+// above is byte-stable for the same source tree.
+const runEnvelopeBytes = `${JSON.stringify(
+  {
+    schemaVersion: 1,
+    sourceFingerprint,
+    commitSha: headSha,
+    generatedAt: generatedAtIso,
+    nodeVersion: process.version,
+  },
+  null,
+  2,
+)}\n`;
+await writeFile(join(outputDir, 'certification-run.json'), runEnvelopeBytes, 'utf8');
 
 console.log(`\nPRODUCTION CERTIFICATION: ${verdict}`);
 console.log(`Evidence report: ${join(outputDir, 'certification-report.json')}`);

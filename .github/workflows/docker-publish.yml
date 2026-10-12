@@ -123,7 +123,7 @@ jobs:
           sbom: true
 
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.32.0
+        uses: aquasecurity/setup-trivy@v0.3.1
 
       - name: Scan published image by immutable digest (fail-closed)
         env:
@@ -132,7 +132,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$DIGEST"
-          # Scan the exact pushed digest, not a re-build. High/Critical findings
+          # Scan the exact pushed digest, not a re-build. HIGH/CRITICAL findings
           # fail the workflow so Release Gate cannot pass with an unscanned or
           # unverified image.
           trivy image \
@@ -140,7 +140,6 @@ jobs:
             --output /tmp/trivy-scan.json \
             --exit-code 1 \
             --severity HIGH,CRITICAL \
-            --ignore-unfixed \
             "${IMAGE_NAME}@${DIGEST}"
           test -s /tmp/trivy-scan.json
           # Report the scanned digest explicitly.

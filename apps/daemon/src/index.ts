@@ -546,6 +546,12 @@ export class RuntimeDaemonHost {
     const intervalMs = intervalMsRaw === undefined ? 0 : Number(intervalMsRaw);
     if (!Number.isInteger(intervalMs) || intervalMs < 0)
       throw new RangeError(`IRP_LOOP_INTERVAL_MS must be a non-negative integer, got: ${intervalMsRaw}`);
+    if (
+      stopWhenHealthyRaw !== undefined &&
+      stopWhenHealthyRaw !== '0' &&
+      stopWhenHealthyRaw !== '1'
+    )
+      throw new RangeError(`IRP_LOOP_STOP_WHEN_HEALTHY must be '0' or '1', got: ${stopWhenHealthyRaw}`);
     const stopWhenHealthy = stopWhenHealthyRaw === undefined ? true : stopWhenHealthyRaw === '1';
     return {
       maxCycles,
