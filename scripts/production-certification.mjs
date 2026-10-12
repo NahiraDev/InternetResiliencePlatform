@@ -18,6 +18,45 @@ const gitHeadSha = async () => {
   }
 };
 
+/**
+ * Content-derived fingerprint of the tracked source tree (excluding artifacts/).
+ *
+ * Unlike the HEAD commit SHA, this does not change merely because a new commit
+ * was made — it only changes when tracked source content changes. That makes
+ * the certification report and its sha256 reproducible for the same source
+ * tree, and a clean checkout stays clean after running the gate.
+ */
+const sourceContentHash = async () => {
+  try {
+    const ls = (
+      await execFileAsync('git', ['ls-files', '--full-name', '--', '.', ':!artifacts'], {
+        cwd: process.cwd(),
+        maxBuffer: 64 * 1024 * 1024,
+      })
+    ).stdout
+      .toString()
+      .split('\n')
+      .filter((p) => p.length > 0)
+      .sort();
+    if (ls.length === 0) return undefined;
+    const digest = createHash('sha256');
+    for (const rel of ls) {
+      const sha = (
+        await execFileAsync('git', ['hash-object', rel], {
+          cwd: process.cwd(),
+          maxBuffer: 64 * 1024 * 1024,
+        })
+      ).stdout
+        .toString()
+        .trim();
+      digest.update(`${rel}\n${sha}\n`);
+    }
+    return digest.digest('hex');
+  } catch {
+    return undefined;
+  }
+};
+
 const root = process.cwd();
 const contractPath = join(root, 'ops/release/production-certification.json');
 const args = new Map();
@@ -186,14 +225,16 @@ if (runtimeUrl) {
   );
 }
 
-const headSha = (await gitHeadSha()) ?? 'unknown';
+// Deterministic: use a content-derived fingerprint of the tracked source tree
+// (excluding artifacts/) so the same source tree always produces identical report
+// bytes, regardless of which commit the tree happens to be checked out on.
+const headSha = (await sourceContentHash()) ?? (await gitHeadSha()) ?? 'unknown';
 
 const verdict = failures.length ? 'FAIL' : pending.length ? 'PENDING' : 'PASS';
 const evidenceSnapshot = {
   schemaVersion: 1,
-  // Deterministic: pin generatedAt to the actual source commit SHA so the same
-  // source tree always produces identical report bytes. `GITHUB_SHA` provides the
-  // authoritative CI value; a local invocation falls back to `git rev-parse HEAD`.
+  // Deterministic: pin generatedAt to a content-derived fingerprint so the same
+  // source tree always produces identical report bytes (see sourceContentHash).
   generatedAt: headSha,
   verdict,
   commitSha: headSha,
