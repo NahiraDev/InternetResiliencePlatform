@@ -14,9 +14,34 @@ const createMemoryDatabaseClient = (): DatabaseClient => ({
   },
 });
 
-export const createPrismaClient = (databaseUrl = process.env.DATABASE_URL): DatabaseClient => {
+export type IdleClientErrorHandler = (error: Error) => void;
+
+/**
+ * Default handler for errors emitted by idle pooled clients. node-postgres
+ * emits 'error' on the pool when an idle client loses its connection (for
+ * example a PostgreSQL restart, failover or `pg_terminate_backend`). Without a
+ * listener Node treats it as an unhandled 'error' event and terminates the
+ * process, turning a recoverable database outage into an API crash. The pool
+ * discards the broken client and the next query reconnects; in-flight and
+ * subsequent queries still reject, so readiness checks report the outage.
+ */
+export const reportIdleClientError: IdleClientErrorHandler = (error) => {
+  process.stderr.write(
+    `${JSON.stringify({ level: 'warn', msg: 'database idle client error', error: error.message })}\n`,
+  );
+};
+
+export interface DatabaseClientOptions {
+  onIdleClientError?: IdleClientErrorHandler;
+}
+
+export const createPrismaClient = (
+  databaseUrl = process.env.DATABASE_URL,
+  options: DatabaseClientOptions = {},
+): DatabaseClient => {
   if (!databaseUrl) return createMemoryDatabaseClient();
   const pool = new Pool({ connectionString: databaseUrl, max: 5 });
+  pool.on('error', options.onIdleClientError ?? reportIdleClientError);
   return {
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {
       const text = strings.reduce(
@@ -33,7 +58,8 @@ export const createPrismaClient = (databaseUrl = process.env.DATABASE_URL): Data
 };
 export const createGeneratedPrismaClient = async (
   databaseUrl = process.env.DATABASE_URL,
-): Promise<DatabaseClient> => createPrismaClient(databaseUrl);
+  options: DatabaseClientOptions = {},
+): Promise<DatabaseClient> => createPrismaClient(databaseUrl, options);
 export interface DatabaseHealth {
   ok: boolean;
   latencyMs: number;

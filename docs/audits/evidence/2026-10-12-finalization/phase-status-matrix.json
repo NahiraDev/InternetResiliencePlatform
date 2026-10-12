@@ -1,0 +1,1748 @@
+{
+  "schemaVersion": 1,
+  "sourceSha": "72ea75f4dad96781f5332312e25edfc8fe63f0fb",
+  "summary": {
+    "PARTIAL": 53,
+    "COMPLETE": 27,
+    "BLOCKED": 3,
+    "NOT STARTED": 67
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "title": "core infrastructure and lifecycle/config/logging contracts",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 2,
+      "title": "quality, type, lint, test and validation baseline",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 3,
+      "title": "reproducible CI/CD verification and release pipeline",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 4,
+      "title": "architecture boundaries and module contracts",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 5,
+      "title": "bounded shared scheduling/retry/cache/concurrency services",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 6,
+      "title": "portable network primitives",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 7,
+      "title": "canonical bounded network measurements",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 8,
+      "title": "health-aware DNS selection and fallback",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 9,
+      "title": "multi-source connectivity classification",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 10,
+      "title": "destination-aware route representation",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 11,
+      "title": "declarative policy and safety constraints",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 12,
+      "title": "connectivity provider orchestration and recovery",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 13,
+      "title": "ranked path candidates with apply/verify/rollback",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 14,
+      "title": "DNS anomaly detection and explainability",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 15,
+      "title": "DNS/TCP/TLS/HTTP/path/MTU diagnostics",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 16,
+      "title": "bounded failover, circuit breakers and rollback",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 17,
+      "title": "service-specific resilience policies",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 18,
+      "title": "context-aware workspace policies",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 19,
+      "title": "stable plugin SDK",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 20,
+      "title": "plugin discovery, signing and compatibility",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 21,
+      "title": "supported connectivity integrations",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 22,
+      "title": "autonomous local access agent",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 23,
+      "title": "continuous route scoring and anti-flapping",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 24,
+      "title": "destination classification",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 25,
+      "title": "service-level reachability verification",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 26,
+      "title": "authenticated controlled API",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 27,
+      "title": "production runtime hardening",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 28,
+      "title": "historical observations",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 29,
+      "title": "temporal degradation baselines",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 30,
+      "title": "bounded predictive engine",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 31,
+      "title": "policy-safe auto optimization",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 32,
+      "title": "evidence-backed explainability and audit",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 33,
+      "title": "provider/path benchmarking",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 34,
+      "title": "canonical telemetry model",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 35,
+      "title": "OpenTelemetry export contracts",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 36,
+      "title": "OpenTelemetry runtime",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 37,
+      "title": "Prometheus exposition and cardinality controls",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 38,
+      "title": "operational diagnostics",
+      "disposition": "PARTIAL",
+      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 39,
+      "title": "device identity and scoped sessions",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'IMPLEMENTED / verification state inherited from current repository gates'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-39.md",
+        "recordedStatus": "IMPLEMENTED / verification state inherited from current repository gates",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 40,
+      "title": "controlled-fault resilience validation",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-40.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-40.md",
+        "recordedStatus": "IMPLEMENTED / CI VERIFICATION PENDING",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 41,
+      "title": "independent regional evidence",
+      "disposition": "BLOCKED",
+      "justification": "Regional validation tooling exists; acceptance requires an Iranian network vantage point and observed-egress evidence that cannot be produced from CI or this environment.",
+      "probe": {
+        "doc": "docs/phases/phase-41.md",
+        "recordedStatus": "INITIAL TOOLING IMPLEMENTED / IRANIAN VANTAGE PENDING",
+        "resolvedReferences": 1,
+        "missingReferences": [
+          ".github/workflows/regional-validation.yml"
+        ],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 42,
+      "title": "remote client enrollment and authorization lifecycle",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-42.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/auth) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-42.md",
+        "recordedStatus": "",
+        "resolvedReferences": 2,
+        "missingReferences": [],
+        "packages": [
+          "@irp/auth"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/auth"
+        ]
+      }
+    },
+    {
+      "phase": 43,
+      "title": "signed replay-resistant probe federation",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: ''); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-43.md",
+        "recordedStatus": "",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 44,
+      "title": "analytics summaries, trends and anomalies",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation present; final CI/runtime verification gate required before completion.'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-44.md",
+        "recordedStatus": "Implementation present; final CI/runtime verification gate required before completion.",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 45,
+      "title": "egress identity and destination/policy assurance",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-45.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-45.md",
+        "recordedStatus": "Implementation present; repository and CI verification gates remain required.",
+        "resolvedReferences": 2,
+        "missingReferences": [],
+        "packages": [
+          "@irp/network-intelligence"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/network-intelligence"
+        ]
+      }
+    },
+    {
+      "phase": 46,
+      "title": "authorized gateway inventory",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation:** complete on the phase branch.'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-46.md",
+        "recordedStatus": "Implementation:** complete on the phase branch.",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 47,
+      "title": "gateway discovery, health and stale handling",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-47.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-47.md",
+        "recordedStatus": "Implementation:** complete on `main` pending repository/CI verification.",
+        "resolvedReferences": 2,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry"
+        ]
+      }
+    },
+    {
+      "phase": 48,
+      "title": "provider-neutral tunnel lifecycle",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-48.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry, @irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-48.md",
+        "recordedStatus": "Implementation complete; CI verification is the completion gate.",
+        "resolvedReferences": 9,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry",
+          "@irp/tunnel"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry",
+          "@irp/tunnel"
+        ]
+      }
+    },
+    {
+      "phase": 49,
+      "title": "WireGuard provider adapter",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-49.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-49.md",
+        "recordedStatus": "Implementation:** present on `main` pending CI verification.",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/tunnel"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/tunnel"
+        ]
+      }
+    },
+    {
+      "phase": 50,
+      "title": "additional legitimate network provider adapters",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-50.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-50.md",
+        "recordedStatus": "Implementation:** present on `main` pending CI verification.",
+        "resolvedReferences": 4,
+        "missingReferences": [],
+        "packages": [
+          "@irp/tunnel"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/tunnel"
+        ]
+      }
+    },
+    {
+      "phase": 51,
+      "title": "policy/health/capacity-aware gateway selection",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Complete / verified.** Implementation, repository validation, typecheck, lint, tests, coverage, build, deterministic smoke tests, production Docker runtime smok'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-51.md",
+        "recordedStatus": "Complete / verified.** Implementation, repository validation, typecheck, lint, tests, coverage, build, deterministic smoke tests, production Docker runtime smok",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 52,
+      "title": "automated tunnel lifecycle",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-52.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-52.md",
+        "recordedStatus": "Implementation complete; CI/runtime verification in progress.",
+        "resolvedReferences": 4,
+        "missingReferences": [],
+        "packages": [
+          "@irp/tunnel"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/tunnel"
+        ]
+      }
+    },
+    {
+      "phase": 53,
+      "title": "multi-gateway failover",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-53.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-53.md",
+        "recordedStatus": "Implementation started; repository verification required.",
+        "resolvedReferences": 4,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry"
+        ]
+      }
+    },
+    {
+      "phase": 54,
+      "title": "gateway fleet operations",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-54.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-54.md",
+        "recordedStatus": "Implementation started; verification required.",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry"
+        ]
+      }
+    },
+    {
+      "phase": 55,
+      "title": "gateway security and supply-chain hardening",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-55.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-55.md",
+        "recordedStatus": "Implementation complete; final CI verification in progress.",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry"
+        ]
+      }
+    },
+    {
+      "phase": 56,
+      "title": "versioned unified capability API",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-56.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/api, @irp/sdk) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-56.md",
+        "recordedStatus": "Implementation complete; final repository verification required.",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/api",
+          "@irp/sdk"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/api",
+          "@irp/sdk"
+        ]
+      }
+    },
+    {
+      "phase": 57,
+      "title": "Web Control Center",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'In progress.** The control-loop contract and fail-closed semantics are implemented, but the phase is not considered complete until a real live adapter, real pos'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-57.md",
+        "recordedStatus": "In progress.** The control-loop contract and fail-closed semantics are implemented, but the phase is not considered complete until a real live adapter, real pos",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 58,
+      "title": "identity, RBAC and conflict-safe sync",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation started; verification required.'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-58.md",
+        "recordedStatus": "Implementation started; verification required.",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 59,
+      "title": "incident center and diagnostics",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation started; verification required.'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-59.md",
+        "recordedStatus": "Implementation started; verification required.",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 60,
+      "title": "administration, deployment, backups and migrations",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Started on `phase/60-administration-self-hosting`.'); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-60.md",
+        "recordedStatus": "Started on `phase/60-administration-self-hosting`.",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 61,
+      "title": "Linux Full Client",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-61.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/linux-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-61.md",
+        "recordedStatus": "Implementation started; repository/runtime verification required.",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/linux-client"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/linux-client"
+        ]
+      }
+    },
+    {
+      "phase": 62,
+      "title": "macOS Full Client",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-62.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/macos-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-62.md",
+        "recordedStatus": "Implementation in progress; final verification evidence required.",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/macos-client"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/macos-client"
+        ]
+      }
+    },
+    {
+      "phase": 63,
+      "title": "Windows Full Client",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-63.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/windows-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-63.md",
+        "recordedStatus": "In progress.** The platform boundary is implemented, but completion remains blocked until native Windows CI and runtime evidence demonstrate the diagnostics and",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/windows-client"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/windows-client"
+        ]
+      }
+    },
+    {
+      "phase": 64,
+      "title": "shared mobile client core",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-64.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/core) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-64.md",
+        "recordedStatus": "In progress.** The shared client contract is implemented, but phase closure remains blocked until the repository gates and public runtime endpoint verification ",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/core"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/core"
+        ]
+      }
+    },
+    {
+      "phase": 65,
+      "title": "iOS Full Client",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: ''); implementation cannot be mapped to tests.",
+      "probe": {
+        "doc": "docs/phases/phase-65.md",
+        "recordedStatus": "",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 66,
+      "title": "iOS Network Extension integration",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-66.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/ios) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "probe": {
+        "doc": "docs/phases/phase-66.md",
+        "recordedStatus": "",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [
+          "native:clients/ios"
+        ],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 67,
+      "title": "Android Full Client",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-67.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/android) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "probe": {
+        "doc": "docs/phases/phase-67.md",
+        "recordedStatus": "Implementation started; verification required.",
+        "resolvedReferences": 2,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [
+          "native:clients/android"
+        ],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 68,
+      "title": "Android-native VPN/network integration",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-68.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/android) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "probe": {
+        "doc": "docs/phases/phase-68.md",
+        "recordedStatus": "Implementation started; verification required.",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [
+          "native:clients/android"
+        ],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 69,
+      "title": "cross-platform production hardening",
+      "disposition": "BLOCKED",
+      "justification": "Production-readiness contract and checks exist and pass in CI; the phase defines device, accessibility and localization acceptance that requires real-device and human evidence (production-certification evidence ids accessibility, localization, platform-runtime).",
+      "probe": {
+        "doc": "docs/phases/phase-69.md",
+        "recordedStatus": "Implementation in progress; verification required.",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 70,
+      "title": "end-to-end v1.0 certification",
+      "disposition": "BLOCKED",
+      "justification": "Fail-closed v1.0 certification verifier exists and reports PENDING: 15 required evidence items (security-audit, regional-evidence, chaos-soak, backup-restore, upgrade-rollback, ios/android-device-smoke, ...) are not supplied.",
+      "probe": {
+        "doc": "docs/phases/phase-70.md",
+        "recordedStatus": "",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 71,
+      "title": "Cross-Platform Distribution & GitHub Releases",
+      "disposition": "COMPLETE",
+      "justification": "Release distribution surface exists and was exercised: GitHub Release v0.2.1 publishes Linux, Android (debug), macOS and Windows developer bundles, iOS source and SHA256SUMS. Scope caveat: macOS/Windows archives are unsigned developer bundles (single dist/index.js + service manifest), Android is a debug APK, iOS is source-only.",
+      "probe": {
+        "doc": "docs/phases/phase-71.md",
+        "recordedStatus": "Implementation complete; external release evidence is pending. Phase 71 establishes a single GitHub Release distribution surface for supported IRP client target",
+        "resolvedReferences": 0,
+        "missingReferences": [],
+        "packages": [],
+        "nativeSources": [],
+        "packagesWithPassingTests": []
+      }
+    },
+    {
+      "phase": 72,
+      "title": "Control-Plane Architecture Completion",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-72.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/api, @irp/events, @irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-72.md",
+        "recordedStatus": "Architecture contract implemented; phase completion is gated by the Phase 71 external release-certification requirement and Phase 72 verification/CI evidence.**",
+        "resolvedReferences": 9,
+        "missingReferences": [],
+        "packages": [
+          "@irp/api",
+          "@irp/events",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/api",
+          "@irp/events",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 73,
+      "title": "Unified Network State Model",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-73.md; all 13 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-73.md",
+        "recordedStatus": "Implementation in progress on `phase/73-unified-network-state`. This phase does not certify Phase 71 or Phase 72 completion.",
+        "resolvedReferences": 13,
+        "missingReferences": [],
+        "packages": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 74,
+      "title": "Control-Plane Contracts",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-74.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/core, @irp/events, @irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-74.md",
+        "recordedStatus": "Implementation in progress on `phase/74-control-plane-contracts`. Phase 71 certification remains intentionally deferred.",
+        "resolvedReferences": 9,
+        "missingReferences": [],
+        "packages": [
+          "@irp/core",
+          "@irp/events",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/core",
+          "@irp/events",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 75,
+      "title": "Decision Orchestration",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-75.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-75.md",
+        "recordedStatus": "Implementation in progress on `phase/75-decision-orchestration`.",
+        "resolvedReferences": 9,
+        "missingReferences": [],
+        "packages": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 76,
+      "title": "Action Transaction Engine",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-76.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-76.md",
+        "recordedStatus": "Implementation in progress on `phase/76-action-transaction-engine`.",
+        "resolvedReferences": 4,
+        "missingReferences": [],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 77,
+      "title": "Safety, Rollback & Recovery Kernel",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-77.md; all 6 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/failover, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "probe": {
+        "doc": "docs/phases/phase-77.md",
+        "recordedStatus": "Implemented and merged on `main` in PR #237.** The implementation landed before the current Phase 78 branch was created. External Phase 71 release certification",
+        "resolvedReferences": 6,
+        "missingReferences": [],
+        "packages": [
+          "@irp/failover",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/failover",
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 78,
+      "title": "Closed-Loop Control Foundation",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-78.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Integration residual: BoundedClosedLoopController is exercised against the canonical ResilienceRuntime by tests, but no production entrypoint runs the multi-cycle loop (API triggers single runCycle calls; the only non-test consumer is the deprecated NetworkAutopilot). Tracked as remaining work.",
+      "probe": {
+        "doc": "docs/phases/phase-78.md",
+        "recordedStatus": "Implementation started on `phase/78-closed-loop-control` from `main` at `164c9793ac8819492939d9d59b6c3b529cc506cd`.",
+        "resolvedReferences": 9,
+        "missingReferences": [],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
+      }
+    },
+    {
+      "phase": 79,
+      "title": "Intent Model & Lifecycle",
+      "disposition": "PARTIAL",
+      "justification": "Intent model and lifecycle exist (resilience-runtime/src/intent, PostgresIntentStore, ownership migrations) with passing tests, but MASTER_ROADMAP_V2 defines no Phase 79 acceptance contract and PROJECT_STATE does not authorize the phase; cannot be COMPLETE without a contract.",
+      "probe": {
+        "doc": "docs/phases/phase-79.md",
+        "recordedStatus": "Implementation started on `phase/79-intent-model-lifecycle` from the merged Phase 78 baseline.",
+        "resolvedReferences": 5,
+        "missingReferences": [],
+        "packages": [
+          "@irp/api",
+          "@irp/core"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/api",
+          "@irp/core"
+        ]
+      }
+    },
+    {
+      "phase": 80,
+      "title": "Intent API & Ingestion",
+      "disposition": "PARTIAL",
+      "justification": "Intent API exists (apps/api/src/intent-api.ts, wired in apps/api/src/index.ts) with tests; no Phase 80 acceptance contract defined.",
+      "probe": {
+        "doc": "docs/phases/phase-80.md",
+        "recordedStatus": "",
+        "resolvedReferences": 2,
+        "missingReferences": [],
+        "packages": [
+          "@irp/api",
+          "@irp/core"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/api",
+          "@irp/core"
+        ]
+      }
+    },
+    {
+      "phase": 81,
+      "title": "Intent Translation / Compilation",
+      "disposition": "PARTIAL",
+      "justification": "Intent compilation exists (resilience-runtime/src/intent/compiler.ts, used by runtime.ts); no Phase 81 acceptance contract defined.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 82,
+      "title": "Policy Decision & Enforcement Engine",
+      "disposition": "PARTIAL",
+      "justification": "Policy registry/arbitration exists (src/policy, PolicyArbitrator used by runtime.executeCycle); no Phase 82 contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 83,
+      "title": "Policy Conflict Resolution",
+      "disposition": "PARTIAL",
+      "justification": "Intent conflict arbitration and conflict journal exist (src/intent/arbitration.ts, migration 20261004000000_phase_274_conflict_journal); no Phase 83 contract.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 84,
+      "title": "Safety Constraints & Change Governance",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 85,
+      "title": "Intent Assurance & Drift Management",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 86,
+      "title": "Unified Connectivity Fabric",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): fabric.ts / fabric-authority.ts / fabric-lifecycle.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 87,
+      "title": "Multi-Interface Intelligence",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 88,
+      "title": "Multi-Path Connectivity Management",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 89,
+      "title": "Gateway Intelligence & Selection",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/gateway-registry, src/gateway/gateway-registry-plane.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 90,
+      "title": "DNS / Tunnel / Proxy Orchestration Integration",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/dns, packages/tunnel, src/tunnel/tunnel-control-plane.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 91,
+      "title": "Application-Aware Path Selection",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 92,
+      "title": "Connectivity Service Assurance",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 93,
+      "title": "Advanced Routing Control",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 94,
+      "title": "Traffic Classification",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 95,
+      "title": "Policy-Based Routing",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 96,
+      "title": "Dynamic Route Optimization",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 97,
+      "title": "Service Reachability Intelligence",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 98,
+      "title": "Congestion & Degradation Awareness",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 99,
+      "title": "Predictive Failover & Recovery",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/failover (circuit breaker / recovery budget).",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 100,
+      "title": "Unified Telemetry Plane",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/telemetry/telemetry.ts (no dedicated tests).",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 101,
+      "title": "Streaming Metrics & Events",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 102,
+      "title": "Cross-Layer Event Correlation",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 103,
+      "title": "Topology & Dependency Intelligence",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 104,
+      "title": "Historical Network State & Time-Series Intelligence",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 105,
+      "title": "Anomaly Detection",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 106,
+      "title": "Telemetry-Driven Closed-Loop Assurance",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 107,
+      "title": "Secure Control-Plane Architecture",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/security, src/security/trust-boundaries.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 108,
+      "title": "Device Identity & Enrollment Trust",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 109,
+      "title": "Authorization / Capability Model",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 110,
+      "title": "Secrets & Key Lifecycle",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/security/secrets.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 111,
+      "title": "Secure Agent \u2194 Control Plane Protocol",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 112,
+      "title": "Security Policy & Runtime Enforcement",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 113,
+      "title": "Security Monitoring & Automated Response",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 114,
+      "title": "Fleet Management Foundation",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 115,
+      "title": "Device Enrollment & Lifecycle",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 116,
+      "title": "Remote Configuration & Policy Distribution",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 117,
+      "title": "Distributed Control & Coordination",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/federation (advisory probe federation).",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 118,
+      "title": "Multi-Device Orchestration",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 119,
+      "title": "Tenant / Organization Isolation",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 120,
+      "title": "Fleet Health & Observability",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 121,
+      "title": "Network Knowledge Base",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/knowledge (knowledge store, failure memory).",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 122,
+      "title": "Network State Prediction",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/knowledge/prediction.ts.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 123,
+      "title": "Decision Intelligence & AI Assistance",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 124,
+      "title": "Autonomous Optimization",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 125,
+      "title": "Network Simulation / Digital Twin",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): src/scenario-lab (deterministic fault scenarios).",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 126,
+      "title": "Chaos, Resilience & Hardware-in-the-Loop Validation",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 127,
+      "title": "Final Production Certification & Release Readiness",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 128,
+      "title": "Data-Plane Abstraction & Enforcement",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 129,
+      "title": "Flow / Connection Lifecycle Intelligence",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 130,
+      "title": "QoS, Priority & Traffic Engineering",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 131,
+      "title": "Service/Application Policy Enforcement",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 132,
+      "title": "Network Address / Session Management",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 133,
+      "title": "Advanced NAT / Firewall Policy Integration",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 134,
+      "title": "Data-Plane Assurance & Safe Reconciliation",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 135,
+      "title": "Versioned Control-Plane API",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): apps/api /api/v1 surface.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 136,
+      "title": "Event Bus & Integration Contracts",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 137,
+      "title": "Plugin / Provider Lifecycle Governance",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/plugin-loader, packages/plugin-sandbox.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 138,
+      "title": "Capability Discovery & Provider Registry",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 139,
+      "title": "External Integrations / Webhooks / SDK Contracts",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 140,
+      "title": "API Compatibility, Migration & Deprecation Framework",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 141,
+      "title": "Privacy-Preserving Telemetry",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 142,
+      "title": "Data Classification, Retention & Deletion",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 143,
+      "title": "Auditability & Immutable Control History",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 144,
+      "title": "Privacy / Security Governance Controls",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 145,
+      "title": "Compliance & Operational Evidence Framework",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 146,
+      "title": "Control-Plane High Availability",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 147,
+      "title": "Distributed State Consistency & Conflict Recovery",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 148,
+      "title": "Horizontal Scale & Backpressure Engineering",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 149,
+      "title": "Backup, Disaster Recovery & Regional Recovery",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    },
+    {
+      "phase": 150,
+      "title": "Global Platform Readiness & Final Architecture Certification",
+      "disposition": "NOT STARTED",
+      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "probe": {
+        "doc": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+Prisma schema loaded from packages/database/prisma/schema.prisma
+Datasource "db": PostgreSQL database "irp", schema "public" at "localhost"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20260714083800_phase_5_core`
+Applying migration `20260719000000_phase_6_network_intelligence`
+Applying migration `20260830230000_phase_59_notifications`
+Applying migration `20260930103000_phase_274_intent_ownership`
+Applying migration `20261004000000_phase_274_conflict_journal`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260714083800_phase_5_core/
+    └─ migration.sql
+  └─ 20260719000000_phase_6_network_intelligence/
+    └─ migration.sql
+  └─ 20260830230000_phase_59_notifications/
+    └─ migration.sql
+  └─ 20260930103000_phase_274_intent_ownership/
+    └─ migration.sql
+  └─ 20261004000000_phase_274_conflict_journal/
+    └─ migration.sql
+      
+All migrations have been successfully applied.

@@ -13,7 +13,7 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "coverage": "turbo run test -- --coverage",
     "validate": "node scripts/validate-repository.mjs",
     "validate:docs": "node scripts/validate-documentation.mjs",
@@ -44,20 +44,20 @@
     "certification:test": "vitest run scripts/production-certification.test.mjs scripts/full-system-assurance.test.mjs"
   },
   "dependencies": {
-    "pg": "8.23.0"
+    "pg": "8.23.0",
+    "prisma": "7.10.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
-    "@vitest/coverage-v8": "3.2.7",
+    "@vitest/coverage-v8": "4.1.11",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "prisma": "7.10.0",
     "turbo": "^2.11.5",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",
