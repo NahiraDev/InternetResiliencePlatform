@@ -16,6 +16,11 @@ Phase 70 production certification or a stable production release.
 - Build provenance, SBOM generation, digest-bound Cosign signing, and digest
   reporting remain required. A preview image signature proves its CI publication
   identity, not independent production certification.
+- A fail-closed Trivy image scan by immutable digest runs after the image is
+  pushed and before cosign signing. Missing, failed, or unreviewed
+  HIGH/CRITICAL findings fail the workflow so Release Gate cannot pass with an
+  unverified image. The scanned digest and JSON result are preserved as a
+  workflow artifact (`trivy-image-scan`).
 
 ## Latest promotion
 

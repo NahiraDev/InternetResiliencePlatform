@@ -68,13 +68,16 @@ test "$(docker inspect -f '{{.Config.User}}' "$api_container")" = "irp"
 docker exec "$api_container" sh -c '
   set -eu
   test "$(id -u)" != "0"
-  for path in /app/.local/share/pnpm /app/tmp; do
+  for path in /app/tmp; do
     test -w "$path"
   done
-  pnpm --version >/dev/null
-  # WP2.2b runtime contract: the Prisma CLI is invoked from the production
-  # dependency closure directly (never through pnpm run/exec, which would
-  # trigger a dependency status check and a runtime install).
+  # pnpm must be absent from the runtime image (issue #16): the entrypoint
+  # runs the Prisma CLI directly from the production dependency closure, and
+  # no part of the startup path may invoke a package manager.
+  if command -v pnpm >/dev/null 2>&1 || [ -x /pnpm/bin/pnpm ]; then
+    echo "runtime image must not contain pnpm" >&2
+    exit 1
+  fi
   node_modules/.bin/prisma --version >/dev/null
   test -f packages/database/prisma/schema.prisma
   test -d packages/database/prisma/migrations

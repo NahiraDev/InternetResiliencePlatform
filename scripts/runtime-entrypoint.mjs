@@ -19,11 +19,11 @@ const required = [
 for (const name of required)
   if (!process.env[name]) fail(`${name} is required for production startup`);
 
-// The runtime image installs pnpm directly and does not invoke Corepack.
 // Only paths that are actually used by the production process are required
 // to be writable. This keeps the container compatible with a read-only root
-// filesystem without introducing a redundant Corepack cache dependency.
-for (const path of ['/app/.local/share/pnpm', '/app/tmp']) {
+// filesystem. pnpm is not present in the runtime image at all; the entrypoint
+// and the app run entirely on Node.js and the production dependency closure.
+for (const path of ['/app/tmp']) {
   try {
     await access(path, constants.R_OK | constants.W_OK);
   } catch {

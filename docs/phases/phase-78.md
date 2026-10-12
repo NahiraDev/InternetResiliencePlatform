@@ -73,6 +73,17 @@ The controller does not bypass runtime policy, validation, safety, transaction, 
 
 Phase 78 is not complete from source presence alone. Completion requires CI evidence for the dedicated tests plus the repository gates and a runtime-level integration test showing the loop invokes the canonical `ResilienceRuntime` rather than a parallel control path.
 
+## Production entrypoint integration (issue #11)
+
+`apps/daemon/src/index.ts` exposes `BoundedClosedLoopController` as a production repetition authority on the canonical `ResilienceRuntime`. The wiring:
+
+- Environment-configured bounds: `IRP_LOOP_MAX_CYCLES` (1–10, integer), `IRP_LOOP_INTERVAL_MS` (non-negative integer), `IRP_LOOP_STOP_WHEN_HEALTHY` (`1`/`0`).
+- Configuration is validated in `getClosedLoopOptions()`; out-of-range or non-integer values fail closed with `RangeError`.
+- `abortClosedLoop()` exposes an `AbortSignal` used by SIGTERM/SIGINT to deterministically stop the loop before the next cycle begins.
+- Dedicated integration tests in `apps/daemon/src/index.test.ts` (`RuntimeDaemonHost bounded closed loop`) drive the canonical runtime path, verify safe-by-default single-cycle behavior, reject out-of-range configuration, and exercise abort semantics. The controller wraps `host.runtime` directly (no parallel authority).
+
+Evidence: `pnpm --filter @irp/daemon test` passes 19/19 tests (including 6 closed-loop tests) at this commit.
+
 ## Rollback
 
 Remove `closed-loop.ts`, its tests and the public export. Existing `ResilienceRuntime.cycle()` behavior remains unchanged.

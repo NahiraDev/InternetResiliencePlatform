@@ -39,8 +39,6 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 FROM node:26-slim AS runtime
 ENV NODE_ENV=production \
-    PNPM_HOME=/pnpm \
-    PATH=/pnpm/bin:/pnpm:$PATH \
     IRP_CONFIG_DIR=/app/config
 WORKDIR /app
 RUN apt-get update \
@@ -48,9 +46,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --system --gid 1001 irp \
   && useradd --system --uid 1001 --gid irp --home-dir /app --shell /usr/sbin/nologin irp \
-  && mkdir -p /app/.local/share/pnpm /app/tmp \
-  && chown -R irp:irp /app/.local /app/tmp
-COPY --from=base --chown=irp:irp /pnpm /pnpm
+  && mkdir -p /app/tmp \
+  && chown -R irp:irp /app/tmp
 COPY --from=prod-deps --chown=irp:irp /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/turbo.json ./
 COPY --from=prod-deps --chown=irp:irp /app/node_modules ./node_modules
 COPY --from=prod-deps --chown=irp:irp /app/apps ./apps

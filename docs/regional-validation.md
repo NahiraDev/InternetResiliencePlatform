@@ -35,6 +35,8 @@ This prevents the regional workflow from silently falling back to `ubuntu-latest
 
 The default probe endpoint is `https://ipapi.co/json/`. The request is made **from the regional self-hosted runner**, so the returned IP/country describes the runner's observed egress rather than the GitHub-hosted CI environment.
 
+The workflow (`.github/workflows/regional-validation.yml`) is a manual `workflow_dispatch` job that targets `[self-hosted, linux, iran]`. It runs the operator-provided HTTPS probe endpoint against the documented exit code contract (0 = pass, 2 = country mismatch, 1 = transport/validation failure) and never silently falls back to `ubuntu-latest`. The structured result is emitted to the run's step summary and uploaded as a `regional-validation-evidence` artifact. It is intentionally not part of the normal repository CI gate.
+
 The endpoint must return JSON containing:
 
 - `ip` or `ip_address`

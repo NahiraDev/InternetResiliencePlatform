@@ -3,6 +3,20 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
+
+const gitHeadSha = async () => {
+  try {
+    return (await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: process.cwd() })).stdout
+      .toString()
+      .trim();
+  } catch {
+    return undefined;
+  }
+};
 
 const root = process.cwd();
 const contractPath = join(root, 'ops/release/production-certification.json');
@@ -172,12 +186,17 @@ if (runtimeUrl) {
   );
 }
 
+const headSha = (await gitHeadSha()) ?? 'unknown';
+
 const verdict = failures.length ? 'FAIL' : pending.length ? 'PENDING' : 'PASS';
 const evidenceSnapshot = {
   schemaVersion: 1,
-  generatedAt: new Date().toISOString(),
+  // Deterministic: pin generatedAt to the actual source commit SHA so the same
+  // source tree always produces identical report bytes. `GITHUB_SHA` provides the
+  // authoritative CI value; a local invocation falls back to `git rev-parse HEAD`.
+  generatedAt: headSha,
   verdict,
-  commitSha: process.env.GITHUB_SHA ?? 'unknown',
+  commitSha: headSha,
   contractSha256: sha256(JSON.stringify(contract)),
   checks,
   runtimeEvidence,

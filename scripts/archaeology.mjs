@@ -195,7 +195,7 @@ async function buildInventory() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     packages: packages.sort((a, b) => a.name.localeCompare(b.name)),
     totals: {
       packages: packages.length,
@@ -272,7 +272,7 @@ async function buildRuntimePaths() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     traces,
     mutationSites: mutationSites.sort((a, b) =>
       `${a.marker}${a.path}`.localeCompare(`${b.marker}${b.path}`),
@@ -503,7 +503,7 @@ async function buildCapabilityMatrix() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     source: registry.available
       ? registry.source
       : `text scan fallback${registry.error ? `: ${registry.error}` : ''}`,
@@ -627,7 +627,7 @@ async function buildAuthorityMap() {
   const contract = await readJson(join(root, 'docs/architecture/IRP-ARCHITECTURE-CONTRACT.json'));
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     contractAuthorities: contract.authorities ?? {},
     productionAuthorityCount: contract.canonicalRuntime?.productionAuthorityCount ?? null,
     compositionSymbol: contract.canonicalRuntime?.composition ?? null,
@@ -733,7 +733,7 @@ async function buildPhaseAudit() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     phases,
     summary: {
       total: phases.length,
@@ -909,7 +909,7 @@ async function buildOrphans() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     vitestIncludeGlobs: includeGlobs,
     orphanTests,
     orphanModules,
@@ -1037,7 +1037,7 @@ async function buildGraphReconciliation(inventory, paths) {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     graphs,
     unreferenced,
     summary: {
@@ -1054,7 +1054,7 @@ async function buildGraphReconciliation(inventory, paths) {
 // ---------------------------------------------------------------------------
 async function buildDriftRegister(inventory, paths, matrix, authority, phases, orphans, graphs) {
   const findings = [];
-  const add = (finding) => findings.push({ ...finding, registeredAt: new Date().toISOString() });
+  const add = (finding) => findings.push({ ...finding, registeredAt: headCommit ?? null });
 
   for (const trace of paths.traces) {
     if (!trace.composesCanonicalRuntime) {
@@ -1201,7 +1201,7 @@ async function buildDriftRegister(inventory, paths, matrix, authority, phases, o
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: headCommit ?? null,
     findings,
     summary: {
       total: findings.length,
