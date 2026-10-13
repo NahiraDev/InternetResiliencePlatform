@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "73b61babb8625255c1d40a6644e5e2aed793db2b636e0c52e062b8832e560454",
+  "generatedAt": "b1bbc30f1927c927b9bc03c5d41844768a6ec6e2d5fc3b359a3d52b70ba5eeeb",
   "packages": [
     {
       "group": "apps",
@@ -887,7 +887,7 @@
     "nativeClients": 2,
     "packagesWithoutTests": 0,
     "workflows": 17,
-    "docs": 157,
+    "docs": 158,
     "phaseDocs": 45
   },
   "infrastructure": {
@@ -1025,6 +1025,7 @@
       "docs/architecture/runtime-adapter-model.md",
       "docs/architecture/security-boundaries.md",
       "docs/architecture/system-architecture.md",
+      "docs/audits/certification-evidence-register-2026-10-13.md",
       "docs/audits/control-plane-execution-baseline-2026-09-03.md",
       "docs/audits/documentation-audit-2026-08-23.md",
       "docs/audits/documentation-quality-standard.md",

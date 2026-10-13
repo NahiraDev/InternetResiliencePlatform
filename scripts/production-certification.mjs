@@ -39,17 +39,31 @@ const sourceContentHash = async () => {
       .filter((p) => p.length > 0)
       .sort();
     if (ls.length === 0) return undefined;
+    // Hash working-tree contents (not the index) in batches. One
+    // `git hash-object -- <paths>` subprocess per batch keeps this fast while
+    // preserving the per-file hashing of the original implementation: the
+    // fingerprint tracks unstaged working-tree edits, not just commits.
     const digest = createHash('sha256');
-    for (const rel of ls) {
-      const sha = (
-        await execFileAsync('git', ['hash-object', rel], {
+    const batch = 64;
+    for (let i = 0; i < ls.length; i += batch) {
+      const chunk = ls.slice(i, i + batch);
+      const out = (
+        await execFileAsync('git', ['hash-object', '--', ...chunk], {
           cwd: process.cwd(),
           maxBuffer: 64 * 1024 * 1024,
         })
       ).stdout
         .toString()
-        .trim();
-      digest.update(`${rel}\n${sha}\n`);
+        .split('\n')
+        .filter((h) => h.length > 0);
+      if (out.length !== chunk.length) {
+        throw new Error(
+          `git hash-object returned ${out.length} hashes for ${chunk.length} files`,
+        );
+      }
+      chunk.forEach((rel, idx) => {
+        digest.update(`${rel}\n${out[idx]}\n`);
+      });
     }
     return digest.digest('hex');
   } catch {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { createRequire } from 'node:module';
 
 const root = process.cwd();
 const ignored = new Set(['.git', 'node_modules', 'dist', '.turbo', 'coverage']);
@@ -180,8 +181,66 @@ for (const forbidden of ['package-lock.json', 'yarn.lock', 'bun.lockb']) {
     });
 }
 
+/*
+ * Content-derived fingerprint of the tracked source tree, used as the stable
+ * `generatedAt` value for this report so that a clean checkout stays clean
+ * after running the gate (mirrors the pattern in scripts/archaeology.mjs and
+ * scripts/production-certification.mjs).
+ *
+ * This report file itself is excluded so running the audit does not change the
+ * fingerprint, which would make every run non-idempotent (issue #18's pattern).
+ */
+const sourceContentHash = (() => {
+  try {
+    const { execFileSync } = createRequire(import.meta.url)('node:child_process');
+    const { createHash } = createRequire(import.meta.url)('node:crypto');
+    const ls = execFileSync(
+      'git',
+      [
+        'ls-files',
+        '--full-name',
+        '--',
+        '.',
+        ':!artifacts',
+        ':!docs/audits/repository-deep-audit.json',
+      ],
+      { cwd: root, maxBuffer: 64 * 1024 * 1024 },
+    )
+      .toString()
+      .split('\n')
+      .filter((p) => p.length > 0)
+      .sort();
+    if (ls.length === 0) return undefined;
+    // Hash working-tree contents in batches (mirrors the batched optimization
+    // applied to scripts/archaeology.mjs and scripts/production-certification.mjs).
+    const digest = createHash('sha256');
+    const batch = 64;
+    for (let i = 0; i < ls.length; i += batch) {
+      const chunk = ls.slice(i, i + batch);
+      const out = execFileSync('git', ['hash-object', '--', ...chunk], {
+        cwd: root,
+        maxBuffer: 64 * 1024 * 1024,
+      })
+        .toString()
+        .split('\n')
+        .filter((h) => h.length > 0);
+      if (out.length !== chunk.length) {
+        throw new Error(
+          `git hash-object returned ${out.length} hashes for ${chunk.length} files`,
+        );
+      }
+      chunk.forEach((rel, idx) => {
+        digest.update(`${rel}\n${out[idx]}\n`);
+      });
+    }
+    return digest.digest('hex');
+  } catch {
+    return undefined;
+  }
+})();
+
 const report = {
-  generatedAt: new Date().toISOString(),
+  generatedAt: sourceContentHash ?? new Date().toISOString(),
   workspaceCount: workspaces.length,
   workflowCount: workflowFiles.length,
   findings,
