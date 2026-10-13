@@ -1,8 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T01:55:15.202Z",
+  "sourceFingerprint": "73b61babb8625255c1d40a6644e5e2aed793db2b636e0c52e062b8832e560454",
   "verdict": "PENDING",
-  "commitSha": "unknown",
   "contractSha256": "c6d37a9e7e5995e980bc03aa58e0b71ba3e64bd580636106d16f880b08cf92a5",
   "checks": [
     {

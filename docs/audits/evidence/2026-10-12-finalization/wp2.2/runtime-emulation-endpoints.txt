@@ -1,0 +1,6 @@
+health 200
+live 200
+ready 200
+platform/status 200
+healthcheck rc=0
+exit rc=0

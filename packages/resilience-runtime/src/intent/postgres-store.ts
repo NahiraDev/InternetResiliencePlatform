@@ -151,6 +151,16 @@ export class PostgresIntentStore implements IntentStore {
       ssl: this.config.ssl,
       max: this.config.max ?? 10,
     });
+    // An idle pooled client that loses its connection (PostgreSQL restart,
+    // failover, backend termination) emits 'error' on the pool. Without a
+    // listener Node terminates the process on the unhandled 'error' event.
+    // The pool discards the broken client; queries keep rejecting until the
+    // database is reachable again, so callers still observe the outage.
+    (this.pool as InstanceType<typeof Pool>).on('error', (error: Error) => {
+      process.stderr.write(
+        `${JSON.stringify({ level: 'warn', msg: 'intent store idle client error', error: error.message })}\n`,
+      );
+    });
 
     // Run migration
     await (this.pool as InstanceType<typeof Pool>).query(MIGRATION_SQL);

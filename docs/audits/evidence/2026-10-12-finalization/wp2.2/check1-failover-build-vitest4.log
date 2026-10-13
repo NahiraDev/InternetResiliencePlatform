@@ -1,0 +1,4 @@
+$ tsc -p tsconfig.json
+src/index.ts(1,28): error TS2591: Cannot find name 'node:crypto'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/index.ts(2,29): error TS2591: Cannot find name 'node:perf_hooks'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+[ELIFECYCLE] Command failed with exit code 2.

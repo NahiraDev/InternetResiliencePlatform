@@ -1,0 +1,23 @@
+## dev tooling presence in pruned tree
+vitest store_dirs=2 root_link=no
+vite store_dirs=1 root_link=no
+esbuild store_dirs=1 root_link=no
+typescript store_dirs=1 root_link=no
+eslint store_dirs=1 root_link=no
+turbo store_dirs=1 root_link=no
+tinypool store_dirs=1 root_link=no
+vite-node store_dirs=1 root_link=no
+@vitest/coverage-v8 store_dirs=2 root_link=no
+husky store_dirs=1 root_link=no
+prettier store_dirs=1 root_link=no
+## prisma
+acorn conventional-commits-parser jiti prisma vite yaml 
+@prisma+config@6.19.3_magicast@0.3.5
+@prisma+debug@6.19.3
+@prisma+engines-version@7.1.1-3.c2990dca591cba766e3b7ef5d9e8a84796e47ab7
+@prisma+engines@6.19.3
+@prisma+fetch-engine@6.19.3
+@prisma+get-platform@6.19.3
+prisma@6.19.3_magicast@0.3.5_typescript@6.0.3
+node_modules/.pnpm/@prisma+engines@6.19.3/node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node
+node_modules/.pnpm/@prisma+engines@6.19.3/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x

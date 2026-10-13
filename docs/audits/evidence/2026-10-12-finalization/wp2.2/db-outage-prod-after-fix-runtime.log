@@ -1,0 +1,42 @@
+{"level":"info","msg":"configuration validated","environment":"production","apiHost":"0.0.0.0","apiPort":18080}
+{"level":"info","msg":"database readiness confirmed","attempt":1}
+{"level":"info","msg":"database connection established"}
+Prisma schema loaded from packages/database/prisma/schema.prisma
+Datasource "db": PostgreSQL database "irp", schema "public" at "127.0.0.1:5432"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20260714083800_phase_5_core`
+Applying migration `20260719000000_phase_6_network_intelligence`
+Applying migration `20260830230000_phase_59_notifications`
+Applying migration `20260930103000_phase_274_intent_ownership`
+Applying migration `20261004000000_phase_274_conflict_journal`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260714083800_phase_5_core/
+    └─ migration.sql
+  └─ 20260719000000_phase_6_network_intelligence/
+    └─ migration.sql
+  └─ 20260830230000_phase_59_notifications/
+    └─ migration.sql
+  └─ 20260930103000_phase_274_intent_ownership/
+    └─ migration.sql
+  └─ 20261004000000_phase_274_conflict_journal/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+{"level":"info","msg":"database migrations verified"}
+{"level":"info","msg":"OpenTelemetry initialized","enabled":true,"traceExporterConfigured":false,"metricExporterConfigured":true,"serviceName":"irp-api"}
+{"level":"info","msg":"Prometheus bridge initialized","enabled":true,"endpoint":"/api/v1/metrics"}
+{"level":"info","msg":"HTTP server started","host":"0.0.0.0","port":18080}
+{"level":"info","msg":"application ready"}
+{"timestamp":"2026-10-12T10:33:20.682Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"f2776797-645f-4670-a23d-75f600647fa2","component":"http","operation":"GET /api/v1/ready","duration":18,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"f2776797-645f-4670-a23d-75f600647fa2","component":"http","operation":"GET /api/v1/ready","duration":18,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"timestamp":"2026-10-12T10:33:20.688Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"7e506351-a725-4a36-b999-b4a01d3f69e0","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"7e506351-a725-4a36-b999-b4a01d3f69e0","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"level":"warn","msg":"database idle client error","error":"terminating connection due to administrator command"}
+{"timestamp":"2026-10-12T10:33:23.984Z","level":"warn","message":"database readiness check failed","service":"irp-api","environment":"production","component":"database","operation":"readiness","error":{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:5432","category":"database"},"context":{"service":"irp-api","environment":"production","component":"database","operation":"readiness","error":{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:5432","category":"database"}}}
+{"timestamp":"2026-10-12T10:33:23.985Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"e4b9b619-d29d-497c-a052-b87958418f36","component":"http","operation":"GET /api/v1/ready","duration":2,"status":503,"context":{"service":"irp-api","environment":"production","requestId":"e4b9b619-d29d-497c-a052-b87958418f36","component":"http","operation":"GET /api/v1/ready","duration":2,"status":503,"method":"GET","route":"/api/v1/ready"}}
+{"timestamp":"2026-10-12T10:33:29.498Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"e68fc339-2795-4ecb-aa92-814f2a2e76a7","component":"http","operation":"GET /api/v1/ready","duration":10,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"e68fc339-2795-4ecb-aa92-814f2a2e76a7","component":"http","operation":"GET /api/v1/ready","duration":10,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"level":"info","msg":"shutdown requested","signal":"SIGTERM"}
+{"level":"info","msg":"shutdown complete"}

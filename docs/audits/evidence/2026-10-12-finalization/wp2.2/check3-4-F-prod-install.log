@@ -1,0 +1,22 @@
+Scope: all 44 workspace projects
+✓ Lockfile passes supply-chain policies (verified 5m ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +225
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /home/user/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 225, reused 225, downloaded 0, added 225, done
+.../node_modules/protobufjs postinstall$ node scripts/postinstall
+.../node_modules/protobufjs postinstall: Done
+
+dependencies:
++ pg 8.23.0
++ prisma 6.19.3
+
+devDependencies: skipped
+
+. prepare$ node .husky/install.mjs
+. prepare: Done
+Done in 1.3s using pnpm v11.21.0

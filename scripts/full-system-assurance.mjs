@@ -328,14 +328,12 @@ const report = {
 };
 report.reportSha256 = hash(JSON.stringify({ ...report, reportSha256: null }));
 await mkdir(outputDir, { recursive: true });
-await writeFile(
-  join(outputDir, 'system-matrix.json'),
-  `${JSON.stringify(report, null, 2)}\n`,
-  'utf8',
-);
+// The manifest must hash the exact published bytes, not compact JSON.
+const reportBytes = `${JSON.stringify(report, null, 2)}\n`;
+await writeFile(join(outputDir, 'system-matrix.json'), reportBytes, 'utf8');
 await writeFile(
   join(outputDir, 'system-matrix.sha256'),
-  `${hash(JSON.stringify(report))}  system-matrix.json\n`,
+  `${hash(reportBytes)}  system-matrix.json\n`,
   'utf8',
 );
 console.log(`FULL SYSTEM ASSURANCE MATRIX: ${report.verdict}`);

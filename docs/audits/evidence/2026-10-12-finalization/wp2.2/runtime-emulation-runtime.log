@@ -1,0 +1,53 @@
+{"level":"info","msg":"configuration validated","environment":"production","apiHost":"0.0.0.0","apiPort":18080}
+{"level":"info","msg":"database readiness confirmed","attempt":1}
+{"level":"info","msg":"database connection established"}
+Prisma schema loaded from packages/database/prisma/schema.prisma
+Datasource "db": PostgreSQL database "irp", schema "public" at "127.0.0.1:5432"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20260714083800_phase_5_core`
+Applying migration `20260719000000_phase_6_network_intelligence`
+Applying migration `20260830230000_phase_59_notifications`
+Applying migration `20260930103000_phase_274_intent_ownership`
+Applying migration `20261004000000_phase_274_conflict_journal`
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.3 -> 8.0.0-rc.22                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260714083800_phase_5_core/
+    └─ migration.sql
+  └─ 20260719000000_phase_6_network_intelligence/
+    └─ migration.sql
+  └─ 20260830230000_phase_59_notifications/
+    └─ migration.sql
+  └─ 20260930103000_phase_274_intent_ownership/
+    └─ migration.sql
+  └─ 20261004000000_phase_274_conflict_journal/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+{"level":"info","msg":"database migrations verified"}
+{"level":"info","msg":"OpenTelemetry initialized","enabled":true,"traceExporterConfigured":false,"metricExporterConfigured":true,"serviceName":"irp-api"}
+{"level":"info","msg":"Prometheus bridge initialized","enabled":true,"endpoint":"/api/v1/metrics"}
+{"level":"info","msg":"HTTP server started","host":"0.0.0.0","port":18080}
+{"level":"info","msg":"application ready"}
+{"timestamp":"2026-10-12T10:10:47.958Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"9af9c092-fbd4-4789-97fe-4a54483988f8","component":"http","operation":"GET /api/v1/ready","duration":21,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"9af9c092-fbd4-4789-97fe-4a54483988f8","component":"http","operation":"GET /api/v1/ready","duration":21,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"timestamp":"2026-10-12T10:10:47.966Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"30ef2cf0-d3e2-4a21-abbf-238465c87119","component":"http","operation":"GET /api/v1/health","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"30ef2cf0-d3e2-4a21-abbf-238465c87119","component":"http","operation":"GET /api/v1/health","duration":1,"status":200,"method":"GET","route":"/api/v1/health"}}
+{"timestamp":"2026-10-12T10:10:47.972Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"7491d21b-744b-47e2-9d89-27b8e3977f0f","component":"http","operation":"GET /api/v1/live","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"7491d21b-744b-47e2-9d89-27b8e3977f0f","component":"http","operation":"GET /api/v1/live","duration":1,"status":200,"method":"GET","route":"/api/v1/live"}}
+{"timestamp":"2026-10-12T10:10:47.979Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"8cd1664a-1620-4a31-a9a5-80085a6e2e67","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"8cd1664a-1620-4a31-a9a5-80085a6e2e67","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"timestamp":"2026-10-12T10:10:48.212Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"a6b8866d-6ecb-4e69-9fca-697b587e3eec","component":"http","operation":"GET /api/v1/platform/status","duration":227,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"a6b8866d-6ecb-4e69-9fca-697b587e3eec","component":"http","operation":"GET /api/v1/platform/status","duration":227,"status":200,"method":"GET","route":"/api/v1/platform/status"}}
+{"timestamp":"2026-10-12T10:10:48.218Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"15d63a0b-b3d6-4e48-9020-a9ad729b7f5b","component":"http","operation":"GET /api/v1/platform/status","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"15d63a0b-b3d6-4e48-9020-a9ad729b7f5b","component":"http","operation":"GET /api/v1/platform/status","duration":1,"status":200,"method":"GET","route":"/api/v1/platform/status"}}
+{"timestamp":"2026-10-12T10:10:48.274Z","level":"info","message":"request completed","service":"irp-api","environment":"production","requestId":"efece698-d928-4f0d-a2ab-25b0f158319c","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"context":{"service":"irp-api","environment":"production","requestId":"efece698-d928-4f0d-a2ab-25b0f158319c","component":"http","operation":"GET /api/v1/ready","duration":1,"status":200,"method":"GET","route":"/api/v1/ready"}}
+{"level":"info","msg":"shutdown requested","signal":"SIGTERM"}
+{"level":"info","msg":"shutdown complete"}

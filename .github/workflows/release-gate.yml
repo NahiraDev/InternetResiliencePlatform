@@ -45,7 +45,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 15
     steps:
       - name: Checkout current main
         uses: actions/checkout@v7
@@ -66,6 +66,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Test release gate fail-closed behavior
+        run: node --test scripts/release-gate.test.mjs
+
       - name: Verify release commit and required workflow results
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,10 +87,7 @@ jobs:
             exit 1
           }
 
-          # Release scope for today's first public release:
-          # Linux + macOS + Windows + Android + iOS source/developer bundle.
-          # The iOS full-client/network-integration gates remain active separately
-          # but are explicitly deferred and must not manufacture a false release-green.
+          # Every mandatory platform and assurance workflow must pass.
           workflows=(
             "ci.yml"
             "system-assurance.yml"
@@ -97,38 +97,36 @@ jobs:
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
+            "ios-client.yml"
+            "ios-network-integration.yml"
             "macos-client.yml"
             "windows-client.yml"
           )
 
-          deadline=$((SECONDS + 5400))
+          # Evaluate a snapshot instead of polling: the public soak takes longer
+          # than the old 90-minute deadline. Each prerequisite's completion
+          # triggers a fresh evaluation through workflow_run above.
           for workflow in "${workflows[@]}"; do
             echo "=== verifying $workflow for $HEAD_SHA ==="
-            while true; do
-              runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
-              completed_count="$(jq '[.workflow_runs[] | select(.status == "completed")] | length' <<<"$runs")"
-              success_count="$(jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")"
-              failed_runs="$(jq -r '[.workflow_runs[] | select(.status == "completed" and .conclusion != "success")] | map(.conclusion) | join(",")' <<<"$runs")"
+            runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
+            completed_count="$(jq '[.workflow_runs[] | select(.status == "completed")] | length' <<<"$runs")"
+            success_count="$(jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")"
+            failed_runs="$(jq -r '[.workflow_runs[] | select(.status == "completed" and .conclusion != "success")] | map(.conclusion) | join(",")' <<<"$runs")"
 
-              echo "workflow=$workflow completed=$completed_count successful=$success_count failed=$failed_runs"
+            echo "workflow=$workflow completed=$completed_count successful=$success_count failed=$failed_runs"
 
-              if [ "$success_count" -ge 1 ]; then
-                echo "PASS $workflow"
-                break
-              fi
+            if [ "$success_count" -ge 1 ]; then
+              echo "PASS $workflow"
+              continue
+            fi
 
-              if [ -n "$failed_runs" ]; then
-                echo "FAIL $workflow: completed run is not successful ($failed_runs)" >&2
-                exit 1
-              fi
+            if [ -n "$failed_runs" ]; then
+              echo "FAIL $workflow: completed run is not successful ($failed_runs)" >&2
+              exit 1
+            fi
 
-              if [ "$SECONDS" -ge "$deadline" ]; then
-                echo "FAIL $workflow: no successful completed run for $HEAD_SHA before timeout" >&2
-                exit 1
-              fi
-
-              sleep 30
-            done
+            echo "BLOCKED $workflow: no successful completed push run for $HEAD_SHA; reevaluate after prerequisite completion" >&2
+            exit 1
           done
 
           echo
