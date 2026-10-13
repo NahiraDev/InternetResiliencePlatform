@@ -180,6 +180,12 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
   });
 
   it('aborts deterministically between cycles (not during a cycle)', async () => {
+    // Synchronization: resolves as soon as the first runtime cycle has actually
+    // settled, so the test aborts without guessing a wall-clock delay.
+    let resolveFirstCycle: () => void = () => {};
+    const firstCycleCompleted = new Promise<void>((resolve) => {
+      resolveFirstCycle = resolve;
+    });
     // Use a minimal DecisionRecord so the loop cannot terminate early via
     // stopWhenHealthy/blocked/failed, forcing it to reach the inter-cycle
     // sleep where the abort is observed. This mirrors the factory used by
@@ -253,7 +259,13 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
         explanation: [],
       }),
     };
-    const loop = new BoundedClosedLoopController(nonTerminalRuntime);
+    const loop = new BoundedClosedLoopController({
+      cycle: async () => {
+        const record = await nonTerminalRuntime.cycle();
+        resolveFirstCycle();
+        return record;
+      },
+    });
     const abortController = new AbortController();
     const promise = loop.run({
       maxCycles: 3,
@@ -261,9 +273,10 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
       stopWhenHealthy: false,
       signal: abortController.signal,
     });
-    // Wait until the first cycle has completed and the inter-cycle sleep is
-    // in flight, then abort. This exercises the sleep-time abort path.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Abort only after the first cycle has settled, so the abort is always
+    // observed between cycles (cycle 1 completes, then the abort stops cycle 2).
+    // No wall-clock delay, so it cannot be flaky under load or slow CI.
+    await firstCycleCompleted;
     abortController.abort();
     const result = await promise;
     // Abort fires between cycle 1 and cycle 2, so exactly one cycle completed.
