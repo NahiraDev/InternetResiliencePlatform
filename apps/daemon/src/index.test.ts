@@ -121,11 +121,19 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
     expect(() => host.getClosedLoopOptions()).toThrow(RangeError);
   });
 
-  it("returns the documented '0' / '1' values verbatim for IRP_LOOP_STOP_WHEN_HEALTHY", () => {
+  it("returns the documented '0' value verbatim for IRP_LOOP_STOP_WHEN_HEALTHY", () => {
     process.env.IRP_LOOP_STOP_WHEN_HEALTHY = '0';
     const host = createRuntimeDaemonHost();
     const options = host.getClosedLoopOptions();
     expect(options.stopWhenHealthy).toBe(false);
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("returns the documented '1' value verbatim for IRP_LOOP_STOP_WHEN_HEALTHY", () => {
+    process.env.IRP_LOOP_STOP_WHEN_HEALTHY = '1';
+    const host = createRuntimeDaemonHost();
+    const options = host.getClosedLoopOptions();
+    expect(options.stopWhenHealthy).toBe(true);
     expect(options.signal).toBeInstanceOf(AbortSignal);
   });
 
