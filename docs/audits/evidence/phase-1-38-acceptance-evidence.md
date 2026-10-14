@@ -287,3 +287,149 @@ python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py
 ```
 
 **Note:** After updating `phase-history-evidence-matrix.md` to `mapped` for the above phases, re-run the generator. Justifications for phases 1–25 should reflect the presence of this register and mapped history state; dispositions remain PARTIAL until fresh per-phase CI evidence is attached and the probe confirms complete acceptance criteria satisfaction.
+
+---
+
+## Batch C — Learning / Observability / Hardening (Phases 26–38)
+
+### Phase 26 — authenticated controlled API
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/api`, `@irp/auth` |
+| Paths | `apps/api/src/`, `packages/auth/src/` |
+| Tests | `@irp/api` 70 passed; `@irp/auth` 14 passed |
+| Recorded run | `docs/audits/evidence/2026-10-12-finalization/test-counts.tsv` |
+| History state | `mapped` |
+
+### Phase 27 — production runtime hardening
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/security`, `@irp/daemon` |
+| Paths | `packages/security/src/`, `packages/daemon/src/` |
+| Tests | `@irp/security` 14; `@irp/daemon` 13 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 28 — historical observations
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/historical-analysis`, `@irp/database` |
+| Paths | `packages/historical-analysis/src/`, `packages/database/src/` |
+| Tests | `@irp/historical-analysis` 10; `@irp/database` 5 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 29 — temporal degradation baselines
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/metrics`, `@irp/historical-analysis` |
+| Paths | `packages/metrics/src/`, `packages/historical-analysis/src/` |
+| Tests | Metrics 8; historical-analysis 10 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 30 — bounded predictive engine
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/internet-intelligence-agent`, `@irp/auto-optimization` |
+| Paths | `packages/internet-intelligence-agent/src/`, `packages/auto-optimization/src/` |
+| Tests | `@irp/internet-intelligence-agent` 8; `@irp/auto-optimization` 5 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 31 — policy-safe auto optimization
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/auto-optimization`, `@irp/resilience-runtime` |
+| Paths | `packages/auto-optimization/src/`, `packages/resilience-runtime/src/` |
+| Tests | Auto-optimization 5; resilience-runtime 661 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 32 — evidence-backed explainability and audit
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/resilience-runtime`, `@irp/telemetry` |
+| Paths | `packages/resilience-runtime/src/`, `packages/telemetry/src/` |
+| Tests | Resilience-runtime and telemetry suites |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 33 — provider/path benchmarking
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/network-intelligence`, `@irp/metrics` |
+| Paths | `packages/network-intelligence/src/`, `packages/metrics/src/` |
+| Tests | Network-intelligence 41; metrics 8 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 34 — canonical telemetry model
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/telemetry` |
+| Paths | `packages/telemetry/src/` |
+| Tests | `@irp/telemetry` 25 passed |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 35 — OpenTelemetry export contracts
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/telemetry` |
+| Paths | `packages/telemetry/src/` |
+| Tests | Telemetry package tests cover export contracts |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 36 — OpenTelemetry runtime
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/telemetry`, `@irp/daemon` |
+| Paths | `packages/telemetry/src/`, `packages/daemon/src/` |
+| Tests | Telemetry and daemon suites |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 37 — Prometheus exposition and cardinality controls
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/metrics`, `@irp/telemetry` |
+| Paths | `packages/metrics/src/`, `packages/telemetry/src/` |
+| Tests | Metrics and telemetry suites |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+### Phase 38 — operational diagnostics
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/linux-client`, `@irp/daemon` |
+| Paths | `packages/linux-client/src/`, `packages/daemon/src/` |
+| Tests | `@irp/linux-client` 53; `@irp/daemon` 13 |
+| Recorded run | Same TSV |
+| History state | `mapped` |
+
+---
+
+## Remaining work
+
+Phases 1–38 evidence register is now complete for mapping. Dispositions remain PARTIAL until fresh per-phase CI evidence is attached and acceptance criteria are fully verified at HEAD.
+
+## Regeneration
+
+```bash
+python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py
+```

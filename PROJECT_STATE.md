@@ -46,3 +46,5 @@ The Phase 71 gate is limited to the release/distribution contract defined by `do
 ## Product objective
 
 IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
+
+- **Issue #12 progress (2026-10-14):** Acceptance evidence register extended through Phases 1–38 (branches issue-12-extend-evidence-register-phases-1-15 / -16-25 and this continuation). History matrix set to mapped for all 1–38. Dispositions remain PARTIAL pending fresh CI evidence. No COMPLETE claimed from documentation alone.
