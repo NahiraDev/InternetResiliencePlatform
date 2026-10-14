@@ -175,9 +175,15 @@ for n in range(1, 151):
     title = titles.get(n, '(title not found)')
     if n <= 38:
         disp = 'PARTIAL'
-        why = ('Implementation lives in the workspace packages and their tests pass, but the repository\'s own '
-               'phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: '
-               'no per-phase acceptance record maps commits and tests to this phase contract.')
+        if n <= 25:
+            why = ('Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps '
+                   'packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records '
+                   'it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL '
+                   'and full acceptance-criteria verification beyond the historical reconstruction.')
+        else:
+            why = ('Implementation lives in the workspace packages and their tests pass, but the repository\'s own '
+                   'phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: '
+                   'no per-phase acceptance record maps commits and tests to this phase contract.')
     elif n in EXTERNAL:
         disp, why = 'BLOCKED', EXTERNAL[n]
     elif n == 71:
