@@ -59,16 +59,16 @@ The table below preserves the 70-phase historical/v1 product contract. Current p
 | 13 | Ranked path candidates with apply/verify/rollback | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
 | 14 | DNS anomaly detection and explainability | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
 | 15 | DNS/TCP/TLS/HTTP/path/MTU diagnostics | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
-|            16 | Bounded failover, circuit breakers and rollback            | `historical-evidence`                            | pending reconstruction               |
-|            17 | Service-specific resilience policies                       | `historical-evidence`                            | pending reconstruction               |
-|            18 | Context-aware workspace policies                           | `historical-evidence`                            | pending reconstruction               |
-|            19 | Stable plugin SDK                                          | `historical-evidence`                            | pending reconstruction               |
-|            20 | Plugin discovery, signing and compatibility                | `historical-evidence`                            | pending reconstruction               |
-|            21 | Supported connectivity integrations                        | `historical-evidence`                            | pending reconstruction               |
-|            22 | Autonomous local access agent                              | `historical-evidence`                            | pending reconstruction               |
-|            23 | Continuous route scoring and anti-flapping                 | `historical-evidence`                            | pending reconstruction               |
-|            24 | Destination classification                                 | `historical-evidence`                            | pending reconstruction               |
-|            25 | Service-level reachability verification                    | `historical-evidence`                            | pending reconstruction               |
+|            16 | Bounded failover, circuit breakers and rollback            | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            17 | Service-specific resilience policies                       | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            18 | Context-aware workspace policies                           | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            19 | Stable plugin SDK                                          | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            20 | Plugin discovery, signing and compatibility                | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            21 | Supported connectivity integrations                        | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            22 | Autonomous local access agent                              | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            23 | Continuous route scoring and anti-flapping                 | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            24 | Destination classification                                 | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            25 | Service-level reachability verification                    | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
 |            26 | Authenticated controlled API                               | `historical-evidence`                            | pending reconstruction               |
 |            27 | Production runtime hardening                               | `historical-evidence`                            | pending reconstruction               |
 |            28 | Historical observations                                    | `historical-evidence`                            | pending reconstruction               |

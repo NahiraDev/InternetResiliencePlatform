@@ -175,7 +175,7 @@ for n in range(1, 151):
     title = titles.get(n, '(title not found)')
     if n <= 38:
         disp = 'PARTIAL'
-        if n <= 15:
+        if n <= 25:
             why = ('Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps '
                    'packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records '
                    'it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL '

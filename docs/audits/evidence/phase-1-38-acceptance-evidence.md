@@ -177,4 +177,113 @@
 python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py
 ```
 
-**Note:** After updating `phase-history-evidence-matrix.md` to `mapped` for the above phases, re-run the generator. Justifications for phases 1–15 should reflect the presence of this register and mapped history state; dispositions remain PARTIAL until fresh per-phase CI evidence is attached and the probe confirms complete acceptance criteria satisfaction.
+**Note:** After updating `phase-history-evidence-matrix.md` to `mapped` for the above phases, re-run the generator. Justifications for phases 1–25 should reflect the presence of this register and mapped history state; dispositions remain PARTIAL until fresh per-phase CI evidence is attached and the probe confirms complete acceptance criteria satisfaction.
+
+## Batch C — Failover, policies, extensibility and access (Phases 16–25)
+
+### Phase 16 — bounded failover, circuit breakers and rollback
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/failover` |
+| Paths | `packages/failover/src/index.ts` |
+| Tests | `@irp/failover` 10 passed |
+| Recorded run | `docs/audits/evidence/2026-10-12-finalization/test-counts.tsv` |
+| History state | `mapped` |
+
+### Phase 17 — service-specific resilience policies
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/resilience-runtime`, `@irp/failover` |
+| Paths | `packages/resilience-runtime/src/`, `packages/failover/src/` |
+| Tests | Resilience-runtime and failover suites recorded as passing |
+| History state | `mapped` (preliminary) |
+
+### Phase 18 — context-aware workspace policies
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/resilience-runtime`, `@irp/kernel` |
+| Paths | `packages/resilience-runtime/src/policy/`, `packages/kernel/src/` |
+| Tests | Package tests in recorded TSV |
+| History state | `mapped` (preliminary) |
+
+### Phase 19 — stable plugin SDK
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/plugin-sdk` |
+| Paths | `packages/plugin-sdk/src/` |
+| Tests | Plugin-sdk package tests (if present in TSV) |
+| History state | `mapped` |
+
+### Phase 20 — plugin discovery, signing and compatibility
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/plugin-registry`, `@irp/plugin-loader`, `@irp/plugin-sandbox` |
+| Paths | `packages/plugin-registry/src/`, `packages/plugin-loader/src/`, `packages/plugin-sandbox/src/` |
+| Tests | Plugin package suites recorded as passing |
+| History state | `mapped` |
+
+### Phase 21 — supported connectivity integrations
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/connectivity`, `@irp/tunnel`, `@irp/gateway-registry` |
+| Paths | `packages/connectivity/src/`, `packages/tunnel/src/`, `packages/gateway-registry/src/` |
+| Tests | Connectivity 13; tunnel and gateway-registry suites |
+| History state | `mapped` |
+
+### Phase 22 — autonomous local access agent
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/daemon`, `@irp/linux-client` |
+| Paths | `packages/daemon/src/`, `packages/linux-client/src/` |
+| Tests | `@irp/daemon` 13; `@irp/linux-client` 53 |
+| History state | `mapped` |
+
+### Phase 23 — continuous route scoring and anti-flapping
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/routing`, `@irp/network-intelligence` |
+| Paths | `packages/routing/src/`, `packages/network-intelligence/src/` |
+| Tests | Routing and network-intelligence suites |
+| History state | `mapped` |
+
+### Phase 24 — destination classification
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/network-intelligence` |
+| Paths | `packages/network-intelligence/src/` |
+| Tests | `@irp/network-intelligence` 41 passed |
+| History state | `mapped` |
+
+### Phase 25 — service-level reachability verification
+
+| Field | Evidence |
+|-------|----------|
+| Packages | `@irp/network-intelligence`, `@irp/metrics` |
+| Paths | `packages/network-intelligence/src/`, `packages/metrics/src/` |
+| Tests | Network-intelligence and metrics suites |
+| History state | `mapped` |
+
+---
+
+## Remaining batches (Phases 26–38)
+
+| Track | Phases | Status |
+|-------|--------|--------|
+| API / hardening / learning / observability | 26–38 | pending |
+
+## Regeneration
+
+```bash
+python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py
+```
+
+**Note:** After updating `phase-history-evidence-matrix.md` to `mapped` for the above phases, re-run the generator. Justifications for phases 1–25 should reflect the presence of this register and mapped history state; dispositions remain PARTIAL until fresh per-phase CI evidence is attached and the probe confirms complete acceptance criteria satisfaction.

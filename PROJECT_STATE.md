@@ -6,7 +6,7 @@
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
 - **Current main HEAD reviewed this run:** `b25d02bcc877ed6d2ccdeb3f8f347fae55e8cbe3` (docs(audits): regenerate phase matrix after Phase 79–83 contracts (issue #13)).
-- **Issue #12 progress (this run):** Extended Phase 1–38 acceptance evidence register to cover Phases 1–15 with package/path/test anchors; updated phase-history-evidence-matrix.md to `mapped` for those phases; regenerated phase-1-150-status-matrix.md with updated justifications. Dispositions remain PARTIAL. No COMPLETE claimed from documentation alone.
+- **Issue #12 progress (this run):** Extended Phase 1–38 acceptance evidence register to cover Phases 1–25 with package/path/test anchors; updated phase-history-evidence-matrix.md to `mapped` for those phases; regenerated phase-1-150-status-matrix.md with updated justifications. Dispositions remain PARTIAL. No COMPLETE claimed from documentation alone. Remaining: Phases 26–38 reconstruction and fresh per-phase CI evidence.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
