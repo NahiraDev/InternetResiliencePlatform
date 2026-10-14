@@ -5,11 +5,11 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `decd9211406e330a1efd0e086beb29820ec210b7` (Merge PR #21 fix/ci-release-gate-green).
+- **Current main HEAD reviewed this run:** `01cf1282cd89d9c7e2ba162b14a003d4b3e20251` (Merge PR #22 docs(phases): add Phase 83 acceptance contract (issue #13)).
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and mapped to existing packages/tests on branch `issue-13-phase-79-83-acceptance-contracts`. Disposition remains PARTIAL; COMPLETE is not claimed from documentation alone. Matrix updates require evidence regeneration.
+- **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and merged (PR #22). Phase matrix regenerated on current HEAD to reflect contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1). Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
 - **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` remains architectural reference material for Phases 72–150. Phase 79–83 contract definition is authorized by issue #13 for existing capability mapping only. Phases 84–150 remain unauthorized for implementation until issue #14 contracts and explicit PROJECT_STATE authorization exist.
