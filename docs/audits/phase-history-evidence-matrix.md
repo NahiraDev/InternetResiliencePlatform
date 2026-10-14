@@ -44,21 +44,21 @@ The table below preserves the 70-phase historical/v1 product contract. Current p
 | Current phase | Product contract                                           | Current evidence state                           | Canonical record                     |
 | ------------: | ---------------------------------------------------------- | ------------------------------------------------ | ------------------------------------ |
 |            00 | Reproducible bootstrap and repository baseline             | `recorded`                                       | `docs/phases/phase-00.md`            |
-|            01 | Core infrastructure and lifecycle/config/logging contracts | `historical-evidence`                            | pending reconstruction               |
-|            02 | Quality, type, lint, test and validation baseline          | `historical-evidence`                            | pending reconstruction               |
-|            03 | Reproducible CI/CD verification and release pipeline       | `historical-evidence`                            | pending reconstruction               |
-|            04 | Architecture boundaries and module contracts               | `historical-evidence`                            | pending reconstruction               |
-|            05 | Bounded shared scheduling/retry/cache/concurrency services | `historical-evidence`                            | pending reconstruction               |
-|            06 | Portable network primitives                                | `historical-evidence`                            | pending reconstruction               |
-|            07 | Canonical bounded network measurements                     | `historical-evidence`                            | pending reconstruction               |
-|            08 | Health-aware DNS selection and fallback                    | `historical-evidence`                            | pending reconstruction               |
-|            09 | Multi-source connectivity classification                   | `historical-evidence`                            | pending reconstruction               |
-|            10 | Destination-aware route representation                     | `historical-evidence`                            | pending reconstruction               |
-|            11 | Declarative policy and safety constraints                  | `historical-evidence`                            | pending reconstruction               |
-|            12 | Connectivity provider orchestration and recovery           | `historical-evidence`                            | pending reconstruction               |
-|            13 | Ranked path candidates with apply/verify/rollback          | `historical-evidence`                            | pending reconstruction               |
-|            14 | DNS anomaly detection and explainability                   | `historical-evidence`                            | pending reconstruction               |
-|            15 | DNS/TCP/TLS/HTTP/path/MTU diagnostics                      | `historical-evidence`                            | pending reconstruction               |
+| 01 | Core infrastructure and lifecycle/config/logging contracts | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 02 | Quality, type, lint, test and validation baseline | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 03 | Reproducible CI/CD verification and release pipeline | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 04 | Architecture boundaries and module contracts | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 05 | Bounded shared scheduling/retry/cache/concurrency services | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 06 | Portable network primitives | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 07 | Canonical bounded network measurements | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 08 | Health-aware DNS selection and fallback | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 09 | Multi-source connectivity classification | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 10 | Destination-aware route representation | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 11 | Declarative policy and safety constraints | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 12 | Connectivity provider orchestration and recovery | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 13 | Ranked path candidates with apply/verify/rollback | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 14 | DNS anomaly detection and explainability | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
+| 15 | DNS/TCP/TLS/HTTP/path/MTU diagnostics | `mapped` | `docs/audits/evidence/phase-1-38-acceptance-evidence.md` |  |
 |            16 | Bounded failover, circuit breakers and rollback            | `historical-evidence`                            | pending reconstruction               |
 |            17 | Service-specific resilience policies                       | `historical-evidence`                            | pending reconstruction               |
 |            18 | Context-aware workspace policies                           | `historical-evidence`                            | pending reconstruction               |

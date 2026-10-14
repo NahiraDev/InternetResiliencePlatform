@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "01cf1282cd89d9c7e2ba162b14a003d4b3e20251",
+  "sourceSha": "b25d02bcc877ed6d2ccdeb3f8f347fae55e8cbe3",
   "summary": {
     "PARTIAL": 54,
     "COMPLETE": 26,
@@ -12,7 +12,7 @@
       "phase": 1,
       "title": "core infrastructure and lifecycle/config/logging contracts",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -21,7 +21,7 @@
       "phase": 2,
       "title": "quality, type, lint, test and validation baseline",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -30,7 +30,7 @@
       "phase": 3,
       "title": "reproducible CI/CD verification and release pipeline",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -39,7 +39,7 @@
       "phase": 4,
       "title": "architecture boundaries and module contracts",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -48,7 +48,7 @@
       "phase": 5,
       "title": "bounded shared scheduling/retry/cache/concurrency services",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -57,7 +57,7 @@
       "phase": 6,
       "title": "portable network primitives",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -66,7 +66,7 @@
       "phase": 7,
       "title": "canonical bounded network measurements",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -75,7 +75,7 @@
       "phase": 8,
       "title": "health-aware DNS selection and fallback",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -84,7 +84,7 @@
       "phase": 9,
       "title": "multi-source connectivity classification",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -93,7 +93,7 @@
       "phase": 10,
       "title": "destination-aware route representation",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -102,7 +102,7 @@
       "phase": 11,
       "title": "declarative policy and safety constraints",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -111,7 +111,7 @@
       "phase": 12,
       "title": "connectivity provider orchestration and recovery",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -120,7 +120,7 @@
       "phase": 13,
       "title": "ranked path candidates with apply/verify/rollback",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -129,7 +129,7 @@
       "phase": 14,
       "title": "DNS anomaly detection and explainability",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
@@ -138,7 +138,7 @@
       "phase": 15,
       "title": "DNS/TCP/TLS/HTTP/path/MTU diagnostics",
       "disposition": "PARTIAL",
-      "justification": "Implementation lives in the workspace packages and their tests pass, but the repository's own phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: no per-phase acceptance record maps commits and tests to this phase contract.",
+      "justification": "Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction.",
       "probe": {
         "doc": null
       }
