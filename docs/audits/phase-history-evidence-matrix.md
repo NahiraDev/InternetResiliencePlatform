@@ -69,19 +69,19 @@ The table below preserves the 70-phase historical/v1 product contract. Current p
 |            23 | Continuous route scoring and anti-flapping                 | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
 |            24 | Destination classification                                 | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
 |            25 | Service-level reachability verification                    | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
-|            26 | Authenticated controlled API                               | `historical-evidence`                            | pending reconstruction               |
-|            27 | Production runtime hardening                               | `historical-evidence`                            | pending reconstruction               |
-|            28 | Historical observations                                    | `historical-evidence`                            | pending reconstruction               |
-|            29 | Temporal degradation baselines                             | `historical-evidence`                            | pending reconstruction               |
-|            30 | Bounded predictive engine                                  | `historical-evidence`                            | pending reconstruction               |
-|            31 | Policy-safe auto optimization                              | `historical-evidence`                            | pending reconstruction               |
-|            32 | Evidence-backed explainability and audit                   | `historical-evidence`                            | pending reconstruction               |
-|            33 | Provider/path benchmarking                                 | `historical-evidence`                            | pending reconstruction               |
-|            34 | Canonical telemetry model                                  | `historical-evidence`                            | pending reconstruction               |
-|            35 | OpenTelemetry export contracts                             | `historical-evidence`                            | pending reconstruction               |
-|            36 | OpenTelemetry runtime                                      | `historical-evidence`                            | pending reconstruction               |
-|            37 | Prometheus exposition and cardinality controls             | `historical-evidence`                            | pending reconstruction               |
-|            38 | Operational diagnostics                                    | `historical-evidence`                            | pending reconstruction               |
+|            26 | Authenticated controlled API                               | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            27 | Production runtime hardening                               | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            28 | Historical observations                                    | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            29 | Temporal degradation baselines                             | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            30 | Bounded predictive engine                                  | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            31 | Policy-safe auto optimization                              | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            32 | Evidence-backed explainability and audit                   | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            33 | Provider/path benchmarking                                 | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            34 | Canonical telemetry model                                  | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
+|            35 | OpenTelemetry export contracts                             | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            36 | OpenTelemetry runtime                                      | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            37 | Prometheus exposition and cardinality controls             | `mapped`                                         | docs/audits/evidence/phase-1-38-acceptance-evidence.md |
+|            38 | Operational diagnostics                                    | `mapped`                            | docs/audits/evidence/phase-1-38-acceptance-evidence.md               |
 |            39 | Device identity and scoped sessions                        | `recorded` / verification pending                | `docs/phases/phase-39.md`            |
 |            40 | Controlled-fault resilience validation                     | `recorded` / verification pending                | `docs/phases/phase-40.md` + evidence |
 |            41 | Independent regional evidence                              | `recorded` / external validation pending         | `docs/phases/phase-41.md`            |
