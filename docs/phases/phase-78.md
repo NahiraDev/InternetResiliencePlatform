@@ -78,7 +78,7 @@ Phase 78 is not complete from source presence alone. Completion requires CI evid
 `apps/daemon/src/index.ts` exposes `BoundedClosedLoopController` as a production repetition authority on the canonical `ResilienceRuntime`. The wiring:
 
 - Environment-configured bounds: `IRP_LOOP_MAX_CYCLES` (1–10, integer), `IRP_LOOP_INTERVAL_MS` (non-negative integer), `IRP_LOOP_STOP_WHEN_HEALTHY` (`1`/`0`).
-- Configuration is validated in `getClosedLoopOptions()`; out-of-range or non-integer values fail closed with `RangeError`.
+- Configuration is validated in `getClosedLoopOptions()`; out-of-range or non-integer values fail closed with a range error.
 - `abortClosedLoop()` exposes an `AbortSignal` used by SIGTERM/SIGINT to deterministically stop the loop before the next cycle begins.
 - Dedicated integration tests in `apps/daemon/src/index.test.ts` (`RuntimeDaemonHost bounded closed loop`) drive the canonical runtime path, verify safe-by-default single-cycle behavior, reject out-of-range configuration, and exercise abort semantics. The controller wraps `host.runtime` directly (no parallel authority).
 
