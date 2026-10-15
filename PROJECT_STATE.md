@@ -13,7 +13,7 @@
 - **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and merged (PR #22). Phase matrix regenerated on current HEAD to reflect contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1). Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (this run):** Phase 84 acceptance contract formalized on branch `docs/phase-84-acceptance-contract` (maps existing `SafetyRollbackRecoveryKernel` and intent governance). Remaining Phases 85–150 still require contracts and explicit authorization before implementation.
+- **Issue #14 progress (this run):** Phase 84 and Phase 85 acceptance contracts formalized on branch `docs/phase-84-acceptance-contract` (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract). Remaining Phases 86–150 still require contracts and explicit authorization before implementation.
 
 ## Phase 78 objective
 
