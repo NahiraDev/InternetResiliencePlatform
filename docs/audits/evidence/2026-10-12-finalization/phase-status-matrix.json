@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "9ee3df458dc89c0c1485cda98c0b16aade4d2ae2",
+  "sourceSha": "ad822e66b3ddc29d7bda0194f9c6237d6bf26867",
   "summary": {
-    "PARTIAL": 54,
-    "COMPLETE": 26,
+    "PARTIAL": 53,
+    "COMPLETE": 27,
     "BLOCKED": 3,
     "NOT STARTED": 67
   },
@@ -1054,15 +1054,13 @@
     {
       "phase": 78,
       "title": "Closed-Loop Control Foundation",
-      "disposition": "PARTIAL",
-      "justification": "Phase contract cites references that do not resolve at HEAD: RangeError.",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-78.md; all 13 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/daemon, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Integration residual: BoundedClosedLoopController is exercised against the canonical ResilienceRuntime by tests, but no production entrypoint runs the multi-cycle loop (API triggers single runCycle calls; the only non-test consumer is the deprecated NetworkAutopilot). Tracked as remaining work.",
       "probe": {
         "doc": "docs/phases/phase-78.md",
         "recordedStatus": "Implementation started on `phase/78-closed-loop-control` from `main` at `164c9793ac8819492939d9d59b6c3b529cc506cd`.",
         "resolvedReferences": 13,
-        "missingReferences": [
-          "RangeError"
-        ],
+        "missingReferences": [],
         "packages": [
           "@irp/daemon",
           "@irp/resilience-runtime"
