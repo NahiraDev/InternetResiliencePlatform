@@ -2,61 +2,61 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing fabric resource model, lifecycle, capability authority and selection logic in `@irp/resilience-runtime` map to the unified fabric. Full multi-interface / multi-path orchestration and live assurance remain **PARTIAL** / **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes further implementation, and evidence is produced. Disposition **PARTIAL** pending matrix update.
+**Contract formalized (issue #14).** Maps existing fabric capability authority, resource model, lifecycle and selection primitives already present on `main` in `@irp/resilience-runtime`. Disposition remains **PARTIAL** until CI evidence is recorded against this contract and the phase matrix is updated from evidence only. Net-new fabric orchestration workflows remain unauthorized until this contract is accepted and PROJECT_STATE is updated.
 
 ## Objective
 
-Establish a single canonical connectivity fabric that represents devices, interfaces, links, providers, gateways, routes, tunnels, transports and related resources with uniform lifecycle, health, trust, capacity and capability authority. All path selection and recovery decisions must consult the fabric rather than ad-hoc resource lists.
+Formalize a single, authoritative connectivity fabric that unifies device, interface, link, provider, gateway, route, resolver, tunnel, transport, proxy, egress and related resources under enforceable capability, scope, trust, safety and platform constraints. The fabric is the canonical source of selectable connectivity resources; selection and mutation paths must consult it rather than invent parallel inventories.
 
 ## Dependencies
 
-- Phase 73 — Unified Network State Model
-- Phase 74 — Control-Plane Contracts
-- Phase 75 — Decision Orchestration
+- Phase 46 — Authorized Gateway Inventory
+- Phase 47 — Gateway Discovery, Health and Stale Handling
+- Phase 48 — Provider-Neutral Tunnel Lifecycle
 - Phase 77 — Safety, Rollback & Recovery Kernel
 - Phase 78 — Closed-Loop Control Foundation
+- Phase 84 — Safety Constraints & Change Governance
 
 ## Canonical owner
 
-- `@irp/resilience-runtime` — `src/fabric.ts` (`FabricResource`, `FABRIC_RESOURCE_KINDS`, resource model)
-- `src/fabric-lifecycle.ts` (state transitions, freshness, diverse selection)
-- `src/fabric-authority.ts` (`FabricCapabilityAuthority`, capability decisions)
-- Consumed by decision orchestration, closed-loop controller and path selection
-- Tests: `packages/resilience-runtime/tests/fabric*.test.ts`
+- `@irp/resilience-runtime` — `src/fabric.ts` (resource kinds, states, capability model), `src/fabric-authority.ts` (`FabricCapabilityAuthority`, authorize), `src/fabric-lifecycle.ts` (freshness, diverse selection, state transitions)
+- Consumed by gateway registry, tunnel, connectivity and decision packages
+- Tests: `packages/resilience-runtime/tests/` (fabric suites)
 
 ## Scope
 
-- Represent all connectivity resources under a uniform `FabricResource` model with kind, state, health, confidence, trust, capacity, cost and ownership.
-- Enforce deterministic lifecycle state transitions and freshness evaluation.
-- Provide a capability authority that answers whether an actor may use a given capability on a resource under scope, platform, trust and safety constraints.
-- Support diverse resource selection that prefers healthy, fresh, high-trust candidates.
-- Preserve the invariant that fabric state is observed/derived; mutation of underlying network resources still flows through the privileged execution boundary and safety kernel.
+- Maintain a typed inventory of fabric resources with declared kinds, states and lifecycle transitions.
+- Enforce capability authorization: a caller may use a capability only when scope, platform, trust and safety ceilings match.
+- Provide freshness evaluation and diverse resource selection that prefer healthy, recent, non-stale entries.
+- Preserve the invariant that the fabric registry is the single place that answers “may this actor use this capability for this resource”.
+- Feed selected resources into existing decision, policy and safety paths; never bypass them.
 
 ## Non-goals
 
-- Direct mutation of host networking or external providers from the fabric layer.
-- A second fabric store or parallel capability registry outside `@irp/resilience-runtime`.
-- Live multi-path or multi-interface runtime evidence on real devices (issue #4).
-- Application-aware or predictive selection (later phases 91+).
+- A second connectivity inventory or competing fabric authority outside `@irp/resilience-runtime`.
+- Automatic mutation of host networking solely from fabric selection.
+- Full multi-path or application-aware orchestration (Phases 88, 91).
+- Production device or regional fabric evidence (issue #4).
 
 ## Acceptance criteria
 
-1. `FabricResource` and related types cover the declared resource kinds and states; construction and serialization are deterministic.
-2. Lifecycle helpers reject illegal state transitions and correctly partition resources by freshness.
-3. `FabricCapabilityAuthority` returns deterministic allow/deny decisions with reasons for scope, platform, trust and safety mismatches.
-4. Diverse selection prefers healthy/fresh resources and respects capacity/cost constraints when supplied.
-5. Unit tests in the owning package cover resource model, lifecycle transitions, capability decisions and selection; architecture guards continue to forbid a competing control plane.
+1. `FabricCapabilityAuthority.authorize` correctly allows or denies a `CapabilityRequest` based on scope, platform, trust and safety, returning structured reasons.
+2. Fabric resource state transitions are validated; invalid transitions are rejected.
+3. Freshness and diverse-selection helpers prefer non-stale, healthy resources and return deterministic partitions.
+4. Unit tests covering authorization matrix, state transitions and freshness/selection pass in the owning package.
+5. No new selection or mutation path is introduced that bypasses the fabric authority or the safety kernel.
 
 ## Verification boundary
 
-- Package unit tests for `@irp/resilience-runtime` fabric modules.
-- Existing CI that runs resilience-runtime tests.
-- No claim of live network fabric evidence until device/runtime validation exists.
+- Local package tests for `@irp/resilience-runtime`.
+- CI workflows that already execute the resilience-runtime test suite.
+- Architecture guards that forbid a second control-plane or fabric authority.
+- Explicit non-claim of production certification or live device fabric evidence.
 
 ## Rollback considerations
 
-- Documentation-only until further implementation lands.
-- Any new fabric mutation surface must remain behind the existing safety kernel and privileged boundary so it can be disabled without affecting closed-loop stop conditions.
+- Contract is documentation only; no runtime behavior change.
+- If later implementation diverges, revert the phase document and restore previous matrix disposition.
 
 ## Related issues
 
