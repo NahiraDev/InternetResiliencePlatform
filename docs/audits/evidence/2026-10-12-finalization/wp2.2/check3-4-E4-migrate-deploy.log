@@ -1,0 +1,21 @@
++ pnpm --filter @irp/database prisma:migrate:deploy
+Scope: all 44 workspace projects
+✓ Lockfile passes supply-chain policies (verified 4m ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+[EACCES] EACCES: permission denied, open '<prod-tree>/node_modules/.pnpm/c12@3.1.0_magicast@0.3.5/node_modules/c12/node_modules/.bin/giget'
+
+pnpm: EACCES: permission denied, open '<prod-tree>/node_modules/.pnpm/c12@3.1.0_magicast@0.3.5/node_modules/c12/node_modules/.bin/giget'
+[ERROR] Command failed with exit code 243: pnpm install --production
+
+pnpm: Command failed with exit code 243: pnpm install --production
+    at getFinalError (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:89024:14)
+    at makeError (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:91331:21)
+    at getSyncResult (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:93175:10)
+    at spawnSubprocessSync (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:93135:14)
+    at execaCoreSync (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:93065:23)
+    at callBoundExeca (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:95593:23)
+    at boundExeca (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:95570:49)
+    at sync2 (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:95725:14)
+    at runPnpmCli (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:269874:5)
+    at runDepsStatusCheck (file://<node-24.21.0>/lib/node_modules/pnpm/dist/pnpm.mjs:271638:7)

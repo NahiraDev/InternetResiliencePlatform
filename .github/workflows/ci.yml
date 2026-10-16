@@ -222,7 +222,7 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Test production certification report checksum
+      - name: Test production certification and system assurance report checksums
         run: pnpm certification:test
 
       - name: Fresh coverage

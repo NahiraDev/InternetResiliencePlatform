@@ -1,9 +1,13 @@
 import { describe, expect, it, afterEach } from 'vitest';
+import { BoundedClosedLoopController, createCapabilitySnapshot, type DecisionRecord } from '@irp/resilience-runtime';
 import { createDaemon, createRuntimeDaemonHost } from './index.js';
 
 afterEach(() => {
   delete process.env.IRP_TUNNEL_ENABLED;
   delete process.env.IRP_GATEWAY_SELECTION_ENABLED;
+  delete process.env.IRP_LOOP_MAX_CYCLES;
+  delete process.env.IRP_LOOP_INTERVAL_MS;
+  delete process.env.IRP_LOOP_STOP_WHEN_HEALTHY;
 });
 
 describe('daemon factory', () => {
@@ -63,8 +67,6 @@ describe('RuntimeDaemonHost', () => {
     expect(host.plugins.isRunning).toBe(false);
   });
 });
-<<<<<<< HEAD
-=======
 
 // Issue #11 / Phase 78: the production entrypoint drives the canonical bounded
 // closed loop. These tests prove the daemon path — not just the library.
@@ -284,4 +286,3 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
     expect(result.records).toHaveLength(1);
   });
 });
->>>>>>> 2d65b37 (test(daemon): cover stop-when-healthy '1' value)

@@ -13,6 +13,7 @@ import {
 } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
 import {
+  BoundedClosedLoopController,
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
   createCanonicalRuntime,
@@ -24,6 +25,7 @@ import {
   withOperationTimeout,
   RuntimeScheduler,
   TunnelRegistryControlPlane,
+  type ClosedLoopOptions,
   type Observation,
   type ObservationProvider,
   type ObservationProviderResult,
@@ -407,6 +409,18 @@ export class RuntimeDaemonHost {
   readonly killSwitchAdapter: Phase18KillSwitch;
   
   readonly scheduler: RuntimeScheduler;
+  /**
+   * Bounded closed-loop controller (Phase 78 / issue #11).
+   *
+   * This is the only repetition authority over the canonical runtime cycle.
+   * It owns no decision, policy, execution, or safety semantics — those stay
+   * owned by `ResilienceRuntime`. Bounds and stop conditions come from
+   * environment-configured, validated options (IRP_LOOP_*). Safe-by-default
+   * behavior remains one cycle per invocation when nothing is configured.
+   */
+  readonly closedLoop: BoundedClosedLoopController;
+  private readonly closedLoopAbortController: AbortController;
+
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {
       enabled: false,
@@ -498,6 +512,12 @@ export class RuntimeDaemonHost {
           validate: async () => false,
         };
 
+    // Phase 78 / issue #11: the daemon exposes the canonical bounded closed
+    // loop as the production repetition authority. Bounds come from validated
+    // environment configuration; there is no default autonomous loop.
+    this.closedLoopAbortController = new AbortController();
+    this.closedLoop = new BoundedClosedLoopController(this.runtime);
+
     // Initialize network security protection engine
     this.securityEngine = new NetworkSecurityProtectionEngine(
       securityEventBus,
@@ -506,6 +526,54 @@ export class RuntimeDaemonHost {
       undefined, // platform adapter
     );
   }
+
+  /**
+   * Validated closed-loop options built from daemon environment configuration.
+   * Values are validated so the loop cannot silently run unbounded.
+   */
+  getClosedLoopOptions(): ClosedLoopOptions {
+    const maxCyclesRaw = process.env.IRP_LOOP_MAX_CYCLES;
+    const intervalMsRaw = process.env.IRP_LOOP_INTERVAL_MS;
+    const stopWhenHealthyRaw = process.env.IRP_LOOP_STOP_WHEN_HEALTHY;
+    if (maxCyclesRaw === undefined && intervalMsRaw === undefined && stopWhenHealthyRaw === undefined)
+      return { signal: this.closedLoopAbortController.signal };
+    // Validate inputs. Out-of-range or invalid values fail closed by throwing —
+    // the controller's own bound checks (`assertIntegerInRange`) already provide
+    // the runtime guarantee; we mirror that for early validation.
+    const maxCycles = maxCyclesRaw === undefined ? 1 : Number(maxCyclesRaw);
+    if (!Number.isInteger(maxCycles) || maxCycles < 1 || maxCycles > 10)
+      throw new RangeError(`IRP_LOOP_MAX_CYCLES must be an integer 1-10, got: ${maxCyclesRaw}`);
+    const intervalMs = intervalMsRaw === undefined ? 0 : Number(intervalMsRaw);
+    if (!Number.isInteger(intervalMs) || intervalMs < 0)
+      throw new RangeError(`IRP_LOOP_INTERVAL_MS must be a non-negative integer, got: ${intervalMsRaw}`);
+    if (
+      stopWhenHealthyRaw !== undefined &&
+      stopWhenHealthyRaw !== '0' &&
+      stopWhenHealthyRaw !== '1'
+    )
+      throw new RangeError(`IRP_LOOP_STOP_WHEN_HEALTHY must be '0' or '1', got: ${stopWhenHealthyRaw}`);
+    const stopWhenHealthy = stopWhenHealthyRaw === undefined ? true : stopWhenHealthyRaw === '1';
+    return {
+      maxCycles,
+      intervalMs,
+      stopWhenHealthy,
+      signal: this.closedLoopAbortController.signal,
+    };
+  }
+
+  /**
+   * Drives the canonical bounded closed loop using validated configuration.
+   * Callers must handle `RangeError` from invalid configuration.
+   */
+  async runClosedLoop(): Promise<ReturnType<BoundedClosedLoopController['run']>> {
+    return this.closedLoop.run(this.getClosedLoopOptions());
+  }
+
+  /** Abort the in-flight (or next) closed-loop cycle cooperatively. */
+  abortClosedLoop(): void {
+    this.closedLoopAbortController.abort();
+  }
+
   private async evaluatePathEvidence(
     context: RuntimeContext,
   ): Promise<PathStrategyEvidence | undefined> {
@@ -822,8 +890,34 @@ if (process.argv[1]?.endsWith('index.js')) {
   const host = createRuntimeDaemonHost({ enabled: process.env.IRP_RUNTIME_ENABLED === '1' });
   await host.start();
   await daemon.start();
+  // Issue #11 / Phase 78: when IRP_LOOP_* is set, the production entrypoint
+  // drives the canonical bounded closed loop. It is cooperative: SIGTERM/SIGINT
+  // aborts before the next cycle starts (BoundedClosedLoopController checks the
+  // signal between cycles), and the scheduler stop in `host.stop()` handles the
+  // ongoing scheduler. Failure of any cycle is not ignored: a `failed` or
+  // `blocked` result ends the loop and surfaces via process exit code.
+  if (
+    process.env.IRP_LOOP_MAX_CYCLES !== undefined ||
+    process.env.IRP_LOOP_INTERVAL_MS !== undefined
+  ) {
+    const runOneLoop = async (): Promise<void> => {
+      const result = await host.runClosedLoop();
+      daemon.logger.info('closed-loop result', {
+        status: result.status,
+        stopReason: result.stopReason,
+        cyclesCompleted: result.cyclesCompleted,
+      });
+      if (result.status === 'failed' || result.status === 'blocked')
+        throw new Error(`closed-loop terminated with status ${result.status}`);
+    };
+    void runOneLoop().catch((error: unknown) => {
+      daemon.logger.error('closed-loop failed', { error: String(error) });
+      process.exit(1);
+    });
+  }
   const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
     daemon.logger.info('shutdown signal received', { signal });
+    host.abortClosedLoop();
     await host.stop();
     await daemon.stop();
     process.exit(0);

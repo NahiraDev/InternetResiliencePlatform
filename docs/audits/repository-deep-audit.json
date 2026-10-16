@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-08T14:55:51.339Z",
+  "generatedAt": "6702fada9d045695d5f4ff4117910dfcdda9b61a17c65719108748a0a9559ffc",
   "workspaceCount": 43,
-  "workflowCount": 16,
+  "workflowCount": 17,
   "findings": [],
   "workspaces": [
     {
@@ -107,7 +107,7 @@
       "name": "@irp/database",
       "path": "packages/database/package.json",
       "sourceFiles": 1,
-      "testFiles": 1,
+      "testFiles": 2,
       "scripts": [
         "build",
         "lint",

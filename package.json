@@ -13,7 +13,7 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "coverage": "turbo run test -- --coverage",
     "validate": "node scripts/validate-repository.mjs",
     "validate:docs": "node scripts/validate-documentation.mjs",
@@ -41,10 +41,11 @@
     "architecture:archaeology": "node scripts/archaeology.mjs",
     "architecture:test": "vitest run scripts/architecture/validate-architecture.test.mjs",
     "bundle:test": "vitest run scripts/package-linux-bundle.test.mjs",
-    "certification:test": "vitest run scripts/production-certification.test.mjs"
+    "certification:test": "vitest run scripts/production-certification.test.mjs scripts/full-system-assurance.test.mjs"
   },
   "dependencies": {
-
+    "pg": "8.23.0",
+    "prisma": "6.19.3"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
@@ -57,7 +58,6 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "prisma": "6.19.3",
     "turbo": "^2.11.7",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",

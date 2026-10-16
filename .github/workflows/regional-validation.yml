@@ -1,0 +1,81 @@
+name: Regional Validation
+
+# Manual regional vantage probe. This is NOT part of the normal repository CI
+# gate: a missing external regional vantage point is an environmental validation
+# failure, not a source-code failure. The workflow never reports PASS without
+# explicit operator-supplied regional evidence and never silently falls back to
+# ubuntu-latest (which would falsely represent GitHub-hosted CI as a regional
+# vantage point).
+on:
+  workflow_dispatch:
+    inputs:
+      probe_url:
+        description: HTTPS regional probe endpoint URL
+        required: true
+      expected_country:
+        description: Expected observed egress country code (default IR)
+        required: false
+        default: IR
+      label:
+        description: Probe identity label for the evidence record
+        required: false
+        default: regional-vantage-probe
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regional-validation
+  cancel-in-progress: false
+
+jobs:
+  regional-vantage:
+    name: Regional vantage probe
+    # Self-hosted runner with the regional label so this job cannot silently
+    # fall back to ubuntu-latest (GitHub-hosted infrastructure would not be a
+    # regional vantage point).
+    runs-on: [self-hosted, linux, iran]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: '11.21.0'
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Run regional online test with explicit evidence
+        env:
+          IRP_REGIONAL_PROBE_URL: ${{ github.event.inputs.probe_url }}
+          IRP_EXPECTED_COUNTRY: ${{ github.event.inputs.expected_country || 'IR' }}
+          IRP_REGIONAL_PROBE_LABEL: ${{ github.event.inputs.label }}
+        run: |
+          set -euo pipefail
+          node scripts/regional-online-test.mjs > /tmp/regional-result.json
+          rc=0
+          cat /tmp/regional-result.json
+          if ! grep -q '"status": "passed"' /tmp/regional-result.json; then
+            rc=2
+          fi
+          {
+            printf '# Regional Validation Result\n\n'
+            printf '```\n%s\n```\n' "$(cat /tmp/regional-result.json)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
+
+      - name: Upload regional evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regional-validation-evidence
+          path: /tmp/regional-result.json
+          retention-days: 30

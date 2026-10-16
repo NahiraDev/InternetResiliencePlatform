@@ -59,6 +59,69 @@ const headCommit = await (async () => {
 })();
 
 /**
+ * Content-derived fingerprint of the tracked source tree, used as the
+ * stable `generatedAt` value for the canonical generated artifacts.
+ *
+ * Unlike the HEAD commit SHA, this does not change merely because a new commit
+ * was made — it only changes when tracked source content changes. That makes a
+ * clean checkout stay clean after every documented gate, without needing the
+ * artifacts to be regenerated on each commit.
+ *
+ * The fingerprint hashes the sorted list of tracked files (excluding the
+ * generated artifacts themselves and lockfile churn) plus each file's blob
+ * SHA. It is intentionally a *content* hash, not a commit hash, so two clean
+ * checkouts of the same source tree produce identical output.
+ */
+const sourceContentHash = await (async () => {
+  try {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const run = promisify(execFile);
+    const ls = (
+      await run(
+        'git',
+        ['ls-files', '--full-name', '--', '.', ':!artifacts'],
+        { cwd: root, maxBuffer: 64 * 1024 * 1024 },
+      )
+    ).stdout
+      .toString()
+      .split('\n')
+      .filter((p) => p.length > 0)
+      .sort();
+    if (ls.length === 0) return undefined;
+    const { createHash } = await import('node:crypto');
+    const digest = createHash('sha256');
+    // Hash working-tree contents (not the index) in batches. One
+    // `git hash-object -- <paths>` subprocess per batch keeps this fast while
+    // preserving the per-file hashing of the original implementation.
+    const batch = 64;
+    for (let i = 0; i < ls.length; i += batch) {
+      const chunk = ls.slice(i, i + batch);
+      const out = (
+        await run('git', ['hash-object', '--', ...chunk], {
+          cwd: root,
+          maxBuffer: 64 * 1024 * 1024,
+        })
+      ).stdout
+        .toString()
+        .split('\n')
+        .filter((h) => h.length > 0);
+      if (out.length !== chunk.length) {
+        throw new Error(
+          `git hash-object returned ${out.length} hashes for ${chunk.length} files`,
+        );
+      }
+      chunk.forEach((rel, idx) => {
+        digest.update(`${rel}\n${out[idx]}\n`);
+      });
+    }
+    return digest.digest('hex');
+  } catch {
+    return undefined;
+  }
+})();
+
+/**
  * True when the commit is a *strict* ancestor of HEAD, i.e. it is behind main.
  *
  * HEAD itself is not "behind": a record that pins the current commit is current.
@@ -195,7 +258,7 @@ async function buildInventory() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     packages: packages.sort((a, b) => a.name.localeCompare(b.name)),
     totals: {
       packages: packages.length,
@@ -272,7 +335,7 @@ async function buildRuntimePaths() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     traces,
     mutationSites: mutationSites.sort((a, b) =>
       `${a.marker}${a.path}`.localeCompare(`${b.marker}${b.path}`),
@@ -503,7 +566,7 @@ async function buildCapabilityMatrix() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     source: registry.available
       ? registry.source
       : `text scan fallback${registry.error ? `: ${registry.error}` : ''}`,
@@ -627,7 +690,7 @@ async function buildAuthorityMap() {
   const contract = await readJson(join(root, 'docs/architecture/IRP-ARCHITECTURE-CONTRACT.json'));
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     contractAuthorities: contract.authorities ?? {},
     productionAuthorityCount: contract.canonicalRuntime?.productionAuthorityCount ?? null,
     compositionSymbol: contract.canonicalRuntime?.composition ?? null,
@@ -733,7 +796,7 @@ async function buildPhaseAudit() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     phases,
     summary: {
       total: phases.length,
@@ -909,7 +972,7 @@ async function buildOrphans() {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     vitestIncludeGlobs: includeGlobs,
     orphanTests,
     orphanModules,
@@ -1037,7 +1100,7 @@ async function buildGraphReconciliation(inventory, paths) {
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     graphs,
     unreferenced,
     summary: {
@@ -1054,7 +1117,7 @@ async function buildGraphReconciliation(inventory, paths) {
 // ---------------------------------------------------------------------------
 async function buildDriftRegister(inventory, paths, matrix, authority, phases, orphans, graphs) {
   const findings = [];
-  const add = (finding) => findings.push({ ...finding, registeredAt: new Date().toISOString() });
+  const add = (finding) => findings.push({ ...finding, registeredAt: sourceContentHash ?? null });
 
   for (const trace of paths.traces) {
     if (!trace.composesCanonicalRuntime) {
@@ -1201,7 +1264,7 @@ async function buildDriftRegister(inventory, paths, matrix, authority, phases, o
 
   return {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: sourceContentHash ?? null,
     findings,
     summary: {
       total: findings.length,

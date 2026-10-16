@@ -19,11 +19,11 @@ const required = [
 for (const name of required)
   if (!process.env[name]) fail(`${name} is required for production startup`);
 
-// The runtime image installs pnpm directly and does not invoke Corepack.
 // Only paths that are actually used by the production process are required
 // to be writable. This keeps the container compatible with a read-only root
-// filesystem without introducing a redundant Corepack cache dependency.
-for (const path of ['/app/.local/share/pnpm', '/app/tmp']) {
+// filesystem. pnpm is not present in the runtime image at all; the entrypoint
+// and the app run entirely on Node.js and the production dependency closure.
+for (const path of ['/app/tmp']) {
   try {
     await access(path, constants.R_OK | constants.W_OK);
   } catch {
@@ -59,10 +59,19 @@ const run = (command, args, env = process.env) =>
 try {
   await run('node', ['scripts/wait-for-database.mjs']);
   log('info', 'database connection established');
-  await run('pnpm', ['--filter', '@irp/database', 'prisma:migrate:deploy'], {
-    ...process.env,
-    PRISMA_GENERATE_SKIP_AUTOINSTALL: '1',
-  });
+  // WP2.2b: invoke the Prisma CLI from the production dependency closure
+  // directly. Running it through `pnpm run`/`pnpm exec` triggers pnpm's
+  // dependency status check, which spawns `pnpm install --production` against
+  // the pruned runtime tree at container startup (and fails on a read-only
+  // root filesystem). The runtime must never install packages.
+  await run(
+    'node_modules/.bin/prisma',
+    ['migrate', 'deploy', '--schema', 'packages/database/prisma/schema.prisma'],
+    {
+      ...process.env,
+      PRISMA_GENERATE_SKIP_AUTOINSTALL: '1',
+    },
+  );
   log('info', 'database migrations verified');
 } catch (error) {
   fail('startup initialization failed', {

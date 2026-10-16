@@ -59,6 +59,34 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Initialize and verify iOS simulator runtime
+        run: |
+          set -euo pipefail
+          # Initialize CoreSimulator after selecting Xcode, before downloading.
+          # https://github.com/actions/runner-images/issues/12862
+          xcrun simctl list
+          sdk_version="$(xcrun --sdk iphonesimulator --show-sdk-version)"
+          runtime_json="$RUNNER_TEMP/ios-simulator-runtimes.json"
+          refresh_runtime() {
+            xcrun simctl list runtimes --json > "$runtime_json"
+            runtime_count="$(jq --arg version "$sdk_version" \
+              '[.runtimes[] | select(.identifier | startswith("com.apple.CoreSimulator.SimRuntime.iOS-")) | select(.version == $version and .isAvailable == true)] | length' \
+              "$runtime_json")"
+            echo "Available iOS $sdk_version runtime count: $runtime_count"
+          }
+          refresh_runtime
+          if [ "$runtime_count" -eq 0 ]; then
+            echo "Installing missing iOS $sdk_version runtime (single attempt)."
+            xcodebuild -downloadPlatform iOS -buildVersion "$sdk_version"
+            refresh_runtime
+          fi
+          if [ "$runtime_count" -eq 0 ]; then
+            echo "Required iOS $sdk_version simulator runtime is not available." >&2
+            exit 1
+          fi
+          xcrun simctl list runtimes
+          xcodebuild -showsdks
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -71,6 +99,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+
+      - name: Test simulator preflight fail-closed behavior
+        run: node --test scripts/ios-simulator.test.mjs
 
       - name: Verify workspace install
         run: pnpm install --frozen-lockfile

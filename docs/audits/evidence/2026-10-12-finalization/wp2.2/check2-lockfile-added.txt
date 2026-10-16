@@ -1,0 +1,17 @@
+@vitest/coverage-v8@4.1.11
+@vitest/expect@4.1.11
+@vitest/mocker@4.1.11
+@vitest/pretty-format@4.1.11
+@vitest/runner@4.1.11
+@vitest/snapshot@4.1.11
+@vitest/spy@4.1.11
+@vitest/utils@4.1.11
+ast-v8-to-istanbul@1.0.7
+chai@6.3.0
+convert-source-map@2.0.0
+es-module-lexer@2.3.2
+magicast@0.5.5
+obug@2.2.1
+std-env@4.3.0
+tinyrainbow@3.2.0
+vitest@4.1.11
