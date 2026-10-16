@@ -147,11 +147,11 @@ EXTERNAL = {
     70: 'Fail-closed v1.0 certification verifier exists and reports PENDING: 15 required evidence items (security-audit, regional-evidence, chaos-soak, backup-restore, upgrade-rollback, ios/android-device-smoke, ...) are not supplied.',
 }
 PARTIAL_LATER = {
-    79: 'Intent model and lifecycle exist (resilience-runtime/src/intent, PostgresIntentStore, ownership migrations) with passing tests, but MASTER_ROADMAP_V2 defines no Phase 79 acceptance contract and PROJECT_STATE does not authorize the phase; cannot be COMPLETE without a contract.',
-    80: 'Intent API exists (apps/api/src/intent-api.ts, wired in apps/api/src/index.ts) with tests; no Phase 80 acceptance contract defined.',
-    81: 'Intent compilation exists (resilience-runtime/src/intent/compiler.ts, used by runtime.ts); no Phase 81 acceptance contract defined.',
-    82: 'Policy registry/arbitration exists (src/policy, PolicyArbitrator used by runtime.executeCycle); no Phase 82 contract.',
-    83: 'Intent conflict arbitration and conflict journal exist (src/intent/arbitration.ts, migration 20261004000000_phase_274_conflict_journal); no Phase 83 contract.',
+    79: 'Acceptance contract formalized in docs/phases/phase-79.md (issue #13). Intent model and lifecycle exist with mapped tests; disposition remains PARTIAL pending full end-to-end verification evidence and matrix regeneration on a green CI SHA.',
+    80: 'Acceptance contract formalized in docs/phases/phase-80.md (issue #13). Intent API exists with tests; remains PARTIAL until durable ownership e2e evidence is recorded.',
+    81: 'Acceptance contract formalized in docs/phases/phase-81.md (issue #13). Compilation exists and is tested; remains PARTIAL pending contract-mapped CI evidence.',
+    82: 'Acceptance contract formalized in docs/phases/phase-82.md (issue #13). Policy arbitration exists; remains PARTIAL.',
+    83: 'Acceptance contract formalized in docs/phases/phase-83.md (issue #13). Arbitration and conflict journal exist with tests; remains PARTIAL pending full durable journal e2e certification.',
 }
 RELATED = {
     86: 'fabric.ts / fabric-authority.ts / fabric-lifecycle.ts',
@@ -171,13 +171,14 @@ RELATED = {
 
 rows = []
 for n in range(1, 151):
-    p = probe(n) if 39 <= n <= 80 else {'doc': None}
+    p = probe(n) if 39 <= n <= 83 else {'doc': None}
     title = titles.get(n, '(title not found)')
     if n <= 38:
         disp = 'PARTIAL'
-        why = ('Implementation lives in the workspace packages and their tests pass, but the repository\'s own '
-               'phase-history evidence matrix records this phase as historical-evidence / pending reconstruction: '
-               'no per-phase acceptance record maps commits and tests to this phase contract.')
+        why = ('Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps '
+               'packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records '
+               'it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL '
+               'and full acceptance-criteria verification beyond the historical reconstruction.')
     elif n in EXTERNAL:
         disp, why = 'BLOCKED', EXTERNAL[n]
     elif n == 71:
