@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Partial mapping to existing effective-window and lifecycle semantics in intent model/compiler. Full continuous drift detection and autonomous correction remain **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes implementation, and evidence is produced. Disposition **PARTIAL** / **NOT STARTED** pending matrix update.
+**Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns structured, non-mutating results. Full continuous correction remains out of scope. Disposition remains **PARTIAL** pending CI evidence on the implementing SHA.
 
 ## Objective
 
