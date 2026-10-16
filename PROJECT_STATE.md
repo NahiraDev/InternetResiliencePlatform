@@ -5,15 +5,15 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `ad822e66b3ddc29d7bda0194f9c6237d6bf26867` (merge of PR #25 completing Phase 1–38 evidence register for issue #12).
-- **Issue #12 progress (this run):** Extended Phase 1–38 acceptance evidence register to cover Phases 1–25 with package/path/test anchors; updated phase-history-evidence-matrix.md to `mapped` for those phases; regenerated phase-1-150-status-matrix.md with updated justifications. Dispositions remain PARTIAL. No COMPLETE claimed from documentation alone. Remaining: Phases 26–38 reconstruction and fresh per-phase CI evidence.
+- **Current main HEAD reviewed this run:** `6c1bbfd7b4a27d2336b49a1c43ba0fc14be7d372` (merge of PR #27: docs refresh PROJECT_STATE and phase matrix to HEAD 19392bc).
+- **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated on current HEAD. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and merged (PR #22). Phase matrix regenerated on current HEAD to reflect contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1). Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Post-70 roadmap:** `docs/roadmap/MASTER_ROADMAP_V2.md` remains architectural reference material for Phases 72–150. Phase 79–83 contract definition is authorized by issue #13 for existing capability mapping only. Phases 84–150 remain unauthorized for implementation until issue #14 contracts and explicit PROJECT_STATE authorization exist.
+- **Issue #14 progress (this run):** Phase 84, Phase 85 and Phase 86 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric in `@irp/resilience-runtime`). Remaining Phases 87–150 still require contracts and explicit authorization before implementation.
 
 ## Phase 78 objective
 
