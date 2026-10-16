@@ -13,7 +13,7 @@
 - **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (this run):** Phase 86 (Unified Connectivity Fabric) and Phase 87 (Multi-Interface Intelligence) acceptance contracts formalized. Both map existing fabric resources (`Interface`/`Link` kinds, lifecycle, authority, selection) in `@irp/resilience-runtime` and supporting connectivity packages. Disposition remains PARTIAL pending CI evidence. Remaining Phases 88–150 still require contracts and explicit authorization before implementation. Open PRs #29/#30 cover related contracts (Phase 88 / Phase 86 variants).
+- **Issue #14 progress (this run):** Phase 84, Phase 85 and Phase 86 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric in `@irp/resilience-runtime`). Remaining Phases 87–150 still require contracts and explicit authorization before implementation.
 
 ## Phase 78 objective
 
