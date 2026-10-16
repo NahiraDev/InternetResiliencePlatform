@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `6c1bbfd7b4a27d2336b49a1c43ba0fc14be7d372` (merge of PR #27: docs refresh PROJECT_STATE and phase matrix to HEAD 19392bc).
+- **Current main HEAD reviewed this run:** `7d063bff0dce0a3f7a6b3605f99b3e520b14bb26` (merge of PR #28: Phase 84/85 contracts).
 - **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated on current HEAD. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -13,7 +13,7 @@
 - **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and merged (PR #22). Phase matrix regenerated on current HEAD to reflect contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1). Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (this run):** Phase 84 and Phase 85 acceptance contracts formalized on branch `docs/phase-84-acceptance-contract` (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract). Remaining Phases 86–150 still require contracts and explicit authorization before implementation.
+- **Issue #14 progress (this run):** Phase 84 and Phase 85 acceptance contracts formalized and merged (PR #28). Minimal observe-only detectIntentDrift implemented under the Phase 85 contract (safe-by-default). Remaining Phases 86–150 still require contracts and explicit authorization before implementation.
 
 ## Phase 78 objective
 
