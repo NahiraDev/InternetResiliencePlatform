@@ -13,7 +13,7 @@
 - **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (this run):** Phase 84, Phase 85 and Phase 86 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric in `@irp/resilience-runtime`). Remaining Phases 87–150 still require contracts and explicit authorization before implementation.
+- **Issue #14 progress (this run):** Phase 84–89 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric; Phase 87 multi-interface; Phase 88 multi-path; Phase 89 gateway intelligence). Remaining Phases 90–150 still require contracts and explicit authorization before implementation.
 
 ## Phase 78 objective
 
@@ -47,4 +47,4 @@ The Phase 71 gate is limited to the release/distribution contract defined by `do
 
 IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
 
-- **Issue #14 progress (2026-10-16):** Phase 86 and Phase 87 contracts added (docs/phases/phase-86.md, phase-87.md). Maps existing fabric surface; no new runtime authority introduced. Matrix update deferred until evidence exists.
+- **Issue #14 progress (2026-10-16):** Phase 86–89 contracts added (docs/phases/phase-86.md through phase-89.md). Maps existing fabric, routing, and gateway surfaces; no new runtime authority introduced. Matrix update deferred until evidence exists.
