@@ -17,6 +17,12 @@ Federate independent regional probes so the control plane can compare service ob
 - Bounded measurements for latency, jitter, packet loss, DNS, TCP, TLS and HTTP timing.
 - No route/VPN decision is made by the federation layer; it is an evidence and comparison subsystem.
 
+## Implementation references
+
+- Package: `@irp/resilience-runtime`
+- Primary sources: `packages/resilience-runtime/src/federation/probe-federation.ts`, `packages/resilience-runtime/src/federation/federated-advisory.ts`
+- Related API integration under `apps/api/` for federation routes.
+
 ## API
 
 | Method | Route                                       | Purpose                       | Authorization     |
