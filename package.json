@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "pg": "8.23.0",
-    "prisma": "6.19.3"
+    "prisma": "7.10.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
@@ -58,9 +58,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.8",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.1",
+    "typescript-eslint": "^8.71.2",
     "vitest": "4.1.11"
   },
   "lint-staged": {
