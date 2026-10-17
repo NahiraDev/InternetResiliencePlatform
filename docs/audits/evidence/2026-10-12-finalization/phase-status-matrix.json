@@ -1929,5 +1929,7 @@
         "doc": null
       }
     }
-  ]
+  ],
+  "reconciledAtSha": "095d70182c436a54392f69b5cdc2ba40cfb8e1b2",
+  "probeFreshness": "The matrix has conservative status dispositions and 150 rows, but the full canonical reference probe was not executed in this connector session. Probe data for phases 39–91 is carried forward from the previous saved matrix; Phase 92 probe was refreshed against its corrected contract. Rerun phase_matrix.py on the final merged PR head before treating all probe inventory fields as fresh."
 }
