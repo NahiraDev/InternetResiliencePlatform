@@ -63,4 +63,34 @@ describe('detectIntentDrift', () => {
     expect(result.severity).toBe('none');
     expect(result.recommendedAdmission).toBe('ALLOW');
   });
+
+  it('classifies large unknown-objective drift symmetrically in both directions', () => {
+    const intent = baseIntent({ objectives: { score: 0.95 } });
+
+    const lower = detectIntentDrift(intent, { score: 0.5 });
+    const higher = detectIntentDrift(intent, { score: 1.5 });
+
+    expect(lower.severity).toBe('high');
+    expect(higher.severity).toBe('high');
+    expect(lower.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(higher.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(lower.observedDelta.score).toMatchObject({
+      target: 0.95,
+      observed: 0.5,
+      direction: 'relative-deviation',
+    });
+    expect(higher.observedDelta.score).toMatchObject({
+      target: 0.95,
+      observed: 1.5,
+      direction: 'relative-deviation',
+    });
+  });
+
+  it('classifies moderate unknown-objective drift as medium', () => {
+    const intent = baseIntent({ objectives: { score: 0.95 } });
+    const result = detectIntentDrift(intent, { score: 0.75 });
+
+    expect(result.severity).toBe('medium');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
 });
