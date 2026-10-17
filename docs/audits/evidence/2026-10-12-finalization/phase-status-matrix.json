@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": null,
+  "sourceSha": "9259c84335e35caef57f5452576906c8a1613404",
   "summary": {
     "PARTIAL": 88,
     "BLOCKED": 3,
@@ -1229,8 +1229,10 @@
       "probe": {
         "doc": "docs/phases/phase-85.md",
         "recordedStatus": "Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns struct",
-        "resolvedReferences": 1,
-        "missingReferences": [],
+        "resolvedReferences": 2,
+        "missingReferences": [
+          "DriftSignal"
+        ],
         "packages": [
           "@irp/resilience-runtime"
         ],
@@ -1571,7 +1573,7 @@
     },
     {
       "phase": 111,
-      "title": "Secure Agent ↔ Control Plane Protocol",
+      "title": "Secure Agent \u2194 Control Plane Protocol",
       "disposition": "NOT STARTED",
       "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
       "probe": {
@@ -1929,8 +1931,5 @@
         "doc": null
       }
     }
-  ],
-  "probeFreshness": "This is a conservative manual reconstruction of 150 phase dispositions, not output from an executed canonical generator. The canonical reference probe was not run in this connector session. Probe inventory for phases 39–91 is carried forward from the prior saved matrix; Phase 92 package/reference metadata was manually corrected after inspection. Rerun docs/audits/evidence/2026-10-12-finalization/phase_matrix.py on the final merged HEAD to populate sourceSha and refresh every probe field before treating the inventory as fresh.",
-  "baselineReviewedSha": "b854e4c8ff1e7b45c0f5059a97476171bfb568c9",
-  "generationStatus": "NOT_GENERATED_IN_CONNECTOR_SESSION"
+  ]
 }
