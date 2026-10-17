@@ -374,7 +374,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
       });
     } catch {
       // Database unavailable: retain locally and retry on the next read.
-      await this.conflictPending.set(this.conflictId(conflict), entry);
+      await this.conflictPending.set(this.conflictId(conflict, scopeKey), entry);
     }
   }
 
@@ -434,7 +434,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
       if (!entry) continue;
       try {
         await this.repository.recordConflict({
-          id: this.conflictId(entry.conflict),
+          id: this.conflictId(entry.conflict, entry.ownerScopeKey),
           intentAId: entry.conflict.intentA.intentId,
           intentBId: entry.conflict.intentB.intentId,
           reason: entry.conflict.reason,
