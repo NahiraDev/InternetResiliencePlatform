@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "19392bc72870227a7034fe69746da79b60f9d8db",
+  "sourceSha": "bce03ba51973c5be2f47037d539a8ddf38973ff8",
   "summary": {
-    "PARTIAL": 53,
-    "COMPLETE": 27,
+    "PARTIAL": 58,
+    "COMPLETE": 30,
     "BLOCKED": 3,
-    "NOT STARTED": 67
+    "NOT STARTED": 59
   },
   "phases": [
     {
@@ -353,16 +353,20 @@
     {
       "phase": 39,
       "title": "device identity and scoped sessions",
-      "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'IMPLEMENTED / verification state inherited from current repository gates'); implementation cannot be mapped to tests.",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-39.md; all 5 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/auth) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
       "probe": {
         "doc": "docs/phases/phase-39.md",
         "recordedStatus": "IMPLEMENTED / verification state inherited from current repository gates",
-        "resolvedReferences": 0,
+        "resolvedReferences": 5,
         "missingReferences": [],
-        "packages": [],
+        "packages": [
+          "@irp/auth"
+        ],
         "nativeSources": [],
-        "packagesWithPassingTests": []
+        "packagesWithPassingTests": [
+          "@irp/auth"
+        ]
       }
     },
     {
@@ -421,31 +425,39 @@
     {
       "phase": 43,
       "title": "signed replay-resistant probe federation",
-      "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: ''); implementation cannot be mapped to tests.",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-43.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
       "probe": {
         "doc": "docs/phases/phase-43.md",
         "recordedStatus": "",
-        "resolvedReferences": 0,
+        "resolvedReferences": 3,
         "missingReferences": [],
-        "packages": [],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
         "nativeSources": [],
-        "packagesWithPassingTests": []
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 44,
       "title": "analytics summaries, trends and anomalies",
-      "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation present; final CI/runtime verification gate required before completion.'); implementation cannot be mapped to tests.",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-44.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/historical-analysis) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
       "probe": {
         "doc": "docs/phases/phase-44.md",
         "recordedStatus": "Implementation present; final CI/runtime verification gate required before completion.",
-        "resolvedReferences": 0,
+        "resolvedReferences": 3,
         "missingReferences": [],
-        "packages": [],
+        "packages": [
+          "@irp/historical-analysis"
+        ],
         "nativeSources": [],
-        "packagesWithPassingTests": []
+        "packagesWithPassingTests": [
+          "@irp/historical-analysis"
+        ]
       }
     },
     {
@@ -470,16 +482,20 @@
     {
       "phase": 46,
       "title": "authorized gateway inventory",
-      "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation:** complete on the phase branch.'); implementation cannot be mapped to tests.",
+      "disposition": "COMPLETE",
+      "justification": "Phase contract docs/phases/phase-46.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
       "probe": {
         "doc": "docs/phases/phase-46.md",
         "recordedStatus": "Implementation:** complete on the phase branch.",
-        "resolvedReferences": 0,
+        "resolvedReferences": 3,
         "missingReferences": [],
-        "packages": [],
+        "packages": [
+          "@irp/gateway-registry"
+        ],
         "nativeSources": [],
-        "packagesWithPassingTests": []
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry"
+        ]
       }
     },
     {
@@ -1054,13 +1070,15 @@
     {
       "phase": 78,
       "title": "Closed-Loop Control Foundation",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-78.md; all 13 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/daemon, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Integration residual: BoundedClosedLoopController is exercised against the canonical ResilienceRuntime by tests, but no production entrypoint runs the multi-cycle loop (API triggers single runCycle calls; the only non-test consumer is the deprecated NetworkAutopilot). Tracked as remaining work.",
+      "disposition": "PARTIAL",
+      "justification": "Phase contract cites references that do not resolve at HEAD: RangeError.",
       "probe": {
         "doc": "docs/phases/phase-78.md",
         "recordedStatus": "Implementation started on `phase/78-closed-loop-control` from `main` at `164c9793ac8819492939d9d59b6c3b529cc506cd`.",
         "resolvedReferences": 13,
-        "missingReferences": [],
+        "missingReferences": [
+          "RangeError"
+        ],
         "packages": [
           "@irp/daemon",
           "@irp/resilience-runtime"
@@ -1184,73 +1202,186 @@
     {
       "phase": 84,
       "title": "Safety Constraints & Change Governance",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-84.md (issue #14). Safety kernel and intent governance exist in resilience-runtime; remains PARTIAL pending full change-governance evidence and CI on implementing SHA.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-84.md",
+        "recordedStatus": "Contract formalized (issue #14).** Maps existing safety kernel and intent governance already present on `main`. Disposition remains **PARTIAL** until CI evidenc",
+        "resolvedReferences": 8,
+        "missingReferences": [
+          "ALLOW",
+          "DENY"
+        ],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 85,
       "title": "Intent Assurance & Drift Management",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Observe-only intent drift detector implemented in packages/resilience-runtime/src/intent/drift.ts with unit tests. Contract formalized (issue #14). Disposition remains PARTIAL; continuous correction and full CI evidence on green SHA still required.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-85.md",
+        "recordedStatus": "Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns struct",
+        "resolvedReferences": 1,
+        "missingReferences": [],
+        "packages": [
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 86,
       "title": "Unified Connectivity Fabric",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): fabric.ts / fabric-authority.ts / fabric-lifecycle.ts.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-86.md (issue #14). Related fabric capability exists; remains PARTIAL pending phase-specific implementation evidence.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-86.md",
+        "recordedStatus": "Contract formalized (issue #14).** Maps the existing connectivity fabric already present in `@irp/resilience-runtime` (`src/fabric.ts`, `src/fabric-authority.ts",
+        "resolvedReferences": 10,
+        "missingReferences": [],
+        "packages": [
+          "@irp/connectivity",
+          "@irp/gateway-registry",
+          "@irp/network",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/connectivity",
+          "@irp/gateway-registry",
+          "@irp/network",
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 87,
       "title": "Multi-Interface Intelligence",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-87.md (issue #14). Remains PARTIAL pending implementation evidence.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-87.md",
+        "recordedStatus": "Contract formalized (issue #14).** Maps existing multi-interface representation already present in the connectivity fabric (`FabricResource` kinds `Interface`, ",
+        "resolvedReferences": 5,
+        "missingReferences": [
+          "Device",
+          "Interface",
+          "Link"
+        ],
+        "packages": [
+          "@irp/connectivity",
+          "@irp/network",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/connectivity",
+          "@irp/network",
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 88,
       "title": "Multi-Path Connectivity Management",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-88.md (issue #14). Remains PARTIAL pending implementation evidence.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-88.md",
+        "recordedStatus": "Contract formalized (issue #14).** Existing path representation in `@irp/routing` and fabric resource kinds (`Route`, `ApplicationPath`) provide a foundation. F",
+        "resolvedReferences": 4,
+        "missingReferences": [
+          "ApplicationPath"
+        ],
+        "packages": [
+          "@irp/resilience-runtime",
+          "@irp/routing"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/resilience-runtime",
+          "@irp/routing"
+        ]
       }
     },
     {
       "phase": 89,
       "title": "Gateway Intelligence & Selection",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/gateway-registry, src/gateway/gateway-registry-plane.ts.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-89.md (issue #14). Related gateway capability exists; remains PARTIAL.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-89.md",
+        "recordedStatus": "Contract formalized (issue #14).** Existing `@irp/gateway-registry` package and `packages/resilience-runtime/src/gateway/gateway-registry-plane.ts` provide regi",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/gateway-registry",
+          "@irp/resilience-runtime"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/gateway-registry",
+          "@irp/resilience-runtime"
+        ]
       }
     },
     {
       "phase": 90,
       "title": "DNS / Tunnel / Proxy Orchestration Integration",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization. Related pre-existing capability (not a phase implementation): packages/dns, packages/tunnel, src/tunnel/tunnel-control-plane.ts.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-90.md (issue #14). Related DNS/tunnel/proxy surfaces exist; remains PARTIAL.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-90.md",
+        "recordedStatus": "Contract formalized (issue #14).** Existing DNS, tunnel, and proxy packages plus fabric resource kinds provide foundational surfaces. Full orchestration of DNS ",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/dns",
+          "@irp/resilience-runtime",
+          "@irp/tunnel"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/dns",
+          "@irp/resilience-runtime",
+          "@irp/tunnel"
+        ]
       }
     },
     {
       "phase": 91,
       "title": "Application-Aware Path Selection",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-91.md (issue #14). Remains PARTIAL pending application-aware path selection evidence.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-91.md",
+        "recordedStatus": "Contract formalized (issue #14).** Existing fabric resource kinds (ApplicationPath, Service, Endpoint, Destination) and decision orchestration provide foundatio",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime",
+          "@irp/routing"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime",
+          "@irp/routing"
+        ]
       }
     },
     {

@@ -33,6 +33,7 @@ export const reportIdleClientError: IdleClientErrorHandler = (error) => {
 
 export interface DatabaseClientOptions {
   onIdleClientError?: IdleClientErrorHandler;
+  max?: number;
 }
 
 export const createPrismaClient = (
@@ -40,7 +41,7 @@ export const createPrismaClient = (
   options: DatabaseClientOptions = {},
 ): DatabaseClient => {
   if (!databaseUrl) return createMemoryDatabaseClient();
-  const pool = new Pool({ connectionString: databaseUrl, max: 5 });
+  const pool = new Pool({ connectionString: databaseUrl, max: options.max ?? 5 });
   pool.on('error', options.onIdleClientError ?? reportIdleClientError);
   return {
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {

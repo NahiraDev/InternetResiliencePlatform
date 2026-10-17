@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UnauthorizedAppError } from '@irp/core';
 import type { Principal } from '@irp/auth';
+import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
 
 export const PRODUCT_API_VERSION = '1' as const;
 export const PRODUCT_API_PATH = `/api/v${PRODUCT_API_VERSION}` as const;
@@ -327,7 +328,8 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
     data: PRODUCT_API_MANIFEST,
   }));
 
-  app.get(`${PRODUCT_API_PATH}/product/context`, async (request) => {
+  const contextRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 60, windowMs: 60_000 }));
+  app.get(`${PRODUCT_API_PATH}/product/context`, { preHandler: contextRateLimit }, async (request) => {
     const principal = await authenticate(request);
     const visibleCapabilities: string[] = [];
     for (const capability of PRODUCT_API_MANIFEST.capabilities) {
