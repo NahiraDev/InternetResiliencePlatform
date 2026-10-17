@@ -173,6 +173,7 @@ describe('intent API', () => {
         conflict.reason,
         conflict.resolution,
         conflict.timestamp,
+        'principal:principal-a',
       ]))
       .digest('hex');
 
