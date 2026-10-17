@@ -1,5 +1,6 @@
 import { isCompiledIntentEffective } from './compiler.js';
 import type { CompiledIntent } from '../domain/types.js';
+import type { IntentObjective } from '@irp/core';
 
 export type DriftSeverity = 'none' | 'low' | 'medium' | 'high';
 
@@ -13,8 +14,50 @@ export interface IntentDriftResult {
 }
 
 /**
+ * Objectives where a lower observed value is worse (higher is better).
+ * Others (latency, jitter, packetLoss, cost) treat higher observed as worse.
+ */
+const HIGHER_IS_BETTER = new Set<IntentObjective>([
+  'reachability',
+  'throughput',
+  'reliability',
+  'privacy',
+  'trust',
+  'diversity',
+]);
+
+const LOWER_IS_BETTER = new Set<IntentObjective>([
+  'latency',
+  'jitter',
+  'packetLoss',
+  'cost',
+]);
+
+const isWorse = (objective: string, observed: number, target: number): boolean => {
+  if (HIGHER_IS_BETTER.has(objective as IntentObjective)) {
+    return observed < target * 0.9;
+  }
+  if (LOWER_IS_BETTER.has(objective as IntentObjective)) {
+    return observed > target * 1.1;
+  }
+  // Unknown objective: treat any material relative deviation as drift.
+  const rel = Math.abs(observed - target) / Math.max(Math.abs(target), 1e-6);
+  return rel > 0.1;
+};
+
+const severityOf = (objective: string, observed: number, target: number): DriftSeverity => {
+  const worse = isWorse(objective, observed, target);
+  if (!worse) return 'none';
+  const ratio = HIGHER_IS_BETTER.has(objective as IntentObjective)
+    ? observed / Math.max(target, 1e-6)
+    : target / Math.max(observed, 1e-6);
+  return ratio < 0.7 ? 'high' : 'medium';
+};
+
+/**
  * Observe-only drift detector. Never mutates state or applies changes.
- * Compares observed numeric metrics against the intent's objectives map.
+ * Compares observed numeric metrics against the intent's objectives map,
+ * respecting whether higher or lower values are better for each objective.
  * Any detected drift is returned as OBSERVE_ONLY so that callers must still
  * route through intent governance and the safety kernel before any action.
  */
@@ -45,14 +88,13 @@ export const detectIntentDrift = (
     const observedValue = observed[key];
     if (typeof observedValue !== 'number' || typeof target !== 'number') continue;
 
-    // Consider drift when observed is more than 10% below the objective.
-    if (observedValue < target * 0.9) {
-      delta[key] = { target, observed: observedValue };
-      const severity: DriftSeverity = observedValue < target * 0.7 ? 'high' : 'medium';
+    if (isWorse(key, observedValue, target)) {
+      const severity = severityOf(key, observedValue, target);
+      delta[key] = { target, observed: observedValue, direction: HIGHER_IS_BETTER.has(key as IntentObjective) ? 'higher-better' : 'lower-better' };
       if (severity === 'high' || (severity === 'medium' && maxSeverity !== 'high')) {
         maxSeverity = severity;
       }
-      reasons.push(`observed ${key}=${observedValue} is below objective ${target}`);
+      reasons.push(`observed ${key}=${observedValue} diverges from objective ${target}`);
     }
   }
 

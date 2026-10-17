@@ -10,7 +10,7 @@ const baseIntent = (overrides: Partial<CompiledIntent> = {}): CompiledIntent =>
     desiredOutcome: 'stable connectivity',
     target: {},
     constraints: {},
-    objectives: { score: 0.95 },
+    objectives: { reachability: 0.95 },
     confidence: 0.9,
     provenance: 'test',
     autonomy: 'OBSERVE_ONLY',
@@ -26,26 +26,41 @@ describe('detectIntentDrift', () => {
     const intent = baseIntent({
       expiresAt: new Date(Date.now() - 1_000).toISOString(),
     });
-    const result = detectIntentDrift(intent, { score: 1 });
+    const result = detectIntentDrift(intent, { reachability: 1 });
     expect(result.effective).toBe(false);
     expect(result.recommendedAdmission).toBe('DENY');
     expect(result.reasons.some((r) => r.includes('effective'))).toBe(true);
   });
 
-  it('reports high drift when observed score is substantially below objective', () => {
-    const intent = baseIntent();
-    const result = detectIntentDrift(intent, { score: 0.5 });
+  it('reports high drift when higher-is-better objective is substantially below target', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95 } });
+    const result = detectIntentDrift(intent, { reachability: 0.5 });
     expect(result.effective).toBe(true);
     expect(result.severity).toBe('high');
     expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
-    expect(result.observedDelta.score).toEqual({ target: 0.95, observed: 0.5 });
+    expect(result.observedDelta.reachability).toMatchObject({ target: 0.95, observed: 0.5 });
   });
 
-  it('reports no drift for healthy observations', () => {
-    const intent = baseIntent();
-    const result = detectIntentDrift(intent, { score: 0.98 });
+  it('reports high drift when lower-is-better objective is substantially above target', () => {
+    const intent = baseIntent({ objectives: { latency: 50 } });
+    const result = detectIntentDrift(intent, { latency: 200 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.observedDelta.latency).toMatchObject({ target: 50, observed: 200 });
+  });
+
+  it('reports no drift for healthy observations on both directions', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95, latency: 50 } });
+    const result = detectIntentDrift(intent, { reachability: 0.97, latency: 48 });
     expect(result.severity).toBe('none');
     expect(result.recommendedAdmission).toBe('ALLOW');
     expect(Object.keys(result.observedDelta)).toHaveLength(0);
+  });
+
+  it('does not false-positive when latency is below target (better)', () => {
+    const intent = baseIntent({ objectives: { latency: 100 } });
+    const result = detectIntentDrift(intent, { latency: 40 });
+    expect(result.severity).toBe('none');
+    expect(result.recommendedAdmission).toBe('ALLOW');
   });
 });

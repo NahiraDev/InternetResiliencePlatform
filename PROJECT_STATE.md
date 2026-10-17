@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `269f2c4225e74c8db382f707478347ec9904f741` (2026-10-17).
+- **Current main HEAD reviewed this run:** `bce03ba51973c5be2f47037d539a8ddf38973ff8` (2026-10-17). Phase 1-150 status matrix regenerated against this SHA. Phases 84–91 dispositions set to PARTIAL to reflect formalized acceptance contracts (issue #14) and the observe-only intent drift detector (Phase 85). No phase promoted to COMPLETE without full evidence.
 - **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -48,3 +48,6 @@ The Phase 71 gate is limited to the release/distribution contract defined by `do
 IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
 
 - **Issue #14 progress (2026-10-17):** Phase 86–91 contracts added (docs/phases/phase-86.md through phase-91.md). Maps existing fabric, routing, gateway, DNS, tunnel, and application path surfaces; no new runtime authority introduced. Matrix update deferred until evidence exists.
+
+## Phase 85 progress (this branch)
+Observe-only drift detector improved to respect objective directionality (higher-is-better vs lower-is-better). Unit tests extended. Drift remains advisory only; no privileged mutation path added. Matrix and PROJECT_STATE reconciled to HEAD bce03ba.

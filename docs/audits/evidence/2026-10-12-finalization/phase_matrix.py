@@ -152,6 +152,14 @@ PARTIAL_LATER = {
     81: 'Acceptance contract formalized in docs/phases/phase-81.md (issue #13). Compilation exists and is tested; remains PARTIAL pending contract-mapped CI evidence.',
     82: 'Acceptance contract formalized in docs/phases/phase-82.md (issue #13). Policy arbitration exists; remains PARTIAL.',
     83: 'Acceptance contract formalized in docs/phases/phase-83.md (issue #13). Arbitration and conflict journal exist with tests; remains PARTIAL pending full durable journal e2e certification.',
+    84: 'Acceptance contract formalized in docs/phases/phase-84.md (issue #14). Safety kernel and intent governance exist in resilience-runtime; remains PARTIAL pending full change-governance evidence and CI on implementing SHA.',
+    85: 'Observe-only intent drift detector implemented in packages/resilience-runtime/src/intent/drift.ts with unit tests. Contract formalized (issue #14). Disposition remains PARTIAL; continuous correction and full CI evidence on green SHA still required.',
+    86: 'Acceptance contract formalized in docs/phases/phase-86.md (issue #14). Related fabric capability exists; remains PARTIAL pending phase-specific implementation evidence.',
+    87: 'Acceptance contract formalized in docs/phases/phase-87.md (issue #14). Remains PARTIAL pending implementation evidence.',
+    88: 'Acceptance contract formalized in docs/phases/phase-88.md (issue #14). Remains PARTIAL pending implementation evidence.',
+    89: 'Acceptance contract formalized in docs/phases/phase-89.md (issue #14). Related gateway capability exists; remains PARTIAL.',
+    90: 'Acceptance contract formalized in docs/phases/phase-90.md (issue #14). Related DNS/tunnel/proxy surfaces exist; remains PARTIAL.',
+    91: 'Acceptance contract formalized in docs/phases/phase-91.md (issue #14). Remains PARTIAL pending application-aware path selection evidence.',
 }
 RELATED = {
     86: 'fabric.ts / fabric-authority.ts / fabric-lifecycle.ts',
@@ -171,7 +179,7 @@ RELATED = {
 
 rows = []
 for n in range(1, 151):
-    p = probe(n) if 39 <= n <= 83 else {'doc': None}
+    p = probe(n) if 39 <= n <= 91 else {'doc': None}
     title = titles.get(n, '(title not found)')
     if n <= 38:
         disp = 'PARTIAL'
