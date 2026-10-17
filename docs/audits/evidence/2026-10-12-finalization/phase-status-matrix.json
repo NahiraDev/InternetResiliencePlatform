@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "b5648a3168b43a1552ee0409b0ada86219c042c5",
+  "sourceSha": null,
   "summary": {
     "PARTIAL": 88,
     "BLOCKED": 3,
@@ -1930,6 +1930,7 @@
       }
     }
   ],
-  "reconciledAtSha": "095d70182c436a54392f69b5cdc2ba40cfb8e1b2",
-  "probeFreshness": "The matrix has conservative status dispositions and 150 rows, but the full canonical reference probe was not executed in this connector session. Probe data for phases 39–91 is carried forward from the previous saved matrix; Phase 92 probe was refreshed against its corrected contract. Rerun phase_matrix.py on the final merged PR head before treating all probe inventory fields as fresh."
+  "probeFreshness": "This is a conservative manual reconstruction of 150 phase dispositions, not output from an executed canonical generator. The canonical reference probe was not run in this connector session. Probe inventory for phases 39–91 is carried forward from the prior saved matrix; Phase 92 package/reference metadata was manually corrected after inspection. Rerun docs/audits/evidence/2026-10-12-finalization/phase_matrix.py on the final merged HEAD to populate sourceSha and refresh every probe field before treating the inventory as fresh.",
+  "baselineReviewedSha": "b854e4c8ff1e7b45c0f5059a97476171bfb568c9",
+  "generationStatus": "NOT_GENERATED_IN_CONNECTOR_SESSION"
 }
