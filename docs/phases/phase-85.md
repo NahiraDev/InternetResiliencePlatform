@@ -18,6 +18,7 @@ Define the contract for continuously assuring that observed network state remain
 ## Canonical owner
 
 - `@irp/resilience-runtime` — intent effective-window evaluation (`isCompiledIntentEffective`, lifecycle status)
+- `@irp/resilience-runtime` — `src/intent/drift.ts` (`detectIntentDrift`, `DriftSignal`)
 - Observation and decision orchestration packages that already produce observed vs desired comparisons
 - Future drift reporter must consume, not replace, the canonical intent store
 
@@ -51,9 +52,10 @@ Define the contract for continuously assuring that observed network state remain
 
 ## Rollback considerations
 
-- Documentation-only until implementation lands.
-- Implementation must be feature-flagged or safe-by-default (observe-only) so it can be disabled without affecting the closed-loop stop conditions.
+- Implementation is safe-by-default (observe-only) and can be disabled by not calling `detectIntentDrift`.
+- Revert the drift module and barrel export if later requirements diverge.
 
 ## Related issues
 
 - Tracking: issue #14
+- Implementation branch: `phase/85-intent-drift-detection`

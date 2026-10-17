@@ -1,5 +1,7 @@
 import type { DecisionOutcome, DecisionRecord, RuntimeContext } from './domain/types.js';
 import type { ResilienceRuntime } from './runtime.js';
+import { detectIntentDrift, type IntentDriftResult } from './intent/drift.js';
+import type { CompiledIntent } from './domain/types.js';
 
 export type ClosedLoopStopReason = 'healthy' | 'max_cycles' | 'blocked' | 'failed' | 'aborted';
 
@@ -18,6 +20,12 @@ export interface ClosedLoopOptions extends Partial<RuntimeContext> {
   readonly idempotencyKey?: string;
   /** Base correlation id. Each cycle receives a deterministic suffix. */
   readonly correlationId?: string;
+  /** Optional observe-only inputs for Phase 85 intent drift assessment. Never triggers mutation. */
+  readonly driftInputs?: {
+    readonly intent: CompiledIntent;
+    readonly observed: Readonly<Record<string, unknown>>;
+    readonly at?: Date;
+  };
 }
 
 export interface ClosedLoopResult {
@@ -25,6 +33,8 @@ export interface ClosedLoopResult {
   readonly stopReason: ClosedLoopStopReason;
   readonly cyclesCompleted: number;
   readonly records: readonly DecisionRecord[];
+  /** Observe-only drift assessments collected when driftInputs were supplied. */
+  readonly driftAssessments?: readonly IntentDriftResult[];
 }
 
 export interface ClosedLoopRuntime {
@@ -71,10 +81,19 @@ const sleep = async (milliseconds: number, signal?: AbortSignal): Promise<void> 
   });
 };
 
+const collectDriftAssessments = (options: ClosedLoopOptions): IntentDriftResult[] | undefined => {
+  if (!options.driftInputs) return undefined;
+  const { intent, observed, at } = options.driftInputs;
+  // Pure observation only — never mutates and never calls privileged paths.
+  return [detectIntentDrift(intent, observed, at)];
+};
+
 /**
  * Runs the existing ResilienceRuntime in a bounded observe→decide→apply→verify/recover loop.
  * This class owns only loop control and stop conditions; decision, policy, execution,
  * verification and recovery remain owned by ResilienceRuntime and its canonical components.
+ * Optional drift assessments are observe-only and must be re-admitted through governance
+ * before any corrective action.
  */
 export class BoundedClosedLoopController {
   constructor(private readonly runtime: ClosedLoopRuntime | Pick<ResilienceRuntime, 'cycle'>) {}
@@ -84,6 +103,7 @@ export class BoundedClosedLoopController {
     const intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
     const stopWhenHealthy = options.stopWhenHealthy ?? true;
     const signal = options.signal;
+    const driftAssessments = collectDriftAssessments(options);
 
     assertIntegerInRange(maxCycles, 'maxCycles', 1, MAX_ALLOWED_CYCLES);
     assertNonNegativeInteger(intervalMs, 'intervalMs');
@@ -113,24 +133,27 @@ export class BoundedClosedLoopController {
       }
     }
 
+    const withDrift = (result: Omit<ClosedLoopResult, 'driftAssessments'>): ClosedLoopResult =>
+      driftAssessments ? { ...result, driftAssessments } : result;
+
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {
       if (signal?.aborted) {
-        return {
+        return withDrift({
           status: 'aborted',
           stopReason: 'aborted',
           cyclesCompleted: records.length,
           records,
-        };
+        });
       }
 
       await sleep(cycleNumber === 1 ? 0 : intervalMs, signal);
       if (signal?.aborted) {
-        return {
+        return withDrift({
           status: 'aborted',
           stopReason: 'aborted',
           cyclesCompleted: records.length,
           records,
-        };
+        });
       }
 
       let record: DecisionRecord;
@@ -142,12 +165,12 @@ export class BoundedClosedLoopController {
         });
       } catch (error) {
         if (signal?.aborted) {
-          return {
+          return withDrift({
             status: 'aborted',
             stopReason: 'aborted',
             cyclesCompleted: records.length,
             records,
-          };
+          });
         }
         throw error;
       }
@@ -155,38 +178,38 @@ export class BoundedClosedLoopController {
       records.push(record);
 
       if (stopWhenHealthy && terminalHealthyOutcomes.has(record.outcome)) {
-        return {
+        return withDrift({
           status: 'healthy',
           stopReason: 'healthy',
           cyclesCompleted: records.length,
           records,
-        };
+        });
       }
 
       if (record.outcome === 'blocked') {
-        return {
+        return withDrift({
           status: 'blocked',
           stopReason: 'blocked',
           cyclesCompleted: records.length,
           records,
-        };
+        });
       }
 
       if (record.outcome === 'failed') {
-        return {
+        return withDrift({
           status: 'failed',
           stopReason: 'failed',
           cyclesCompleted: records.length,
           records,
-        };
+        });
       }
     }
 
-    return {
+    return withDrift({
       status: 'bounded',
       stopReason: 'max_cycles',
       cyclesCompleted: records.length,
       records,
-    };
+    });
   }
 }
