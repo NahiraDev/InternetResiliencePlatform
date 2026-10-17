@@ -11,7 +11,7 @@
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
-- **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open.
+- **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open. Latest Release Gate on main is green.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
 - **Issue #14 progress (2026-10-17):** Phase 84–91 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric; Phase 87 multi-interface; Phase 88 multi-path; Phase 89 gateway intelligence; Phase 90 DNS/tunnel/proxy orchestration; Phase 91 application-aware path selection). Remaining Phases 92–150 still require contracts and explicit authorization before implementation. Matrix update deferred until evidence exists. No new runtime authority introduced.
 
