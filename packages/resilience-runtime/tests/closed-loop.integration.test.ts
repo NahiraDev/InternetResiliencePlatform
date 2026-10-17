@@ -90,4 +90,57 @@ describe('BoundedClosedLoopController integration', () => {
       events.indexOf('runtime.transaction.created'),
     );
   });
+
+  it('collects observe-only intent drift assessments without triggering mutation', async () => {
+    const runtime = new ResilienceRuntime([], {
+      runtimeId: 'phase-85-drift-integration',
+      instanceId: 'phase-85-drift-test',
+    });
+    const cycle = vi.spyOn(runtime, 'cycle');
+    const controller = new BoundedClosedLoopController(runtime);
+
+    const compiledIntent = {
+      intentId: 'drift-test',
+      version: 1,
+      priority: 'normal' as const,
+      desiredOutcome: 'high reachability',
+      target: {},
+      constraints: {},
+      objectives: { reachability: 0.95 },
+      confidence: 0.9,
+      provenance: 'test',
+      autonomy: 'OBSERVE_ONLY' as const,
+      scope: {},
+      effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      compiledAt: new Date().toISOString(),
+    };
+
+    const result = await controller.run({
+      maxCycles: 1,
+      stopWhenHealthy: false,
+      mode: 'simulation',
+      correlationId: 'phase-85/drift',
+      idempotencyKey: 'phase-85/drift',
+      context: {
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+      },
+      driftInputs: {
+        intent: compiledIntent,
+        observed: { reachability: 0.4 },
+      },
+    });
+
+    expect(cycle).toHaveBeenCalledTimes(1);
+    expect(result.cyclesCompleted).toBe(1);
+    expect(result.driftAssessments).toBeDefined();
+    expect(result.driftAssessments).toHaveLength(1);
+    expect(result.driftAssessments![0].severity).toBe('high');
+    expect(result.driftAssessments![0].recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.records[0]?.outcome).toBe('simulated');
+    // Ensure no additional mutation events beyond the normal cycle
+    const events = runtime.events.events.map(({ event }) => event);
+    expect(events.filter((e) => e.includes('transaction')).length).toBeLessThanOrEqual(1);
+  });
 });
