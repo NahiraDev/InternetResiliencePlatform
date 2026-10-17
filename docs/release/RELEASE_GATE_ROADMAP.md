@@ -6,9 +6,9 @@
 
 - Commit reviewed: `51979d36bc3cf1de302d4cb166685d2475d79950` (`main`, merge of PR #325), reviewed 2026-10-07.
 - Local gates re-run on this commit with Node 24 and pnpm 11.21.0: `pnpm validate`, `typecheck`, `lint`, `test`, `validate:docs`, `architecture:check`, `architecture:guards`, `audit:deep`, `examples:smoke`, `phase69:readiness`, `phase70:certify`, `production:assure`, `full-system:matrix`, `integration:graph`, `runtime:integration:strict` all pass.
-- Remote CI on that commit: CI, System Assurance, Linux Primary Device, Runtime Lab, Repository Deep Audit, Android, Windows, macOS and iOS Network Integration pass. **iOS Full Client and Public Runtime Lab fail**, which makes `Release Gate` fail. No GitHub Release has ever been published.
+- Remote CI on that historical 2026-10-07 baseline: CI, System Assurance, Linux Primary Device, Runtime Lab, Repository Deep Audit, Android, Windows, macOS and iOS Network Integration passed. **iOS Full Client and Public Runtime Lab failed**, which made `Release Gate` fail. The statement that no GitHub Release existed applies only to that historical date; developer-preview/prereleases `v0.2.0` and `v0.2.1` were published later. Neither is production certification.
 
-## Release blockers found and fixed in this change
+## Release blockers recorded in the historical 2026-10-07 change
 
 | #   | Blocker                                                                                                                                                                                                                         | Fix                                                                                                                                                  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -20,8 +20,8 @@
 
 ## Known remaining items (not changed here)
 
-- Dev-only advisories: `vitest` 3.2.7 and `tinypool` (two critical, two moderate) are reported by `pnpm audit`. Moving to vitest 4.1.11 broke the `@irp/failover` build in a trial run (type resolution), so it needs its own change with a full test run. The `package.json` ranges (`vitest ^4.1.11`, `@vitest/coverage-v8 5.0.2`) are also inconsistent with the 3.2.7 override.
-- `Release Gate` polls for 90 minutes while Public Runtime Lab runs for up to 6 hours, so intermediate gate runs time out and show red. The final run after all workflows complete is the authoritative one.
+- Historical advisory snapshot (2026-10-07; must be re-audited against the current lockfile): `vitest` 3.2.7 and `tinypool` were reported by `pnpm audit` with two critical and two moderate advisories. A prior trial of vitest 4.1.11 broke `@irp/failover` type resolution; it requires an isolated dependency change and full verification. The recorded `package.json` ranges (`vitest ^4.1.11`, `@vitest/coverage-v8 5.0.2`) were inconsistent with the 3.2.7 override.
+- `Release Gate` is event-driven, not a 90-minute polling loop. Each completed prerequisite workflow triggers an exact-SHA snapshot evaluation; an early evaluation can fail because a required workflow has not completed, and the next completion triggers another evaluation. A passing result is authoritative only for the exact SHA evaluated. Current repair-branch CI has not yet been verified.
 - `pnpm diagnostics:strict` exits non-zero without a live runtime URL. That is expected locally and is covered by Runtime Lab in CI.
 
 ## Roadmap
@@ -29,7 +29,7 @@
 ### Step 1 — Land the fixes (hours)
 
 1. Merge this change through a pull request; wait for CI, Repository Deep Audit and System Assurance to pass.
-2. Exit criterion: all workflows other than iOS Full Client and the Public Runtime Lab soak are green on the PR.
+2. Exit criterion: every required workflow passes on the exact PR SHA. No required platform or soak workflow may be excluded, waived, or made non-blocking to obtain a green gate.
 
 ### Step 2 — Turn iOS Full Client green (hours to 1 day)
 
@@ -51,10 +51,10 @@
 
 ### Step 5 — Phase 71 certification (day 2)
 
-1. Tag a real semantic version (for example `v0.2.0`) on the green commit. The `IRP Release` workflow verifies the Release Gate, builds all five platform assets, runs `scripts/phase71-release.mjs`, generates and verifies `SHA256SUMS.txt`, and publishes.
+1. Existing `v0.2.0` and `v0.2.1` are developer-preview/prereleases, not production-certified releases. Do not create or promote a stable tag from this repair alone. A future release candidate must use a newly verified commit and pass the Release Gate and `scripts/phase71-release.mjs`; generated checksums and every published platform asset must be inspected before any production-release claim.
 2. Inspect every published asset: exactly one Android debug APK, Linux bundle, macOS bundle, Windows bundle and iOS source ZIP; no `.ipa`; names versioned; all non-empty; all covered by `SHA256SUMS.txt`.
 3. Record the release URL and inspection result in `docs/phases/phase-71.md`, then update `PROJECT_STATE.md`.
-4. Exit criterion: Phase 71 marked certified with evidence. Only then may anything be described as released.
+4. Exit criterion: Phase 71's release/distribution contract is recorded with its actual asset and checksum evidence. A developer-preview/prerelease label is not equivalent to production certification; production claims additionally require Step 6.
 
 ### Step 6 — Production certification inputs (Phase 70 / Gate D)
 
@@ -69,7 +69,7 @@ Exit criterion: `pnpm production:certify` reports certified with the evidence bu
 
 ### Step 7 — Post-v1 execution (Phases 72-150)
 
-Starts only after Steps 1-6. Work follows the dependency rules in `MASTER_ROADMAP_V2.md`: one owner per phase, branch `phase/<number>-<short-name>`, extend the existing canonical owner (`@irp/resilience-runtime`) rather than creating a second control plane.
+Architecture work in Phases 72–150 follows `PROJECT_STATE.md` and the dependency rules in `MASTER_ROADMAP_V2.md`; it does not need to wait for production certification. Each phase requires an explicit contract/authorization where specified, one owner, and a branch `phase/<number>-<short-name>`. Extend the canonical owner (`@irp/resilience-runtime`) rather than creating a second control plane. Stable-release and production-certification claims remain blocked until all release and external-evidence gates pass.
 
 | Order | Groups                                                                     | Phases  | Gate to start                                          |
 | ----- | -------------------------------------------------------------------------- | ------- | ------------------------------------------------------ |
