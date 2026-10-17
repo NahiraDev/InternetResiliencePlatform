@@ -5,15 +5,15 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `7d063bff0dce0a3f7a6b3605f99b3e520b14bb26` (merge of PR #28: Phase 84/85 acceptance contracts).
-- **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated on current HEAD. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
+- **Current main HEAD reviewed this run:** `bce03ba51973c5be2f47037d539a8ddf38973ff8` (2026-10-17, after PR #38 merge).
+- **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Issue #13 progress (this run):** acceptance contracts for Phases 79–83 formalized and merged (PR #22). Phase matrix regenerated on current HEAD to reflect contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
-- **Release state:** Phase 71 release-contract evidence exists: GitHub Release [v0.2.1](https://github.com/nimarahimloo/InternetResiliencePlatform/releases/tag/v0.2.1). Production certification (roadmap Step 6) remains open.
+- **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
+- **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open. Latest Release Gate on main is green.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (this run):** Phase 84 and Phase 85 acceptance contracts formalized and merged. Phase 85 implementation authorized: observational `detectIntentDrift` added to `@irp/resilience-runtime` (`src/intent/drift.ts`) with unit tests covering effective-window boundaries and synthetic drift scenarios. Disposition remains PARTIAL until CI evidence is attached and the phase matrix is regenerated from evidence. Remaining Phases 86–150 still require contracts and explicit authorization before implementation.
+- **Issue #14 progress (2026-10-17):** Phase 84–92 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric; Phase 87 multi-interface; Phase 88 multi-path; Phase 89 gateway intelligence; Phase 90 DNS/tunnel/proxy orchestration; Phase 91 application-aware path selection; Phase 92 connectivity service assurance). Remaining Phases 93–150 still require contracts and explicit authorization before implementation. Matrix update deferred until evidence exists. No new runtime authority introduced.
 
 ## Phase 78 objective
 
@@ -40,12 +40,11 @@ The Phase 71 gate is limited to the release/distribution contract defined by `do
 - Release path and blockers: `docs/release/RELEASE_GATE_ROADMAP.md`.
 - Current post-70 roadmap: `docs/roadmap/MASTER_ROADMAP_V2.md`.
 - Historical 0–70 roadmap: `ROADMAP.md`.
-- Current phase records: `docs/phases/` (including formalized Phase 79–85 contracts under issues #13 and #14).
+- Current phase records: `docs/phases/` (including formalized Phase 79–92 contracts under issues #13/#14).
 - Engineering governance: `docs/architecture/engineering-governance.md`.
 
 ## Product objective
 
 IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
 
-- **Issue #12 progress (2026-10-14):** Acceptance evidence register extended through Phases 1–38 (branches issue-12-extend-evidence-register-phases-1-15 / -16-25 and this continuation). History matrix set to mapped for all 1–38. Dispositions remain PARTIAL pending fresh CI evidence. No COMPLETE claimed from documentation alone.
-- **Phase 85 implementation (2026-10-16):** Observational drift detection landed on branch `phase/85-intent-drift-detection`. Safe-by-default (observe-only). No mutation path added.
+- **Issue #14 progress (2026-10-17):** Phase 86–92 contracts added (docs/phases/phase-86.md through phase-92.md). Maps existing fabric, routing, gateway, DNS, tunnel, application path, and assurance surfaces; no new runtime authority introduced. Matrix update deferred until evidence exists.

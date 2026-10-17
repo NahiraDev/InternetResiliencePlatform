@@ -93,22 +93,13 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            latest=false
           tags: |
-            type=raw,value=sha-${{ steps.source.outputs.short_sha }}
+            type=sha,prefix=sha-,format=short
           labels: |
-            org.opencontainers.image.revision=${{ steps.source.outputs.sha }}
             io.irp.publication.class=developer-preview
 
       - name: Enforce developer-preview tag policy
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: |
-          set -euo pipefail
-          export IMAGE="${REGISTRY}/${GITHUB_REPOSITORY,,}"
-          node scripts/docker-publication-policy.mjs
+        run: node scripts/docker-publication-policy.mjs ${{ steps.meta.outputs.tags }}
 
       - name: Build and push Docker image
         id: build
@@ -127,11 +118,15 @@ jobs:
 
       - name: Scan published image by immutable digest (fail-closed)
         env:
-          IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          REGISTRY: ${{ env.REGISTRY }}
+          REPO_NAME: ${{ github.event.repository.name }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
           test -n "$DIGEST"
+          # Image names must be lowercase. metadata-action lowercases; the scan
+          # must use the same canonical reference.
+          IMAGE_NAME="${REGISTRY}/$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')"
           # Scan the exact pushed digest, not a re-build. HIGH/CRITICAL findings
           # fail the workflow so Release Gate cannot pass with an unscanned or
           # unverified image.

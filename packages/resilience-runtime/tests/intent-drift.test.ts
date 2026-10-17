@@ -1,83 +1,66 @@
-import { describe, expect, it } from 'vitest';
-import type { CompiledIntent } from '../src/domain/types.js';
+import { describe, it, expect } from 'vitest';
 import { detectIntentDrift } from '../src/intent/drift.js';
-import { isCompiledIntentEffective } from '../src/intent/compiler.js';
+import type { CompiledIntent } from '../src/domain/types.js';
 
-const baseIntent = (overrides: Partial<CompiledIntent> = {}): CompiledIntent => ({
-  intentId: 'intent-test-1',
-  version: 1,
-  priority: 'normal',
-  desiredOutcome: 'low latency reachability',
-  target: {},
-  constraints: {},
-  objectives: { latency: 0.8, reachability: 0.9 },
-  confidence: 0.85,
-  provenance: 'test',
-  autonomy: 'SAFE_AUTOMATION',
-  scope: {},
-  compiledAt: '2026-10-01T00:00:00.000Z',
-  ...overrides,
-});
+const baseIntent = (overrides: Partial<CompiledIntent> = {}): CompiledIntent =>
+  ({
+    intentId: 'intent-1',
+    version: 1,
+    priority: 'normal',
+    desiredOutcome: 'stable connectivity',
+    target: {},
+    constraints: {},
+    objectives: { reachability: 0.95 },
+    confidence: 0.9,
+    provenance: 'test',
+    autonomy: 'OBSERVE_ONLY',
+    scope: {},
+    effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    compiledAt: new Date().toISOString(),
+    ...overrides,
+  }) as CompiledIntent;
 
-describe('Phase 85 intent drift detection', () => {
-  it('classifies effective vs expired intents', () => {
-    const now = new Date('2026-10-16T00:00:00.000Z');
-    const active = baseIntent({
-      effectiveFrom: '2026-10-01T00:00:00.000Z',
-      expiresAt: '2026-11-01T00:00:00.000Z',
+describe('detectIntentDrift', () => {
+  it('classifies expired intents as not effective and recommends DENY', () => {
+    const intent = baseIntent({
+      expiresAt: new Date(Date.now() - 1_000).toISOString(),
     });
-    const expired = baseIntent({
-      effectiveFrom: '2026-09-01T00:00:00.000Z',
-      expiresAt: '2026-10-01T00:00:00.000Z',
-    });
-
-    expect(isCompiledIntentEffective(active, now)).toBe(true);
-    expect(isCompiledIntentEffective(expired, now)).toBe(false);
-
-    const expiredSignal = detectIntentDrift(expired, { latencyMs: 50 }, now);
-    expect(expiredSignal.effective).toBe(false);
-    expect(expiredSignal.recommendedAdmission).toBe('DENY');
-    expect(expiredSignal.severity).toBe('none');
+    const result = detectIntentDrift(intent, { reachability: 1 });
+    expect(result.effective).toBe(false);
+    expect(result.recommendedAdmission).toBe('DENY');
+    expect(result.reasons.some((r) => r.includes('effective'))).toBe(true);
   });
 
-  it('returns structured drift signal with severity and recommended admission', () => {
-    const intent = baseIntent();
-    const highDrift = detectIntentDrift(intent, {
-      latencyMs: 400,
-      packetLoss: 0.15,
-      reachability: 0.4,
-    });
-
-    expect(highDrift.intentId).toBe('intent-test-1');
-    expect(highDrift.effective).toBe(true);
-    expect(highDrift.severity).toBe('high');
-    expect(highDrift.recommendedAdmission).toBe('REQUIRE_APPROVAL');
-    expect(highDrift.observedDelta.latencyMs).toBeGreaterThan(0);
-    expect(highDrift.reasons.length).toBeGreaterThan(0);
-    expect(highDrift.reasons.some((r) => r.includes('latency'))).toBe(true);
+  it('reports high drift when higher-is-better objective is substantially below target', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95 } });
+    const result = detectIntentDrift(intent, { reachability: 0.5 });
+    expect(result.effective).toBe(true);
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.observedDelta.reachability).toMatchObject({ target: 0.95, observed: 0.5 });
   });
 
-  it('reports no significant drift for healthy observations', () => {
-    const intent = baseIntent();
-    const healthy = detectIntentDrift(intent, {
-      latencyMs: 40,
-      packetLoss: 0.01,
-      reachability: 0.98,
-    });
-
-    expect(healthy.severity).toBe('none');
-    expect(healthy.recommendedAdmission).toBe('ALLOW');
-    expect(Object.keys(healthy.observedDelta)).toHaveLength(0);
-    expect(healthy.reasons[0]).toMatch(/no significant drift/);
+  it('reports high drift when lower-is-better objective is substantially above target', () => {
+    const intent = baseIntent({ objectives: { latency: 50 } });
+    const result = detectIntentDrift(intent, { latency: 200 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.observedDelta.latency).toMatchObject({ target: 50, observed: 200 });
   });
 
-  it('never returns a mutation-capable result; signal is observational', () => {
-    const intent = baseIntent();
-    const signal = detectIntentDrift(intent, { latencyMs: 200 });
-    // Type-level and structural guarantee: no execute/apply fields exist
-    expect(signal).not.toHaveProperty('execute');
-    expect(signal).not.toHaveProperty('apply');
-    expect(signal).not.toHaveProperty('mutate');
-    expect(typeof signal.recommendedAdmission).toBe('string');
+  it('reports no drift for healthy observations on both directions', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95, latency: 50 } });
+    const result = detectIntentDrift(intent, { reachability: 0.97, latency: 48 });
+    expect(result.severity).toBe('none');
+    expect(result.recommendedAdmission).toBe('ALLOW');
+    expect(Object.keys(result.observedDelta)).toHaveLength(0);
+  });
+
+  it('does not false-positive when latency is below target (better)', () => {
+    const intent = baseIntent({ objectives: { latency: 100 } });
+    const result = detectIntentDrift(intent, { latency: 40 });
+    expect(result.severity).toBe('none');
+    expect(result.recommendedAdmission).toBe('ALLOW');
   });
 });

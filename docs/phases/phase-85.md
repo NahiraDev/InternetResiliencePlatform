@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implementation authorized and landed (issue #14).** Observational `detectIntentDrift` implemented in `@irp/resilience-runtime` (`src/intent/drift.ts`). Effective-window evaluation reuses existing `isCompiledIntentEffective`. Disposition remains **PARTIAL** until CI evidence is attached and the phase matrix is regenerated from evidence. Autonomous correction remains out of scope (non-goal).
+**Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns structured, non-mutating results. Full continuous correction remains out of scope. Disposition remains **PARTIAL** pending CI evidence on the implementing SHA.
 
 ## Objective
 

@@ -20,6 +20,12 @@ Provide the reusable, transport-independent security foundation for Android/iOS/
 - Platform metadata for Android, iOS, Linux, macOS, Windows and unknown clients.
 - Unit coverage for credential lifecycle, refresh replay, scope validation, audit bounds and secret redaction.
 
+## Implementation references
+
+- Package: `@irp/auth`
+- Primary sources: `packages/auth/src/index.ts`, `packages/auth/src/client-security.ts`
+- Tests: `packages/auth/src/index.test.ts`, `packages/auth/src/client-security.test.ts`
+
 ## Integration boundary
 
 Phase 39 established the security primitives. The actual Fastify remote-client lifecycle was subsequently integrated in **Phase 42**. Therefore the original Phase 39 statement that API integration was still pending is historical and must not be treated as the current API state.

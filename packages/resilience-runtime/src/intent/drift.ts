@@ -1,117 +1,109 @@
-/**
- * Intent assurance and drift detection for Phase 85.
- * Observational only: never applies mutations.
- * Drift signals feed the existing decision / closed-loop path.
- */
-
-import type { CompiledIntent } from '../domain/types.js';
 import { isCompiledIntentEffective } from './compiler.js';
+import type { CompiledIntent } from '../domain/types.js';
+import type { IntentObjective } from '@irp/core';
 
 export type DriftSeverity = 'none' | 'low' | 'medium' | 'high';
-export type RecommendedAdmission = 'ALLOW' | 'PLAN_ONLY' | 'REQUIRE_APPROVAL' | 'DENY';
 
-export interface ObservedMetrics {
-  readonly latencyMs?: number;
-  readonly packetLoss?: number;
-  readonly jitterMs?: number;
-  readonly throughputMbps?: number;
-  readonly reachability?: number;
-  readonly [key: string]: number | undefined;
-}
-
-export interface DriftSignal {
+export interface IntentDriftResult {
   readonly intentId: string;
-  readonly observedDelta: Readonly<Record<string, number>>;
-  readonly severity: DriftSeverity;
-  readonly recommendedAdmission: RecommendedAdmission;
-  readonly reasons: readonly string[];
   readonly effective: boolean;
+  readonly observedDelta: Record<string, unknown>;
+  readonly severity: DriftSeverity;
+  readonly recommendedAdmission: 'ALLOW' | 'PLAN_ONLY' | 'REQUIRE_APPROVAL' | 'DENY' | 'OBSERVE_ONLY';
+  readonly reasons: readonly string[];
 }
-
-const DEFAULT_THRESHOLDS = {
-  latencyMs: 150,
-  packetLoss: 0.05,
-  jitterMs: 30,
-  throughputMbps: 5,
-  reachability: 0.9,
-} as const;
 
 /**
- * Detects drift between a compiled intent's desired outcomes and observed metrics.
- * Returns a structured signal suitable for audit and closed-loop consumption.
- * Does not mutate anything.
+ * Objectives where a lower observed value is worse (higher is better).
+ * Others (latency, jitter, packetLoss, cost) treat higher observed as worse.
  */
-export function detectIntentDrift(
+const HIGHER_IS_BETTER = new Set<IntentObjective>([
+  'reachability',
+  'throughput',
+  'reliability',
+  'privacy',
+  'trust',
+  'diversity',
+]);
+
+const LOWER_IS_BETTER = new Set<IntentObjective>([
+  'latency',
+  'jitter',
+  'packetLoss',
+  'cost',
+]);
+
+const isWorse = (objective: string, observed: number, target: number): boolean => {
+  if (HIGHER_IS_BETTER.has(objective as IntentObjective)) {
+    return observed < target * 0.9;
+  }
+  if (LOWER_IS_BETTER.has(objective as IntentObjective)) {
+    return observed > target * 1.1;
+  }
+  // Unknown objective: treat any material relative deviation as drift.
+  const rel = Math.abs(observed - target) / Math.max(Math.abs(target), 1e-6);
+  return rel > 0.1;
+};
+
+const severityOf = (objective: string, observed: number, target: number): DriftSeverity => {
+  const worse = isWorse(objective, observed, target);
+  if (!worse) return 'none';
+  const ratio = HIGHER_IS_BETTER.has(objective as IntentObjective)
+    ? observed / Math.max(target, 1e-6)
+    : target / Math.max(observed, 1e-6);
+  return ratio < 0.7 ? 'high' : 'medium';
+};
+
+/**
+ * Observe-only drift detector. Never mutates state or applies changes.
+ * Compares observed numeric metrics against the intent's objectives map,
+ * respecting whether higher or lower values are better for each objective.
+ * Any detected drift is returned as OBSERVE_ONLY so that callers must still
+ * route through intent governance and the safety kernel before any action.
+ */
+export const detectIntentDrift = (
   intent: CompiledIntent,
-  observed: ObservedMetrics,
-  now = new Date(),
-): DriftSignal {
-  const effective = isCompiledIntentEffective(intent, now);
-  const deltas: Record<string, number> = {};
+  observed: Readonly<Record<string, unknown>>,
+  at = new Date(),
+): IntentDriftResult => {
+  const effective = isCompiledIntentEffective(intent, at);
   const reasons: string[] = [];
 
   if (!effective) {
-    reasons.push('intent is not currently effective (expired, not yet active, or superseded)');
+    reasons.push('intent is outside its effective lifecycle window');
     return {
       intentId: intent.intentId,
-      observedDelta: Object.freeze(deltas),
+      effective: false,
+      observedDelta: {},
       severity: 'none',
       recommendedAdmission: 'DENY',
-      reasons: Object.freeze(reasons),
-      effective: false,
+      reasons,
     };
   }
 
-  let severityScore = 0;
+  const delta: Record<string, unknown> = {};
+  let maxSeverity: DriftSeverity = 'none';
 
-  if (observed.latencyMs !== undefined && observed.latencyMs > DEFAULT_THRESHOLDS.latencyMs) {
-    const delta = observed.latencyMs - DEFAULT_THRESHOLDS.latencyMs;
-    deltas.latencyMs = delta;
-    reasons.push(`latency exceeds threshold by ${delta.toFixed(1)} ms`);
-    severityScore += Math.min(3, delta / 50);
+  for (const [key, target] of Object.entries(intent.objectives)) {
+    const observedValue = observed[key];
+    if (typeof observedValue !== 'number' || typeof target !== 'number') continue;
+
+    if (isWorse(key, observedValue, target)) {
+      const severity = severityOf(key, observedValue, target);
+      delta[key] = { target, observed: observedValue, direction: HIGHER_IS_BETTER.has(key as IntentObjective) ? 'higher-better' : 'lower-better' };
+      if (severity === 'high' || (severity === 'medium' && maxSeverity !== 'high')) {
+        maxSeverity = severity;
+      }
+      reasons.push(`observed ${key}=${observedValue} diverges from objective ${target}`);
+    }
   }
 
-  if (observed.packetLoss !== undefined && observed.packetLoss > DEFAULT_THRESHOLDS.packetLoss) {
-    const delta = observed.packetLoss - DEFAULT_THRESHOLDS.packetLoss;
-    deltas.packetLoss = delta;
-    reasons.push(`packet loss exceeds threshold by ${(delta * 100).toFixed(1)}%`);
-    severityScore += Math.min(3, delta * 40);
-  }
-
-  if (
-    observed.reachability !== undefined &&
-    observed.reachability < DEFAULT_THRESHOLDS.reachability
-  ) {
-    const delta = DEFAULT_THRESHOLDS.reachability - observed.reachability;
-    deltas.reachability = -delta;
-    reasons.push(`reachability below threshold by ${(delta * 100).toFixed(1)}%`);
-    severityScore += Math.min(3, delta * 10);
-  }
-
-  let severity: DriftSeverity = 'none';
-  let recommended: RecommendedAdmission = 'ALLOW';
-
-  if (severityScore >= 4) {
-    severity = 'high';
-    recommended = 'REQUIRE_APPROVAL';
-  } else if (severityScore >= 2) {
-    severity = 'medium';
-    recommended = 'PLAN_ONLY';
-  } else if (severityScore > 0) {
-    severity = 'low';
-    recommended = 'ALLOW';
-  }
-
-  if (reasons.length === 0) {
-    reasons.push('no significant drift detected against default thresholds');
-  }
-
-  return Object.freeze({
+  return {
     intentId: intent.intentId,
-    observedDelta: Object.freeze(deltas),
-    severity,
-    recommendedAdmission: recommended,
-    reasons: Object.freeze(reasons),
     effective: true,
-  });
-}
+    observedDelta: delta,
+    severity: maxSeverity,
+    recommendedAdmission: maxSeverity === 'none' ? 'ALLOW' : 'OBSERVE_ONLY',
+    reasons: reasons.length > 0 ? reasons : ['no material drift detected'],
+  };
+};
