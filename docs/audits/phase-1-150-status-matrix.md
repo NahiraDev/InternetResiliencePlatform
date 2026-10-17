@@ -10,8 +10,8 @@
 | Disposition | Phases |
 | --- | ---: |
 | COMPLETE | 1 |
-| PARTIAL | 89 |
-| BLOCKED | 2 |
+| PARTIAL | 88 |
+| BLOCKED | 3 |
 | NOT STARTED | 58 |
 | NOT APPLICABLE | 0 |
 
@@ -59,7 +59,7 @@
 | 38 | operational diagnostics | PARTIAL | Acceptance evidence register (docs/audits/evidence/phase-1-38-acceptance-evidence.md) maps packages, paths and recorded test passes for this phase; phase-history-evidence-matrix.md records it as mapped. Disposition remains PARTIAL pending attachment of a fresh per-phase CI workflow URL and full acceptance-criteria verification beyond the historical reconstruction. |
 | 39 | device identity and scoped sessions | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
 | 40 | controlled-fault resilience validation | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
-| 41 | independent regional evidence | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
+| 41 | independent regional evidence | BLOCKED | Regional validation tooling exists; acceptance requires an Iranian network vantage point and observed-egress evidence that cannot be produced from CI or this environment. |
 | 42 | remote client enrollment and authorization lifecycle | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
 | 43 | signed replay-resistant probe federation | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
 | 44 | analytics summaries, trends and anomalies | PARTIAL | Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence. |
