@@ -13,7 +13,7 @@
 - **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification (roadmap Step 6) remains open. The previously observed Release Gate failed because API typecheck failed; no passing Release Gate evidence has yet been observed for the repair branch's current SHA.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (2026-10-17):** Phase contracts 84–92 exist; all remain PARTIAL pending implementation/acceptance evidence. The phase matrix has been restored and reconciled against source SHA `99d68fac66a0e6a331074ab7e9ce7cfda2b67f3e`, with all 150 phases represented. Phases 93–150 still require contracts and explicit authorization before implementation. No new runtime authority introduced.
+- **Issue #14 progress (2026-10-17):** Phase contracts 84–92 exist; all remain PARTIAL pending implementation/acceptance evidence. The phase matrix has been restored and reconciled against source SHA `b5648a3168b43a1552ee0409b0ada86219c042c5`, with all 150 phases represented. Phases 93–150 still require contracts and explicit authorization before implementation. No new runtime authority introduced.
 
 ## Phase 78 objective
 
