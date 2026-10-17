@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns structured, non-mutating results. Full continuous correction remains out of scope. Disposition remains **PARTIAL** pending CI evidence on the implementing SHA.
+**Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns structured, non-mutating results. Full continuous correction remains out of scope. Disposition remains **PARTIAL** pending CI evidence on the implementing SHA. Public barrel now exports `detectIntentDrift` and related types.
 
 ## Objective
 
