@@ -172,15 +172,23 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
       idempotencyFingerprint?: string;
     }
   >();
-  private readonly conflicts: ArbitrationConflict[] = [];
+  private readonly conflicts: { conflict: ArbitrationConflict; ownerScopeKey: string }[] = [];
 
-  recordConflict(_conflict: ArbitrationConflict): void {
-    this.conflicts.push(_conflict);
+  recordConflict(
+    conflict: ArbitrationConflict,
+    ownership: IntentOwnership = { principalId: 'unknown' },
+  ): void {
+    this.conflicts.push({ conflict: clone(conflict), ownerScopeKey: ownershipKey(ownership) });
   }
 
-  async getConflict(id: string): Promise<ArbitrationConflict | undefined> {
-    return this.conflicts.find(
-      (conflict) =>
+  async getConflict(
+    id: string,
+    ownership: IntentOwnership,
+  ): Promise<ArbitrationConflict | undefined> {
+    const scopeKey = ownershipKey(ownership);
+    const entry = this.conflicts.find(
+      ({ conflict, ownerScopeKey }) =>
+        ownerScopeKey === scopeKey &&
         createHash('sha256')
           .update(
             JSON.stringify([
@@ -193,6 +201,7 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
           )
           .digest('hex') === id,
     );
+    return entry ? clone(entry.conflict) : undefined;
   }
 
   async listConflicts(
@@ -200,11 +209,13 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
     limit: number,
     since?: Date,
   ): Promise<readonly ArbitrationConflict[]> {
-    let conflicts = this.conflicts;
+    let conflicts = this.conflicts
+      .filter((entry) => entry.ownerScopeKey === ownershipKey(ownership))
+      .map((entry) => entry.conflict);
     if (since) {
-      conflicts = conflicts.filter((c) => new Date(c.timestamp) > since);
+      conflicts = conflicts.filter((conflict) => new Date(conflict.timestamp) > since);
     }
-    return Object.freeze(conflicts.slice(-limit));
+    return Object.freeze(conflicts.slice(-limit).map(clone));
   }
 
   async get(id: string, ownership: IntentOwnership): Promise<NetworkIntent | undefined> {
