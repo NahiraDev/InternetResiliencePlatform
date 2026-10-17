@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `269f2c4225e74c8db382f707478347ec9904f741` (2026-10-17).
+- **Current main HEAD reviewed this run:** `bce03ba51973c5be2f47037d539a8ddf38973ff8` (2026-10-17, after PR #38 merge).
 - **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -13,7 +13,8 @@
 - **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
 - **Release state:** Phase 71 release-contract evidence exists: GitHub Release v0.2.1. Production certification (roadmap Step 6) remains open. Latest Release Gate on main is green.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (2026-10-17):** Phase 84–91 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract; Phase 86 maps existing connectivity fabric; Phase 87 multi-interface; Phase 88 multi-path; Phase 89 gateway intelligence; Phase 90 DNS/tunnel/proxy orchestration; Phase 91 application-aware path selection). Remaining Phases 92–150 still require contracts and explicit authorization before implementation. Matrix update deferred until evidence exists. No new runtime authority introduced.
+- **Issue #14 progress (2026-10-17):** Phase 84–91 acceptance contracts formalized (Phase 84 maps existing safety kernel + intent governance; Phase 85 formalizes assurance/drift contract with minimal observe-only `detectIntentDrift`; Phase 86 maps existing connectivity fabric; Phase 87 multi-interface; Phase 88 multi-path; Phase 89 gateway intelligence; Phase 90 DNS/tunnel/proxy orchestration; Phase 91 application-aware path selection). Remaining Phases 92–150 still require contracts and explicit authorization before implementation. Matrix update deferred until evidence exists. No new runtime authority introduced.
+- **Phase 85 next (this branch):** observe-only drift results are now optionally fed as advisory metadata into `BoundedClosedLoopController` results. Detection never mutates; any corrective action must still pass governance and the safety kernel.
 
 ## Phase 78 objective
 
