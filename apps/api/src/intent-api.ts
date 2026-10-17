@@ -197,6 +197,7 @@ export class InMemoryIntentStore implements IntentApiStore, ConflictApiStore {
               conflict.reason,
               conflict.resolution,
               conflict.timestamp,
+              ownershipKey(ownership),
             ]),
           )
           .digest('hex') === id,
@@ -338,7 +339,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     this.repository = createIntentRepository(client);
   }
 
-  private conflictId(conflict: ArbitrationConflict): string {
+  private conflictId(conflict: ArbitrationConflict, ownerScopeKey: string): string {
     return createHash('sha256')
       .update(
         JSON.stringify([
@@ -347,6 +348,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
           conflict.reason,
           conflict.resolution,
           conflict.timestamp,
+          ownerScopeKey,
         ]),
       )
       .digest('hex');
@@ -362,7 +364,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     while (this.conflictMirror.length > 1000) this.conflictMirror.shift();
     try {
       await this.repository.recordConflict({
-        id: this.conflictId(conflict),
+        id: this.conflictId(conflict, scopeKey),
         intentAId: conflict.intentA.intentId,
         intentBId: conflict.intentB.intentId,
         reason: conflict.reason,
@@ -406,7 +408,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     const scopeKey = ownershipKey(ownership);
     const mirrored = this.conflictMirror.find(
       (entry) =>
-        entry.ownerScopeKey === scopeKey && this.conflictId(entry.conflict) === id,
+        entry.ownerScopeKey === scopeKey && this.conflictId(entry.conflict, entry.ownerScopeKey) === id,
     );
     if (mirrored) return clone(mirrored.conflict);
     try {
@@ -457,9 +459,9 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
       const fromDb = rows
         .map((row) => this.toArbitrationConflict(row as never))
         .filter((conflict): conflict is ArbitrationConflict => conflict !== undefined);
-      const seen = new Set(conflicts.map((conflict) => this.conflictId(conflict)));
+      const seen = new Set(conflicts.map((conflict) => this.conflictId(conflict, scopeKey)));
       for (const conflict of fromDb) {
-        if (!seen.has(this.conflictId(conflict))) {
+        if (!seen.has(this.conflictId(conflict, scopeKey))) {
           conflicts = [...conflicts, conflict];
           seen.add(this.conflictId(conflict));
         }
