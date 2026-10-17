@@ -383,6 +383,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
     intentBId: string;
     reason: string;
     resolution: string;
+    recordedAt?: Date | string;
   }): ArbitrationConflict | undefined {
     const base = { intentId: '', desiredOutcome: '', priority: 'normal' as const, version: 1 };
     if (typeof row.intentAId !== 'string' || typeof row.intentBId !== 'string') return undefined;
@@ -397,7 +398,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
         row.resolution === 'merge'
           ? row.resolution
           : 'queue-b',
-      timestamp: new Date().toISOString(),
+      timestamp: row.recordedAt ? new Date(row.recordedAt).toISOString() : new Date().toISOString(),
     };
   }
 
@@ -463,7 +464,7 @@ export class DatabaseIntentStore implements IntentApiStore, ConflictApiStore {
       for (const conflict of fromDb) {
         if (!seen.has(this.conflictId(conflict, scopeKey))) {
           conflicts = [...conflicts, conflict];
-          seen.add(this.conflictId(conflict));
+          seen.add(this.conflictId(conflict, scopeKey));
         }
       }
     } catch {
