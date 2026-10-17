@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { compileNetworkIntent } from '../src/intent/compiler.js';
 import { selectGovernedIntents, resolveIntentGovernance } from '../src/intent/governance.js';
+import { arbitrateIntents } from '../src/intent/arbitration.js';
 import { createRuntimeContext } from '../src/context/context.js';
 import { createNetworkIntent, type IntentAutonomyLevel } from '@irp/core';
 import { DecisionOrchestrator } from '../src/decision-orchestration.js';
@@ -69,6 +70,51 @@ const trustedSimulationContext = (
 };
 
 describe('intent governance', () => {
+  it('does not treat intent identity alone as an overlapping scope', () => {
+    const a = {
+      ...intent('a', 'high'),
+      scope: { intentId: 'a', destination: 'github.com' },
+      desiredOutcome: 'prefer-primary',
+    };
+    const b = {
+      ...intent('b', 'high'),
+      scope: { intentId: 'b', destination: 'example.com' },
+      desiredOutcome: 'prefer-secondary',
+    };
+
+    expect(arbitrateIntents([a, b]).conflicts).toHaveLength(0);
+  });
+
+  it('detects matching target scopes while ignoring differing intent identities', () => {
+    const a = {
+      ...intent('a', 'high'),
+      scope: { intentId: 'a', destination: 'github.com' },
+      desiredOutcome: 'prefer-primary',
+    };
+    const b = {
+      ...intent('b', 'normal'),
+      scope: { intentId: 'b', destination: 'github.com' },
+      desiredOutcome: 'prefer-secondary',
+    };
+
+    expect(arbitrateIntents([a, b]).conflicts).toHaveLength(1);
+  });
+
+  it('treats conflicting values on a shared scope dimension as disjoint', () => {
+    const a = {
+      ...intent('a', 'high'),
+      scope: { intentId: 'a', destination: 'github.com', region: 'us-east' },
+      desiredOutcome: 'prefer-primary',
+    };
+    const b = {
+      ...intent('b', 'normal'),
+      scope: { intentId: 'b', destination: 'github.com', region: 'eu-west' },
+      desiredOutcome: 'prefer-secondary',
+    };
+
+    expect(arbitrateIntents([a, b]).conflicts).toHaveLength(0);
+  });
+
   it('arbitrates overlapping intents deterministically by priority', () => {
     const selected = selectGovernedIntents([intent('low', 'normal'), intent('high', 'critical')]);
     expect(selected.selectedIntent?.intentId).toBe('high');
