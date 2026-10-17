@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "bce03ba51973c5be2f47037d539a8ddf38973ff8",
+  "sourceSha": "b5648a3168b43a1552ee0409b0ada86219c042c5",
   "summary": {
-    "PARTIAL": 58,
-    "COMPLETE": 30,
+    "PARTIAL": 88,
     "BLOCKED": 3,
-    "NOT STARTED": 59
+    "COMPLETE": 1,
+    "NOT STARTED": 58
   },
   "phases": [
     {
@@ -353,8 +353,8 @@
     {
       "phase": 39,
       "title": "device identity and scoped sessions",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-39.md; all 5 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/auth) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-39.md",
         "recordedStatus": "IMPLEMENTED / verification state inherited from current repository gates",
@@ -372,8 +372,8 @@
     {
       "phase": 40,
       "title": "controlled-fault resilience validation",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-40.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-40.md",
         "recordedStatus": "IMPLEMENTED / CI VERIFICATION PENDING",
@@ -406,8 +406,8 @@
     {
       "phase": 42,
       "title": "remote client enrollment and authorization lifecycle",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-42.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/auth) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-42.md",
         "recordedStatus": "",
@@ -425,8 +425,8 @@
     {
       "phase": 43,
       "title": "signed replay-resistant probe federation",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-43.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-43.md",
         "recordedStatus": "",
@@ -444,8 +444,8 @@
     {
       "phase": 44,
       "title": "analytics summaries, trends and anomalies",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-44.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/historical-analysis) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-44.md",
         "recordedStatus": "Implementation present; final CI/runtime verification gate required before completion.",
@@ -463,8 +463,8 @@
     {
       "phase": 45,
       "title": "egress identity and destination/policy assurance",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-45.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-45.md",
         "recordedStatus": "Implementation present; repository and CI verification gates remain required.",
@@ -482,8 +482,8 @@
     {
       "phase": 46,
       "title": "authorized gateway inventory",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-46.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-46.md",
         "recordedStatus": "Implementation:** complete on the phase branch.",
@@ -501,8 +501,8 @@
     {
       "phase": 47,
       "title": "gateway discovery, health and stale handling",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-47.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-47.md",
         "recordedStatus": "Implementation:** complete on `main` pending repository/CI verification.",
@@ -520,8 +520,8 @@
     {
       "phase": 48,
       "title": "provider-neutral tunnel lifecycle",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-48.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry, @irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-48.md",
         "recordedStatus": "Implementation complete; CI verification is the completion gate.",
@@ -541,8 +541,8 @@
     {
       "phase": 49,
       "title": "WireGuard provider adapter",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-49.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-49.md",
         "recordedStatus": "Implementation:** present on `main` pending CI verification.",
@@ -560,8 +560,8 @@
     {
       "phase": 50,
       "title": "additional legitimate network provider adapters",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-50.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-50.md",
         "recordedStatus": "Implementation:** present on `main` pending CI verification.",
@@ -580,7 +580,7 @@
       "phase": 51,
       "title": "policy/health/capacity-aware gateway selection",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Complete / verified.** Implementation, repository validation, typecheck, lint, tests, coverage, build, deterministic smoke tests, production Docker runtime smok'); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-51.md",
         "recordedStatus": "Complete / verified.** Implementation, repository validation, typecheck, lint, tests, coverage, build, deterministic smoke tests, production Docker runtime smok",
@@ -594,8 +594,8 @@
     {
       "phase": 52,
       "title": "automated tunnel lifecycle",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-52.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/tunnel) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-52.md",
         "recordedStatus": "Implementation complete; CI/runtime verification in progress.",
@@ -613,8 +613,8 @@
     {
       "phase": 53,
       "title": "multi-gateway failover",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-53.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-53.md",
         "recordedStatus": "Implementation started; repository verification required.",
@@ -632,8 +632,8 @@
     {
       "phase": 54,
       "title": "gateway fleet operations",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-54.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-54.md",
         "recordedStatus": "Implementation started; verification required.",
@@ -651,8 +651,8 @@
     {
       "phase": 55,
       "title": "gateway security and supply-chain hardening",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-55.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/gateway-registry) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-55.md",
         "recordedStatus": "Implementation complete; final CI verification in progress.",
@@ -670,8 +670,8 @@
     {
       "phase": 56,
       "title": "versioned unified capability API",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-56.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/api, @irp/sdk) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-56.md",
         "recordedStatus": "Implementation complete; final repository verification required.",
@@ -692,7 +692,7 @@
       "phase": 57,
       "title": "Web Control Center",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'In progress.** The control-loop contract and fail-closed semantics are implemented, but the phase is not considered complete until a real live adapter, real pos'); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-57.md",
         "recordedStatus": "In progress.** The control-loop contract and fail-closed semantics are implemented, but the phase is not considered complete until a real live adapter, real pos",
@@ -707,7 +707,7 @@
       "phase": 58,
       "title": "identity, RBAC and conflict-safe sync",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation started; verification required.'); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-58.md",
         "recordedStatus": "Implementation started; verification required.",
@@ -722,7 +722,7 @@
       "phase": 59,
       "title": "incident center and diagnostics",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Implementation started; verification required.'); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-59.md",
         "recordedStatus": "Implementation started; verification required.",
@@ -737,7 +737,7 @@
       "phase": 60,
       "title": "administration, deployment, backups and migrations",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: 'Started on `phase/60-administration-self-hosting`.'); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-60.md",
         "recordedStatus": "Started on `phase/60-administration-self-hosting`.",
@@ -751,8 +751,8 @@
     {
       "phase": 61,
       "title": "Linux Full Client",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-61.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/linux-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-61.md",
         "recordedStatus": "Implementation started; repository/runtime verification required.",
@@ -770,8 +770,8 @@
     {
       "phase": 62,
       "title": "macOS Full Client",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-62.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/macos-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-62.md",
         "recordedStatus": "Implementation in progress; final verification evidence required.",
@@ -789,8 +789,8 @@
     {
       "phase": 63,
       "title": "Windows Full Client",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-63.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/windows-client) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-63.md",
         "recordedStatus": "In progress.** The platform boundary is implemented, but completion remains blocked until native Windows CI and runtime evidence demonstrate the diagnostics and",
@@ -808,8 +808,8 @@
     {
       "phase": 64,
       "title": "shared mobile client core",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-64.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/core) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-64.md",
         "recordedStatus": "In progress.** The shared client contract is implemented, but phase closure remains blocked until the repository gates and public runtime endpoint verification ",
@@ -828,7 +828,7 @@
       "phase": 65,
       "title": "iOS Full Client",
       "disposition": "PARTIAL",
-      "justification": "Phase contract does not cite a package, source path or symbol that can be verified at HEAD (recorded status: ''); implementation cannot be mapped to tests.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-65.md",
         "recordedStatus": "",
@@ -842,8 +842,8 @@
     {
       "phase": 66,
       "title": "iOS Network Extension integration",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-66.md; all 3 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/ios) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-66.md",
         "recordedStatus": "",
@@ -859,8 +859,8 @@
     {
       "phase": 67,
       "title": "Android Full Client",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-67.md; all 2 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/android) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-67.md",
         "recordedStatus": "Implementation started; verification required.",
@@ -876,8 +876,8 @@
     {
       "phase": 68,
       "title": "Android-native VPN/network integration",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-68.md; all 1 cited packages/paths/symbols resolve at HEAD; owning package tests () passed in the recorded run and the bf73303/WP2.2 CI workflows are green. Native sources (native:clients/android) are verified by the platform CI workflows (iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 certification item and remains pending.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-68.md",
         "recordedStatus": "Implementation started; verification required.",
@@ -938,8 +938,8 @@
     {
       "phase": 72,
       "title": "Control-Plane Architecture Completion",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-72.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/api, @irp/events, @irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-72.md",
         "recordedStatus": "Architecture contract implemented; phase completion is gated by the Phase 71 external release-certification requirement and Phase 72 verification/CI evidence.**",
@@ -963,8 +963,8 @@
     {
       "phase": 73,
       "title": "Unified Network State Model",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-73.md; all 13 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-73.md",
         "recordedStatus": "Implementation in progress on `phase/73-unified-network-state`. This phase does not certify Phase 71 or Phase 72 completion.",
@@ -984,8 +984,8 @@
     {
       "phase": 74,
       "title": "Control-Plane Contracts",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-74.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/core, @irp/events, @irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-74.md",
         "recordedStatus": "Implementation in progress on `phase/74-control-plane-contracts`. Phase 71 certification remains intentionally deferred.",
@@ -1009,8 +1009,8 @@
     {
       "phase": 75,
       "title": "Decision Orchestration",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-75.md; all 9 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/network-intelligence, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-75.md",
         "recordedStatus": "Implementation in progress on `phase/75-decision-orchestration`.",
@@ -1030,8 +1030,8 @@
     {
       "phase": 76,
       "title": "Action Transaction Engine",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-76.md; all 4 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-76.md",
         "recordedStatus": "Implementation in progress on `phase/76-action-transaction-engine`.",
@@ -1049,8 +1049,8 @@
     {
       "phase": 77,
       "title": "Safety, Rollback & Recovery Kernel",
-      "disposition": "COMPLETE",
-      "justification": "Phase contract docs/phases/phase-77.md; all 6 cited packages/paths/symbols resolve at HEAD; owning package tests (@irp/failover, @irp/resilience-runtime) passed in the recorded run and the bf73303/WP2.2 CI workflows are green.",
+      "disposition": "PARTIAL",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-77.md",
         "recordedStatus": "Implemented and merged on `main` in PR #237.** The implementation landed before the current Phase 78 branch was created. External Phase 71 release certification",
@@ -1071,7 +1071,7 @@
       "phase": 78,
       "title": "Closed-Loop Control Foundation",
       "disposition": "PARTIAL",
-      "justification": "Phase contract cites references that do not resolve at HEAD: RangeError.",
+      "justification": "Historical path-resolution and package test-count records are inventory signals only; they do not prove phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are verified and the current implementation SHA has attached, successful CI evidence.",
       "probe": {
         "doc": "docs/phases/phase-78.md",
         "recordedStatus": "Implementation started on `phase/78-closed-loop-control` from `main` at `164c9793ac8819492939d9d59b6c3b529cc506cd`.",
@@ -1387,10 +1387,24 @@
     {
       "phase": 92,
       "title": "Connectivity Service Assurance",
-      "disposition": "NOT STARTED",
-      "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
+      "disposition": "PARTIAL",
+      "justification": "Acceptance contract formalized in docs/phases/phase-92.md. Remains PARTIAL pending implementation mapped to acceptance tests and exact-current-SHA CI evidence.",
       "probe": {
-        "doc": null
+        "doc": "docs/phases/phase-92.md",
+        "recordedStatus": "Contract formalized (issue #14).** Existing fabric health/freshness attributes, closed-loop verification, safety kernel checkpoints, and observability surfaces ",
+        "resolvedReferences": 3,
+        "missingReferences": [],
+        "packages": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime",
+          "@irp/telemetry"
+        ],
+        "nativeSources": [],
+        "packagesWithPassingTests": [
+          "@irp/network-intelligence",
+          "@irp/resilience-runtime",
+          "@irp/telemetry"
+        ]
       }
     },
     {
@@ -1557,7 +1571,7 @@
     },
     {
       "phase": 111,
-      "title": "Secure Agent \u2194 Control Plane Protocol",
+      "title": "Secure Agent ↔ Control Plane Protocol",
       "disposition": "NOT STARTED",
       "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
       "probe": {

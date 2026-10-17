@@ -160,6 +160,7 @@ PARTIAL_LATER = {
     89: 'Acceptance contract formalized in docs/phases/phase-89.md (issue #14). Related gateway capability exists; remains PARTIAL.',
     90: 'Acceptance contract formalized in docs/phases/phase-90.md (issue #14). Related DNS/tunnel/proxy surfaces exist; remains PARTIAL.',
     91: 'Acceptance contract formalized in docs/phases/phase-91.md (issue #14). Remains PARTIAL pending application-aware path selection evidence.',
+    92: 'Acceptance contract formalized in docs/phases/phase-92.md. Remains PARTIAL pending implementation mapped to acceptance tests and exact-current-SHA CI evidence.',
 }
 RELATED = {
     86: 'fabric.ts / fabric-authority.ts / fabric-lifecycle.ts',
@@ -179,7 +180,7 @@ RELATED = {
 
 rows = []
 for n in range(1, 151):
-    p = probe(n) if 39 <= n <= 91 else {'doc': None}
+    p = probe(n) if 39 <= n <= 92 else {'doc': None}
     title = titles.get(n, '(title not found)')
     if n <= 38:
         disp = 'PARTIAL'
@@ -195,31 +196,10 @@ for n in range(1, 151):
                'macOS and Windows developer bundles, iOS source and SHA256SUMS. Scope caveat: macOS/Windows archives are '
                'unsigned developer bundles (single dist/index.js + service manifest), Android is a debug APK, iOS is source-only.')
     elif 39 <= n <= 78:
-        ok = p['doc'] and not p['missingReferences'] and p['resolvedReferences'] > 0 and (p['packages'] or p['nativeSources'])
-        tests_ok = set(p.get('packages', [])) <= set(p.get('packagesWithPassingTests', []))
-        if ok and tests_ok:
-            disp = 'COMPLETE'
-            why = (f"Phase contract {p['doc']}; all {p['resolvedReferences']} cited packages/paths/symbols resolve at HEAD; owning package tests ({', '.join(p['packages'])}) passed "
-                   'in the recorded run and the bf73303/WP2.2 CI workflows are green.')
-            if p.get('nativeSources'):
-                why += (f" Native sources ({', '.join(p['nativeSources'])}) are verified by the platform CI workflows "
-                        '(iOS Full Client / iOS Network Integration / Android Client); real-device smoke evidence is a Phase 70 '
-                        'certification item and remains pending.')
-            if n == 78:
-                why += (' Integration residual: BoundedClosedLoopController is exercised against the canonical ResilienceRuntime '
-                        'by tests, but no production entrypoint runs the multi-cycle loop (API triggers single runCycle calls; the '
-                        'only non-test consumer is the deprecated NetworkAutopilot). Tracked as remaining work.')
-        elif p['doc'] is None:
-            disp, why = 'PARTIAL', 'No phase contract document found; cannot verify acceptance.'
-        else:
-            disp = 'PARTIAL'
-            if p['missingReferences']:
-                why = f"Phase contract cites references that do not resolve at HEAD: {', '.join(p['missingReferences'][:6])}."
-            elif not p['packages']:
-                why = ('Phase contract does not cite a package, source path or symbol that can be verified at HEAD '
-                       f"(recorded status: '{p['recordedStatus']}'); implementation cannot be mapped to tests.")
-            else:
-                why = 'Owning package tests did not pass in the recorded run.'
+        disp = 'PARTIAL'
+        why = ('Historical path-resolution and package test-count records are inventory signals only; they do not prove '
+               'phase acceptance on the current source SHA. Keep PARTIAL until phase-specific acceptance criteria are '
+               'verified and the current implementation SHA has attached, successful CI evidence.')
     elif n in PARTIAL_LATER:
         disp, why = 'PARTIAL', PARTIAL_LATER[n]
     else:

@@ -29,10 +29,10 @@ permissions:
   contents: read
 
 concurrency:
-  # A release gate is authoritative evidence. Never cancel an older main
-  # commit merely because a newer commit arrived.
+  # Runs are scoped to one exact SHA; duplicate evaluations of that same SHA
+  # are interchangeable, while runs for different commits remain isolated.
   group: release-gate-${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '24'
