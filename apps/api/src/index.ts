@@ -1255,7 +1255,10 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.get('/api/v1/workspaces/:id', { preHandler: generalRateLimit }, async (request) => {
+  const workspaceReadRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 120, windowMs: 60_000 }), {
+    key: (request) => `${request.ip}:workspace-read`,
+  });
+  app.get('/api/v1/workspaces/:id', { preHandler: workspaceReadRateLimit }, async (request) => {
     await requirePermission(request, 'workspaces:read');
     const w = workspaces.get(idParams.parse(request.params).id);
     if (!w) throw new NotFoundAppError('workspace');
