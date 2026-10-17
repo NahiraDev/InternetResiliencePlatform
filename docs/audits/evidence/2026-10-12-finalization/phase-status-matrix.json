@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "b5648a3168b43a1552ee0409b0ada86219c042c5",
+  "sourceSha": "9259c84335e35caef57f5452576906c8a1613404",
   "summary": {
     "PARTIAL": 88,
     "BLOCKED": 3,
@@ -1229,8 +1229,10 @@
       "probe": {
         "doc": "docs/phases/phase-85.md",
         "recordedStatus": "Contract formalized and minimal observe-only drift detector implemented (issue #14).** `detectIntentDrift` reuses `isCompiledIntentEffective` and returns struct",
-        "resolvedReferences": 1,
-        "missingReferences": [],
+        "resolvedReferences": 2,
+        "missingReferences": [
+          "DriftSignal"
+        ],
         "packages": [
           "@irp/resilience-runtime"
         ],
@@ -1571,7 +1573,7 @@
     },
     {
       "phase": 111,
-      "title": "Secure Agent ↔ Control Plane Protocol",
+      "title": "Secure Agent \u2194 Control Plane Protocol",
       "disposition": "NOT STARTED",
       "justification": "MASTER_ROADMAP_V2 lists this phase as a reference-only heading with no acceptance contract; PROJECT_STATE forbids starting it without explicit authorization.",
       "probe": {
