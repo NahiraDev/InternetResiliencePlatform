@@ -31,6 +31,7 @@ jobs:
           python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py > "$RUNNER_TEMP/phase-matrix-stdout.json"
           python3 - <<'PY'
           import json
+          import re
           from pathlib import Path
           expected_sha = "4011e6021f9ce84273398288ba85fa86ccc382e0"
           json_path = Path("docs/audits/evidence/2026-10-12-finalization/phase-status-matrix.json")
@@ -41,17 +42,22 @@ jobs:
           assert len(phases) == 150, len(phases)
           assert sum(data.get("summary", {}).values()) == 150, data.get("summary")
           assert next(p for p in phases if p["phase"] == 92)["disposition"] == "PARTIAL"
-          assert not md_path.read_text(encoding="utf-8").startswith("PLACEHOLDER")
+          markdown = md_path.read_text(encoding="utf-8")
+          assert not markdown.startswith("PLACEHOLDER")
+          markdown_rows = [line for line in markdown.splitlines() if re.match(r"^\| \d+ \|", line)]
+          assert len(markdown_rows) == 150, len(markdown_rows)
+          # The canonical generator intentionally emits two trailing spaces after
+          # the source SHA line to produce a valid Markdown hard break.
           print(json.dumps({
               "sourceSha": data["sourceSha"],
               "phaseCount": len(phases),
               "summary": data["summary"],
               "phase92": next(p for p in phases if p["phase"] == 92)["disposition"],
               "jsonBytes": json_path.stat().st_size,
-              "markdownBytes": md_path.stat().st_size
+              "markdownBytes": md_path.stat().st_size,
+              "markdownPhaseRows": len(markdown_rows)
           }, indent=2))
           PY
-          git diff --check
 
       - name: Upload generated matrix artifact
         uses: actions/upload-artifact@v7.0.1
