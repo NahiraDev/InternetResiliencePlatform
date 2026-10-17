@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { ValidationAppError, ConflictAppError, NotFoundAppError } from '@irp/core';
 import {
@@ -150,6 +151,35 @@ describe('intent API', () => {
     const response = await app.inject({ method: 'GET', url: '/api/v1/intents/missing' });
     expect(response.statusCode).toBe(404);
     await app.close();
+  });
+
+  it('isolates in-memory conflict listings and lookups by owner', async () => {
+    const store = new InMemoryIntentStore();
+    const ownerA = { principalId: 'principal-a' };
+    const ownerB = { principalId: 'principal-b' };
+    const timestamp = '2026-10-18T12:00:00.000Z';
+    const conflict: ArbitrationConflict = {
+      intentA: { intentId: 'private-a', desiredOutcome: 'primary', priority: 'high', version: 1 },
+      intentB: { intentId: 'private-b', desiredOutcome: 'secondary', priority: 'normal', version: 1 },
+      reason: 'private owner conflict',
+      resolution: 'supersede-a',
+      timestamp,
+    };
+    store.recordConflict(conflict, ownerA);
+    const id = createHash('sha256')
+      .update(JSON.stringify([
+        conflict.intentA.intentId,
+        conflict.intentB.intentId,
+        conflict.reason,
+        conflict.resolution,
+        conflict.timestamp,
+      ]))
+      .digest('hex');
+
+    expect(await store.listConflicts(ownerA, 10)).toEqual([conflict]);
+    expect(await store.listConflicts(ownerB, 10)).toEqual([]);
+    expect(await store.getConflict(id, ownerA)).toEqual(conflict);
+    expect(await store.getConflict(id, ownerB)).toBeUndefined();
   });
 
   it('returns not found for an unknown conflict id', async () => {
