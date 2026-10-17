@@ -20,7 +20,7 @@ Provide continuous, policy-bounded assurance of connectivity services by verifyi
 ## Canonical owner
 
 - `@irp/resilience-runtime` — fabric resource health/freshness, closed-loop verification, safety kernel recovery
-- `@irp/observability`, `@irp/network-intelligence` — metrics, events, and diagnostics used for assurance signals
+- `@irp/telemetry`, `@irp/network-intelligence` — metrics, events, and diagnostics used for assurance signals
 - Consumed by the bounded closed-loop controller and existing decision orchestration
 - Tests: resilience-runtime closed-loop, fabric, and safety tests; observability package tests
 
