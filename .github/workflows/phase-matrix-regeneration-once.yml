@@ -1,0 +1,64 @@
+name: One-off Phase Matrix Regeneration
+
+on:
+  push:
+    branches:
+      - chore/phase-matrix-regeneration-4011
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact main baseline
+        uses: actions/checkout@v7
+        with:
+          repository: NahiraDev/InternetResiliencePlatform
+          ref: 4011e6021f9ce84273398288ba85fa86ccc382e0
+          persist-credentials: false
+
+      - name: Run canonical phase matrix generator and verify outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA=4011e6021f9ce84273398288ba85fa86ccc382e0
+          actual_sha="$(git rev-parse HEAD)"
+          test "$actual_sha" = "$EXPECTED_SHA"
+          python3 --version
+          python3 docs/audits/evidence/2026-10-12-finalization/phase_matrix.py > "$RUNNER_TEMP/phase-matrix-stdout.json"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          expected_sha = "4011e6021f9ce84273398288ba85fa86ccc382e0"
+          json_path = Path("docs/audits/evidence/2026-10-12-finalization/phase-status-matrix.json")
+          md_path = Path("docs/audits/phase-1-150-status-matrix.md")
+          data = json.loads(json_path.read_text(encoding="utf-8"))
+          assert data.get("sourceSha") == expected_sha, data.get("sourceSha")
+          phases = data.get("phases", [])
+          assert len(phases) == 150, len(phases)
+          assert sum(data.get("summary", {}).values()) == 150, data.get("summary")
+          assert next(p for p in phases if p["phase"] == 92)["disposition"] == "PARTIAL"
+          assert not md_path.read_text(encoding="utf-8").startswith("PLACEHOLDER")
+          print(json.dumps({
+              "sourceSha": data["sourceSha"],
+              "phaseCount": len(phases),
+              "summary": data["summary"],
+              "phase92": next(p for p in phases if p["phase"] == 92)["disposition"],
+              "jsonBytes": json_path.stat().st_size,
+              "markdownBytes": md_path.stat().st_size
+          }, indent=2))
+          PY
+          git diff --check
+
+      - name: Upload generated matrix artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: canonical-phase-matrix-4011e602
+          path: |
+            docs/audits/evidence/2026-10-12-finalization/phase-status-matrix.json
+            docs/audits/phase-1-150-status-matrix.md
+          if-no-files-found: error
+          retention-days: 7
