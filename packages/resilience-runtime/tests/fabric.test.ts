@@ -11,9 +11,10 @@ const resource = (
   score: number,
   domain: string,
   owner = 'test-provider',
+  kind: FabricResource['kind'] = 'Gateway',
 ): FabricResource => ({
   id,
-  kind: 'Gateway',
+  kind,
   state: score >= 70 ? 'HEALTHY' : 'DEGRADED',
   health: {
     status: score >= 70 ? 'healthy' : 'degraded',
@@ -162,5 +163,26 @@ describe('ProgrammableConnectivityFabric', () => {
     const routeResource = snapshot.resources.find((entry) => entry.kind === 'Route');
     expect(routeResource).toBeDefined();
     expect(snapshot.edges.some((edge) => edge.from === routeResource?.id)).toBe(true);
+  });
+
+  it('exposes Resolver, Tunnel, and Proxy kinds as selectable fabric resources (Phase 90)', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    fabric.registerProvider({
+      id: 'dns-tunnel-proxy',
+      owner: 'core',
+      async discover() {
+        return [
+          resource('resolver-a', 85, 'dns-a', 'dns-provider', 'Resolver'),
+          resource('tunnel-a', 90, 'tun-a', 'tunnel-provider', 'Tunnel'),
+          resource('proxy-a', 75, 'proxy-a', 'proxy-provider', 'Proxy'),
+        ];
+      },
+    });
+    const snapshot = await fabric.discover({ limit: 3 });
+    expect(snapshot.resources.map((r) => r.kind).sort()).toEqual(['Proxy', 'Resolver', 'Tunnel']);
+    expect(snapshot.resources.every((r) => r.owner && r.failureDomains.length > 0)).toBe(true);
+    const selected = fabric.select({ requiredCapabilities: ['route.select'] });
+    expect(selected.selected).toBeDefined();
+    expect(['resolver-a', 'tunnel-a', 'proxy-a']).toContain(selected.selected?.id);
   });
 });

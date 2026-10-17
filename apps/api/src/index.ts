@@ -328,6 +328,7 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     });
     reply.status(mapped.statusCode).send(mapped.body);
   });
+  const generalRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 100, windowMs: 60_000 }));
   app.addHook('onRequest', async (request, reply) => {
     request.jwtAuth = jwtAuth;
     request.rbac = rbac;
@@ -787,15 +788,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       deprecated: true,
     };
   };
-  app.get('/api/v1/autopilot/status', async (request) => {
+  app.get('/api/v1/autopilot/status', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     return runtimeResponse(request, await canonicalAutopilotStatus());
   });
-  app.get('/api/v1/autopilot/runs', async (request) => {
+  app.get('/api/v1/autopilot/runs', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     return runtimeResponse(request, await resilienceRuntime.decisions.list());
   });
-  app.get('/api/v1/autopilot/runs/:id', async (request) => {
+  app.get('/api/v1/autopilot/runs/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     const params = z.object({ id: z.string().min(1) }).parse(request.params);
     const run = (await resilienceRuntime.decisions.list()).find(
@@ -804,7 +805,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     if (!run) throw new NotFoundAppError('autopilot run');
     return runtimeResponse(request, run);
   });
-  app.post('/api/v1/autopilot/runs', async (request) => {
+  app.post('/api/v1/autopilot/runs', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.execute');
     const body = z
       .object({
@@ -822,39 +823,39 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       }),
     );
   });
-  app.post('/api/v1/autopilot/runs/:id/cancel', async (request) => {
+  app.post('/api/v1/autopilot/runs/:id/cancel', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.admin');
     const id = z.object({ id: z.string() }).parse(request.params).id;
     throw new ConflictAppError(
       `Autopilot run '${id}' cannot be cancelled through the legacy API; canonical runtime cycles are bounded and API cycles are synchronous simulations.`,
     );
   });
-  app.post('/api/v1/autopilot/actions/:id/approve', async (request) => {
+  app.post('/api/v1/autopilot/actions/:id/approve', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.approve');
     const id = z.object({ id: z.string() }).parse(request.params).id;
     throw new ConflictAppError(
       `Autopilot action '${id}' cannot be approved through the legacy API; use a policy-governed runtime plan.`,
     );
   });
-  app.post('/api/v1/autopilot/actions/:id/reject', async (request) => {
+  app.post('/api/v1/autopilot/actions/:id/reject', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.approve');
     const id = z.object({ id: z.string() }).parse(request.params).id;
     throw new ConflictAppError(
       `Autopilot action '${id}' cannot be rejected through the legacy API; use a policy-governed runtime plan.`,
     );
   });
-  app.post('/api/v1/autopilot/actions/:id/rollback', async (request) => {
+  app.post('/api/v1/autopilot/actions/:id/rollback', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.admin');
     const id = z.object({ id: z.string() }).parse(request.params).id;
     throw new ConflictAppError(
       `Autopilot action '${id}' cannot be rolled back through the legacy API; rollback is owned by the canonical transaction/recovery path.`,
     );
   });
-  app.get('/api/v1/autopilot/policies', async (request) => {
+  app.get('/api/v1/autopilot/policies', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     return runtimeResponse(request, (await resilienceRuntime.getRuntimeSnapshot()).policySnapshot);
   });
-  app.get('/api/v1/autopilot/actions', async (request) => {
+  app.get('/api/v1/autopilot/actions', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     return runtimeResponse(
       request,
@@ -863,7 +864,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.get('/api/v1/autopilot/health', async (request) => {
+  app.get('/api/v1/autopilot/health', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     const snapshot = await resilienceRuntime.getRuntimeSnapshot();
     return runtimeResponse(request, {
@@ -878,7 +879,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       },
     });
   });
-  app.get('/api/v1/autopilot/circuit-breaker', async (request) => {
+  app.get('/api/v1/autopilot/circuit-breaker', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.read');
     return runtimeResponse(request, {
       state: 'NOT_APPLICABLE',
@@ -886,7 +887,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
         'canonical ResilienceRuntime uses validation locks and bounded cycles, not a legacy circuit breaker',
     });
   });
-  app.post('/api/v1/autopilot/circuit-breaker/reset', async (request) => {
+  app.post('/api/v1/autopilot/circuit-breaker/reset', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'autopilot.admin');
     return runtimeResponse(request, {
       state: 'NOT_APPLICABLE',
@@ -894,7 +895,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     });
   });
 
-  app.get('/api/v1/runtime/status', async (request) => {
+  app.get('/api/v1/runtime/status', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.read');
     const snapshot = await resilienceRuntime.getRuntimeSnapshot();
     return runtimeResponse(request, {
@@ -906,7 +907,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       uptimeMs: snapshot.uptimeMs,
     });
   });
-  app.get('/api/v1/runtime/snapshot', async (request) => {
+  app.get('/api/v1/runtime/snapshot', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.inspect');
     return runtimeResponse(request, {
       ...(await resilienceRuntime.getRuntimeSnapshot()),
@@ -914,11 +915,11 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       instanceId: resilienceRuntime.instanceId,
     });
   });
-  app.get('/api/v1/runtime/decisions', async (request) => {
+  app.get('/api/v1/runtime/decisions', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.read');
     return runtimeResponse(request, await resilienceRuntime.decisions.list());
   });
-  app.get('/api/v1/runtime/decisions/:id/explanation', async (request) => {
+  app.get('/api/v1/runtime/decisions/:id/explanation', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.read');
     const params = z.object({ id: z.string().min(1) }).parse(request.params);
     const decision = (await resilienceRuntime.decisions.list()).find(
@@ -927,22 +928,22 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     if (!decision) throw new NotFoundAppError('runtime decision');
     return runtimeResponse(request, explainDecision(decision));
   });
-  app.get('/api/v1/runtime/incidents', async (request) => {
+  app.get('/api/v1/runtime/incidents', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.read');
     return runtimeResponse(request, await resilienceRuntime.incidents.list());
   });
-  app.get('/api/v1/runtime/policies', async (request) => {
+  app.get('/api/v1/runtime/policies', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.inspect');
     return runtimeResponse(request, (await resilienceRuntime.getRuntimeSnapshot()).policySnapshot);
   });
-  app.get('/api/v1/runtime/capabilities', async (request) => {
+  app.get('/api/v1/runtime/capabilities', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.inspect');
     return runtimeResponse(request, resilienceRuntime.capabilities());
   });
   // Read-only negotiation view. It reports which platform capabilities this
   // deployment actually supports; it never grants or performs an operation, so
   // exposing it does not make the API an execution authority.
-  app.get('/api/v1/runtime/platform-capabilities', async (request) => {
+  app.get('/api/v1/runtime/platform-capabilities', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'runtime.inspect');
     const rawQuery = (request.query ?? {}) as Readonly<Record<string, unknown>>;
     const requested = String(rawQuery['capabilities'] ?? '')
@@ -964,7 +965,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.post('/api/v1/runtime/cycle', async (request, reply) => {
+  app.post('/api/v1/runtime/cycle', { preHandler: generalRateLimit }, async (request, reply) => {
     const input = runtimeCycleSchema.parse(request.body ?? {});
     const required = input.mode === 'live' ? 'runtime.execute' : 'runtime.simulate';
     await requirePermission(request, required);
@@ -1119,17 +1120,17 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       expiresIn: 900,
     });
   });
-  app.post('/api/v1/auth/logout', async (request) => {
+  app.post('/api/v1/auth/logout', { preHandler: generalRateLimit }, async (request) => {
     const p = await requireAuth(request);
     const sid = String(p.metadata?.sessionId ?? '');
     sessions.delete(sid);
     return ok({ loggedOut: true });
   });
-  app.post('/api/v1/auth/password-reset/request', async (request) => {
+  app.post('/api/v1/auth/password-reset/request', { preHandler: generalRateLimit }, async (request) => {
     z.object({ email: z.string().email() }).parse(request.body);
     return ok({ accepted: true });
   });
-  app.post('/api/v1/auth/email-verification/request', async (request) => {
+  app.post('/api/v1/auth/email-verification/request', { preHandler: generalRateLimit }, async (request) => {
     await requireAuth(request);
     return ok({ accepted: true });
   });
@@ -1147,25 +1148,25 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     });
   };
   app.get('/api/v1/users', listUsers);
-  app.get('/api/v1/users/:id', async (request) => {
+  app.get('/api/v1/users/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'users:read');
     const user = users.get(idParams.parse(request.params).id);
     if (!user) throw new NotFoundAppError('user');
     return ok(publicUser(user));
   });
-  app.get('/api/v1/me', async (request) => {
+  app.get('/api/v1/me', { preHandler: generalRateLimit }, async (request) => {
     const p = await requireAuth(request);
     const user = users.get(p.id);
     if (!user) throw new NotFoundAppError('user');
     return ok(publicUser(user));
   });
-  app.get('/api/v1/organizations', async (request) => {
+  app.get('/api/v1/organizations', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'organizations:read');
     const q = paginationSchema.parse(request.query);
     const r = orgs.list(q, (o) => !q.search || o.name.includes(q.search));
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
-  app.post('/api/v1/organizations', async (request, reply) => {
+  app.post('/api/v1/organizations', { preHandler: generalRateLimit }, async (request, reply) => {
     await requirePermission(request, 'organizations:write');
     const i = nameSchema.parse(request.body);
     const slug = i.slug ?? slugify(i.name);
@@ -1183,24 +1184,24 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.get('/api/v1/organizations/:id', async (request) => {
+  app.get('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'organizations:read');
     const o = orgs.get(idParams.parse(request.params).id);
     if (!o) throw new NotFoundAppError('organization');
     return ok(o);
   });
-  app.delete('/api/v1/organizations/:id', async (request) => {
+  app.delete('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'organizations:write');
     orgs.softDelete(idParams.parse(request.params).id);
     return ok({ deleted: true });
   });
-  app.get('/api/v1/projects', async (request) => {
+  app.get('/api/v1/projects', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'projects:read');
     const q = paginationSchema.parse(request.query);
     const r = projects.list(q);
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
-  app.post('/api/v1/organizations/:id/projects', async (request, reply) => {
+  app.post('/api/v1/organizations/:id/projects', { preHandler: generalRateLimit }, async (request, reply) => {
     await requirePermission(request, 'projects:write');
     const organizationId = idParams.parse(request.params).id;
     if (!orgs.get(organizationId)) throw new NotFoundAppError('organization');
@@ -1220,19 +1221,19 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.get('/api/v1/projects/:id', async (request) => {
+  app.get('/api/v1/projects/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'projects:read');
     const p = projects.get(idParams.parse(request.params).id);
     if (!p) throw new NotFoundAppError('project');
     return ok(p);
   });
-  app.get('/api/v1/workspaces', async (request) => {
+  app.get('/api/v1/workspaces', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'workspaces:read');
     const q = paginationSchema.parse(request.query);
     const r = workspaces.list(q);
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
-  app.post('/api/v1/organizations/:id/workspaces', async (request, reply) => {
+  app.post('/api/v1/organizations/:id/workspaces', { preHandler: generalRateLimit }, async (request, reply) => {
     await requirePermission(request, 'workspaces:write');
     const organizationId = idParams.parse(request.params).id;
     if (!orgs.get(organizationId)) throw new NotFoundAppError('organization');
@@ -1254,7 +1255,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       ),
     );
   });
-  app.get('/api/v1/workspaces/:id', async (request) => {
+  app.get('/api/v1/workspaces/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'workspaces:read');
     const w = workspaces.get(idParams.parse(request.params).id);
     if (!w) throw new NotFoundAppError('workspace');
