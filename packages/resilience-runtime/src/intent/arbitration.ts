@@ -82,11 +82,17 @@ export const arbitrateIntents = (
 };
 
 const scopesOverlap = (a: CompiledIntent, b: CompiledIntent): boolean => {
-  const aKeys = new Set(Object.keys(a.scope));
-  for (const key of Object.keys(b.scope)) {
-    if (aKeys.has(key)) return true;
-  }
-  return false;
+  // intentId identifies a record; it is not a network scope dimension.
+  const identityKeys = new Set(['intentId']);
+  const aScope = Object.entries(a.scope).filter(([key]) => !identityKeys.has(key));
+  const bScope = new Map(
+    Object.entries(b.scope).filter(([key]) => !identityKeys.has(key)),
+  );
+  const shared = aScope.filter(([key]) => bScope.has(key));
+
+  // No shared dimensions means the scopes are unrelated. Any disagreement on
+  // a shared dimension makes them disjoint; otherwise the scopes overlap.
+  return shared.length > 0 && shared.every(([key, value]) => bScope.get(key) === value);
 };
 
 /**
