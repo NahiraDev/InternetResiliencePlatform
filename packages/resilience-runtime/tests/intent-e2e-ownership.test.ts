@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createNetworkIntent } from '@irp/core';
 import { compileNetworkIntent } from '../src/intent/compiler.js';
 import { InMemoryIntentStore } from '../src/intent/arbitration.js';
@@ -10,20 +10,13 @@ import type { ResilienceRuntime } from '../src/runtime.js';
 
 const runtime = (status: 'success' | 'blocked' | 'failed'): ResilienceRuntime =>
   ({
-    cycle: vi.fn(async () => ({
+    cycle: async () => ({
       status,
-      outcome: status,
       decision: { outcome: status === 'success' ? 'apply' : status },
-    })),
+    }),
   }) as unknown as ResilienceRuntime;
 
-const baseContext = createRuntimeContext({ mode: 'live' });
-const context = createRuntimeContext({
-  ...baseContext,
-  mode: 'live',
-  securityContext: { trusted: true },
-  capabilitySnapshot: { ...baseContext.capabilitySnapshot, trusted: true },
-});
+const context = createRuntimeContext({ mode: 'autonomous' });
 
 describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue #13)', () => {
   it('persists compiled intent via InMemoryIntentStore, reloads, governs, and feeds observe-only drift into closed loop without mutation', async () => {
@@ -31,11 +24,9 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
     const draft = createNetworkIntent({
       id: 'intent-ownership-1',
       priority: 'high',
-      autonomy: 'SAFE_AUTOMATION',
       spec: {
         outcome: 'Maintain stable low-latency access',
         target: { destination: 'example.com' },
-        objectives: { latency: 0.25 },
         constraints: { 'objective.latency': 0.85 },
       },
     });
@@ -55,7 +46,7 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
     expect(governance.selectedIntent?.intentId).toBe('intent-ownership-1');
     expect(governance.mutationAllowed).toBe(true);
 
-    const drift = detectIntentDrift(reloaded!, { latency: 0.5 });
+    const drift = detectIntentDrift(reloaded!, { latency: 0.2 });
     expect(drift.effective).toBe(true);
     expect(drift.recommendedAdmission).toBe('OBSERVE_ONLY');
 
@@ -66,7 +57,7 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
       correlationId: 'ownership-loop',
       driftInputs: {
         intent: reloaded!,
-        observed: { latency: 0.5 },
+        observed: { latency: 0.2 },
       },
     });
 
