@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createNetworkIntent } from '@irp/core';
 import { compileNetworkIntent } from '../src/intent/compiler.js';
 import { InMemoryIntentStore } from '../src/intent/arbitration.js';
@@ -10,13 +10,22 @@ import type { ResilienceRuntime } from '../src/runtime.js';
 
 const runtime = (status: 'success' | 'blocked' | 'failed'): ResilienceRuntime =>
   ({
-    cycle: async () => ({
+    cycle: vi.fn(async () => ({
       status,
       decision: { outcome: status === 'success' ? 'apply' : status },
-    }),
+    })),
   }) as unknown as ResilienceRuntime;
 
-const context = createRuntimeContext({ mode: 'autonomous' });
+const untrustedContext = createRuntimeContext({ mode: 'autonomous' });
+
+const trustedLiveContext = createRuntimeContext({
+  mode: 'live',
+  securityContext: { trusted: true },
+  capabilitySnapshot: {
+    ...createRuntimeContext({ mode: 'live' }).capabilitySnapshot,
+    trusted: true,
+  },
+});
 
 describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue #13)', () => {
   it('persists compiled intent via InMemoryIntentStore, reloads, governs, and feeds observe-only drift into closed loop without mutation', async () => {
@@ -24,6 +33,7 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
     const draft = createNetworkIntent({
       id: 'intent-ownership-1',
       priority: 'high',
+      autonomy: 'SAFE_AUTOMATION',
       spec: {
         outcome: 'Maintain stable low-latency access',
         target: { destination: 'example.com' },
@@ -41,7 +51,7 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
     const activeList = await store.getActive();
     expect(activeList).toHaveLength(1);
 
-    const governance = resolveIntentGovernance(activeList, context);
+    const governance = resolveIntentGovernance(activeList, trustedLiveContext);
     expect(governance.admission).toBe('ALLOW');
     expect(governance.selectedIntent?.intentId).toBe('intent-ownership-1');
     expect(governance.mutationAllowed).toBe(true);
@@ -92,7 +102,7 @@ describe('Intent ownership and stale handling end-to-end (Phases 79–83 / issue
     const activeList = await store.getActive(); // now, after expiry
     expect(activeList).toHaveLength(0);
 
-    const governance = resolveIntentGovernance([compiled], context);
+    const governance = resolveIntentGovernance([compiled], untrustedContext);
     expect(governance.admission).toBe('DENY');
     expect(governance.rejectedIntents.map((i) => i.intentId)).toContain('intent-stale-1');
     expect(governance.mutationAllowed).toBe(false);
