@@ -44,6 +44,7 @@ export * from './fabric-lifecycle.js';
 export * from './fabric.js';
 export * from './fabric-authority.js';
 export * from './closed-loop.js';
+export { detectIntentDrift, type IntentDriftResult, type DriftSeverity } from './intent/drift.js';
 export * from './historical-advisory.js';
 export * from './federation/federated-advisory.js';
 export * from './intent/postgres-store.js';

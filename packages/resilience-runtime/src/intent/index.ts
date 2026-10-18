@@ -15,10 +15,3 @@ export { PostgresIntentStore, type PostgresConfig } from './postgres-store.js';
 export type { CompiledIntent } from '../domain/types.js';
 export { detectIntentDrift, type IntentDriftResult, type DriftSeverity } from './drift.js';
 export * from './governance.js';
-export {
-  detectIntentDrift,
-  type DriftSeverity,
-  type RecommendedAdmission,
-  type ObservedMetrics,
-  type DriftSignal,
-} from './drift.js';

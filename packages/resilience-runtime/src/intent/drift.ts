@@ -48,9 +48,17 @@ const isWorse = (objective: string, observed: number, target: number): boolean =
 const severityOf = (objective: string, observed: number, target: number): DriftSeverity => {
   const worse = isWorse(objective, observed, target);
   if (!worse) return 'none';
+  // Known objectives have a direction; unknown objectives do not. For an
+  // unknown objective, measure the magnitude of the deviation symmetrically
+  // rather than implicitly treating it as lower-is-better.
   const ratio = HIGHER_IS_BETTER.has(objective as IntentObjective)
     ? observed / Math.max(target, 1e-6)
-    : target / Math.max(observed, 1e-6);
+    : LOWER_IS_BETTER.has(objective as IntentObjective)
+      ? target / Math.max(observed, 1e-6)
+      : Math.min(
+          observed / Math.max(Math.abs(target), 1e-6),
+          target / Math.max(Math.abs(observed), 1e-6),
+        );
   return ratio < 0.7 ? 'high' : 'medium';
 };
 

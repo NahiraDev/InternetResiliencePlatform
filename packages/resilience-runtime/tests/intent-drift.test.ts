@@ -57,6 +57,22 @@ describe('detectIntentDrift', () => {
     expect(Object.keys(result.observedDelta)).toHaveLength(0);
   });
 
+
+  it('classifies substantial unknown-objective deviation symmetrically', () => {
+    const intent = baseIntent({ objectives: { score: 0.95 } });
+    const result = detectIntentDrift(intent, { score: 0.5 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.observedDelta.score).toMatchObject({ target: 0.95, observed: 0.5 });
+  });
+
+  it('does not assume unknown objectives are lower-is-better when observations are higher', () => {
+    const intent = baseIntent({ objectives: { score: 0.5 } });
+    const result = detectIntentDrift(intent, { score: 0.95 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
+
   it('does not false-positive when latency is below target (better)', () => {
     const intent = baseIntent({ objectives: { latency: 100 } });
     const result = detectIntentDrift(intent, { latency: 40 });
