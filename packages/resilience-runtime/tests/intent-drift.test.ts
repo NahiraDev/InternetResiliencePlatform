@@ -79,4 +79,20 @@ describe('detectIntentDrift', () => {
     expect(result.severity).toBe('none');
     expect(result.recommendedAdmission).toBe('ALLOW');
   });
+
+  it('treats zero target with non-zero observation as material drift for unknown objectives', () => {
+    const intent = baseIntent({ objectives: { score: 0 } });
+    const result = detectIntentDrift(intent, { score: 1 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
+
+  it('selects the highest severity across multiple objectives', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95, latency: 50 } });
+    const result = detectIntentDrift(intent, { reachability: 0.85, latency: 200 });
+    expect(result.severity).toBe('high');
+    expect(result.observedDelta).toHaveProperty('reachability');
+    expect(result.observedDelta).toHaveProperty('latency');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
 });
