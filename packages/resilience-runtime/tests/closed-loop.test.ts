@@ -188,6 +188,29 @@ describe('BoundedClosedLoopController', () => {
     expect(fake.cycle).toHaveBeenCalledTimes(1);
   });
 
+  it('collects one observe-only drift assessment per completed cycle on multi-cycle runs', async () => {
+    const fake = runtime('degraded', 'degraded', 'success');
+    const controller = new BoundedClosedLoopController(fake);
+    const intent = baseIntent();
+
+    const result = await controller.run({
+      maxCycles: 3,
+      stopWhenHealthy: false,
+      correlationId: 'multi-drift',
+      driftInputs: {
+        intent,
+        observed: { score: 0.5 },
+      },
+    });
+
+    expect(result.status).toBe('bounded');
+    expect(result.cyclesCompleted).toBe(3);
+    expect(result.driftAssessments).toHaveLength(3);
+    expect(result.driftAssessments!.every((a) => a.intentId === 'intent-drift')).toBe(true);
+    expect(result.driftAssessments!.every((a) => a.recommendedAdmission === 'OBSERVE_ONLY')).toBe(true);
+    expect(fake.cycle).toHaveBeenCalledTimes(3);
+  });
+
   it('omits driftAssessments when no driftInputs are provided', async () => {
     const fake = runtime('success');
     const controller = new BoundedClosedLoopController(fake);

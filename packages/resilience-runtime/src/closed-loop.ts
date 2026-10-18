@@ -33,7 +33,7 @@ export interface ClosedLoopResult {
   readonly stopReason: ClosedLoopStopReason;
   readonly cyclesCompleted: number;
   readonly records: readonly DecisionRecord[];
-  /** Observe-only drift assessments collected when driftInputs were supplied. */
+  /** Observe-only drift assessments collected when driftInputs were supplied (one per completed cycle). */
   readonly driftAssessments?: readonly IntentDriftResult[];
 }
 
@@ -81,7 +81,7 @@ const sleep = async (milliseconds: number, signal?: AbortSignal): Promise<void> 
   });
 };
 
-const collectOneDriftAssessment = (options: ClosedLoopOptions): IntentDriftResult | undefined => {
+const assessDrift = (options: ClosedLoopOptions): IntentDriftResult | undefined => {
   if (!options.driftInputs) return undefined;
   const { intent, observed, at } = options.driftInputs;
   // Pure observation only — never mutates and never calls privileged paths.
@@ -92,8 +92,8 @@ const collectOneDriftAssessment = (options: ClosedLoopOptions): IntentDriftResul
  * Runs the existing ResilienceRuntime in a bounded observe→decide→apply→verify/recover loop.
  * This class owns only loop control and stop conditions; decision, policy, execution,
  * verification and recovery remain owned by ResilienceRuntime and its canonical components.
- * Optional drift assessments are observe-only and must be re-admitted through governance
- * before any corrective action.
+ * Optional drift assessments are observe-only (one per completed cycle) and must be
+ * re-admitted through governance before any corrective action.
  */
 export class BoundedClosedLoopController {
   constructor(private readonly runtime: ClosedLoopRuntime | Pick<ResilienceRuntime, 'cycle'>) {}
@@ -103,12 +103,12 @@ export class BoundedClosedLoopController {
     const intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
     const stopWhenHealthy = options.stopWhenHealthy ?? true;
     const signal = options.signal;
-    const driftAssessments: IntentDriftResult[] = [];
 
     assertIntegerInRange(maxCycles, 'maxCycles', 1, MAX_ALLOWED_CYCLES);
     assertNonNegativeInteger(intervalMs, 'intervalMs');
 
     const records: DecisionRecord[] = [];
+    const driftAssessments: IntentDriftResult[] = [];
     const baseCorrelationId =
       options.correlationId ?? options.context?.correlationId ?? 'closed-loop';
     const baseIdempotencyKey = options.idempotencyKey ?? baseCorrelationId;
@@ -134,7 +134,7 @@ export class BoundedClosedLoopController {
     }
 
     const withDrift = (result: Omit<ClosedLoopResult, 'driftAssessments'>): ClosedLoopResult =>
-      driftAssessments.length > 0 ? { ...result, driftAssessments } : result;
+      options.driftInputs ? { ...result, driftAssessments } : result;
 
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {
       if (signal?.aborted) {
@@ -182,6 +182,11 @@ export class BoundedClosedLoopController {
       }
 
       records.push(record);
+
+      const assessment = assessDrift(options);
+      if (assessment) {
+        driftAssessments.push(assessment);
+      }
 
       if (stopWhenHealthy && terminalHealthyOutcomes.has(record.outcome)) {
         return withDrift({
