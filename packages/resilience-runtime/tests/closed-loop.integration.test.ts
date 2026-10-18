@@ -90,4 +90,49 @@ describe('BoundedClosedLoopController integration', () => {
       events.indexOf('runtime.transaction.created'),
     );
   });
+
+  it('observes intent drift without invoking privileged mutation or altering cycle outcomes', async () => {
+    const runtime = new ResilienceRuntime([], {
+      runtimeId: 'phase-85-drift-integration',
+      instanceId: 'phase-85-test',
+    });
+    const cycle = vi.spyOn(runtime, 'cycle');
+    const controller = new BoundedClosedLoopController(runtime);
+
+    const intent = {
+      intentId: 'intent-85',
+      objectives: { latency: 50, reachability: 1 },
+      lifecycleStatus: 'active',
+      effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    } as any;
+
+    const result = await controller.run({
+      maxCycles: 1,
+      mode: 'simulation',
+      correlationId: 'phase-85/drift',
+      idempotencyKey: 'phase-85/drift',
+      context: {
+        securityContext: { trusted: true },
+        capabilitySnapshot: createCapabilitySnapshot([], true),
+      },
+      driftInputs: {
+        intent,
+        observed: { latency: 120, reachability: 1 },
+      },
+    });
+
+    expect(cycle).toHaveBeenCalledTimes(1);
+    expect(result.cyclesCompleted).toBe(1);
+    expect(result.driftAssessments).toBeDefined();
+    expect(result.driftAssessments).toHaveLength(1);
+    const drift = result.driftAssessments![0];
+    expect(drift.effective).toBe(true);
+    expect(drift.severity).not.toBe('none');
+    expect(drift.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(drift.reasons.some((r) => r.includes('latency'))).toBe(true);
+    // Drift must not change the cycle outcome or introduce a parallel mutation path.
+    expect(result.records[0]?.outcome).toBe('simulated');
+    expect(result.status).toBe('healthy');
+  });
 });

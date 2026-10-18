@@ -57,10 +57,42 @@ describe('detectIntentDrift', () => {
     expect(Object.keys(result.observedDelta)).toHaveLength(0);
   });
 
+
+  it('classifies substantial unknown-objective deviation symmetrically', () => {
+    const intent = baseIntent({ objectives: { score: 0.95 } });
+    const result = detectIntentDrift(intent, { score: 0.5 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+    expect(result.observedDelta.score).toMatchObject({ target: 0.95, observed: 0.5 });
+  });
+
+  it('does not assume unknown objectives are lower-is-better when observations are higher', () => {
+    const intent = baseIntent({ objectives: { score: 0.5 } });
+    const result = detectIntentDrift(intent, { score: 0.95 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
+
   it('does not false-positive when latency is below target (better)', () => {
     const intent = baseIntent({ objectives: { latency: 100 } });
     const result = detectIntentDrift(intent, { latency: 40 });
     expect(result.severity).toBe('none');
     expect(result.recommendedAdmission).toBe('ALLOW');
+  });
+
+  it('treats zero target with non-zero observation as material drift for unknown objectives', () => {
+    const intent = baseIntent({ objectives: { score: 0 } });
+    const result = detectIntentDrift(intent, { score: 1 });
+    expect(result.severity).toBe('high');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
+  });
+
+  it('selects the highest severity across multiple objectives', () => {
+    const intent = baseIntent({ objectives: { reachability: 0.95, latency: 50 } });
+    const result = detectIntentDrift(intent, { reachability: 0.85, latency: 200 });
+    expect(result.severity).toBe('high');
+    expect(result.observedDelta).toHaveProperty('reachability');
+    expect(result.observedDelta).toHaveProperty('latency');
+    expect(result.recommendedAdmission).toBe('OBSERVE_ONLY');
   });
 });
