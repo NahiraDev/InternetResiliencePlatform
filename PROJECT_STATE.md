@@ -27,6 +27,7 @@ Phase 78 formalizes a bounded observe → decide → apply → verify/recover co
 - Blocked and failed decisions terminate the loop immediately.
 - Healthy terminal outcomes stop the loop by default.
 - Cooperative cancellation prevents the next runtime cycle from starting.
+- Optional per-cycle observe-only intent drift assessments (Phase 85) are collected when `driftInputs` are supplied; they never invoke privileged mutation.
 - Dedicated tests are in `packages/resilience-runtime/tests/closed-loop.test.ts`.
 - The public runtime barrel exports the controller.
 - Observe-only Phase 85 drift assessments are optionally collected and attached without triggering mutation.

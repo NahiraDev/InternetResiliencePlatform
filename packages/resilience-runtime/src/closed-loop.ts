@@ -156,6 +156,12 @@ export class BoundedClosedLoopController {
         });
       }
 
+      // Per-cycle observe-only drift assessment. Never invokes mutation.
+      const assessment = collectOneDriftAssessment(options);
+      if (assessment) {
+        driftAssessments.push(assessment);
+      }
+
       let record: DecisionRecord;
       try {
         record = await this.runtime.cycle({
