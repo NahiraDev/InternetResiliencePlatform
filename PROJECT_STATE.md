@@ -5,12 +5,12 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `2a8728214bf57347049dcfbba0fdf5e367db60f7` (2026-10-17, verified HEAD after reconcile merges).
+- **Current main HEAD reviewed this run:** `de562ec9be7919a05ce75f607d423e0b10e36abe` (2026-10-17, merge of PR #56 adding e2e ownership/stale intent coverage for Phases 79–83).
 - **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
+- **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone. E2E ownership/stale coverage added in PR #56; test fixes pending in follow-up to make assertions match governance contracts (trusted live context + SAFE_AUTOMATION).
 - **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification (roadmap Step 6) remains open. The previously observed Release Gate failed because API typecheck failed; no passing Release Gate evidence has yet been observed for the repair branch's current SHA.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
 - **Issue #14 progress (2026-10-17):** Phase contracts 84–92 exist; all remain PARTIAL pending implementation/acceptance evidence. The phase matrix has been restored and reconciled against source SHA `2a8728214bf57347049dcfbba0fdf5e367db60f7`, with all 150 phases represented. Phases 93–150 still require contracts and explicit authorization before implementation. No new runtime authority introduced.
