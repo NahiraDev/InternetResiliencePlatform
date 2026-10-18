@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createNetworkIntent } from '@irp/core';
 import { compileNetworkIntent } from '../src/intent/compiler.js';
 import { InMemoryIntentStore } from '../src/intent/arbitration.js';
@@ -10,10 +10,10 @@ import type { ResilienceRuntime } from '../src/runtime.js';
 
 const runtime = (status: 'success' | 'blocked' | 'failed'): ResilienceRuntime =>
   ({
-    cycle: async () => ({
+    cycle: vi.fn(async () => ({
       status,
       decision: { outcome: status === 'success' ? 'apply' : status },
-    }),
+    })),
   }) as unknown as ResilienceRuntime;
 
 const context = createRuntimeContext({ mode: 'autonomous' });
