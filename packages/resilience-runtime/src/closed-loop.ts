@@ -81,11 +81,11 @@ const sleep = async (milliseconds: number, signal?: AbortSignal): Promise<void> 
   });
 };
 
-const collectDriftAssessments = (options: ClosedLoopOptions): IntentDriftResult[] | undefined => {
+const collectOneDriftAssessment = (options: ClosedLoopOptions): IntentDriftResult | undefined => {
   if (!options.driftInputs) return undefined;
   const { intent, observed, at } = options.driftInputs;
   // Pure observation only — never mutates and never calls privileged paths.
-  return [detectIntentDrift(intent, observed, at)];
+  return detectIntentDrift(intent, observed, at);
 };
 
 /**
@@ -103,7 +103,7 @@ export class BoundedClosedLoopController {
     const intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
     const stopWhenHealthy = options.stopWhenHealthy ?? true;
     const signal = options.signal;
-    const driftAssessments = collectDriftAssessments(options);
+    const driftAssessments: IntentDriftResult[] = [];
 
     assertIntegerInRange(maxCycles, 'maxCycles', 1, MAX_ALLOWED_CYCLES);
     assertNonNegativeInteger(intervalMs, 'intervalMs');
@@ -134,7 +134,7 @@ export class BoundedClosedLoopController {
     }
 
     const withDrift = (result: Omit<ClosedLoopResult, 'driftAssessments'>): ClosedLoopResult =>
-      driftAssessments ? { ...result, driftAssessments } : result;
+      driftAssessments.length > 0 ? { ...result, driftAssessments } : result;
 
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {
       if (signal?.aborted) {
@@ -154,6 +154,12 @@ export class BoundedClosedLoopController {
           cyclesCompleted: records.length,
           records,
         });
+      }
+
+      // Per-cycle observe-only drift assessment. Never invokes mutation.
+      const assessment = collectOneDriftAssessment(options);
+      if (assessment) {
+        driftAssessments.push(assessment);
       }
 
       let record: DecisionRecord;
