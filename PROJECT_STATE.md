@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD reviewed this run:** `de562ec9be7919a05ce75f607d423e0b10e36abe` (2026-10-17, merge of PR #56 adding e2e ownership/stale intent coverage for Phases 79–83).
+- **Current main HEAD reviewed this run:** `2c8610ce2b3e6c7b603dbfcb575366b687886792` (2026-10-18, merge of PR #55 resolving intent scope arbitration and conflict ownership).
 - **Issue #12 progress:** Phase 1–38 acceptance evidence register complete with package/path/test anchors; phase-history-evidence-matrix mapped; phase-1-150-status-matrix regenerated. Dispositions remain PARTIAL pending fresh per-phase CI evidence and full acceptance verification. No COMPLETE claimed from documentation alone.
 - **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (authorize contracts for Groups B–L / Phases 84–150).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -49,3 +49,5 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 - **Issue #14 progress (2026-10-17):** Phase 86–92 contracts added (docs/phases/phase-86.md through phase-92.md). Maps existing fabric, routing, gateway, DNS, tunnel, application path, and assurance surfaces; no new runtime authority introduced. Matrix update deferred until evidence exists.
 - **Matrix regeneration (2026-10-17):** phase-1-150-status-matrix.md and phase-status-matrix.json regenerated from authoritative generator against verified HEAD 2a8728214bf57347049dcfbba0fdf5e367db60f7. Dispositions unchanged (Phase 85 remains PARTIAL with observe-only drift + closed-loop integration present).
+
+- **Phase 85 progress (2026-10-18):** Observe-only `detectIntentDrift` integrated into `BoundedClosedLoopController`. Drift assessments are now collected after each completed cycle (still pure observation; never mutates or invokes privileged paths). Multi-cycle test coverage added. Disposition remains PARTIAL pending full CI evidence on the implementing SHA and continuous correction remaining out of scope.

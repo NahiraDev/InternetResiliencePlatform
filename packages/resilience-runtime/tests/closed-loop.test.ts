@@ -196,4 +196,27 @@ describe('BoundedClosedLoopController', () => {
 
     expect(result.driftAssessments).toBeUndefined();
   });
+
+  it('collects one observe-only drift assessment per completed cycle without mutation', async () => {
+    const fake = runtime('success');
+    const controller = new BoundedClosedLoopController(fake);
+    const intent = baseIntent();
+
+    const result = await controller.run({
+      maxCycles: 3,
+      stopWhenHealthy: false,
+      correlationId: 'multi-drift',
+      driftInputs: {
+        intent,
+        observed: { reachability: 0.5 },
+      },
+    });
+
+    expect(result.cyclesCompleted).toBe(3);
+    expect(result.driftAssessments).toHaveLength(3);
+    expect(result.driftAssessments?.every((d) => d.severity === 'high' && d.recommendedAdmission === 'OBSERVE_ONLY')).toBe(true);
+    expect(fake.calls).toHaveLength(3);
+    // Confirm no extra privileged calls beyond the cycles
+    expect(fake.calls.every((c) => typeof c.idempotencyKey === 'string')).toBe(true);
+  });
 });

@@ -103,7 +103,7 @@ export class BoundedClosedLoopController {
     const intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
     const stopWhenHealthy = options.stopWhenHealthy ?? true;
     const signal = options.signal;
-    const driftAssessments = collectDriftAssessments(options);
+    const driftAssessments: IntentDriftResult[] = [];
 
     assertIntegerInRange(maxCycles, 'maxCycles', 1, MAX_ALLOWED_CYCLES);
     assertNonNegativeInteger(intervalMs, 'intervalMs');
@@ -134,7 +134,7 @@ export class BoundedClosedLoopController {
     }
 
     const withDrift = (result: Omit<ClosedLoopResult, 'driftAssessments'>): ClosedLoopResult =>
-      driftAssessments ? { ...result, driftAssessments } : result;
+      driftAssessments.length > 0 ? { ...result, driftAssessments } : result;
 
     for (let cycleNumber = 1; cycleNumber <= maxCycles; cycleNumber += 1) {
       if (signal?.aborted) {
@@ -176,6 +176,13 @@ export class BoundedClosedLoopController {
       }
 
       records.push(record);
+
+      // Observe-only Phase 85 drift assessment collected after each successful cycle.
+      // Never mutates and never invokes privileged paths.
+      if (options.driftInputs) {
+        const { intent, observed, at } = options.driftInputs;
+        driftAssessments.push(detectIntentDrift(intent, observed, at));
+      }
 
       if (stopWhenHealthy && terminalHealthyOutcomes.has(record.outcome)) {
         return withDrift({
