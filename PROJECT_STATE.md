@@ -4,35 +4,33 @@
 
 ## Current implementation gate
 
-- **Current implementation baseline:** Phase 78 — Closed-Loop Control Foundation is implemented on `main`.
-- **Current main HEAD inspected (2026-10-17):** `4011e6021f9ce84273398288ba85fa86ccc382e0` (merge commit for PR #375). The workspace-read rate-limit TypeScript error was fixed in PR #373; PR #375 then fixed the unknown-objective drift-severity regression. PR-SHA CI and Deep Audit passed before merge. Post-merge workflows are now running on the exact main SHA; no passing Release Gate result has yet been verified for this SHA.
+- **Current implementation baseline:** Phase 79 — Intent Model & Lifecycle is implemented on `main`.
+- **Current main HEAD inspected (2026-10-20):** `fd73eacd9acc643416856ac2806d797febcef348` (merge of phase matrix regeneration). Phase 79 NetworkIntent model, lifecycle, effective-window semantics, autonomy levels and tests are present in `@irp/core`.
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
-- **Current open issues (authoritative tracker):** #4 (post-v0.2.1 runtime/signing/production certification — largely external blockers), #12 (reconstruct per-phase acceptance evidence for Phases 1–38 / unmapped 39–78), #13 (define acceptance contracts for Phases 79–83 existing intent/policy capability), #14 (verify Phases 84–92 and define/authorize contracts for Phases 93–150).
+- **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
-- **Issue #13 progress:** acceptance contracts for Phases 79–83 formalized and merged. Phase matrix reflects contracts; dispositions remain PARTIAL pending full verification evidence. No COMPLETE claimed from documentation alone.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification (roadmap Step 6) remains open. PR #375 is on main at `4011e6021f9ce84273398288ba85fa86ccc382e0`; post-merge workflow results and a passing exact-SHA Release Gate must be verified before any stronger release claim.
-- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–78, but it must not be represented as certified until its evidence exists.
-- **Issue #14 progress (2026-10-17):** Phase contracts 84–92 exist; all remain PARTIAL pending implementation/acceptance evidence. Phases 93–150 remain NOT STARTED until contracts and explicit authorization exist. The canonical generator `phase_matrix.py` was run successfully by GitHub Actions workflow [39047858520](https://github.com/NahiraDev/InternetResiliencePlatform/actions/runs/39047858520) on source SHA `9259c84335e35caef57f5452576906c8a1613404`; the generated 150-row JSON/Markdown outputs are committed in the documentation PR branch at `17ad229ad3257f3dc95a906001ff56bf8d980368`. Summary: 88 PARTIAL, 3 BLOCKED, 1 COMPLETE (Phase 71 distribution contract), 58 NOT STARTED; Phase 92 remains PARTIAL. Historical entries in `test-counts.tsv` remain historical records, not fresh per-phase acceptance evidence. No new runtime authority introduced.
+- **Phase 79 status:** NetworkIntent model, lifecycle transitions, effective-window evaluation, autonomy levels and dedicated tests are implemented and present on `main` in `packages/core/src/intent.ts` and `intent.test.ts`. Exported from the core barrel.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `fd73eacd9acc643416856ac2806d797febcef348`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–79, but it must not be represented as certified until its evidence exists.
+- **Phases 80–150:** contracts for 79–92 exist; implementation for 80+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
-## Phase 78 objective
+## Phase 79 objective
 
-Phase 78 formalizes a bounded observe → decide → apply → verify/recover control loop around the existing `@irp/resilience-runtime` cycle. The loop controller owns only bounded repetition, cancellation and deterministic stop conditions. It must not create a second decision engine, policy engine, execution engine or global control plane.
+Phase 79 defines the canonical, typed network-intent model and deterministic lifecycle. An intent expresses a desired network outcome without embedding policy evaluation, planning or low-level execution details. The model is in `@irp/core` and must not become a parallel control plane.
 
-## Current Phase 78 implementation
+## Current Phase 79 implementation
 
-- `packages/resilience-runtime/src/closed-loop.ts` provides `BoundedClosedLoopController`.
-- The controller is safe-by-default with a one-cycle default and a hard maximum of 10 cycles.
-- Each cycle receives deterministic correlation and idempotency suffixes.
-- Blocked and failed decisions terminate the loop immediately.
-- Healthy terminal outcomes stop the loop by default.
-- Cooperative cancellation prevents the next runtime cycle from starting.
-- Dedicated tests are in `packages/resilience-runtime/tests/closed-loop.test.ts`.
-- The public runtime barrel exports the controller.
+- `packages/core/src/intent.ts` provides `NetworkIntent`, `createNetworkIntent`, `transitionIntent`, `isIntentEffective`, `isIntentTerminal`, `isAutonomyPermitted`.
+- Lifecycle transitions are explicit and fail-closed.
+- Effective window uses half-open `[effectiveFrom, expiresAt)` semantics.
+- Autonomy levels and objective weights are validated.
+- Dedicated tests in `packages/core/src/intent.test.ts`.
+- Public exports from `packages/core/src/index.ts`.
 
 ## Phase 71 certification prerequisites
 
-The Phase 71 gate is limited to the release/distribution contract defined by `docs/phases/phase-71.md`. Remaining production certification (device smoke, regional validation, signing, security sign-off) is tracked in issue #4 and `docs/release/RELEASE_GATE_ROADMAP.md`.
+The Phase 71 gate is limited to the release/distribution contract defined by `docs/phases/phase-71.md`. Remaining production certification (device smoke, regional validation, signing, security sign-off) is tracked in open issues and `docs/release/RELEASE_GATE_ROADMAP.md`.
 
 ## Canonical evidence locations
 
@@ -40,11 +38,15 @@ The Phase 71 gate is limited to the release/distribution contract defined by `do
 - Release path and blockers: `docs/release/RELEASE_GATE_ROADMAP.md`.
 - Current post-70 roadmap: `docs/roadmap/MASTER_ROADMAP_V2.md`.
 - Historical 0–70 roadmap: `ROADMAP.md`.
-- Current phase records: `docs/phases/` (including formalized Phase 79–92 contracts under issues #13/#14).
+- Current phase records: `docs/phases/`.
 - Engineering governance: `docs/architecture/engineering-governance.md`.
 
 ## Product objective
 
 IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
 
-- **Matrix regeneration (2026-10-17):** The placeholder was replaced; the canonical generator ran successfully on source SHA `9259c84335e35caef57f5452576906c8a1613404` in workflow [39047858520](https://github.com/NahiraDev/InternetResiliencePlatform/actions/runs/39047858520). Generated JSON and Markdown cover 150 phases and are committed at `17ad229ad3257f3dc95a906001ff56bf8d980368`. Summary: 88 PARTIAL, 3 BLOCKED, 1 COMPLETE (Phase 71 distribution contract), 58 NOT STARTED. Historical test-count entries do not substitute for current-SHA acceptance evidence.
+## Architecture invariants (unchanged)
+
+- ResilienceRuntime remains the canonical runtime authority.
+- Never restore NetworkAutopilot as a parallel production control plane.
+- No competing authorities for runtime state, policy, decisions, safety, mutation, execution, verification, recovery, intent, or orchestration.
