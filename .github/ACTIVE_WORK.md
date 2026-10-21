@@ -4,10 +4,10 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation baseline: **Phase 82 — Policy Decision & Enforcement Engine (intent-scoped) is implemented on main**. Intent model (79), API ingestion (80), compilation (81), and intent-scoped governance/admission (82) are present. ResilienceRuntime remains the sole production mutation authority.
+- Current implementation baseline: **Phase 83 — Policy Conflict Resolution has arbitration implementation on main** (arbitrateIntents, conflict detection with supersede resolution, optional durable journal). Intent model (79), API (80), compilation (81), governance (82) are present. Disposition PARTIAL pending full e2e evidence. ResilienceRuntime remains the sole production mutation authority.
 - Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**.
 - Main branch: `main`
-- Current main commit reviewed: `a35c48dccc71b8ee5b931416d3bd95ccd60a14db`.
+- Current main commit reviewed: `6db4989311095de1a03738d09ef67d78e5edb0a1`.
 - Phase 71 status: implementation/release contract work exists; external release certification remains open. Published GitHub Release v0.2.1 is developer-preview evidence only.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
 - Current work must close source → contract → consumer → entrypoint → execution → outcome gaps without creating a second control plane or declaring completion from source presence alone.
