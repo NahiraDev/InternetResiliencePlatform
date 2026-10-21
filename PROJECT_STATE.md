@@ -4,29 +4,23 @@
 
 ## Current implementation gate
 
-- **Current implementation baseline:** Phase 79 — Intent Model & Lifecycle is implemented on `main`.
-- **Current main HEAD inspected (2026-10-20):** `fd73eacd9acc643416856ac2806d797febcef348` (merge of phase matrix regeneration). Phase 79 NetworkIntent model, lifecycle, effective-window semantics, autonomy levels and tests are present in `@irp/core`.
+- **Current implementation baseline:** Phase 82 — Policy Decision & Enforcement Engine (intent-scoped) is implemented on `main`.
+- **Current main HEAD inspected (2026-10-21):** `a35c48dccc71b8ee5b931416d3bd95ccd60a14db`.
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Phase 79 status:** NetworkIntent model, lifecycle transitions, effective-window evaluation, autonomy levels and dedicated tests are implemented and present on `main` in `packages/core/src/intent.ts` and `intent.test.ts`. Exported from the core barrel.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `fd73eacd9acc643416856ac2806d797febcef348`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
-- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–79, but it must not be represented as certified until its evidence exists.
-- **Phases 80–150:** contracts for 79–92 exist; implementation for 80+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
+- **Phase 80 status:** Intent API & Ingestion is implemented on `main` in `apps/api/src/intent-api.ts` (authenticated routes for create/list/get/commands, Idempotency-Key, in-memory and database stores, ownership isolation). Tests in `intent-api.test.ts`. No network mutation from the API boundary.
+- **Phase 81 status:** Intent Translation / Compilation is implemented on `main` in `packages/resilience-runtime/src/intent/compiler.ts` (`compileNetworkIntent`, `isCompiledIntentEffective`). Pure, deterministic, side-effect free. Tests present.
+- **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `a35c48dccc71b8ee5b931416d3bd95ccd60a14db`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–82, but it must not be represented as certified until its evidence exists.
+- **Phases 83–150:** contracts for 79–92 exist; implementation for 83+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
-## Phase 79 objective
+## Phase 79–82 summary
 
-Phase 79 defines the canonical, typed network-intent model and deterministic lifecycle. An intent expresses a desired network outcome without embedding policy evaluation, planning or low-level execution details. The model is in `@irp/core` and must not become a parallel control plane.
-
-## Current Phase 79 implementation
-
-- `packages/core/src/intent.ts` provides `NetworkIntent`, `createNetworkIntent`, `transitionIntent`, `isIntentEffective`, `isIntentTerminal`, `isAutonomyPermitted`.
-- Lifecycle transitions are explicit and fail-closed.
-- Effective window uses half-open `[effectiveFrom, expiresAt)` semantics.
-- Autonomy levels and objective weights are validated.
-- Dedicated tests in `packages/core/src/intent.test.ts`.
-- Public exports from `packages/core/src/index.ts`.
+Phases 79–82 establish the intent model, API ingestion boundary, pure compilation to CompiledIntent, and intent-scoped admission/enforcement without introducing a second control plane. Downstream phases must consume these contracts.
 
 ## Phase 71 certification prerequisites
 
