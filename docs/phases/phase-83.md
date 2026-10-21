@@ -20,7 +20,7 @@ Detect and deterministically resolve conflicts between multiple effective intent
 - Durable store: `src/intent/postgres-store.ts` (`PostgresIntentStore`)
 - API conflict listing: `apps/api/src/intent-api.ts` (conflict query surface)
 - Related migration: `packages/database/prisma/migrations/20260930103000_phase_274_intent_ownership`
-- Tests: `packages/resilience-runtime/tests/intent-governance.test.ts` (arbitration paths), `apps/api/src/intent-api.test.ts` (API)
+- Tests: `packages/resilience-runtime/tests/intent-arbitration.test.ts` (direct arbitrateIntents coverage), `packages/resilience-runtime/tests/intent-governance.test.ts` (arbitration paths), `apps/api/src/intent-api.test.ts` (API)
 
 ## Scope
 
@@ -59,6 +59,7 @@ Source presence is not completion. Phase 83 completion requires mapped paths, gr
 | Postgres store | `packages/resilience-runtime/src/intent/postgres-store.ts` |
 | API + ownership | `apps/api/src/intent-api.ts` (`IntentOwnership`, conflict query) |
 | API tests | `apps/api/src/intent-api.test.ts` |
+| Direct arbitration tests | `packages/resilience-runtime/tests/intent-arbitration.test.ts` |
 | Governance integration | `packages/resilience-runtime/src/intent/governance.ts` + tests |
 | Ownership migration | `packages/database/prisma/migrations/20260930103000_phase_274_intent_ownership` |
 
