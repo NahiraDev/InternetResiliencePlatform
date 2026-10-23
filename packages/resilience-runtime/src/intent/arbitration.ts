@@ -82,11 +82,9 @@ export const arbitrateIntents = (
 };
 
 const scopesOverlap = (a: CompiledIntent, b: CompiledIntent): boolean => {
-  const aKeys = new Set(Object.keys(a.scope));
-  for (const key of Object.keys(b.scope)) {
-    if (aKeys.has(key)) return true;
-  }
-  return false;
+  const aEntries = Object.entries(a.scope).filter(([key]) => key !== 'intentId');
+  const bScope = new Map(Object.entries(b.scope));
+  return aEntries.some(([key, value]) => bScope.get(key) === value);
 };
 
 /**
