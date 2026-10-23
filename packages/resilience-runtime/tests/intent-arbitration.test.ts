@@ -10,20 +10,21 @@ const makeIntent = (
   scope: Record<string, string> = { destination: 'github.com' },
   version = 1,
   expiresAt?: string,
-) =>
-  compileNetworkIntent({
-    ...createNetworkIntent({
-      id,
-      priority,
-      spec: { outcome, target: { destination: 'github.com' } },
-      confidence: 0.9,
-      autonomy: 'SAFE_AUTOMATION',
-    }),
+) => {
+  const base = createNetworkIntent({
+    id,
+    priority,
+    spec: { outcome, target: scope },
+    confidence: 0.9,
+    autonomy: 'SAFE_AUTOMATION',
+  });
+  return compileNetworkIntent({
+    ...base,
     status: 'active' as const,
     version,
-    scope,
     ...(expiresAt ? { expiresAt } : {}),
   });
+};
 
 describe('intent arbitration (Phase 83)', () => {
   it('returns ordered intents and empty conflicts when no overlap', () => {
@@ -54,7 +55,9 @@ describe('intent arbitration (Phase 83)', () => {
   });
 
   it('excludes stale intents before conflict analysis', () => {
-    const stale = makeIntent('stale', 'critical', 'old', { destination: 'github.com' }, 1, '2020-01-01T00:00:00.000Z');
+    // Compile a valid intent then force an expired window; the compiler rejects already-stale inputs.
+    const staleBase = makeIntent('stale', 'critical', 'old');
+    const stale = { ...staleBase, expiresAt: '2020-01-01T00:00:00.000Z' };
     const fresh = makeIntent('fresh', 'normal', 'new');
     const result = arbitrateIntents([stale, fresh]);
     expect(result.ordered.map((i) => i.intentId)).toEqual(['fresh']);
