@@ -44,7 +44,7 @@
     "certification:test": "vitest run scripts/production-certification.test.mjs scripts/full-system-assurance.test.mjs"
   },
   "dependencies": {
-    "pg": "8.23.0",
+    "pg": "8.23.1",
     "prisma": "7.10.0"
   },
   "devDependencies": {
