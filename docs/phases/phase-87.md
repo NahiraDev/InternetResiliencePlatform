@@ -59,6 +59,11 @@ Provide intelligence over multiple network interfaces on a device (Wi-Fi, Ethern
 
 ## Evidence map (Phase 87)
 
-- `packages/resilience-runtime/tests/phase-87-multi-interface-regression.test.ts` — focused regressions for Interface kind modeling, freshness classification of interface resources, and health-ranking invariant used by selection.
-- Broader coverage remains in existing `fabric*.test.ts` and connectivity package suites.
-- Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
+| Criterion | Location |
+|-----------|----------|
+| Interface kind filtering + highest-health selection | `packages/resilience-runtime/tests/phase-87-multi-interface-regression.test.ts` (discover + select) |
+| Stale interface rejection on select | same |
+| Freshness classification | same + `evaluateFabricFreshness` |
+| Broader fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
