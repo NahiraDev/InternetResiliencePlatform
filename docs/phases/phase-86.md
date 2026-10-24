@@ -35,6 +35,16 @@ Provide a single, canonical connectivity fabric that normalizes devices, interfa
 - Production device or regional fabric evidence (issue #4).
 - Full multi-path or application-aware selection (later phases 87–91).
 
+
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Illegal state transition fail-closed | `packages/resilience-runtime/tests/phase-86-fabric-regression.test.ts` |
+| Freshness classification (fresh / expired) | same |
+| Capability authority trust & runtime-authority gates | same |
+| Existing fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
+
 ## Acceptance criteria
 
 1. `FabricResource` and the closed set of `FABRIC_RESOURCE_KINDS` / `FABRIC_RESOURCE_STATES` are the canonical model; no competing resource type is used for selection.
