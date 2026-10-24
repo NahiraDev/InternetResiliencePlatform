@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 83 — Policy Conflict Resolution has arbitration implementation on `main` (intent arbitration, conflict detection, ordered effective intents). Disposition remains PARTIAL pending full durable journal e2e evidence.
-- **Current main HEAD inspected (2026-10-21):** `6db4989311095de1a03738d09ef67d78e5edb0a1`.
+- **Current main HEAD inspected (2026-10-24):** `7872f2b298db0694cc869f4d491437770e752ad1` (Phase 86 regression merged).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -15,7 +15,7 @@
 - **Phase 81 status:** Intent Translation / Compilation is implemented on `main` in `packages/resilience-runtime/src/intent/compiler.ts` (`compileNetworkIntent`, `isCompiledIntentEffective`). Pure, deterministic, side-effect free. Tests present.
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `a35c48dccc71b8ee5b931416d3bd95ccd60a14db`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `7872f2b298db0694cc869f4d491437770e752ad1`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–82, but it must not be represented as certified until its evidence exists.
 - **Phases 83–150:** contracts for 79–92 exist; implementation for 83+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
@@ -48,11 +48,11 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 ## Autonomous engineer checkpoint (2026-10-24)
 
-- Starting base SHA: d4fd35f078ba8f2bfec19459a82742cf2f02f9b8 (upstream/main)
+- Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main after Phase 86 merge)
 - Ending base SHA: (pending this PR)
-- Completed this run: added Phase 86 fabric regression tests covering illegal state transitions (fail-closed), freshness expiry classification, and capability authority trust/runtime gates. Updated phase-86 evidence map. No runtime authority changes.
-- Branches/PRs: phase/86-fabric-regression-evidence (this PR)
+- Completed this run: merged PR #396 (Phase 86 fabric regressions). Added Phase 87 multi-interface regression tests covering Interface kind modeling, freshness classification, and health-ranking invariant. Updated phase-87 evidence map. No runtime authority changes.
+- Branches/PRs: phase/87-multi-interface-regression-evidence (this PR)
 - Actual CI: pending
-- Verified merges: none this run
+- Verified merges: #396
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
-- Next prioritized tasks: durable conflict journal restart tests; Phase 87 multi-interface evidence or gaps; continue roadmap to Phase 150.
+- Next prioritized tasks: Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150; address open issues #254/#323 when external evidence possible.

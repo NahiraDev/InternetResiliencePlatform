@@ -56,3 +56,9 @@ Provide intelligence over multiple network interfaces on a device (Wi-Fi, Ethern
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+## Evidence map (Phase 87)
+
+- `packages/resilience-runtime/tests/phase-87-multi-interface-regression.test.ts` — focused regressions for Interface kind modeling, freshness classification of interface resources, and health-ranking invariant used by selection.
+- Broader coverage remains in existing `fabric*.test.ts` and connectivity package suites.
+- Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
