@@ -50,9 +50,9 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 - Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main after Phase 86 merge)
 - Ending base SHA: (pending this PR)
-- Completed this run: merged PR #396 (Phase 86 fabric regressions). Added Phase 87 multi-interface regression tests covering Interface kind modeling, freshness classification, and health-ranking invariant. Updated phase-87 evidence map. No runtime authority changes.
+- Completed this run: strengthened Phase 87 multi-interface regressions to exercise public `discover` + `select` for Interface kind filtering, stale rejection, and health ranking. Updated phase-87 evidence map. No runtime authority changes.
 - Branches/PRs: phase/87-multi-interface-regression-evidence (this PR)
 - Actual CI: pending
-- Verified merges: #396
+- Verified merges: none this run (Phase 86 previously merged)
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
 - Next prioritized tasks: Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150; address open issues #254/#323 when external evidence possible.
