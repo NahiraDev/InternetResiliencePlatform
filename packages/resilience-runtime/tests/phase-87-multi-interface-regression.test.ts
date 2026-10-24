@@ -25,42 +25,70 @@ describe('Phase 87 — Multi-Interface Intelligence regressions', () => {
     ...overrides,
   });
 
-  it('selects only Interface kind when requested', async () => {
+  it('selects the highest-health fresh Interface and rejects non-Interface kinds', async () => {
     const fabric = new ProgrammableConnectivityFabric();
-    // Simulate discovery by directly setting snapshot via internal-like flow is hard;
-    // use select after constructing resources through public API where possible.
-    // For unit isolation we test selection logic via public select after register + discover mock.
-    // Minimal: rely on evaluate + select ranking helpers indirectly.
-    const wifi = makeInterface('wifi-1', { health: { status: 'healthy', score: 70, checkedAt: now }, metadata: { media: 'wifi' } });
-    const eth = makeInterface('eth-1', { health: { status: 'healthy', score: 95, checkedAt: now }, metadata: { media: 'ethernet' } });
-    const gateway = makeInterface('gw-1', { kind: 'Gateway' as const });
+    const wifi = makeInterface('wifi-1', {
+      health: { status: 'healthy', score: 70, checkedAt: now },
+      metadata: { media: 'wifi' },
+    });
+    const eth = makeInterface('eth-1', {
+      health: { status: 'healthy', score: 95, checkedAt: now },
+      metadata: { media: 'ethernet' },
+    });
+    const gateway = {
+      ...makeInterface('gw-1'),
+      kind: 'Gateway' as const,
+      id: 'gw-1',
+    };
 
-    // Direct freshness check for multi-interface candidates
-    expect(evaluateFabricFreshness(wifi, now).fresh).toBe(true);
-    expect(evaluateFabricFreshness(eth, now).fresh).toBe(true);
+    fabric.registerProvider({
+      id: 'iface-provider',
+      owner: 'test',
+      async discover() {
+        return [wifi, eth, gateway];
+      },
+    });
 
-    // Capability and kind filtering is exercised by the fabric select path in broader suites;
-    // this focused regression confirms Interface kind is closed and selectable.
-    expect(wifi.kind).toBe('Interface');
-    expect(eth.kind).toBe('Interface');
-    expect(gateway.kind).not.toBe('Interface');
+    await fabric.discover();
+    const result = fabric.select({ kind: 'Interface', now });
+
+    expect(result.selected?.id).toBe('eth-1');
+    expect(result.selected?.kind).toBe('Interface');
+    expect(result.candidates.map((c) => c.id)).toContain('eth-1');
+    expect(result.candidates.map((c) => c.id)).toContain('wifi-1');
+    expect(result.rejected.some((r) => r.id === 'gw-1' && r.reason === 'kind-mismatch')).toBe(true);
   });
 
-  it('classifies expired interface as non-fresh', () => {
+  it('rejects stale interfaces during selection', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    const fresh = makeInterface('fresh-if');
+    const stale = makeInterface('stale-if', {
+      expiresAt: new Date(Date.now() - 5_000).toISOString(),
+    });
+
+    fabric.registerProvider({
+      id: 'stale-provider',
+      owner: 'test',
+      async discover() {
+        return [fresh, stale];
+      },
+    });
+
+    await fabric.discover();
+    const result = fabric.select({ kind: 'Interface', now });
+
+    expect(result.selected?.id).toBe('fresh-if');
+    expect(result.rejected.some((r) => r.id === 'stale-if' && r.reason === 'stale-resource')).toBe(
+      true,
+    );
+  });
+
+  it('classifies expired interface as non-fresh via evaluateFabricFreshness', () => {
     const expired = makeInterface('stale-if', {
       expiresAt: new Date(Date.now() - 5_000).toISOString(),
     });
     const report = evaluateFabricFreshness(expired, now);
     expect(report.fresh).toBe(false);
-  });
-
-  it('prefers higher health score among fresh interfaces (ranking invariant)', () => {
-    const low = makeInterface('low', { health: { status: 'healthy', score: 60, checkedAt: now } });
-    const high = makeInterface('high', { health: { status: 'healthy', score: 98, checkedAt: now } });
-    // Health rank favors higher score; exact select requires full fabric instance with snapshot.
-    // Document the ranking factor used by select.
-    const healthRank = (r: FabricResource) =>
-      r.health.score * 0.45 + r.confidence * 100 * 0.25 + r.trust * 100 * 0.2;
-    expect(healthRank(high)).toBeGreaterThan(healthRank(low));
+    expect(report.expiredForMs).toBeGreaterThan(0);
   });
 });
