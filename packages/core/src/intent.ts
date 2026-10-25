@@ -142,14 +142,24 @@ export const isAutonomyPermitted = (
   actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk',
 ): boolean => {
   const level = intent.autonomy ?? 'ADVISORY';
-  const order: IntentAutonomyLevel[] = [
-    'OBSERVE_ONLY',
-    'ADVISORY',
-    'SAFE_AUTOMATION',
-    'AUTONOMOUS',
-    'HIGH_RISK_REQUIRES_APPROVAL',
-  ];
-  const required = order.indexOf(level);
-  const allowed = order.indexOf(actionClass as IntentAutonomyLevel);
-  return allowed <= required;
+  const autonomyRank: Readonly<Record<IntentAutonomyLevel, number>> = {
+    OBSERVE_ONLY: 0,
+    ADVISORY: 1,
+    SAFE_AUTOMATION: 2,
+    AUTONOMOUS: 3,
+    // Approval is not represented by this predicate, so this level must not
+    // grant mutation until a separate approval-aware boundary authorizes it.
+    HIGH_RISK_REQUIRES_APPROVAL: 1,
+  };
+  const actionRank: Readonly<
+    Record<'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk', number>
+  > = {
+    read: 0,
+    advise: 1,
+    safe_mutate: 2,
+    autonomous: 3,
+    high_risk: 4,
+  };
+
+  return actionRank[actionClass] <= autonomyRank[level];
 };
