@@ -46,7 +46,7 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Never restore NetworkAutopilot as a parallel production control plane.
 - No competing authorities for runtime state, policy, decisions, safety, mutation, execution, verification, recovery, intent, or orchestration.
 
-## Autonomous engineer checkpoint (2026-10-24)
+## Autonomous engineer checkpoint (2026-10-25)
 
 - Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main)
 - Ending base SHA: (pending this PR)
