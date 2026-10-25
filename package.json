@@ -44,23 +44,23 @@
     "certification:test": "vitest run scripts/production-certification.test.mjs scripts/full-system-assurance.test.mjs"
   },
   "dependencies": {
-    "pg": "8.23.0",
+    "pg": "8.23.1",
     "prisma": "7.10.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.4",
     "@vitest/coverage-v8": "5.0.3",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "turbo": "^2.11.8",
+    "turbo": "^2.11.10",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.2",
+    "typescript-eslint": "^8.72.0",
     "vitest": "4.1.11"
   },
   "lint-staged": {

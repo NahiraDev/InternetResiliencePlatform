@@ -48,11 +48,11 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 ## Autonomous engineer checkpoint (2026-10-24)
 
-- Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main after Phase 86 merge)
+- Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main)
 - Ending base SHA: (pending this PR)
-- Completed this run: strengthened Phase 87 multi-interface regressions to exercise public `discover` + `select` for Interface kind filtering, stale rejection, and health ranking. Updated phase-87 evidence map. No runtime authority changes.
-- Branches/PRs: phase/87-multi-interface-regression-evidence (this PR)
+- Completed this run: added Phase 87 multi-interface regression tests covering Interface selection by health, freshness filtering of stale interfaces, and platform/trust capability restrictions. Updated phase-87 evidence map. No runtime authority changes.
+- Branches/PRs: phase/87-multi-interface-evidence (this PR)
 - Actual CI: pending
 - Verified merges: none this run (Phase 86 previously merged)
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
-- Next prioritized tasks: Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150; address open issues #254/#323 when external evidence possible.
+- Next prioritized tasks: durable conflict journal restart tests; Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150.
