@@ -150,13 +150,17 @@ export const resolveIntentGovernance = (
     reasons.push(`runtime mode ${context.mode} does not permit live mutation`);
   }
 
-  // Enforce autonomy at governance level using canonical enforcement
-  try {
-    enforceAutonomy(selected, 'safe_mutate');
-  } catch (error) {
-    mutationAllowed = false;
-    admission = 'DENY';
-    reasons.push(error instanceof Error ? error.message : 'autonomy violation');
+  // Apply the mutation-specific gate only after broader admission allows
+  // mutation. PLAN_ONLY / REQUIRE_APPROVAL / DENY are intentional outcomes and
+  // must not be overwritten by a lower-level check.
+  if (admission === 'ALLOW' && mutationAllowed) {
+    try {
+      enforceAutonomy(selected, 'safe_mutate');
+    } catch (error) {
+      mutationAllowed = false;
+      admission = 'DENY';
+      reasons.push(error instanceof Error ? error.message : 'autonomy violation');
+    }
   }
 
   if (arbitration.rejectedIntents.length)
