@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing `@irp/gateway-registry` package and `packages/resilience-runtime/src/gateway/gateway-registry-plane.ts` provide registry and plane foundations. Intelligent selection, health-aware ranking, and policy-gated activation remain **PARTIAL** / **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes implementation, and evidence is produced. Disposition **PARTIAL** pending matrix update.
+**Contract formalized (issue #14).** Existing `@irp/gateway-registry` package and `packages/resilience-runtime/src/gateway/gateway-registry-plane.ts` provide registry and plane foundations. Intelligent selection, health-aware ranking, and policy-gated activation remain **PARTIAL** pending exact-SHA CI evidence. Disposition **PARTIAL**.
 
 ## Objective
 
@@ -37,6 +37,17 @@ Provide deterministic gateway discovery, inventory, health scoring, and policy-a
 - Production regional gateway evidence or signed device validation (issue #4).
 - Predictive or ML-driven gateway ranking (later phases).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Gateway selection by health | `packages/resilience-runtime/tests/phase-89-gateway-regression.test.ts` |
+| Stale Gateway rejection | same |
+| Failure-domain diversity fail-closed | same |
+| Inventory attributes (owner, failure domains, health) | same |
+| Existing selectGateway policy/health | `packages/gateway-registry/src/selection.test.ts` |
+| Fabric Gateway kind | `packages/resilience-runtime/src/fabric.ts` |
+
 ## Acceptance criteria
 
 1. Gateway inventory can be queried with required attributes (id, health, ownership, failure domains, freshness).
@@ -60,3 +71,5 @@ Provide deterministic gateway discovery, inventory, health scoring, and policy-a
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
