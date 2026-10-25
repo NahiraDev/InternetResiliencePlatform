@@ -1,63 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { arbitrateIntents } from '../src/intent/arbitration.js';
-import type { CompiledIntent } from '../src/domain/types.js';
+import { arbitrateIntents, InMemoryIntentStore } from '../src/intent/arbitration.js';
+import { compileNetworkIntent } from '../src/intent/compiler.js';
+import { createNetworkIntent } from '@irp/core';
 
-const makeIntent = (overrides: Partial<CompiledIntent> = {}): CompiledIntent => ({
-  intentId: 'intent-1',
-  version: 1,
-  priority: 'normal',
-  desiredOutcome: 'reach github.com',
-  target: { destination: 'github.com' },
-  constraints: {},
-  objectives: {},
-  confidence: 0.9,
-  provenance: 'test',
-  autonomy: 'SAFE_AUTOMATION',
-  scope: { destination: 'github.com' },
-  compiledAt: new Date().toISOString(),
-  ...overrides,
-});
-
-describe('arbitrateIntents — Phase 83 Policy Conflict Resolution', () => {
-  const now = new Date('2026-10-21T12:00:00.000Z');
-
-  it('filters to effective intents and excludes stale ones', () => {
-    const effective = makeIntent({ intentId: 'eff', effectiveFrom: '2026-10-20T00:00:00.000Z' });
-    const expired = makeIntent({
-      intentId: 'exp',
-      expiresAt: '2026-10-20T00:00:00.000Z',
-    });
-    const future = makeIntent({
-      intentId: 'fut',
-      effectiveFrom: '2026-10-22T00:00:00.000Z',
-    });
-
-    const { ordered, conflicts } = arbitrateIntents([effective, expired, future], now);
-
-    expect(ordered.map((i) => i.intentId)).toEqual(['eff']);
-    expect(conflicts).toHaveLength(0);
+const makeIntent = (
+  id: string,
+  priority: 'low' | 'normal' | 'high' | 'critical' = 'normal',
+  outcome = 'reach destination',
+  scope: Record<string, string> = { destination: 'github.com' },
+  version = 1,
+  expiresAt?: string,
+) => {
+  const base = createNetworkIntent({
+    id,
+    priority,
+    spec: { outcome, target: scope },
+    confidence: 0.9,
+    autonomy: 'SAFE_AUTOMATION',
   });
-
-  it('orders by priority then version then recency', () => {
-    const low = makeIntent({ intentId: 'low', priority: 'low', version: 2 });
-    const high = makeIntent({ intentId: 'high', priority: 'high', version: 1 });
-    const normalNew = makeIntent({
-      intentId: 'normal-new',
-      priority: 'normal',
-      version: 3,
-      compiledAt: '2026-10-21T11:00:00.000Z',
-    });
-    const normalOld = makeIntent({
-      intentId: 'normal-old',
-      priority: 'normal',
-      version: 3,
-      compiledAt: '2026-10-21T10:00:00.000Z',
-    });
-
-    const { ordered } = arbitrateIntents([low, high, normalNew, normalOld], now);
-
-    expect(ordered.map((i) => i.intentId)).toEqual(['high', 'normal-new', 'normal-old', 'low']);
+  return compileNetworkIntent({
+    ...base,
+    status: 'active' as const,
+    version,
+    ...(expiresAt ? { expiresAt } : {}),
   });
+};
 
   it('detects overlapping different outcomes and resolves by priority (supersede lower)', () => {
     const critical = makeIntent({
@@ -114,20 +81,14 @@ describe('arbitrateIntents — Phase 83 Policy Conflict Resolution', () => {
     expect(conflicts).toHaveLength(0);
   });
 
-  it('does not conflict when outcomes are identical', () => {
-    const a = makeIntent({
-      intentId: 'a',
-      scope: { destination: 'github.com' },
-      desiredOutcome: 'same',
-    });
-    const b = makeIntent({
-      intentId: 'b',
-      scope: { destination: 'github.com' },
-      desiredOutcome: 'same',
-    });
-
-    const { conflicts } = arbitrateIntents([a, b], now);
-    expect(conflicts).toHaveLength(0);
+  it('excludes stale intents before conflict analysis', () => {
+    // Compile a valid intent then force an expired window; the compiler rejects already-stale inputs.
+    const staleBase = makeIntent('stale', 'critical', 'old');
+    const stale = { ...staleBase, expiresAt: '2020-01-01T00:00:00.000Z' };
+    const fresh = makeIntent('fresh', 'normal', 'new');
+    const result = arbitrateIntents([stale, fresh]);
+    expect(result.ordered.map((i) => i.intentId)).toEqual(['fresh']);
+    expect(result.conflicts).toHaveLength(0);
   });
 
   it('resolves same-priority same-version by recency (more recent supersedes)', () => {

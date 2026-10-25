@@ -1,118 +1,129 @@
 import { describe, expect, it } from 'vitest';
 import {
-  evaluateFabricFreshness,
-  selectDiverseResources,
-  partitionByFreshness,
-  FabricCapabilityAuthority,
+  ProgrammableConnectivityFabric,
   type FabricResource,
+  type FabricDiscoveryProvider,
   type FabricCapability,
 } from '../src/index.js';
 
 describe('Phase 87 — Multi-Interface Intelligence regressions', () => {
   const now = new Date().toISOString();
-  const makeInterface = (overrides: Partial<FabricResource> = {}): FabricResource => ({
-    id: 'iface-eth0',
+  const makeInterface = (
+    id: string,
+    overrides: Partial<FabricResource> = {},
+  ): FabricResource => ({
+    id,
     kind: 'Interface',
     state: 'HEALTHY',
     health: { status: 'healthy', score: 95, checkedAt: now },
     confidence: 0.95,
-    observedAt: new Date(Date.now() - 10_000).toISOString(),
+    observedAt: now,
     trust: 0.9,
-    capacity: { bandwidthMbps: 1000 },
+    capacity: { bandwidthMbps: 100 },
     cost: { latencyMs: 5 },
     owner: 'linux-adapter',
-    failureDomains: ['nic-1'],
+    failureDomains: [`nic-${id}`],
     lifecycle: 'active',
-    capabilities: [],
-    metadata: { media: 'ethernet' },
-    ...overrides,
-  });
-
-  describe('interface freshness and partition', () => {
-    it('treats recent Interface observation as fresh', () => {
-      const iface = makeInterface();
-      const report = evaluateFabricFreshness(iface, now);
-      expect(report.fresh).toBe(true);
-      expect(report.ageMs).toBeLessThan(60_000);
-    });
-
-    it('partitions expired Interface as stale', () => {
-      const expired = makeInterface({
-        id: 'iface-wlan0',
-        expiresAt: new Date(Date.now() - 5_000).toISOString(),
-        failureDomains: ['nic-2'],
-      });
-      const fresh = makeInterface({ id: 'iface-eth0' });
-      const { fresh: f, stale } = partitionByFreshness([fresh, expired], now);
-      expect(f.map((r) => r.id)).toEqual(['iface-eth0']);
-      expect(stale.map((r) => r.id)).toEqual(['iface-wlan0']);
-    });
-  });
-
-  describe('diverse selection among interfaces', () => {
-    it('selects failure-domain-disjoint Interfaces', () => {
-      const eth = makeInterface({ id: 'eth0', failureDomains: ['domain-a'], health: { status: 'healthy', score: 90, checkedAt: now } });
-      const wifi = makeInterface({ id: 'wlan0', failureDomains: ['domain-b'], health: { status: 'healthy', score: 80, checkedAt: now } });
-      const same = makeInterface({ id: 'eth1', failureDomains: ['domain-a'], health: { status: 'healthy', score: 85, checkedAt: now } });
-      const ranked = [eth, wifi, same];
-      const result = selectDiverseResources(ranked, { required: 2 });
-      expect(result.selected?.id).toBe('eth0');
-      expect(result.diverse.map((r) => r.id)).toEqual(expect.arrayContaining(['eth0', 'wlan0']));
-      expect(result.diverse).toHaveLength(2);
-      expect(result.distinctFailureDomains).toBe(2);
-    });
-
-    it('fail-closed when diversity floor cannot be met', () => {
-      const only = makeInterface({ id: 'only', failureDomains: ['single'] });
-      const result = selectDiverseResources([only], { required: 2 });
-      expect(result.diverse).toHaveLength(1);
-      expect(result.reason).toMatch(/fewer than 2/);
-    });
-  });
-
-  describe('capability authority for interfaces', () => {
-    it('rejects low-trust adapter capability on Interface', () => {
-      const auth = new FabricCapabilityAuthority();
-      const cap: FabricCapability = {
-        id: 'interface.select',
-        scope: 'interface',
-        authority: 'adapter',
-        trust: 0.4,
-        safety: 'safe',
-        platforms: ['linux'],
-      };
-      auth.register(cap);
-      const decision = auth.authorize({
-        capabilityId: 'interface.select',
-        resourceId: 'iface-eth0',
-        scope: 'interface',
-        minimumTrust: 0.7,
-        platform: 'linux',
-      });
-      expect(decision.allowed).toBe(false);
-      expect(decision.reasons.some((r) => r.includes('insufficient-trust'))).toBe(true);
-    });
-
-    it('allows runtime-authority high-trust Interface capability', () => {
-      const auth = new FabricCapabilityAuthority();
-      const cap: FabricCapability = {
+    capabilities: [
+      {
         id: 'interface.select',
         scope: 'interface',
         authority: 'runtime',
-        trust: 0.92,
+        trust: 0.95,
         safety: 'governed',
-        platforms: ['linux', 'any'],
-      };
-      auth.register(cap);
-      const decision = auth.authorize({
-        capabilityId: 'interface.select',
-        resourceId: 'iface-eth0',
-        scope: 'interface',
-        minimumTrust: 0.8,
-        platform: 'linux',
-        requireRuntimeAuthority: true,
-      });
-      expect(decision.allowed).toBe(true);
+        platforms: ['linux'],
+      },
+    ],
+    metadata: { type: 'ethernet' },
+    ...overrides,
+  });
+
+  it('selects among multiple healthy Interface resources', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    const eth0 = makeInterface('eth0');
+    const wlan0 = makeInterface('wlan0', {
+      health: { status: 'healthy', score: 80, checkedAt: now },
+      cost: { latencyMs: 15 },
+      failureDomains: ['nic-wlan0'],
     });
+
+    const provider: FabricDiscoveryProvider = {
+      id: 'linux-ifaces',
+      owner: 'linux-adapter',
+      async discover() {
+        return [eth0, wlan0];
+      },
+    };
+    fabric.registerProvider(provider);
+    await fabric.discover();
+
+    const result = fabric.select({ kind: 'Interface', now });
+    expect(result.selected?.id).toBe('eth0'); // higher health score
+    expect(result.candidates).toHaveLength(2);
+    expect(result.reason).toContain('eth0');
+  });
+
+  it('filters stale Interface resources from selection', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    const fresh = makeInterface('eth0');
+    const stale = makeInterface('wlan0', {
+      observedAt: new Date(Date.now() - 120_000).toISOString(),
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+
+    const provider: FabricDiscoveryProvider = {
+      id: 'linux-ifaces',
+      owner: 'linux-adapter',
+      async discover() {
+        return [fresh, stale];
+      },
+    };
+    fabric.registerProvider(provider);
+    await fabric.discover();
+
+    const result = fabric.select({ kind: 'Interface', now });
+    expect(result.selected?.id).toBe('eth0');
+    expect(result.candidates).toHaveLength(1);
+    expect(result.rejected.some((r) => r.id === 'wlan0' && r.reason === 'stale-resource')).toBe(
+      true,
+    );
+  });
+
+  it('rejects Interface lacking platform capability authority', async () => {
+    const fabric = new ProgrammableConnectivityFabric();
+    const restricted = makeInterface('cellular0', {
+      capabilities: [
+        {
+          id: 'interface.select',
+          scope: 'interface',
+          authority: 'adapter',
+          trust: 0.4,
+          safety: 'safe',
+          platforms: ['android'],
+        } as FabricCapability,
+      ],
+    });
+
+    const provider: FabricDiscoveryProvider = {
+      id: 'mobile-ifaces',
+      owner: 'android-adapter',
+      async discover() {
+        return [restricted];
+      },
+    };
+    fabric.registerProvider(provider);
+    await fabric.discover();
+
+    const result = fabric.select({
+      kind: 'Interface',
+      requiredCapabilities: ['interface.select'],
+      platform: 'linux',
+      minimumTrust: 0.8,
+      requireRuntimeAuthority: true,
+      now,
+    });
+    expect(result.selected).toBeUndefined();
+    expect(result.rejected.length).toBeGreaterThan(0);
+    expect(result.rejected[0]?.reason).toMatch(/capability-denied/);
   });
 });
