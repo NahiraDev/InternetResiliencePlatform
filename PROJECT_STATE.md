@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 83 — Policy Conflict Resolution has arbitration implementation on `main` (intent arbitration, conflict detection, ordered effective intents). Disposition remains PARTIAL pending full durable journal e2e evidence.
-- **Current main HEAD inspected (2026-10-21):** `6db4989311095de1a03738d09ef67d78e5edb0a1`.
+- **Current main HEAD inspected (2026-10-24):** `7872f2b298db0694cc869f4d491437770e752ad1` (Phase 86 regression merged).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -50,9 +50,9 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 - Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main)
 - Ending base SHA: (pending this PR)
-- Completed this run: added Phase 87 multi-interface regression tests covering interface kind modeling, freshness exclusion, and health ranking expectations. Updated phase-87 evidence map. No runtime authority changes.
-- Branches/PRs: phase/87-multi-interface-regression-20261024 (this PR)
+- Completed this run: added Phase 87 multi-interface regression tests covering Interface selection by health, freshness filtering of stale interfaces, and platform/trust capability restrictions. Updated phase-87 evidence map. No runtime authority changes.
+- Branches/PRs: phase/87-multi-interface-evidence (this PR)
 - Actual CI: pending
-- Verified merges: none this run
-- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage; Linux runtime soak (#254/#323).
+- Verified merges: none this run (Phase 86 previously merged)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
 - Next prioritized tasks: durable conflict journal restart tests; Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150.
