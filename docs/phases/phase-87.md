@@ -37,10 +37,9 @@ Provide intelligence over multiple network interfaces on a device (Wi-Fi, Ethern
 
 | Criterion | Location |
 |-----------|----------|
-| Deterministic ranking of multiple Interface resources by health/score | `packages/resilience-runtime/tests/phase-87-interface-regression.test.ts` |
-| Kind filter excludes non-Interface resources | same |
-| Stale Interface resources rejected at selection | same |
-| Trust/cost tie-break when health scores equal | same |
+| Multi-interface selection (higher health preferred) | `packages/resilience-runtime/tests/phase-87-multi-interface-regression.test.ts` |
+| Freshness filtering of stale Interface | same |
+| Platform/trust capability restriction | same |
 | Existing fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
 
 ## Acceptance criteria
@@ -66,3 +65,14 @@ Provide intelligence over multiple network interfaces on a device (Wi-Fi, Ethern
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+## Evidence map (Phase 87)
+
+| Criterion | Location |
+|-----------|----------|
+| Interface kind filtering + highest-health selection | `packages/resilience-runtime/tests/phase-87-multi-interface-regression.test.ts` (discover + select) |
+| Stale interface rejection on select | same |
+| Freshness classification | same + `evaluateFabricFreshness` |
+| Broader fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
