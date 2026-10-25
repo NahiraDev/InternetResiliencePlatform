@@ -37,6 +37,16 @@ Enable deterministic management of multiple concurrent network paths (primary, b
 - Production device multi-path behavioral evidence (issue #4).
 - Full application-aware or predictive path selection (later phases).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Multi-candidate Route selection by health | `packages/resilience-runtime/tests/phase-88-multi-path-regression.test.ts` |
+| Stale Route rejection | same |
+| Failure-domain diversity fail-closed | same |
+| ApplicationPath kind exposure | same |
+| Existing fabric selection | `packages/resilience-runtime/src/fabric.ts` (`select`, `selectDiverseResources`) |
+
 ## Acceptance criteria
 
 1. Fabric or routing can expose multiple distinct path candidates with required attributes (id, health, failure domains, ownership).
@@ -60,3 +70,14 @@ Enable deterministic management of multiple concurrent network paths (primary, b
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+## Evidence map (Phase 88)
+
+| Criterion | Location |
+|-----------|----------|
+| Multi-candidate Route selection + diversity | `packages/resilience-runtime/tests/phase-88-multi-path-regression.test.ts` |
+| Stale path rejection | same |
+| Insufficient diversity fail-closed | same |
+| Broader fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
