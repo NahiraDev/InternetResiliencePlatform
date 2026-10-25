@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   createNetworkIntent,
+  isAutonomyPermitted,
   isIntentEffective,
   isIntentTerminal,
   transitionIntent,
+  type IntentAutonomyLevel,
 } from './intent.js';
 
 describe('network intent lifecycle', () => {
@@ -70,3 +72,45 @@ describe('network intent lifecycle', () => {
     ).toThrow(/ISO-8601/);
   });
 });
+
+describe('intent autonomy permissions', () => {
+  type ActionClass = Parameters<typeof isAutonomyPermitted>[1];
+
+  const actionClasses: readonly ActionClass[] = [
+    'read',
+    'advise',
+    'safe_mutate',
+    'autonomous',
+    'high_risk',
+  ];
+  const cases: readonly {
+    autonomy: IntentAutonomyLevel;
+    allowed: readonly ActionClass[];
+  }[] = [
+    { autonomy: 'OBSERVE_ONLY', allowed: ['read'] },
+    { autonomy: 'ADVISORY', allowed: ['read', 'advise'] },
+    { autonomy: 'SAFE_AUTOMATION', allowed: ['read', 'advise', 'safe_mutate'] },
+    { autonomy: 'AUTONOMOUS', allowed: ['read', 'advise', 'safe_mutate', 'autonomous'] },
+    // This predicate has no approval evidence, so this level cannot authorize mutation.
+    { autonomy: 'HIGH_RISK_REQUIRES_APPROVAL', allowed: ['read', 'advise'] },
+  ];
+
+  for (const { autonomy, allowed } of cases) {
+    it(`enforces the action boundary for ${autonomy}`, () => {
+      for (const actionClass of actionClasses) {
+        expect(isAutonomyPermitted({ autonomy }, actionClass)).toBe(
+          allowed.includes(actionClass),
+        );
+      }
+    });
+  }
+
+  it('defaults an unspecified autonomy level to advisory and fails closed on mutation', () => {
+    expect(isAutonomyPermitted({}, 'read')).toBe(true);
+    expect(isAutonomyPermitted({}, 'advise')).toBe(true);
+    expect(isAutonomyPermitted({}, 'safe_mutate')).toBe(false);
+    expect(isAutonomyPermitted({}, 'autonomous')).toBe(false);
+    expect(isAutonomyPermitted({}, 'high_risk')).toBe(false);
+  });
+});
+
