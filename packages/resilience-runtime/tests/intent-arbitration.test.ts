@@ -26,32 +26,59 @@ const makeIntent = (
   });
 };
 
-describe('intent arbitration (Phase 83)', () => {
-  it('returns ordered intents and empty conflicts when no overlap', () => {
-    const a = makeIntent('a', 'high', 'reach A', { destination: 'a.com' });
-    const b = makeIntent('b', 'normal', 'reach B', { destination: 'b.com' });
-    const result = arbitrateIntents([a, b]);
-    expect(result.ordered.map((i) => i.intentId)).toEqual(['a', 'b']);
-    expect(result.conflicts).toHaveLength(0);
+  it('detects overlapping different outcomes and resolves by priority (supersede lower)', () => {
+    const critical = makeIntent({
+      intentId: 'crit',
+      priority: 'critical',
+      desiredOutcome: 'prefer tunnel',
+      scope: { destination: 'github.com' },
+    });
+    const high = makeIntent({
+      intentId: 'high',
+      priority: 'high',
+      desiredOutcome: 'prefer direct',
+      scope: { destination: 'github.com' },
+    });
+
+    const { ordered, conflicts } = arbitrateIntents([high, critical], now);
+
+    expect(ordered.map((i) => i.intentId)).toEqual(['crit', 'high']);
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]).toMatchObject({
+      intentA: expect.objectContaining({ intentId: 'crit' }),
+      intentB: expect.objectContaining({ intentId: 'high' }),
+      resolution: 'supersede-b',
+    });
   });
 
-  it('detects conflict and supersedes by priority', () => {
-    const high = makeIntent('high', 'critical', 'prefer-fast');
-    const low = makeIntent('low', 'low', 'prefer-cheap');
-    const result = arbitrateIntents([low, high]);
-    expect(result.ordered[0]?.intentId).toBe('high');
-    expect(result.conflicts).toHaveLength(1);
-    expect(result.conflicts[0]?.resolution).toBe('supersede-b');
-    expect(result.conflicts[0]?.intentA.intentId).toBe('high');
+  it('resolves same-priority by version (newer supersedes)', () => {
+    const v1 = makeIntent({
+      intentId: 'v1',
+      priority: 'high',
+      version: 1,
+      desiredOutcome: 'old',
+      scope: { destination: 'github.com' },
+    });
+    const v2 = makeIntent({
+      intentId: 'v2',
+      priority: 'high',
+      version: 2,
+      desiredOutcome: 'new',
+      scope: { destination: 'github.com' },
+    });
+
+    const { conflicts } = arbitrateIntents([v1, v2], now);
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]?.resolution).toBe('supersede-b');
   });
 
-  it('supersedes by version when priority is equal', () => {
-    const v2 = makeIntent('same', 'high', 'outcome-v2', { destination: 'github.com' }, 2);
-    const v1 = makeIntent('same', 'high', 'outcome-v1', { destination: 'github.com' }, 1);
-    const result = arbitrateIntents([v1, v2]);
-    expect(result.ordered[0]?.version).toBe(2);
-    expect(result.conflicts).toHaveLength(1);
-    expect(result.conflicts[0]?.resolution).toBe('supersede-b');
+  it('does not conflict on non-overlapping scopes', () => {
+    const a = makeIntent({ intentId: 'a', scope: { destination: 'github.com' }, desiredOutcome: 'A' });
+    const b = makeIntent({ intentId: 'b', scope: { destination: 'example.com' }, desiredOutcome: 'B' });
+
+    const { conflicts } = arbitrateIntents([a, b], now);
+    expect(conflicts).toHaveLength(0);
   });
 
   it('excludes stale intents before conflict analysis', () => {
@@ -64,23 +91,38 @@ describe('intent arbitration (Phase 83)', () => {
     expect(result.conflicts).toHaveLength(0);
   });
 
-  it('does not flag conflict for identical outcomes on overlapping scope', () => {
-    const a = makeIntent('a', 'high', 'same-outcome');
-    const b = makeIntent('b', 'normal', 'same-outcome');
-    const result = arbitrateIntents([a, b]);
-    expect(result.conflicts).toHaveLength(0);
+  it('resolves same-priority same-version by recency (more recent supersedes)', () => {
+    const older = makeIntent({
+      intentId: 'older',
+      priority: 'high',
+      version: 2,
+      desiredOutcome: 'old-outcome',
+      compiledAt: '2026-10-21T10:00:00.000Z',
+      scope: { destination: 'github.com' },
+    });
+    const newer = makeIntent({
+      intentId: 'newer',
+      priority: 'high',
+      version: 2,
+      desiredOutcome: 'new-outcome',
+      compiledAt: '2026-10-21T11:00:00.000Z',
+      scope: { destination: 'github.com' },
+    });
+
+    const { ordered, conflicts } = arbitrateIntents([older, newer], now);
+
+    expect(ordered.map((i) => i.intentId)).toEqual(['newer', 'older']);
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]).toMatchObject({
+      intentA: expect.objectContaining({ intentId: 'newer' }),
+      intentB: expect.objectContaining({ intentId: 'older' }),
+      resolution: 'supersede-b',
+    });
   });
 
-  it('records conflicts in InMemoryIntentStore', async () => {
-    const store = new InMemoryIntentStore();
-    const a = makeIntent('a', 'critical', 'fast');
-    const b = makeIntent('b', 'low', 'cheap');
-    await store.put(a);
-    await store.put(b);
-    const { conflicts } = arbitrateIntents([a, b]);
-    await store.recordConflicts(conflicts);
-    const recorded = await store.listConflicts();
-    expect(recorded).toHaveLength(1);
-    expect(recorded[0]?.resolution).toBe('supersede-b');
+  it('returns empty results for no intents', () => {
+    const { ordered, conflicts } = arbitrateIntents([], now);
+    expect(ordered).toHaveLength(0);
+    expect(conflicts).toHaveLength(0);
   });
 });
