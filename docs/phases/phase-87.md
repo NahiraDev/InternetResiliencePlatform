@@ -33,6 +33,16 @@ Provide intelligence over multiple network interfaces on a device (Wi-Fi, Ethern
 - Full multi-path bonding or application-aware routing (later phases).
 - Production device evidence on real multi-interface hardware (issue #4).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Deterministic ranking of multiple Interface resources by health/score | `packages/resilience-runtime/tests/phase-87-interface-regression.test.ts` |
+| Kind filter excludes non-Interface resources | same |
+| Stale Interface resources rejected at selection | same |
+| Trust/cost tie-break when health scores equal | same |
+| Existing fabric suites | `packages/resilience-runtime/tests/fabric*.test.ts` |
+
 ## Acceptance criteria
 
 1. Interfaces and links are modeled exclusively as `FabricResource` instances of the closed kind set; no competing interface registry exists.
