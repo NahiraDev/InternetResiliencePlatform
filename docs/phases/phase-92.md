@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing fabric health/freshness attributes, closed-loop verification, safety kernel checkpoints, and observability surfaces provide foundational assurance primitives. Full continuous connectivity service assurance that continuously verifies path health, detects drift from intended connectivity outcomes, and triggers bounded recovery remains **PARTIAL** / **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes implementation, and evidence is produced. Disposition **PARTIAL** pending matrix update.
+**Contract formalized (issue #14).** Existing fabric health/freshness attributes, closed-loop verification, safety kernel checkpoints, and observability surfaces provide foundational assurance primitives. Full continuous connectivity service assurance that continuously verifies path health, detects drift from intended connectivity outcomes, and triggers bounded recovery remains **PARTIAL**. Regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric boundaries added. Disposition **PARTIAL** pending exact-SHA CI evidence.
 
 ## Objective
 
@@ -39,6 +39,16 @@ Provide continuous, policy-bounded assurance of connectivity services by verifyi
 - Production multi-device or regional assurance evidence (issue #4).
 - Predictive anomaly models (later Group E phases).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Fabric health and freshness as assurance signals | `packages/resilience-runtime/tests/phase-92-connectivity-service-assurance.test.ts` |
+| Drift detection between intended outcome and observed state (observe-only) | same |
+| Re-selection / fail-closed routed through existing fabric.select boundary | same |
+| Intent drift detector | `packages/resilience-runtime/src/intent/drift.ts` |
+| Fabric health/freshness | `packages/resilience-runtime/src/fabric.ts` |
+
 ## Acceptance criteria
 
 1. Fabric snapshots expose health, freshness, and failure-domain attributes usable as assurance inputs.
@@ -62,3 +72,5 @@ Provide continuous, policy-bounded assurance of connectivity services by verifyi
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
