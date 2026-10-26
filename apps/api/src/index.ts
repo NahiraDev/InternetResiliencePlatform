@@ -1,4 +1,10 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import { registerRemoteClientRoutes } from './remote-client-api.js';
+import { registerProbeFederationRoutes } from './probe-federation-api.js';
+import { registerUnifiedProductRoutes } from './unified-product-api.js';
+import { registerNotificationIncidentRoutes } from './notifications-api.js';
+import { registerHistoryRoutes } from './history-api.js';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
@@ -1279,7 +1285,57 @@ export {
   type SpeedInsightsConfig,
 };
 
-if (process.argv[1]?.endsWith('index.js')) {
+
+const requiredProductionEnvironment = [
+  'JWT_SECRET',
+  'REMOTE_CLIENT_CREDENTIAL_KEY',
+  'REMOTE_CLIENT_REFRESH_KEY',
+  'DATABASE_URL',
+] as const;
+
+let vercelAppPromise: Promise<FastifyInstance> | undefined;
+
+const getVercelApp = (): Promise<FastifyInstance> => {
+  if (!vercelAppPromise) {
+    if (['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase())) {
+      const missing = requiredProductionEnvironment.filter((name) => !process.env[name]?.trim());
+      if (missing.length > 0) {
+        throw new Error(
+          `Missing required production API environment variables: ${missing.join(', ')}`,
+        );
+      }
+    }
+
+    vercelAppPromise = buildServer().then((app) => {
+      registerUnifiedProductRoutes(app);
+      registerRemoteClientRoutes(app);
+      registerProbeFederationRoutes(app);
+      registerNotificationIncidentRoutes(app);
+      registerHistoryRoutes(app);
+      return app;
+    }).catch((error: unknown) => {
+      vercelAppPromise = undefined;
+      throw error;
+    });
+  }
+  return vercelAppPromise;
+};
+
+/**
+ * Vercel's Node.js function loader resolves apps/api/package.json's main field
+ * to dist/index.js. Export a default Node handler from this source so the
+ * compiled entrypoint is valid and Fastify remains lazily initialized.
+ */
+export default async function handler(
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  const app = await getVercelApp();
+  await app.ready();
+  app.server.emit('request', request, response);
+}
+
+if (process.env.VERCEL !== '1' && process.argv[1]?.endsWith('index.js')) {
   const config = loadConfig();
   const server = await buildServer();
   const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
