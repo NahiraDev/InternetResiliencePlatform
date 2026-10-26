@@ -1,11 +1,10 @@
 /**
  * Vercel-native Fastify entrypoint.
  *
+ * Vercel's Fastify adapter discovers the Fastify instance through listen().
  * Keep the standalone Node.js entrypoint at src/remote-entrypoint.ts for
- * containers and VMs. Vercel invokes the exported handler per request, so
- * initialize Fastify lazily and reuse the instance across warm invocations.
+ * containers and VMs.
  */
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buildServer } from './src/index.js';
 import { registerRemoteClientRoutes } from './src/remote-client-api.js';
 import { registerProbeFederationRoutes } from './src/probe-federation-api.js';
@@ -13,43 +12,17 @@ import { registerUnifiedProductRoutes } from './src/unified-product-api.js';
 import { registerNotificationIncidentRoutes } from './src/notifications-api.js';
 import { registerHistoryRoutes } from './src/history-api.js';
 
-const requiredProductionEnvironment = [
-  'JWT_SECRET',
-  'REMOTE_CLIENT_CREDENTIAL_KEY',
-  'REMOTE_CLIENT_REFRESH_KEY',
-  'DATABASE_URL',
-] as const;
+const app = await buildServer();
 
-let appPromise: ReturnType<typeof buildServer> | undefined;
+registerUnifiedProductRoutes(app);
+registerRemoteClientRoutes(app);
+registerProbeFederationRoutes(app);
+registerNotificationIncidentRoutes(app);
+registerHistoryRoutes(app);
 
-const getApp = () => {
-  if (!appPromise) {
-    if (['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase())) {
-      const missing = requiredProductionEnvironment.filter((name) => !process.env[name]?.trim());
-      if (missing.length > 0) {
-        throw new Error(
-          `Missing required production API environment variables: ${missing.join(', ')}`,
-        );
-      }
-    }
-
-    appPromise = buildServer().then((app) => {
-      registerUnifiedProductRoutes(app);
-      registerRemoteClientRoutes(app);
-      registerProbeFederationRoutes(app);
-      registerNotificationIncidentRoutes(app);
-      registerHistoryRoutes(app);
-      return app;
-    });
-  }
-  return appPromise;
-};
-
-export default async function handler(
-  request: IncomingMessage,
-  response: ServerResponse,
-): Promise<void> {
-  const app = await getApp();
-  await app.ready();
-  app.server.emit('request', request, response);
-}
+// Fastify's Vercel integration instruments listen() to expose the app as a
+// serverless function. Do not replace this with a raw Node request handler.
+await app.listen({
+  port: Number(process.env.PORT) || 3000,
+  host: '0.0.0.0',
+});
