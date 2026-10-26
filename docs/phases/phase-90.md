@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing DNS, tunnel, and proxy packages plus fabric resource kinds provide foundational surfaces. Full orchestration of DNS resolution paths, tunnel lifecycle, and proxy selection as first-class fabric consumers remains **PARTIAL** / **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes implementation, and evidence is produced. Disposition **PARTIAL** pending matrix update.
+**Contract formalized (issue #14).** Existing DNS, tunnel, and proxy packages plus fabric resource kinds provide foundational surfaces. Intelligent selection, health-aware ranking, and policy-gated activation remain **PARTIAL** pending exact-SHA CI evidence. Disposition **PARTIAL**.
 
 ## Objective
 
@@ -37,6 +37,16 @@ Integrate DNS, tunnel, and proxy selection and lifecycle into the unified connec
 - Production external-service validation or signed client evidence (issue #4).
 - Predictive orchestration (later phases).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| Resolver (DNS) selection by health | `packages/resilience-runtime/tests/phase-90-dns-tunnel-proxy-regression.test.ts` |
+| Stale Tunnel rejection | same |
+| Proxy failure-domain diversity fail-closed | same |
+| Inventory attributes (owner, failure domains, health) for Resolver/Tunnel/Proxy | same |
+| Fabric Resolver/Tunnel/Proxy kinds | `packages/resilience-runtime/src/fabric.ts` |
+
 ## Acceptance criteria
 
 1. DNS, tunnel, and proxy candidates appear in fabric snapshots with required attributes (id, health, capability, ownership).
@@ -60,3 +70,5 @@ Integrate DNS, tunnel, and proxy selection and lifecycle into the unified connec
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
