@@ -5,7 +5,7 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phase 89 — Gateway Intelligence & Selection regression evidence merged; Phase 90 DNS/Tunnel/Proxy orchestration evidence in progress.
-- **Current main HEAD inspected (2026-10-26):** `95d9c5edaa7b20f1d0baf0b1d6cbf63fcdd38a4e` (Phase 89 regression merged + Vercel fixes).
+- **Current main HEAD inspected (2026-10-26):** `95d9c5edaa7b20f1d0baf0b1d6cbf63fcdd38a4e` (post-Phase 89 merge + Vercel fixes).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
@@ -83,9 +83,9 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 - Starting base SHA: 95d9c5edaa7b20f1d0baf0b1d6cbf63fcdd38a4e (upstream/main)
 - Ending base SHA: (pending this PR)
-- Completed this run: added Phase 90 DNS/Tunnel/Proxy orchestration regression tests covering Resolver selection by health, stale Tunnel rejection, Proxy failure-domain diversity fail-closed behavior, and inventory attribute exposure for Resolver/Tunnel/Proxy. Updated phase-90 evidence map. No runtime authority changes.
-- Branches/PRs: phase/90-dns-tunnel-proxy-orchestration-evidence (this PR)
+- Completed this run: added Phase 90 DNS/Tunnel/Proxy orchestration regression tests covering Resolver/Tunnel/Proxy selection by health, stale rejection, failure-domain diversity fail-closed behavior, and inventory attribute exposure. Updated phase-90 evidence map. No runtime authority changes.
+- Branches/PRs: phase/90-dns-tunnel-proxy-evidence (this PR)
 - Actual CI: pending
 - Verified merges: none this run (Phase 89 previously merged)
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
-- Next prioritized tasks: Phase 91 evidence or gaps; continue roadmap to Phase 150; durable journal tests.
+- Next prioritized tasks: Phase 91 application-aware path selection evidence or gaps; continue roadmap to Phase 150; durable journal tests.

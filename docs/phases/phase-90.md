@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing DNS, tunnel, and proxy packages plus fabric resource kinds provide foundational surfaces. Intelligent selection, health-aware ranking, and policy-gated activation remain **PARTIAL** pending exact-SHA CI evidence. Disposition **PARTIAL**.
+**Contract formalized (issue #14).** Existing DNS, tunnel, and proxy packages plus fabric resource kinds provide foundational surfaces. Full orchestration of DNS resolution paths, tunnel lifecycle, and proxy selection as first-class fabric consumers remains **PARTIAL**. Regression evidence for fabric selection of Resolver/Tunnel/Proxy kinds added. Disposition **PARTIAL** pending exact-SHA CI evidence.
 
 ## Objective
 
@@ -41,10 +41,10 @@ Integrate DNS, tunnel, and proxy selection and lifecycle into the unified connec
 
 | Criterion | Location |
 |-----------|----------|
-| Resolver (DNS) selection by health | `packages/resilience-runtime/tests/phase-90-dns-tunnel-proxy-regression.test.ts` |
-| Stale Tunnel rejection | same |
-| Proxy failure-domain diversity fail-closed | same |
-| Inventory attributes (owner, failure domains, health) for Resolver/Tunnel/Proxy | same |
+| Resolver/Tunnel/Proxy selection by health | `packages/resilience-runtime/tests/phase-90-dns-tunnel-proxy-regression.test.ts` |
+| Stale resource rejection | same |
+| Failure-domain diversity fail-closed | same |
+| Inventory attributes (owner, failure domains, health) | same |
 | Fabric Resolver/Tunnel/Proxy kinds | `packages/resilience-runtime/src/fabric.ts` |
 
 ## Acceptance criteria
