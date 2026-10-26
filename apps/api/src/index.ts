@@ -8,7 +8,6 @@ import { registerHistoryRoutes } from './history-api.js';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
 import { z } from 'zod';
 import { loadConfig } from '@irp/config';
 import {
@@ -380,7 +379,13 @@ export const buildServer = async (): Promise<FastifyInstance> => {
       servers: [{ url: '/api/v1' }],
     },
   });
-  await app.register(swaggerUi, { routePrefix: '/docs' });
+  // @fastify/swagger-ui pulls @fastify/static, which has a CJS/ESM conflict
+  // in Vercel's bundled Node runtime. Keep the docs UI available locally,
+  // but do not load the optional plugin in serverless functions.
+  if (process.env.VERCEL !== '1') {
+    const swaggerUi = (await import('@fastify/swagger-ui')).default;
+    await app.register(swaggerUi, { routePrefix: '/docs' });
+  }
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
   app.get('/api/v1/ready', async (_request, reply) => {
     let database: 'healthy' | 'degraded' = 'healthy';
