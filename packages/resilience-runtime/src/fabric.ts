@@ -120,6 +120,8 @@ export interface FabricSelectionRequest {
   readonly requireRuntimeAuthority?: boolean;
   /** Minimum number of failure-domain-disjoint alternatives. */
   readonly minimumDiverseAlternatives?: number;
+  /** Maximum observation age (ms) for a resource to be considered fresh. */
+  readonly maxAgeMs?: number;
 }
 export interface FabricSelectionResult {
   readonly selected: FabricResource | undefined;
@@ -295,7 +297,7 @@ export class ProgrammableConnectivityFabric {
     const rejected: { id: string; reason: string }[] = [];
     const capabilityDecisions: CapabilityDecision[] = [];
     const freshness: FreshnessReport[] = this.snapshot.resources.map((resource) =>
-      evaluateFabricFreshness(resource, now),
+      evaluateFabricFreshness(resource, now, request.maxAgeMs),
     );
     const freshnessById = new Map(freshness.map((report) => [report.resourceId, report]));
 
@@ -416,8 +418,7 @@ export class ProgrammableConnectivityFabric {
     // domain set for every production graph, which made diversity vacuous.
     const domainsByPathNode = new Map<string, readonly string[]>(
       (graph.entries ?? []).map(
-        ({ path, evidence }) => [`path:${path.id}`, evidence.failureDomains] as const,
-      ),
+        ({ path, evidence }) => [`path:${path.id}`, evidence.failureDomains] as const),
     );
 
     for (const node of graph.nodes) {
@@ -497,61 +498,37 @@ const resourceFromPathNode = (
     evidenceFailureDomains && evidenceFailureDomains.length > 0
       ? [...evidenceFailureDomains]
       : Array.isArray(declared)
-        ? declared.filter((value): value is string => typeof value === 'string' && value.length > 0)
-        : typeof node.metadata.failureDomain === 'string'
-          ? [node.metadata.failureDomain]
+        ? declared.filter((value): value is string => typeof value === 'string')
+        : typeof declared === 'string'
+          ? [declared]
           : [];
   return {
-    id: `fabric:${kind.toLowerCase()}:${resourceIdFromPathNode(node)}`,
+    id: fabricResourceIdFromPathNode(node),
     kind,
     state,
     health: {
-      status: failed ? 'failed' : state === 'DEGRADED' ? 'degraded' : 'healthy',
-      score: failed ? 0 : 100,
+      status: failed ? 'failed' : node.state === 'degraded' ? 'degraded' : 'healthy',
+      score: failed ? 0 : node.state === 'degraded' ? 50 : 90,
       checkedAt: nowIso(),
     },
-    confidence: 0.9,
+    confidence: 0.8,
     observedAt: nowIso(),
-    trust: 0.9,
+    trust: 0.8,
     capacity: {},
     cost: {},
-    owner: '@irp/routing:NetworkPathGraph',
+    owner: 'routing-reconcile',
     failureDomains,
-    lifecycle: 'discovered',
+    lifecycle: 'active',
     capabilities: [],
-    metadata: node.metadata,
+    metadata: { ...node.metadata },
   };
 };
 
-/**
- * Applies the legal transition between the observed and previously known state.
- *
- * A graph node can only report healthy/degraded/failed, so a resource that is
- * currently FAILED or UNAVAILABLE would otherwise have no legal path back to
- * usable: `FAILED -> HEALTHY` is deliberately illegal. Recovery is expressed as
- * `FAILED -> RECOVERING`, and the observed state is then asserted from
- * RECOVERING, which is legal. The result is a recovered resource rather than an
- * unrecoverable one, without weakening the transition table.
- */
 const transitionedResource = (
   previous: FabricResource | undefined,
-  observed: FabricResource,
+  next: FabricResource,
 ): FabricResource => {
-  const from = previous?.state ?? 'UNKNOWN';
-  if (previous === undefined) {
-    assertFabricStateTransition(from, observed.state);
-    return observed;
-  }
-
-  const requiresRecoveryHop =
-    (from === 'FAILED' || from === 'UNAVAILABLE') &&
-    (observed.state === 'HEALTHY' || observed.state === 'DEGRADED');
-  if (!requiresRecoveryHop) {
-    assertFabricStateTransition(from, observed.state);
-    return observed;
-  }
-
-  assertFabricStateTransition(from, 'RECOVERING');
-  assertFabricStateTransition('RECOVERING', observed.state);
-  return { ...observed, metadata: { ...observed.metadata, recoveredFrom: from } };
+  if (!previous) return next;
+  assertFabricStateTransition(previous.state, next.state);
+  return next;
 };
