@@ -2,9 +2,10 @@
  * Vercel-native Fastify entrypoint.
  *
  * Keep the standalone Node.js entrypoint at src/remote-entrypoint.ts for
- * containers and VMs; Vercel needs the Fastify instance exported instead of
- * a long-running listener.
+ * containers and VMs. Vercel invokes the exported handler per request, so
+ * initialize Fastify lazily and reuse the instance across warm invocations.
  */
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buildServer } from './src/index.js';
 import { registerRemoteClientRoutes } from './src/remote-client-api.js';
 import { registerProbeFederationRoutes } from './src/probe-federation-api.js';
@@ -19,21 +20,36 @@ const requiredProductionEnvironment = [
   'DATABASE_URL',
 ] as const;
 
-if (['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase())) {
-  const missing = requiredProductionEnvironment.filter((name) => !process.env[name]?.trim());
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required production API environment variables: ${missing.join(', ')}`,
-    );
+let appPromise: ReturnType<typeof buildServer> | undefined;
+
+const getApp = () => {
+  if (!appPromise) {
+    if (['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase())) {
+      const missing = requiredProductionEnvironment.filter((name) => !process.env[name]?.trim());
+      if (missing.length > 0) {
+        throw new Error(
+          `Missing required production API environment variables: ${missing.join(', ')}`,
+        );
+      }
+    }
+
+    appPromise = buildServer().then((app) => {
+      registerUnifiedProductRoutes(app);
+      registerRemoteClientRoutes(app);
+      registerProbeFederationRoutes(app);
+      registerNotificationIncidentRoutes(app);
+      registerHistoryRoutes(app);
+      return app;
+    });
   }
+  return appPromise;
+};
+
+export default async function handler(
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  const app = await getApp();
+  await app.ready();
+  app.server.emit('request', request, response);
 }
-
-const app = await buildServer();
-registerUnifiedProductRoutes(app);
-registerRemoteClientRoutes(app);
-registerProbeFederationRoutes(app);
-registerNotificationIncidentRoutes(app);
-registerHistoryRoutes(app);
-
-// Vercel's Node backend adapter invokes this exported Fastify application.
-export default app;
