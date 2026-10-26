@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized (issue #14).** Existing fabric resource kinds (ApplicationPath, Service, Endpoint, Destination) and decision orchestration provide foundational surfaces. Full application-aware selection that maps service/application identity to path candidates while respecting policy and safety remains **PARTIAL** / **NOT STARTED** until this contract is accepted, PROJECT_STATE authorizes implementation, and evidence is produced. Disposition **PARTIAL** pending matrix update.
+**Contract formalized (issue #14).** Existing fabric resource kinds (ApplicationPath, Service, Endpoint, Destination) and decision orchestration provide foundational surfaces. Full application-aware selection that maps service/application identity to path candidates while respecting policy and safety remains **PARTIAL**. Regression evidence for fabric selection of ApplicationPath/Service/Endpoint kinds added. Disposition **PARTIAL** pending exact-SHA CI evidence.
 
 ## Objective
 
@@ -37,6 +37,16 @@ Enable deterministic selection of connectivity paths that are aware of the targe
 - Production device or regional evidence of application-specific steering (issue #4).
 - Predictive or ML-driven application path ranking (later phases).
 
+## Evidence map (this change)
+
+| Criterion | Location |
+|-----------|----------|
+| ApplicationPath/Service/Endpoint selection by health | `packages/resilience-runtime/tests/phase-91-application-aware-path-regression.test.ts` |
+| Stale resource rejection | same |
+| Failure-domain diversity fail-closed | same |
+| Inventory attributes (owner, failure domains, application metadata) | same |
+| Fabric ApplicationPath/Service/Endpoint kinds | `packages/resilience-runtime/src/fabric.ts` |
+
 ## Acceptance criteria
 
 1. Application, service, and endpoint candidates appear in fabric snapshots with required attributes (id, health, capability, ownership, failure domains).
@@ -60,3 +70,5 @@ Enable deterministic selection of connectivity paths that are aware of the targe
 
 - Tracking: issue #14
 - External blockers remain in issue #4
+
+Disposition remains PARTIAL pending exact-SHA CI evidence on the owning package tests.
