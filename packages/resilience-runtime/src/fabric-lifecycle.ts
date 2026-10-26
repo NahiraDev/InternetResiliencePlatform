@@ -88,43 +88,59 @@ export interface FreshnessReport {
   readonly expiredForMs?: number;
 }
 
-/** Freshness is evaluated per resource against an explicit clock. */
+/**
+ * Freshness is evaluated per resource against an explicit clock.
+ *
+ * When `maxAgeMs` is provided, a resource whose observation age exceeds the
+ * bound is treated as stale even if it has no `expiresAt`. This makes caller-
+ * supplied selection freshness bounds (e.g. Phase 91 stale-candidate tests)
+ * enforceable rather than decorative.
+ */
 export const evaluateFabricFreshness = (
   resource: FabricResource,
   nowIso: string,
+  maxAgeMs?: number,
 ): FreshnessReport => {
   const now = Date.parse(nowIso);
   const observed = Date.parse(resource.observedAt);
   const ageMs = Number.isFinite(observed) ? Math.max(0, now - observed) : Number.POSITIVE_INFINITY;
-  if (!resource.expiresAt) {
+
+  // Explicit expiry always wins when present.
+  if (resource.expiresAt) {
+    const expires = Date.parse(resource.expiresAt);
+    const expiredForMs = Number.isFinite(expires)
+      ? Math.max(0, now - expires)
+      : Number.POSITIVE_INFINITY;
+    const fresh = Number.isFinite(expires) && now < expires;
     return Object.freeze({
       resourceId: resource.id,
-      fresh: Number.isFinite(ageMs),
+      fresh,
       ageMs,
+      expiresAt: resource.expiresAt,
+      ...(Number.isFinite(expiredForMs) ? { expiredForMs } : {}),
     });
   }
-  const expires = Date.parse(resource.expiresAt);
-  const expiredForMs = Number.isFinite(expires)
-    ? Math.max(0, now - expires)
-    : Number.POSITIVE_INFINITY;
-  const fresh = Number.isFinite(expires) && now < expires;
+
+  // No expiresAt: apply optional maxAgeMs bound; otherwise treat finite age as fresh.
+  const withinAge =
+    maxAgeMs === undefined || (Number.isFinite(ageMs) && ageMs <= maxAgeMs);
+  const fresh = Number.isFinite(ageMs) && withinAge;
   return Object.freeze({
     resourceId: resource.id,
     fresh,
     ageMs,
-    expiresAt: resource.expiresAt,
-    ...(Number.isFinite(expiredForMs) ? { expiredForMs } : {}),
   });
 };
 
 export const partitionByFreshness = (
   resources: readonly FabricResource[],
   nowIso: string,
+  maxAgeMs?: number,
 ): { readonly fresh: readonly FabricResource[]; readonly stale: readonly FabricResource[] } => {
   const fresh: FabricResource[] = [];
   const stale: FabricResource[] = [];
   for (const resource of resources) {
-    if (evaluateFabricFreshness(resource, nowIso).fresh) fresh.push(resource);
+    if (evaluateFabricFreshness(resource, nowIso, maxAgeMs).fresh) fresh.push(resource);
     else stale.push(resource);
   }
   return { fresh: Object.freeze(fresh), stale: Object.freeze(stale) };
