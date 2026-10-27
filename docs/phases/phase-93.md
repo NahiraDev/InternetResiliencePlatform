@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized.** Existing fabric route selection, multi-path intelligence (Phase 88), gateway selection (Phase 89), and closed-loop decision orchestration provide foundational routing primitives. Full advanced routing control that supports policy-driven route optimization, dynamic path preference, and bounded re-routing under changing conditions remains **NOT STARTED**. Disposition **PARTIAL** (contract only).
+**Contract formalized + foundational regression evidence added.** Existing fabric route selection already ranks by health/cost/trust, filters by freshness, honors preferred failure domains, and fails closed on diversity shortfalls. Regression tests demonstrate these advanced ranking and constraint behaviors remain pure, deterministic, and confined to the existing `fabric.select` boundary. Full policy-driven dynamic optimization and live re-routing under continuous conditions remain **NOT STARTED**. Disposition **PARTIAL** (contract + foundational evidence).
 
 ## Objective
 
@@ -39,14 +39,14 @@ Provide policy-bounded advanced routing control that selects, ranks, and re-sele
 - Predictive or ML-driven routing (later phases).
 - Production multi-region or live traffic engineering evidence.
 
-## Evidence map (planned)
+## Evidence map
 
 | Criterion | Location |
 |-----------|----------|
-| Advanced route ranking by health/freshness/diversity | `packages/resilience-runtime/tests/phase-93-advanced-routing.test.ts` (to be added) |
-| Intent-constrained route preference | same |
-| Fail-closed on insufficient candidates | same |
-| Re-routing through existing fabric.select / safety boundary | same |
+| Advanced route ranking by health/freshness/diversity | `packages/resilience-runtime/tests/phase-93-advanced-routing.test.ts` |
+| Intent-constrained route preference (preferredFailureDomains) | same |
+| Fail-closed on insufficient candidates / stale | same |
+| Re-routing through existing fabric.select boundary | same |
 
 ## Acceptance criteria
 
@@ -73,4 +73,4 @@ Provide policy-bounded advanced routing control that selects, ranks, and re-sele
 - Tracking: open roadmap workstream
 - External blockers remain in issues #4, #254, #323
 
-Disposition remains PARTIAL (contract only) until regression evidence and exact-SHA CI are present.
+Disposition remains PARTIAL pending exact-SHA CI on the owning package tests and full continuous assurance.
