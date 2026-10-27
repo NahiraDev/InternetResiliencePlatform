@@ -53,7 +53,7 @@ if (url.includes('/git/ref/heads/main')) {
   appendFileSync(process.env.MOCK_QUERIES, workflow + '\\n');
   const overrides = JSON.parse(process.env.MOCK_RUNS);
   console.log(JSON.stringify({ workflow_runs: overrides[workflow] ??
-    [{status: 'completed', conclusion: 'success'}] }));
+    [{status: 'completed', conclusion: 'success', created_at: '2026-01-01T00:00:00Z'}] }));
 }
 `,
       { mode: 0o755 },
@@ -114,6 +114,29 @@ for (const name of ['ios-client.yml', 'ios-network-integration.yml', 'codeql.yml
     assert.doesNotMatch(result.output, /Release Gate: PASS/);
   });
 }
+
+test('a newer failure cannot be hidden by an older successful run for the same SHA', () => {
+  const result = evaluate({
+    'ci.yml': [
+      { status: 'completed', conclusion: 'success', created_at: '2026-01-01T00:00:00Z' },
+      { status: 'completed', conclusion: 'failure', created_at: '2026-01-01T01:00:00Z' },
+    ],
+  });
+  assert.equal(result.code, 1);
+  assert.match(result.output, /FAIL ci\.yml/);
+  assert.doesNotMatch(result.output, /Release Gate: PASS/);
+});
+
+test('a newer successful retry may replace an older failure for the same SHA', () => {
+  const result = evaluate({
+    'ci.yml': [
+      { status: 'completed', conclusion: 'failure', created_at: '2026-01-01T00:00:00Z' },
+      { status: 'completed', conclusion: 'success', created_at: '2026-01-01T01:00:00Z' },
+    ],
+  });
+  assert.equal(result.code, 0);
+  assert.match(result.output, /Release Gate: PASS/);
+});
 
 test('a stale triggering SHA fails before requesting workflow evidence', () => {
   const result = evaluate({}, 'a'.repeat(40));
