@@ -7,7 +7,6 @@ on:
       - System Assurance
       - Linux Primary Device
       - Runtime Lab
-      - CodeQL Advanced
       - Repository Deep Audit
       - Public Runtime Lab
       - Android Client
@@ -29,8 +28,6 @@ permissions:
   contents: read
 
 concurrency:
-  # Runs are scoped to one exact SHA; duplicate evaluations of that same SHA
-  # are interchangeable, while runs for different commits remain isolated.
   group: release-gate-${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
   cancel-in-progress: true
 
@@ -62,7 +59,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -87,13 +84,11 @@ jobs:
             exit 1
           }
 
-          # Every mandatory platform and assurance workflow must pass.
           workflows=(
             "ci.yml"
             "system-assurance.yml"
             "linux-primary-device.yml"
             "runtime-lab.yml"
-            "codeql.yml"
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
@@ -103,11 +98,6 @@ jobs:
             "windows-client.yml"
           )
 
-          # Evaluate the latest completed run for this exact SHA. Older failures
-          # must not poison a newer successful retry, but a newer failure must
-          # never be hidden by an older successful run.
-          # No completed run is equivalent to BLOCKED; in-progress/queued runs
-          # are never inferred to be green.
           for workflow in "${workflows[@]}"; do
             echo "=== verifying $workflow for $HEAD_SHA ==="
             runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
@@ -132,6 +122,21 @@ jobs:
 
             echo "PASS $workflow"
           done
+
+          echo "=== verifying GitHub Default Setup CodeQL for $HEAD_SHA ==="
+          check_runs="$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100")"
+          codeql="$(jq -c '[.check_runs[] | select(.name == "CodeQL" or (.name | startswith("CodeQL /")))] | sort_by(.completed_at // "") | last // empty' <<<"$check_runs")"
+          if [ -z "$codeql" ]; then
+            echo "BLOCKED CodeQL: no completed GitHub Default Setup CodeQL check for exact SHA $HEAD_SHA" >&2
+            exit 1
+          fi
+          codeql_status="$(jq -r '.status // "unknown"' <<<"$codeql")"
+          codeql_conclusion="$(jq -r '.conclusion // "unknown"' <<<"$codeql")"
+          echo "CodeQL status=$codeql_status conclusion=$codeql_conclusion"
+          if [ "$codeql_status" != "completed" ] || [ "$codeql_conclusion" != "success" ]; then
+            echo "FAIL CodeQL: latest exact-SHA check is not successful" >&2
+            exit 1
+          fi
 
           echo
           echo "Release Gate: PASS"
