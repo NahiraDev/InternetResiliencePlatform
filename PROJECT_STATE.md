@@ -4,10 +4,10 @@
 
 ## Current implementation gate
 
-- **Current implementation baseline:** Phase 91 — Application-Aware Path Selection regression evidence merged; Phase 92 Connectivity Service Assurance evidence in progress.
-- **Current main HEAD inspected (2026-10-26):** `b5a484c22570c08c63364c2bd3be291d51af35ee` (post-Phase 91 merge).
+- **Current implementation baseline:** Phase 92 — Connectivity Service Assurance regression evidence merged (PR #415); Phase 93 Advanced Routing Control contract and foundational evidence next.
+- **Current main HEAD inspected (2026-10-27):** `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13` (post-PR #421 CI fix merge).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
-- **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411/#412 (durable stores / auth / PostgreSQL).
+- **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411/#412 (durable stores / auth / PostgreSQL), #413 (reconcile project state), #420 (CodeQL workflow).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Phase 79 status:** NetworkIntent model, lifecycle transitions, effective-window evaluation, autonomy levels and dedicated tests are implemented and present on `main` in `packages/core/src/intent.ts` and `intent.test.ts`. Exported from the core barrel.
@@ -15,9 +15,10 @@
 - **Phase 81 status:** Intent Translation / Compilation is implemented on `main` in `packages/resilience-runtime/src/intent/compiler.ts` (`compileNetworkIntent`, `isCompiledIntentEffective`). Pure, deterministic, side-effect free. Tests present.
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `b5a484c22570c08c63364c2bd3be291d51af35ee`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
-- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–82, but it must not be represented as certified until its evidence exists.
-- **Phases 83–150:** contracts for 79–92 exist; implementation for 83+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
+- **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
+- **Phases 93–150:** Phase 93 contract not yet formalized; implementation for 93+ remains not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
 ## Phase 79–83 summary
 
@@ -111,3 +112,14 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Verified merges: Phase 91 previously merged (PR #414)
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323); production PostgreSQL / durable stores (#410/#411); auth lifecycle (#412).
 - Next prioritized tasks: Phase 93 advanced routing control evidence or gaps (if contract exists) or durable store / auth blockers; continue roadmap to Phase 150.
+
+## Autonomous engineer checkpoint (2026-10-27)
+
+- Starting base SHA: 9d6c1d562e5c3b0e868cc03b3acd3993b0346a13 (upstream/main, post-#421)
+- Ending base SHA: (pending this PR)
+- Completed this run: reconciled PROJECT_STATE.md with live main SHA and Phase 92 merge (PR #415). Formalized that Phase 92 evidence is merged; next is Phase 93. No runtime authority changes.
+- Branches/PRs: chore/update-project-state-phase-92-93 (this PR)
+- Actual CI: pending
+- Verified merges: Phase 92 previously merged (PR #415); CI fix #421 merged.
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage; Linux runtime soak (#254/#323); production PostgreSQL / durable stores (#410); auth lifecycle (#412); CodeQL config (#420).
+- Next prioritized tasks: formalize Phase 93 Advanced Routing Control contract + regression evidence; address #413 fully; continue roadmap to Phase 150.
