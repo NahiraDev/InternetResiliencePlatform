@@ -14,6 +14,9 @@ const createMemoryDatabaseClient = (): DatabaseClient => ({
   },
 });
 
+const isProductionRuntime = (): boolean =>
+  ['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase());
+
 export type IdleClientErrorHandler = (error: Error) => void;
 
 /**
@@ -40,7 +43,14 @@ export const createPrismaClient = (
   databaseUrl = process.env.DATABASE_URL,
   options: DatabaseClientOptions = {},
 ): DatabaseClient => {
-  if (!databaseUrl) return createMemoryDatabaseClient();
+  if (!databaseUrl) {
+    if (isProductionRuntime()) {
+      throw new Error(
+        'DATABASE_URL is required for production or staging database runtime; refusing the in-memory database fallback.',
+      );
+    }
+    return createMemoryDatabaseClient();
+  }
   const pool = new Pool({ connectionString: databaseUrl, max: options.max ?? 5 });
   pool.on('error', options.onIdleClientError ?? reportIdleClientError);
   return {
