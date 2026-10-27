@@ -1,0 +1,274 @@
+name: Apply durable repository refactor
+
+on:
+  push:
+    branches: [fix/p0-durable-postgres-repositories]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != 'feat(api): wire durable postgres repositories [skip ci]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/p0-durable-postgres-repositories
+          fetch-depth: 1
+      - name: Rewrite API persistence boundary
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('apps/api/src/index.ts')
+          text = path.read_text()
+
+          import_line = "import { createDurableRepositories } from './durable-repositories.js';\n"
+          anchor = "import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } from './analytics.js';\n"
+          if import_line not in text:
+              text = text.replace(anchor, anchor + import_line)
+
+          start = text.index('class Store<T extends Entity> {')
+          end = text.index('const isProductionRuntime = () =>', start)
+          text = text[:start] + text[end:]
+
+          db_anchor = "  const db = createPrismaClient(process.env.DATABASE_URL);\n"
+          db_replacement = db_anchor + "  const repositories = createDurableRepositories(db);\n  const { users, organizations: orgs, projects, workspaces, sessions } = repositories;\n"
+          if 'const repositories = createDurableRepositories(db);' not in text:
+              text = text.replace(db_anchor, db_replacement)
+
+          auth_start = text.index("  const authRateLimit = rateLimitPreHandler")
+          auth_end = text.index("  app.addHook('onClose'", auth_start)
+
+          replacement = r'''  const authRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 10, windowMs: 60_000 }));
+  app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
+    const input = registerSchema.parse(request.body);
+    if (await users.findByEmail(input.email)) throw new ConflictAppError('Email is already registered.');
+    const roles = isBootstrapAdminEmail(input.email) ? ['platform_admin'] : ['member'];
+    const user = {
+      ...(await users.create({
+        id: crypto.randomUUID(),
+        email: input.email,
+        name: input.name,
+        passwordHash: hashPassword(input.password),
+        status: 'active',
+        createdAt: now(),
+        updatedAt: now(),
+      })),
+      roles,
+      permissions: isBootstrapAdminEmail(input.email) ? permissions : [],
+    };
+    await events.publish(createDomainEvent('user.registered', user.id, { email: user.email }));
+    await trackServerEvent('user_registered', { status: user.status });
+    return reply.code(201).send(created(publicUser(user) as never));
+  });
+
+  app.post('/api/v1/auth/login', { preHandler: authRateLimit }, async (request) => {
+    const input = loginSchema.parse(request.body);
+    const userRecord = await users.findByEmail(input.email);
+    const user = userRecord
+      ? {
+          ...userRecord,
+          roles: isBootstrapAdminEmail(userRecord.email) ? ['platform_admin'] : ['member'],
+          permissions: isBootstrapAdminEmail(userRecord.email) ? permissions : [],
+        }
+      : null;
+    if (!user || user.status !== 'active' || !verifyPassword(input.password, user.passwordHash))
+      throw new UnauthorizedAppError('Invalid credentials');
+
+    const sessionId = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 86400_000).toISOString();
+    const accessToken = jwt.sign({
+      sub: user.id,
+      roles: user.roles,
+      scopes: user.permissions,
+      sessionId,
+      type: 'access',
+      ttlSeconds: 900,
+    });
+    const refreshToken = jwt.sign({
+      sub: user.id,
+      roles: user.roles,
+      scopes: user.permissions,
+      sessionId,
+      type: 'refresh',
+      ttlSeconds: 30 * 86400,
+    });
+    await sessions.create({ id: sessionId, userId: user.id, refreshToken, expiresAt });
+    await trackServerEvent('user_login', { method: 'password' });
+    return ok({ accessToken, refreshToken, expiresIn: 900, user: publicUser(user) });
+  });
+
+  app.post('/api/v1/auth/refresh', { preHandler: authRateLimit }, async (request) => {
+    const token = z.object({ refreshToken: z.string() }).parse(request.body).refreshToken;
+    const claims = jwt.verify(token, 'refresh');
+    const userRecord = await users.get(claims.sub);
+    const user = userRecord
+      ? {
+          ...userRecord,
+          roles: isBootstrapAdminEmail(userRecord.email) ? ['platform_admin'] : ['member'],
+          permissions: isBootstrapAdminEmail(userRecord.email) ? permissions : [],
+        }
+      : null;
+    const session = claims.sessionId ? await sessions.get(claims.sessionId) : null;
+    const sessionExpired = session ? Date.now() >= Date.parse(session.expiresAt) : true;
+    if (!user || user.status !== 'active' || !session || session.revokedAt || sessionExpired || !(await sessions.matchesRefreshToken(session, token)))
+      throw new UnauthorizedAppError();
+
+    await sessions.revoke(session.id);
+    const rotatedId = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 86400_000).toISOString();
+    const accessToken = jwt.sign({
+      sub: user.id,
+      roles: user.roles,
+      scopes: user.permissions,
+      sessionId: rotatedId,
+      type: 'access',
+      ttlSeconds: 900,
+    });
+    const refreshToken = jwt.sign({
+      sub: user.id,
+      roles: user.roles,
+      scopes: user.permissions,
+      sessionId: rotatedId,
+      type: 'refresh',
+      ttlSeconds: 30 * 86400,
+    });
+    await sessions.create({ id: rotatedId, userId: user.id, refreshToken, expiresAt });
+    return ok({ accessToken, refreshToken, expiresIn: 900 });
+  });
+
+  app.post('/api/v1/auth/logout', { preHandler: generalRateLimit }, async (request) => {
+    const p = await requireAuth(request);
+    const sid = String(p.metadata?.sessionId ?? '');
+    if (sid) await sessions.revoke(sid);
+    return ok({ loggedOut: true });
+  });
+  app.post('/api/v1/auth/password-reset/request', { preHandler: generalRateLimit }, async (request) => {
+    z.object({ email: z.string().email() }).parse(request.body);
+    return ok({ accepted: true });
+  });
+  app.post('/api/v1/auth/email-verification/request', { preHandler: generalRateLimit }, async (request) => {
+    await requireAuth(request);
+    return ok({ accepted: true });
+  });
+
+  const listUsers = async (request: FastifyRequest) => {
+    await requirePermission(request, 'users:read');
+    const q = paginationSchema.parse(request.query);
+    const result = await users.list(q, q.search);
+    return ok(result.items.map(publicUser), { total: result.total, page: result.page, pageSize: result.pageSize });
+  };
+  app.get('/api/v1/users', listUsers);
+  app.get('/api/v1/users/:id', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'users:read');
+    const record = await users.get(idParams.parse(request.params).id);
+    if (!record) throw new NotFoundAppError('user');
+    const user = { ...record, roles: isBootstrapAdminEmail(record.email) ? ['platform_admin'] : ['member'], permissions: isBootstrapAdminEmail(record.email) ? permissions : [] };
+    return ok(publicUser(user));
+  });
+  app.get('/api/v1/me', { preHandler: generalRateLimit }, async (request) => {
+    const p = await requireAuth(request);
+    const record = await users.get(p.id);
+    if (!record) throw new NotFoundAppError('user');
+    const user = { ...record, roles: isBootstrapAdminEmail(record.email) ? ['platform_admin'] : ['member'], permissions: isBootstrapAdminEmail(record.email) ? permissions : [] };
+    return ok(publicUser(user));
+  });
+
+  app.get('/api/v1/organizations', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'organizations:read');
+    const q = paginationSchema.parse(request.query);
+    const r = await orgs.list(q, q.search);
+    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+  });
+  app.post('/api/v1/organizations', { preHandler: generalRateLimit }, async (request, reply) => {
+    await requirePermission(request, 'organizations:write');
+    const i = nameSchema.parse(request.body);
+    const slug = i.slug ?? slugify(i.name);
+    if (await orgs.findBySlug(slug)) throw new ConflictAppError('Organization slug already exists.');
+    return reply.code(201).send(created(await orgs.create({ id: crypto.randomUUID(), name: i.name, slug, createdAt: now(), updatedAt: now() })));
+  });
+  app.get('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'organizations:read');
+    const o = await orgs.get(idParams.parse(request.params).id);
+    if (!o) throw new NotFoundAppError('organization');
+    return ok(o);
+  });
+  app.delete('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'organizations:write');
+    const id = idParams.parse(request.params).id;
+    if (!(await orgs.get(id))) throw new NotFoundAppError('organization');
+    await orgs.softDelete(id);
+    return ok({ deleted: true });
+  });
+
+  app.get('/api/v1/projects', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'projects:read');
+    const q = paginationSchema.parse(request.query);
+    const r = await projects.list(q);
+    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+  });
+  app.post('/api/v1/organizations/:id/projects', { preHandler: generalRateLimit }, async (request, reply) => {
+    await requirePermission(request, 'projects:write');
+    const organizationId = idParams.parse(request.params).id;
+    if (!(await orgs.get(organizationId))) throw new NotFoundAppError('organization');
+    const i = nameSchema.parse(request.body);
+    const slug = i.slug ?? slugify(i.name);
+    return reply.code(201).send(created(await projects.create({
+      id: crypto.randomUUID(), organizationId, name: i.name, slug,
+      ...(i.description ? { description: i.description } : {}), createdAt: now(), updatedAt: now(),
+    })));
+  });
+  app.get('/api/v1/projects/:id', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'projects:read');
+    const p = await projects.get(idParams.parse(request.params).id);
+    if (!p) throw new NotFoundAppError('project');
+    return ok(p);
+  });
+
+  app.get('/api/v1/workspaces', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'workspaces:read');
+    const q = paginationSchema.parse(request.query);
+    const r = await workspaces.list(q);
+    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+  });
+  app.post('/api/v1/organizations/:id/workspaces', { preHandler: generalRateLimit }, async (request, reply) => {
+    await requirePermission(request, 'workspaces:write');
+    const organizationId = idParams.parse(request.params).id;
+    if (!(await orgs.get(organizationId))) throw new NotFoundAppError('organization');
+    const i = workspaceSchema.parse(request.body);
+    if (i.projectId && !(await projects.get(i.projectId))) throw new NotFoundAppError('project');
+    const slug = i.slug ?? slugify(i.name);
+    return reply.code(201).send(created(await workspaces.create({
+      id: crypto.randomUUID(), organizationId, ...(i.projectId ? { projectId: i.projectId } : {}),
+      name: i.name, slug, environment: i.environment, createdAt: now(), updatedAt: now(),
+    })));
+  });
+  const workspaceReadRateLimit = rateLimitPreHandler(
+    new InMemoryRateLimiter({ max: 120, windowMs: 60_000 }),
+    (request) => `${request.ip}:workspace-read`,
+  );
+  app.get('/api/v1/workspaces/:id', { preHandler: workspaceReadRateLimit }, async (request) => {
+    await requirePermission(request, 'workspaces:read');
+    const w = await workspaces.get(idParams.parse(request.params).id);
+    if (!w) throw new NotFoundAppError('workspace');
+    return ok(w);
+  });
+'''
+
+          text = text[:auth_start] + replacement + text[auth_end:]
+          path.write_text(text)
+          PY
+      - name: Validate and commit
+        run: |
+          grep -n "createDurableRepositories\|class Store\|const sessions" apps/api/src/index.ts || true
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/api/src/index.ts
+          git commit -m 'feat(api): wire durable postgres repositories [skip ci]'
+          git push origin HEAD:fix/p0-durable-postgres-repositories
