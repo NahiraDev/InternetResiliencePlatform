@@ -25,9 +25,22 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: '11.21.0'
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
       - name: Run opencode
-        uses: anomalyco/opencode/github@latest
+        # Pinned to the upstream action revision rather than a mutable tag.
+        uses: anomalyco/opencode/github@2c14fc5586fe0b88e5c04732d2e846769cc35671 # latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_PERMISSION: '{"bash":"deny"}'
         with:
           model: opencode/big-pickle

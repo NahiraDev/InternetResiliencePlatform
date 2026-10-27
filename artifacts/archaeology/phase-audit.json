@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "b1bbc30f1927c927b9bc03c5d41844768a6ec6e2d5fc3b359a3d52b70ba5eeeb",
+  "generatedAt": "c657996ed305285aa264caeb9bfd5d78dfb4bfd982f4d506901b7818210d4ba0",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -33,10 +33,10 @@
       "beyondPhase78": false,
       "claimsImplementation": true,
       "citesEvidence": true,
-      "hasTestEvidence": false,
+      "hasTestEvidence": true,
       "pinnedShas": [],
       "stalePins": [],
-      "evidenceClass": "claim-with-citation"
+      "evidenceClass": "evidence-backed"
     },
     {
       "file": "docs/phases/phase-40-evidence.md",
@@ -105,7 +105,7 @@
       "beyondPhase78": false,
       "claimsImplementation": false,
       "citesEvidence": true,
-      "hasTestEvidence": false,
+      "hasTestEvidence": true,
       "pinnedShas": [],
       "stalePins": [],
       "evidenceClass": "descriptive"
@@ -129,7 +129,7 @@
       "beyondPhase78": false,
       "claimsImplementation": true,
       "citesEvidence": false,
-      "hasTestEvidence": false,
+      "hasTestEvidence": true,
       "pinnedShas": [],
       "stalePins": [],
       "evidenceClass": "unsubstantiated-claim"
@@ -551,6 +551,168 @@
       "evidenceClass": "unsubstantiated-claim"
     },
     {
+      "file": "docs/phases/phase-81.md",
+      "kind": "phase",
+      "number": 81,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [
+        "decd9211406e330a1efd0e086beb29820ec210b7"
+      ],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-82.md",
+      "kind": "phase",
+      "number": 82,
+      "beyondPhase78": true,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [
+        "decd9211406e330a1efd0e086beb29820ec210b7"
+      ],
+      "stalePins": [],
+      "evidenceClass": "evidence-backed"
+    },
+    {
+      "file": "docs/phases/phase-83.md",
+      "kind": "phase",
+      "number": 83,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [
+        "decd9211406e330a1efd0e086beb29820ec210b7"
+      ],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-84.md",
+      "kind": "phase",
+      "number": 84,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-85.md",
+      "kind": "phase",
+      "number": 85,
+      "beyondPhase78": true,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": false,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "claim-with-citation"
+    },
+    {
+      "file": "docs/phases/phase-86.md",
+      "kind": "phase",
+      "number": 86,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-87.md",
+      "kind": "phase",
+      "number": 87,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-88.md",
+      "kind": "phase",
+      "number": 88,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-89.md",
+      "kind": "phase",
+      "number": 89,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-90.md",
+      "kind": "phase",
+      "number": 90,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-91.md",
+      "kind": "phase",
+      "number": 91,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-92.md",
+      "kind": "phase",
+      "number": 92,
+      "beyondPhase78": true,
+      "claimsImplementation": false,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "descriptive"
+    },
+    {
+      "file": "docs/phases/phase-93.md",
+      "kind": "phase",
+      "number": 93,
+      "beyondPhase78": true,
+      "claimsImplementation": true,
+      "citesEvidence": true,
+      "hasTestEvidence": true,
+      "pinnedShas": [],
+      "stalePins": [],
+      "evidenceClass": "evidence-backed"
+    },
+    {
       "file": "artifacts/issues/272-evidence.md",
       "kind": "issue-evidence",
       "number": null,
@@ -733,11 +895,13 @@
       "citesEvidence": true,
       "hasTestEvidence": false,
       "pinnedShas": [
-        "faac50bbfa7e0e728761061467b5455e3e3f6897"
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13",
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
       ],
       "stalePins": [],
       "behindHead": [
-        "faac50bbfa7e0e728761061467b5455e3e3f6897"
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13",
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
       ],
       "evidenceClass": "behind-head"
     },
@@ -750,22 +914,35 @@
       "citesEvidence": true,
       "hasTestEvidence": false,
       "pinnedShas": [
-        "51979d36bc3cf1de302d4cb166685d2475d79950"
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
       ],
       "stalePins": [],
       "behindHead": [
-        "51979d36bc3cf1de302d4cb166685d2475d79950"
+        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
       ],
       "evidenceClass": "behind-head"
     }
   ],
   "summary": {
-    "total": 61,
-    "phaseDocuments": 45,
+    "total": 74,
+    "phaseDocuments": 58,
     "issueEvidenceDocuments": 14,
     "beyondPhase78": [
       "docs/phases/phase-79.md",
-      "docs/phases/phase-80.md"
+      "docs/phases/phase-80.md",
+      "docs/phases/phase-81.md",
+      "docs/phases/phase-82.md",
+      "docs/phases/phase-83.md",
+      "docs/phases/phase-84.md",
+      "docs/phases/phase-85.md",
+      "docs/phases/phase-86.md",
+      "docs/phases/phase-87.md",
+      "docs/phases/phase-88.md",
+      "docs/phases/phase-89.md",
+      "docs/phases/phase-90.md",
+      "docs/phases/phase-91.md",
+      "docs/phases/phase-92.md",
+      "docs/phases/phase-93.md"
     ],
     "unsubstantiated": [
       "docs/phases/phase-46.md",
@@ -775,20 +952,21 @@
       "docs/phases/phase-76.md",
       "docs/phases/phase-80.md"
     ],
-    "evidenceBacked": 17,
+    "evidenceBacked": 20,
     "coordinationRecords": 2,
     "staleReferences": [],
     "behindHeadRecords": [
       {
         "file": "PROJECT_STATE.md",
         "behindHead": [
-          "faac50bbfa7e0e728761061467b5455e3e3f6897"
+          "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13",
+          "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
         ]
       },
       {
         "file": ".github/ACTIVE_WORK.md",
         "behindHead": [
-          "51979d36bc3cf1de302d4cb166685d2475d79950"
+          "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
         ]
       }
     ]

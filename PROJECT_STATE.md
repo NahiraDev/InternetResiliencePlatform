@@ -4,7 +4,7 @@
 
 ## Current implementation gate
 
-- **Current implementation baseline:** Phase 92 — Connectivity Service Assurance regression evidence merged (PR #415); Phase 93 Advanced Routing Control contract and foundational evidence next.
+- **Current implementation baseline:** Phase 93 — Advanced Routing Control implementation and local regression evidence complete; exact-SHA CI evidence remains required.
 - **Current main HEAD inspected (2026-10-27):** `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13` (post-PR #421 CI fix merge).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411/#412 (durable stores / auth / PostgreSQL), #413 (reconcile project state), #420 (CodeQL workflow).
@@ -18,7 +18,8 @@
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
 - **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
-- **Phases 93–150:** Phase 93 contract not yet formalized; implementation for 93+ remains not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
+- **Phase 93 status:** advanced route ranking, bounded compiled-intent routing preferences, fail-closed validation, and selection audit evidence are implemented in `packages/resilience-runtime/src/fabric.ts`, with regression coverage in `phase-93-advanced-routing.test.ts`. Disposition PARTIAL pending exact-SHA CI and external runtime evidence. No new runtime authority was introduced.
+- **Phases 94–150:** not started. Their phase contracts and acceptance criteria have not yet been formalized, so implementation is not authorized. ResilienceRuntime remains the sole production mutation authority.
 
 ## Phase 79–83 summary
 

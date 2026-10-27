@@ -5,9 +5,7 @@
 **Before planning, coding, reviewing, or changing architecture, read:**
 `docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md`
 
-That document is the single canonical architecture contract for IRP. It defines the product identity, planes, canonical runtime authority, resource/fabric model, control loop, security boundaries, ownership rules, prohibited architecture drift, and definition of done.
-
-Agents MUST extend that architecture rather than invent a competing control plane, decision engine, state model, roadmap, or product identity.
+It is the canonical contract for product identity, planes, runtime authority, control loop, security, ownership, prohibited drift, and done criteria. Extend it; never invent a competing control plane, decision engine, state model, roadmap, or product identity.
 
 1. Read `PROJECT_STATE.md`.
 2. Read `.github/ACTIVE_WORK.md` for the current implementation gate and coordination state.
@@ -38,15 +36,7 @@ Agents MUST extend that architecture rather than invent a competing control plan
 
 ## Preferred agent routing
 
-| Task                                              | Agent                              |
-| ------------------------------------------------- | ---------------------------------- |
-| Feature/phase implementation                      | `irp-phase-implementer`            |
-| GitHub Actions / Runtime Lab / Public Runtime Lab | `irp-ci-runtime-engineer`          |
-| Architecture/domain review                        | `irp-architecture-reviewer`        |
-| Tests/flakiness/runtime verification              | `irp-test-verification-engineer`   |
-| Integration/final gate/release readiness          | `irp-integration-release-engineer` |
-
-For Phase 72–150 work, extend the existing canonical owners after inspecting the reference architecture and current runtime evidence. Do not design a second architecture because an existing integration is incomplete.
+Use `irp-phase-implementer` for phase work, `irp-ci-runtime-engineer` for CI/runtime labs, `irp-architecture-reviewer` for architecture, `irp-test-verification-engineer` for verification, and `irp-integration-release-engineer` for release gates. For Phases 72–150, extend the canonical owner; never make a second architecture to cover an incomplete integration.
 
 ## Architecture enforcement gate
 
@@ -61,28 +51,12 @@ When implementing any issue or feature:
 - Do not change the architecture contract merely to make an implementation pass. First prove the implementation is consistent with the existing contract.
 - If a capability appears to require a new authority, reconcile ownership against the reference architecture and machine-readable contract before coding.
 - Any intentional architecture evolution must update the canonical architecture document, machine-readable contract, validator, tests, and CI gate together.
-ط 
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel
 
-These defaults are optimized for AI coding agents (and humans) working on apps that deploy to Vercel.
-
-- Treat Vercel Functions as stateless + ephemeral (no durable RAM/FS, no background daemons), use Blob or marketplace integrations for preserving state
-- Edge Functions (standalone) are deprecated; prefer Vercel Functions
-- Don't start new projects on Vercel KV/Postgres (both discontinued); use Marketplace Redis/Postgres instead
-- Store secrets in Vercel Env Variables; not in git or `NEXT_PUBLIC_*`
-- Provision Marketplace native integrations with `vercel integration add` (CI/agent-friendly)
-- Sync env + project settings with `vercel env pull` / `vercel pull` when you need local/offline parity
-- Use `waitUntil` for post-response work; avoid the deprecated Function `context` parameter
-- Set Function regions near your primary data source; avoid cross-region DB/service roundtrips
-- Tune Fluid Compute knobs (e.g., `maxDuration`, memory/CPU) for long I/O-heavy calls (LLMs, APIs)
-- Use Runtime Cache for fast **regional** caching + tag invalidation (don't treat it as global KV)
-- Use Cron Jobs for schedules; cron runs in UTC and triggers your production URL via HTTP GET
-- Use Vercel Blob for uploads/media; Use Edge Config for small, globally-read config
-- If a deployment URL returns a Vercel Deployment Protection 401/403, retry the same URL with `vercel curl <url>`; don't disable protection or manage bypass secrets manually
-- Add OpenTelemetry via `@vercel/otel` on Node; don't expect OTEL support on the Edge runtime
-- Enable Web Analytics + Speed Insights early
-- Use AI Gateway for model routing, set AI_GATEWAY_API_KEY, using a model string (e.g. 'anthropic/claude-sonnet-4.6'), Gateway is already default in AI SDK
-  needed. Always curl https://ai-gateway.vercel.sh/v1/models first; never trust model IDs from memory
-- For durable agent loops or untrusted code: use Workflow (pause/resume/state) + Sandbox; use Vercel MCP for secure infra access
+- Functions are stateless and ephemeral: use Blob or Marketplace services for durable state; prefer Node Vercel Functions over deprecated Edge Functions. Do not start projects on discontinued Vercel KV/Postgres.
+- Keep secrets in Vercel Env Variables (never Git or `NEXT_PUBLIC_*`); add integrations with `vercel integration add`, and use `vercel pull`/`vercel env pull` for local parity.
+- Use `waitUntil` for post-response work, place functions near data, and tune Fluid Compute for long I/O. Runtime Cache is regional only; use Cron (UTC GET) for schedules, Blob for media, and Edge Config for small global reads.
+- Keep Deployment Protection enabled; retry protected URLs with `vercel curl`. Use `@vercel/otel`, Web Analytics, and Speed Insights on Node functions.
+- For AI Gateway, set `AI_GATEWAY_API_KEY` and verify available models with `curl https://ai-gateway.vercel.sh/v1/models`. Use Workflow plus Sandbox for durable loops or untrusted code; use Vercel MCP for infrastructure access.
 <!-- VERCEL BEST PRACTICES END -->

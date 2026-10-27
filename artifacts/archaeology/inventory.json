@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "b1bbc30f1927c927b9bc03c5d41844768a6ec6e2d5fc3b359a3d52b70ba5eeeb",
+  "generatedAt": "c657996ed305285aa264caeb9bfd5d78dfb4bfd982f4d506901b7818210d4ba0",
   "packages": [
     {
       "group": "apps",
@@ -681,8 +681,8 @@
         "@irp/tunnel",
         "@irp/utils"
       ],
-      "sourceFiles": 90,
-      "testFiles": 49,
+      "sourceFiles": 91,
+      "testFiles": 60,
       "hasTests": true
     },
     {
@@ -886,9 +886,9 @@
     "workspacePackages": 43,
     "nativeClients": 2,
     "packagesWithoutTests": 0,
-    "workflows": 17,
-    "docs": 158,
-    "phaseDocs": 45
+    "workflows": 18,
+    "docs": 172,
+    "phaseDocs": 58
   },
   "infrastructure": {
     "workflows": [
@@ -901,6 +901,7 @@
       ".github/workflows/ios-network-integration.yml",
       ".github/workflows/linux-primary-device.yml",
       ".github/workflows/macos-client.yml",
+      ".github/workflows/opencode.yml",
       ".github/workflows/public-runtime-lab.yml",
       ".github/workflows/regional-validation.yml",
       ".github/workflows/release-gate.yml",
@@ -1029,6 +1030,7 @@
       "docs/audits/control-plane-execution-baseline-2026-09-03.md",
       "docs/audits/documentation-audit-2026-08-23.md",
       "docs/audits/documentation-quality-standard.md",
+      "docs/audits/evidence/phase-1-38-acceptance-evidence.md",
       "docs/audits/finalization-baseline-2026-10-12.md",
       "docs/audits/full-system-architecture-reconstruction.md",
       "docs/audits/phase-1-150-status-matrix.md",
@@ -1118,6 +1120,19 @@
       "docs/phases/phase-78.md",
       "docs/phases/phase-79.md",
       "docs/phases/phase-80.md",
+      "docs/phases/phase-81.md",
+      "docs/phases/phase-82.md",
+      "docs/phases/phase-83.md",
+      "docs/phases/phase-84.md",
+      "docs/phases/phase-85.md",
+      "docs/phases/phase-86.md",
+      "docs/phases/phase-87.md",
+      "docs/phases/phase-88.md",
+      "docs/phases/phase-89.md",
+      "docs/phases/phase-90.md",
+      "docs/phases/phase-91.md",
+      "docs/phases/phase-92.md",
+      "docs/phases/phase-93.md",
       "docs/reference/README.md",
       "docs/reference/packages.md",
       "docs/regional-validation.md",
@@ -1188,7 +1203,20 @@
       "phase-77.md",
       "phase-78.md",
       "phase-79.md",
-      "phase-80.md"
+      "phase-80.md",
+      "phase-81.md",
+      "phase-82.md",
+      "phase-83.md",
+      "phase-84.md",
+      "phase-85.md",
+      "phase-86.md",
+      "phase-87.md",
+      "phase-88.md",
+      "phase-89.md",
+      "phase-90.md",
+      "phase-91.md",
+      "phase-92.md",
+      "phase-93.md"
     ]
   },
   "entrypoints": [

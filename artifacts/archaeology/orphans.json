@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "b1bbc30f1927c927b9bc03c5d41844768a6ec6e2d5fc3b359a3d52b70ba5eeeb",
+  "generatedAt": "c657996ed305285aa264caeb9bfd5d78dfb4bfd982f4d506901b7818210d4ba0",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -42,9 +42,19 @@
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "DEFAULT_FABRIC_MAX_AGE_MS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/fabric-lifecycle.ts"
+    },
+    {
       "symbol": "defaultAutopilotPolicy",
       "kind": "const",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
+    },
+    {
+      "symbol": "deriveIntentRoutingPreferences",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/fabric.ts"
     },
     {
       "symbol": "FAILURE_LAYERS",
@@ -252,7 +262,7 @@
   "summary": {
     "orphanTests": 0,
     "orphanModules": 3,
-    "orphanExports": 11,
+    "orphanExports": 13,
     "duplicateContracts": 25,
     "unreferencedPersistenceModels": 0
   }

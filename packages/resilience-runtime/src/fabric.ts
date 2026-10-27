@@ -14,6 +14,7 @@ import {
   type DiverseSelection,
   type FreshnessReport,
 } from './fabric-lifecycle.js';
+import type { CompiledIntent } from './domain/types.js';
 
 export const FABRIC_RESOURCE_KINDS = [
   'Device', 'Interface', 'Link', 'Provider', 'Gateway', 'Route', 'Resolver', 'Tunnel',
@@ -89,6 +90,21 @@ export interface FabricSelectionRequest {
   readonly requireRuntimeAuthority?: boolean;
   readonly minimumDiverseAlternatives?: number;
   readonly maxAgeMs?: number;
+  /**
+   * Optional compiled intent consumed as read-only selection evidence. This is
+   * deliberately not an admission or mutation path: governance and the
+   * closed-loop runtime remain responsible for authorizing any route change.
+   */
+  readonly intent?: Pick<CompiledIntent, 'intentId' | 'target' | 'constraints' | 'objectives'>;
+}
+export interface RoutingSelectionAudit {
+  readonly intentId?: string;
+  readonly applicationAffinity?: string;
+  readonly criteria: readonly string[];
+  readonly selectedId?: string;
+  readonly candidateIds: readonly string[];
+  readonly rejected: readonly { id: string; reason: string }[];
+  readonly evaluatedAt: string;
 }
 export interface FabricSelectionResult {
   readonly selected: FabricResource | undefined;
@@ -98,6 +114,8 @@ export interface FabricSelectionResult {
   readonly diversity?: DiverseSelection;
   readonly freshness?: readonly FreshnessReport[];
   readonly capabilityDecisions?: readonly CapabilityDecision[];
+  /** Deterministic, read-only evidence explaining the fabric selection. */
+  readonly audit: RoutingSelectionAudit;
 }
 
 const nowIso = () => new Date().toISOString();
@@ -105,6 +123,67 @@ const numericCost = (resource: FabricResource) =>
   Object.values(resource.cost).reduce((sum, value) => sum + Math.max(0, value), 0);
 const healthRank = (resource: FabricResource) =>
   resource.health.score * 0.45 + resource.confidence * 100 * 0.25 + resource.trust * 100 * 0.2 - numericCost(resource) * 0.1;
+
+interface IntentRoutingPreferences {
+  readonly application?: string;
+  readonly maximumCost?: number;
+  readonly minimumTrust?: number;
+  readonly preferredFailureDomains: readonly string[];
+  readonly requiredCapabilities: readonly string[];
+  readonly invalidReason?: string;
+}
+
+const intentString = (intent: FabricSelectionRequest['intent'], keys: readonly string[]): string | undefined => {
+  if (!intent) return undefined;
+  for (const key of keys) {
+    const target = intent.target[key];
+    const constraint = intent.constraints[key];
+    const value = target ?? constraint;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
+};
+
+const intentNumber = (intent: FabricSelectionRequest['intent'], key: string): number | undefined => {
+  const value = intent?.constraints[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+};
+
+/**
+ * Compiles the deliberately small Phase 93 routing vocabulary from a compiled
+ * intent. Unknown constraints are not interpreted as routing authority.
+ */
+export const deriveIntentRoutingPreferences = (
+  intent: FabricSelectionRequest['intent'],
+): IntentRoutingPreferences => {
+  const application = intentString(intent, ['routing.application', 'application', 'workload', 'service']);
+  const maximumCost = intentNumber(intent, 'routing.maximumCost');
+  const minimumTrust = intentNumber(intent, 'routing.minimumTrust');
+  const preferredFailureDomain = intentString(intent, ['routing.preferredFailureDomain']);
+  const requiredCapability = intentString(intent, ['routing.requiredCapability']);
+  if (maximumCost !== undefined && maximumCost < 0) {
+    return { preferredFailureDomains: [], requiredCapabilities: [], invalidReason: 'invalid-intent-routing-maximum-cost' };
+  }
+  if (minimumTrust !== undefined && (minimumTrust < 0 || minimumTrust > 1)) {
+    return { preferredFailureDomains: [], requiredCapabilities: [], invalidReason: 'invalid-intent-routing-minimum-trust' };
+  }
+  return Object.freeze({
+    ...(application ? { application } : {}),
+    ...(maximumCost !== undefined ? { maximumCost } : {}),
+    ...(minimumTrust !== undefined ? { minimumTrust } : {}),
+    preferredFailureDomains: Object.freeze(preferredFailureDomain ? [preferredFailureDomain] : []),
+    requiredCapabilities: Object.freeze(requiredCapability ? [requiredCapability] : []),
+  });
+};
+
+const applicationAffinityRank = (resource: FabricResource, application?: string): number => {
+  if (!application) return 0;
+  const expected = application.toLocaleLowerCase();
+  const values = ['application', 'app', 'workload', 'service']
+    .map((key) => resource.metadata[key])
+    .filter((value): value is string => typeof value === 'string');
+  return values.some((value) => value.toLocaleLowerCase() === expected) ? 1 : 0;
+};
 
 export class ProgrammableConnectivityFabric {
   readonly capabilityAuthority = new FabricCapabilityAuthority();
@@ -187,18 +266,35 @@ export class ProgrammableConnectivityFabric {
     const now = request.now ?? nowIso();
     const rejected: { id: string; reason: string }[] = [];
     const capabilityDecisions: CapabilityDecision[] = [];
+    const preferences = deriveIntentRoutingPreferences(request.intent);
+    const maximumCost = request.maximumCost ?? preferences.maximumCost;
+    const minimumTrust = Math.max(request.minimumTrust ?? 0, preferences.minimumTrust ?? 0);
+    const requiredCapabilities = [...new Set([...(request.requiredCapabilities ?? []), ...preferences.requiredCapabilities])];
+    const preferredFailureDomains = [...new Set([...(request.preferredFailureDomains ?? []), ...preferences.preferredFailureDomains])];
+    const criteria = [
+      'freshness', 'selectable-state', 'trust', 'cost', 'capabilities', 'health', 'confidence', 'failure-domain-diversity',
+      ...(preferences.application ? ['application-affinity'] : []),
+    ];
+    if (preferences.invalidReason) {
+      const audit: RoutingSelectionAudit = Object.freeze({
+        ...(request.intent ? { intentId: request.intent.intentId } : {}),
+        criteria: Object.freeze(criteria), candidateIds: Object.freeze([]),
+        rejected: Object.freeze([{ id: request.intent?.intentId ?? 'intent', reason: preferences.invalidReason }]), evaluatedAt: now,
+      });
+      return Object.freeze({ selected: undefined, candidates: Object.freeze([]), rejected: audit.rejected, reason: `fail-closed: ${preferences.invalidReason}`, freshness: Object.freeze([]), capabilityDecisions: Object.freeze([]), audit });
+    }
     const freshness: FreshnessReport[] = this.snapshot.resources.map((resource) => evaluateFabricFreshness(resource, now, request.maxAgeMs));
     const freshnessById = new Map(freshness.map((report) => [report.resourceId, report]));
     const eligible = this.snapshot.resources.filter((resource) => {
       if (request.kind && resource.kind !== request.kind) { rejected.push({ id: resource.id, reason: 'kind-mismatch' }); return false; }
       if (freshnessById.get(resource.id)?.fresh !== true) { rejected.push({ id: resource.id, reason: 'stale-resource' }); return false; }
       if (!SELECTABLE_FABRIC_STATES.has(resource.state)) { rejected.push({ id: resource.id, reason: `state-${resource.state.toLowerCase()}` }); return false; }
-      if (resource.trust < (request.minimumTrust ?? 0)) { rejected.push({ id: resource.id, reason: 'insufficient-trust' }); return false; }
-      if (request.maximumCost !== undefined && numericCost(resource) > request.maximumCost) { rejected.push({ id: resource.id, reason: 'cost-limit' }); return false; }
-      const required = request.requiredCapabilities ?? [];
+      if (resource.trust < minimumTrust) { rejected.push({ id: resource.id, reason: 'insufficient-trust' }); return false; }
+      if (maximumCost !== undefined && numericCost(resource) > maximumCost) { rejected.push({ id: resource.id, reason: 'cost-limit' }); return false; }
+      const required = requiredCapabilities;
       const missing = required.filter((capability) => !resource.capabilities.some((candidate) => candidate.id === capability));
       if (missing.length) { rejected.push({ id: resource.id, reason: `missing-capability:${missing.join(',')}` }); return false; }
-      const capabilityRequests: CapabilityRequest[] = required.map((capabilityId) => ({ capabilityId, resourceId: resource.id, ...(request.platform ? { platform: request.platform } : {}), ...(request.minimumTrust !== undefined ? { minimumTrust: request.minimumTrust } : {}), ...(request.maximumSafety ? { maximumSafety: request.maximumSafety } : {}), ...(request.requireRuntimeAuthority ? { requireRuntimeAuthority: true } : {}) }));
+      const capabilityRequests: CapabilityRequest[] = required.map((capabilityId) => ({ capabilityId, resourceId: resource.id, ...(request.platform ? { platform: request.platform } : {}), ...(minimumTrust > 0 ? { minimumTrust } : {}), ...(request.maximumSafety ? { maximumSafety: request.maximumSafety } : {}), ...(request.requireRuntimeAuthority ? { requireRuntimeAuthority: true } : {}) }));
       if (capabilityRequests.length > 0) {
         const decision = this.capabilityAuthority.authorizeAll(capabilityRequests);
         if (!decision.allowed) { rejected.push({ id: resource.id, reason: `capability-denied:${decision.reasons.join(',')}` }); return false; }
@@ -207,23 +303,33 @@ export class ProgrammableConnectivityFabric {
       return true;
     });
     const candidates = [...eligible].sort((a, b) => {
-      const diversityA = request.preferredFailureDomains?.some((d) => a.failureDomains.includes(d)) ? 1 : 0;
-      const diversityB = request.preferredFailureDomains?.some((d) => b.failureDomains.includes(d)) ? 1 : 0;
-      return diversityB - diversityA || healthRank(b) - healthRank(a) || a.id.localeCompare(b.id);
+      const affinityA = applicationAffinityRank(a, preferences.application);
+      const affinityB = applicationAffinityRank(b, preferences.application);
+      const diversityA = preferredFailureDomains.some((d) => a.failureDomains.includes(d)) ? 1 : 0;
+      const diversityB = preferredFailureDomains.some((d) => b.failureDomains.includes(d)) ? 1 : 0;
+      return affinityB - affinityA || diversityB - diversityA || healthRank(b) - healthRank(a) || a.id.localeCompare(b.id);
     });
     const requiredDiverse = request.minimumDiverseAlternatives ?? 1;
     const diversity = selectDiverseResources(candidates, { required: requiredDiverse });
     const selected = diversity.selected ?? candidates[0];
     const diversityShortfall = request.minimumDiverseAlternatives !== undefined && request.minimumDiverseAlternatives > 1 && selected !== undefined && diversity.diverse.length < requiredDiverse;
     if (diversityShortfall) for (const candidate of diversity.diverse) rejected.push({ id: candidate.id, reason: 'insufficient-failure-domain-diversity' });
+    const finalSelected = diversityShortfall ? undefined : selected;
+    const audit: RoutingSelectionAudit = Object.freeze({
+      ...(request.intent ? { intentId: request.intent.intentId } : {}),
+      ...(preferences.application ? { applicationAffinity: preferences.application } : {}),
+      criteria: Object.freeze(criteria), ...(finalSelected ? { selectedId: finalSelected.id } : {}),
+      candidateIds: Object.freeze(candidates.map((candidate) => candidate.id)), rejected: Object.freeze([...rejected]), evaluatedAt: now,
+    });
     return Object.freeze({
-      selected: diversityShortfall ? undefined : selected,
+      selected: finalSelected,
       candidates,
       rejected: Object.freeze(rejected),
       reason: !selected ? 'no eligible fabric resource' : diversityShortfall ? `fail-closed: ${diversity.reason}` : diversity.reason,
       diversity,
       freshness: Object.freeze(freshness),
       capabilityDecisions: Object.freeze(capabilityDecisions),
+      audit,
     });
   }
 
