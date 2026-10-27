@@ -54,3 +54,4 @@ export * from './scenario-lab/seed.js';
 export * from './intent/compiler.js';
 
 export * from './autopilot/autopilot.js';
+export * from './traffic/index.js';
