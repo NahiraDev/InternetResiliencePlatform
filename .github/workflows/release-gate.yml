@@ -103,30 +103,34 @@ jobs:
             "windows-client.yml"
           )
 
-          # Evaluate a snapshot instead of polling: the public soak takes longer
-          # than the old 90-minute deadline. Each prerequisite's completion
-          # triggers a fresh evaluation through workflow_run above.
+          # Evaluate the latest completed run for this exact SHA. Older failures
+          # must not poison a newer successful retry, but a newer failure must
+          # never be hidden by an older successful run.
+          # No completed run is equivalent to BLOCKED; in-progress/queued runs
+          # are never inferred to be green.
           for workflow in "${workflows[@]}"; do
             echo "=== verifying $workflow for $HEAD_SHA ==="
             runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
-            completed_count="$(jq '[.workflow_runs[] | select(.status == "completed")] | length' <<<"$runs")"
-            success_count="$(jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length' <<<"$runs")"
-            failed_runs="$(jq -r '[.workflow_runs[] | select(.status == "completed" and .conclusion != "success")] | map(.conclusion) | join(",")' <<<"$runs")"
+            latest_completed="$(jq -c '[.workflow_runs[] | select(.status == "completed")] | sort_by(.created_at) | last // empty' <<<"$runs")"
 
-            echo "workflow=$workflow completed=$completed_count successful=$success_count failed=$failed_runs"
-
-            if [ "$success_count" -ge 1 ]; then
-              echo "PASS $workflow"
-              continue
-            fi
-
-            if [ -n "$failed_runs" ]; then
-              echo "FAIL $workflow: completed run is not successful ($failed_runs)" >&2
+            if [ -z "$latest_completed" ]; then
+              echo "BLOCKED $workflow: no completed push run for exact SHA $HEAD_SHA" >&2
               exit 1
             fi
 
-            echo "BLOCKED $workflow: no successful completed push run for $HEAD_SHA; reevaluate after prerequisite completion" >&2
-            exit 1
+            run_id="$(jq -r '.id' <<<"$latest_completed")"
+            conclusion="$(jq -r '.conclusion // "unknown"' <<<"$latest_completed")"
+            created_at="$(jq -r '.created_at // "unknown"' <<<"$latest_completed")"
+            updated_at="$(jq -r '.updated_at // "unknown"' <<<"$latest_completed")"
+
+            echo "workflow=$workflow run=$run_id conclusion=$conclusion created_at=$created_at updated_at=$updated_at"
+
+            if [ "$conclusion" != "success" ]; then
+              echo "FAIL $workflow: latest completed exact-SHA run concluded '$conclusion'" >&2
+              exit 1
+            fi
+
+            echo "PASS $workflow"
           done
 
           echo
