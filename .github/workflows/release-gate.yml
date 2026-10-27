@@ -29,8 +29,6 @@ permissions:
   contents: read
 
 concurrency:
-  # Runs are scoped to one exact SHA; duplicate evaluations of that same SHA
-  # are interchangeable, while runs for different commits remain isolated.
   group: release-gate-${{ github.event.workflow_run.head_sha || inputs.commit_sha }}
   cancel-in-progress: true
 
@@ -87,7 +85,6 @@ jobs:
             exit 1
           }
 
-          # Every mandatory platform and assurance workflow must pass.
           workflows=(
             "ci.yml"
             "system-assurance.yml"
@@ -103,11 +100,6 @@ jobs:
             "windows-client.yml"
           )
 
-          # Evaluate the latest completed run for this exact SHA. Older failures
-          # must not poison a newer successful retry, but a newer failure must
-          # never be hidden by an older successful run.
-          # No completed run is equivalent to BLOCKED; in-progress/queued runs
-          # are never inferred to be green.
           for workflow in "${workflows[@]}"; do
             echo "=== verifying $workflow for $HEAD_SHA ==="
             runs="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=push&per_page=20")"
