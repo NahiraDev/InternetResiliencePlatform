@@ -4,10 +4,10 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation baseline: **Phase 83 — Policy Conflict Resolution has arbitration implementation on main** (arbitrateIntents, conflict detection with supersede resolution, optional durable journal). Intent model (79), API (80), compilation (81), governance (82) are present. Disposition PARTIAL pending full e2e evidence. ResilienceRuntime remains the sole production mutation authority.
-- Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**.
+- Current implementation baseline: **Phase 92 — Connectivity Service Assurance regression evidence merged on main** (PR #415). Phase 93 Advanced Routing Control contract formalized. ResilienceRuntime remains the sole production mutation authority.
+- Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**, **#410**, **#412**, **#413**, **#420**.
 - Main branch: `main`
-- Current main commit reviewed: `6db4989311095de1a03738d09ef67d78e5edb0a1`.
+- Current main commit reviewed: `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`.
 - Phase 71 status: implementation/release contract work exists; external release certification remains open. Published GitHub Release v0.2.1 is developer-preview evidence only.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
 - Current work must close source → contract → consumer → entrypoint → execution → outcome gaps without creating a second control plane or declaring completion from source presence alone.

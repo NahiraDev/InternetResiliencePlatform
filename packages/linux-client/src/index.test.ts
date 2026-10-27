@@ -93,6 +93,26 @@ describe('LinuxClientRuntime', () => {
       ]),
     );
   });
+  it('runs one bounded canonical cycle when autonomous mode is enabled', async () => {
+    const runtime = new LinuxClientRuntime(new FakeLinuxSystem());
+
+    await runtime.start();
+    await runtime.setAutonomousMode(true);
+    const enabled = await runtime.status();
+
+    expect(enabled.autonomousMode).toBe(true);
+    expect(enabled.runtime.counters.cyclesTotal).toBe(2);
+    expect(enabled.lastAutonomyCycle).toMatchObject({
+      cyclesCompleted: 1,
+      status: expect.any(String),
+    });
+
+    await runtime.setAutonomousMode(false);
+    const disabled = await runtime.status();
+    expect(disabled.autonomousMode).toBe(false);
+    expect(disabled.runtime.counters.cyclesTotal).toBe(2);
+  });
+
 });
 
 describe('LinuxClientServer', () => {
@@ -127,4 +147,28 @@ describe('LinuxClientServer', () => {
       ]),
     });
   });
+  it('routes the autonomy toggle through the canonical runtime before changing UI policy', async () => {
+    const system = new FakeLinuxSystem();
+    server = new LinuxClientServer(system);
+    await server.start(0);
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('expected TCP server address');
+
+    const response = await fetch(`http://127.0.0.1:${address.port}/policy`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'autonomousMode=true',
+      redirect: 'manual',
+    });
+
+    expect(response.status).toBe(303);
+    expect(system.getPolicy().autonomousMode).toBe(true);
+    const health = await fetch(`http://127.0.0.1:${address.port}/health`);
+    await expect(health.json()).resolves.toMatchObject({
+      autonomousMode: true,
+      runtime: { counters: { cyclesTotal: 2 } },
+      lastAutonomyCycle: { cyclesCompleted: 1 },
+    });
+  });
+
 });

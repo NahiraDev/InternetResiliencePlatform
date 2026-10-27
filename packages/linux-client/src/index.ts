@@ -3,8 +3,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
 import {
+  BoundedClosedLoopController,
   createCanonicalRuntime,
   type CanonicalRuntimeComposition,
+  type ClosedLoopResult,
   ResilienceRuntime,
   type Observation,
   type ObservationProvider,
@@ -119,6 +121,8 @@ export type LinuxCapabilityStatus = {
 
 export type LinuxRuntimeStatus = {
   runtime: RuntimeSnapshot;
+  autonomousMode: boolean;
+  lastAutonomyCycle?: ClosedLoopResult;
   capabilities: readonly RuntimeAdapterDescriptor[];
   capabilityStatus: readonly LinuxCapabilityStatus[];
 };
@@ -127,6 +131,8 @@ export type LinuxRuntimeStatus = {
 export class LinuxClientRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
+  private autonomousMode = false;
+  private lastAutonomyCycle: ClosedLoopResult | undefined;
 
   private readonly composition: CanonicalRuntimeComposition;
 
@@ -155,10 +161,25 @@ export class LinuxClientRuntime {
     this.started = true;
   }
 
+  async setAutonomousMode(enabled: boolean): Promise<void> {
+    if (enabled && !this.autonomousMode) {
+      const controller = new BoundedClosedLoopController(this.runtime);
+      this.lastAutonomyCycle = await controller.run({
+        maxCycles: 1,
+        stopWhenHealthy: true,
+        correlationId: 'linux-client-autonomy',
+        idempotencyKey: `linux-client-autonomy-${Date.now()}`,
+      });
+    }
+    this.autonomousMode = enabled;
+  }
+
   async status(): Promise<LinuxRuntimeStatus> {
     const capabilities = this.runtime.capabilities();
     return {
       runtime: await this.runtime.getRuntimeSnapshot(),
+      autonomousMode: this.autonomousMode,
+      ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -193,6 +214,8 @@ export class LinuxClientRuntime {
 export class LinuxProductionRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
+  private autonomousMode = false;
+  private lastAutonomyCycle: ClosedLoopResult | undefined;
 
   readonly composition: CanonicalRuntimeComposition;
   readonly controlPlane: LinuxNetworkControlPlane;
@@ -236,10 +259,25 @@ export class LinuxProductionRuntime {
     this.started = true;
   }
 
+  async setAutonomousMode(enabled: boolean): Promise<void> {
+    if (enabled && !this.autonomousMode) {
+      const controller = new BoundedClosedLoopController(this.runtime);
+      this.lastAutonomyCycle = await controller.run({
+        maxCycles: 1,
+        stopWhenHealthy: true,
+        correlationId: 'linux-production-autonomy',
+        idempotencyKey: `linux-production-autonomy-${Date.now()}`,
+      });
+    }
+    this.autonomousMode = enabled;
+  }
+
   async status(): Promise<LinuxRuntimeStatus> {
     const capabilities = this.runtime.capabilities();
     return {
       runtime: await this.runtime.getRuntimeSnapshot(),
+      autonomousMode: this.autonomousMode,
+      ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -307,6 +345,7 @@ function escapeHtml(value: string): string {
 export interface LinuxRuntime {
   start(): Promise<void>;
   status(): Promise<LinuxRuntimeStatus>;
+  setAutonomousMode(enabled: boolean): Promise<void>;
 }
 
 export class LinuxClientServer {
@@ -356,6 +395,7 @@ export class LinuxClientServer {
       for await (const chunk of request) chunks.push(Buffer.from(chunk));
       const body = Buffer.concat(chunks).toString('utf8');
       const enabled = /autonomousMode=true(?:&|$)/.test(body);
+      await this.runtime.setAutonomousMode(enabled);
       await this.system.setAutonomousMode(enabled);
       response.statusCode = 303;
       response.setHeader('Location', '/');
@@ -368,15 +408,13 @@ export class LinuxClientServer {
 }
 
 export async function runLinuxClient(): Promise<LinuxClientServer> {
-  // Explicit mode config: simulation is the default; real mode is an opt-in
-  // via IRP_EXECUTION_MODE=real. Live route mutation additionally requires
-  // CAP_NET_ADMIN; when not available, the runtime still observes real network
-  // state and registers providers, but route apply fails closed at the kernel
-  // executor boundary.
-  const executionMode =
-    process.env.IRP_EXECUTION_MODE === 'real'
-      ? ('real' as const)
-      : ('simulation' as const);
+  // Live autonomous mutation requires two explicit opt-ins. The default and
+  // the UI toggle remain observe/simulate-only to prevent accidental host route
+  // changes. Operators must set both variables deliberately to enable live mode.
+  const liveMutationExplicitlyEnabled =
+    process.env.IRP_EXECUTION_MODE === 'real' &&
+    process.env.IRP_ENABLE_AUTONOMOUS_LIVE_MUTATION === 'true';
+  const executionMode = liveMutationExplicitlyEnabled ? ('real' as const) : ('simulation' as const);
   const system = new LinuxSystem();
   const runtime = new LinuxProductionRuntime(system, {
     enableLiveRouteMutation: executionMode === 'real',
