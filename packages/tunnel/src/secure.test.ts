@@ -80,7 +80,10 @@ describe('phase 48 secure tunnel boundary', () => {
   });
 
   it('rejects capability mismatch before provider execution', () => {
-    const incompatible = { ...provider, capabilities: ['fullTunnel'] as TunnelProvider['capabilities'] };
+    const incompatible = {
+      ...provider,
+      capabilities: ['fullTunnel'] as TunnelProvider['capabilities'],
+    };
     expect(() => validateProviderCompatibility(incompatible, config)).toThrow(/capabilities/);
   });
 
@@ -93,12 +96,13 @@ describe('phase 48 secure tunnel boundary', () => {
     let aborted = false;
     await expect(
       withSecureTunnelTimeout(
-        ({ signal }) => new Promise<never>((_, reject) => {
-          signal.addEventListener('abort', () => {
-            aborted = true;
-            reject(new Error('aborted'));
-          });
-        }),
+        ({ signal }) =>
+          new Promise<never>((_, reject) => {
+            signal.addEventListener('abort', () => {
+              aborted = true;
+              reject(new Error('aborted'));
+            });
+          }),
         'connect',
         1_000,
       ),
@@ -107,48 +111,58 @@ describe('phase 48 secure tunnel boundary', () => {
   });
 
   it('rejects timeouts outside the bounded production range', async () => {
-    await expect(withSecureTunnelTimeout(async () => 'ok', 'connect', 999)).rejects.toThrow(/between 1000 and 300000/);
-    await expect(withSecureTunnelTimeout(async () => 'ok', 'connect', 300_001)).rejects.toThrow(/between 1000 and 300000/);
+    await expect(withSecureTunnelTimeout(async () => 'ok', 'connect', 999)).rejects.toThrow(
+      /between 1000 and 300000/,
+    );
+    await expect(withSecureTunnelTimeout(async () => 'ok', 'connect', 300_001)).rejects.toThrow(
+      /between 1000 and 300000/,
+    );
   });
 
   it('validates health evidence and rejects future timestamps', () => {
-    expect(() => validateTunnelHealthEvidence({
-      status: 'healthy',
-      connectivity: true,
-      handshake: true,
-      keepalive: true,
-      routeReachable: true,
-      dnsReachable: true,
-      authenticated: true,
-      checkedAt: new Date().toISOString(),
-      leakProtection: 'protected',
-    })).not.toThrow();
+    expect(() =>
+      validateTunnelHealthEvidence({
+        status: 'healthy',
+        connectivity: true,
+        handshake: true,
+        keepalive: true,
+        routeReachable: true,
+        dnsReachable: true,
+        authenticated: true,
+        checkedAt: new Date().toISOString(),
+        leakProtection: 'protected',
+      }),
+    ).not.toThrow();
 
-    expect(() => validateTunnelHealthEvidence({
-      status: 'healthy',
-      connectivity: true,
-      handshake: true,
-      keepalive: true,
-      routeReachable: true,
-      dnsReachable: true,
-      authenticated: true,
-      checkedAt: new Date(Date.now() + 60_000).toISOString(),
-      leakProtection: 'protected',
-    })).toThrow(/future/);
+    expect(() =>
+      validateTunnelHealthEvidence({
+        status: 'healthy',
+        connectivity: true,
+        handshake: true,
+        keepalive: true,
+        routeReachable: true,
+        dnsReachable: true,
+        authenticated: true,
+        checkedAt: new Date(Date.now() + 60_000).toISOString(),
+        leakProtection: 'protected',
+      }),
+    ).toThrow(/future/);
   });
 
   it('rejects internally inconsistent healthy evidence', () => {
-    expect(() => validateTunnelHealthEvidence({
-      status: 'healthy',
-      connectivity: false,
-      handshake: true,
-      keepalive: true,
-      routeReachable: true,
-      dnsReachable: true,
-      authenticated: true,
-      checkedAt: new Date().toISOString(),
-      leakProtection: 'protected',
-    })).toThrow(/inconsistent/);
+    expect(() =>
+      validateTunnelHealthEvidence({
+        status: 'healthy',
+        connectivity: false,
+        handshake: true,
+        keepalive: true,
+        routeReachable: true,
+        dnsReachable: true,
+        authenticated: true,
+        checkedAt: new Date().toISOString(),
+        leakProtection: 'protected',
+      }),
+    ).toThrow(/inconsistent/);
   });
 
   it('keeps lifecycle transitions authoritative', () => {

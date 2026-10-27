@@ -2,105 +2,112 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
-## Current State
+## Current implementation gate
 
-- **Current phase:** Phase 70 — IRP v1.0 Production Certification (**implementation started; certification evidence required**).
-- **Phase 70:** versioned certification manifest, fail-closed evidence contract, certification verifier, evidence secret-scan and Phase 70 CI gates are implemented on the Phase 70 branch. Production certification is not claimed until runtime, device, regional, security, recovery and release evidence is independently verified.
-- **Phase 69:** production-hardening contract, compatibility matrix, release checklist, machine-readable readiness manifest, bounded chaos/soak and backup/restore readiness harness, and Phase 69 CI gates are implemented on `main`; full repository/runtime/security/device evidence remains required before closure.
-- **Phase 68:** Android `VpnService` execution boundary is implemented under `clients/android`; validated tunnel configuration, explicit packet-forwarding transport boundary, fail-closed startup, lifecycle cleanup, VPN service registration and configuration tests are present. Final evidence remains governed by the phase verification rules.
-- **Phase 67:** Android full-client boundary is implemented under `clients/android`; enrollment/session, Keystore-backed credentials, persisted device identity, read-only diagnostics, analytics/policy contracts, Compose presentation, tests and Android CI scaffolding are present.
-- **Phase 66:** native iOS Network Extension boundary is implemented under `clients/ios`; packet-tunnel configuration validation, `NETunnelProviderManager` lifecycle, `NEPacketTunnelProvider` extension metadata/entitlements, and Xcode project scaffolding are present.
-- **Phase 65:** native iOS full-client boundary is implemented under `clients/ios`; enrollment/session, Keychain-backed credentials, diagnostics/analytics presentation and policy requests are covered.
-- **Phase 64:** shared platform-neutral mobile client core is implemented in `@irp/core`; repository/runtime verification remains required before closure.
-- **Phase 63:** Windows Full Client implementation is on `main`; native Windows runtime and CI verification remain required before closure.
-- **Phase 62:** implementation is on `main`; final macOS runtime and CI verification evidence is still required before closure.
-- **Phase 61:** implementation remains subject to full repository/runtime verification under the phase verification rules.
-- **Phase 60:** implementation was merged to `main` by PR #170; its final verification status remains governed by the phase verification rules.
-- **Phase 59:** implementation is merged to `main`; final closure remains governed by repository/runtime evidence.
-- **Phase 58:** implementation is merged to `main`; final verification evidence remains required.
-- **Phase 54:** implementation is in `@irp/gateway-registry`; final repository/CI verification remains required.
-- **Phase 53:** implementation is complete, but its final verification gate remains explicitly tracked until the verified fix is accepted on `main`.
-- **Phase 52:** implementation is complete, but final repository/runtime verification is still required.
-- **Phase 51:** implementation is complete and accepted after repository/CI verification on `main`.
-- **Phase 50:** OpenVPN provider implementation is complete and accepted after repository/runtime verification.
-- **Phase 49:** WireGuard provider implementation is complete and accepted after CI/runtime verification.
-- **Phase 48:** secure tunnel abstraction is complete and accepted after verification.
-- **Phase 47:** gateway discovery and health is verified green and accepted.
-- **Roadmap:** 70 phases total and immutable as the current baseline. Additional execution/hardening phases may be proposed only after Phase 70 CTO/architecture review.
-- **Core architecture:** headless Core + unified Control Plane + full-capability clients.
-- **Client strategy:** Linux, macOS, Windows, iOS and Android are full product clients; mobile is not dashboard-only.
-- **Gateway strategy:** `@irp/gateway-registry` owns gateway inventory/discovery/health, deterministic gateway selection, multi-gateway failover coordination and fleet operations. `@irp/tunnel` owns tunnel contracts, lifecycle and concrete providers. Do not duplicate these domains.
-- **UI strategy:** Web Control Center begins at Phase 57 and never owns safety-critical routing logic. Desktop and mobile clients consume shared capability contracts and do not duplicate routing/policy intelligence.
-- **Notification strategy:** Phase 59 owns operational incident/notification state and alert presentation contracts. It must not gain authority over routing, DNS, tunnel or gateway mutations.
-- **Administration strategy:** Phase 60 owns operator configuration, self-hosting, migrations, backups, restore safety and maintenance tooling. It must not gain routing, DNS, tunnel or gateway execution authority.
-- **Linux client strategy:** Phase 61 owns Linux process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **macOS client strategy:** Phase 62 owns macOS process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **Windows client strategy:** Phase 63 owns Windows process/platform integration, local diagnostics presentation and client-local controls. Safety-critical routing, DNS, tunnel, gateway and failover decisions remain in shared Core/Control Plane.
-- **Mobile client strategy:** Phase 64 provides platform-neutral shared state, diagnostics and local policy contracts in `@irp/core`. Native OS networking and privileged integrations remain behind platform adapters in Phases 65–68.
-- **iOS client strategy:** Phase 65 owns native iOS presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. Network Extension and privileged system networking remain exclusively in Phase 66.
-- **iOS network integration strategy:** Phase 66 owns the Network Extension execution boundary and VPN profile lifecycle. It may apply only Control Plane-authorized tunnel configuration. It must not implement gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
-- **Android client strategy:** Phase 67 owns Android-native presentation, enrollment/session lifecycle, secure credential storage, diagnostics/analytics presentation and explicit Control Plane policy requests. VPN/network execution remains exclusively in Phase 68.
-- **Android network integration strategy:** Phase 68 owns Android VPN/network execution and must consume Control Plane-authorized tunnel contracts. It must not duplicate gateway selection, destination policy, failover decisions or a second tunnel protocol stack.
-- **Production hardening strategy:** Phase 69 owns cross-platform release readiness, compatibility evidence, accessibility/localization acceptance, upgrade/rollback safety, security audit controls, bounded chaos/soak verification, backup/restore verification and release engineering. It does not move product authority into clients.
-- **v1.0 certification strategy:** Phase 70 owns the final evidence contract and release gate. It aggregates verified repository, runtime, security, recovery, regional, platform, device and release-engineering evidence without treating source presence or a contract check as certification.
-- **Trusted-source CI workflow:** keep the existing trusted source artifact workflow semantics unchanged.
-- **README policy:** keep the root README concise; detailed architecture, procedures and phase history belong under `docs/`.
+- **Current implementation baseline:** Phase 91 — Application-Aware Path Selection regression evidence merged; Phase 92 Connectivity Service Assurance evidence in progress.
+- **Current main HEAD inspected (2026-10-26):** `b5a484c22570c08c63364c2bd3be291d51af35ee` (post-Phase 91 merge).
+- **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
+- **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411/#412 (durable stores / auth / PostgreSQL).
+- **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
+- **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
+- **Phase 79 status:** NetworkIntent model, lifecycle transitions, effective-window evaluation, autonomy levels and dedicated tests are implemented and present on `main` in `packages/core/src/intent.ts` and `intent.test.ts`. Exported from the core barrel.
+- **Phase 80 status:** Intent API & Ingestion is implemented on `main` in `apps/api/src/intent-api.ts` (authenticated routes for create/list/get/commands, Idempotency-Key, in-memory and database stores, ownership isolation). Tests in `intent-api.test.ts`. No network mutation from the API boundary.
+- **Phase 81 status:** Intent Translation / Compilation is implemented on `main` in `packages/resilience-runtime/src/intent/compiler.ts` (`compileNetworkIntent`, `isCompiledIntentEffective`). Pure, deterministic, side-effect free. Tests present.
+- **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
+- **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `b5a484c22570c08c63364c2bd3be291d51af35ee`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–82, but it must not be represented as certified until its evidence exists.
+- **Phases 83–150:** contracts for 79–92 exist; implementation for 83+ remains partial or not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
-## Phase 70 — IRP v1.0 Production Certification
+## Phase 79–83 summary
 
-**Implementation in progress; certification evidence required.**
+Phases 79–83 establish the intent model, API ingestion boundary, pure compilation to CompiledIntent, intent-scoped admission/enforcement, and deterministic multi-intent conflict resolution (priority/version supersession, overlapping scope detection) without introducing a second control plane. Downstream phases must consume these contracts.
 
-### Implementation evidence
+## Phase 71 certification prerequisites
 
-- `docs/phases/phase-70.md`
-- `ops/release/phase-70-certification.json`
-- `scripts/phase70-certification.mjs`
-- `.github/workflows/phase-70-certification.yml`
+The Phase 71 gate is limited to the release/distribution contract defined by `docs/phases/phase-71.md`. Remaining production certification (device smoke, regional validation, signing, security sign-off) is tracked in open issues and `docs/release/RELEASE_GATE_ROADMAP.md`.
 
-### Current guarantees
+## Canonical evidence locations
 
-- v1.0 certification requirements are explicit and machine-readable.
-- Supported product surfaces are represented across Core, API, gateways, web, Linux, macOS, Windows, iOS and Android.
-- Missing runtime/device/regional/release evidence is fail-closed and cannot be represented as certification.
-- Certification evidence receives an explicit secret-material safety scan.
-- Phase 69 repository/readiness gates are treated as prerequisites rather than silently assumed.
-- Phase 70 CI has explicit dependencies, bounded job timeouts and PR-only cancellation semantics; main evidence is not cancelled by newer main pushes.
-- Required checks do not intentionally use false-green mechanisms such as `continue-on-error` or shell success overrides.
+- Current state: this file.
+- Release path and blockers: `docs/release/RELEASE_GATE_ROADMAP.md`.
+- Current post-70 roadmap: `docs/roadmap/MASTER_ROADMAP_V2.md`.
+- Historical 0–70 roadmap: `ROADMAP.md`.
+- Current phase records: `docs/phases/`.
+- Engineering governance: `docs/architecture/engineering-governance.md`.
 
-### Remaining certification evidence
+## Product objective
 
-- Full repository `validate`, typecheck, lint, tests and build.
-- Security analysis/dependency review and artifact integrity evidence.
-- Control-plane and gateway runtime evidence.
-- Regional public-IP/service evidence.
-- Real upgrade/rollback rehearsal against a representative deployment.
-- Real backup/restore rehearsal against representative control-plane state.
-- Runtime chaos/soak evidence in an isolated provisioned environment.
-- Accessibility/localization verification on each applicable user-facing client.
-- Linux, macOS, Windows, iOS and Android runtime evidence.
-- Signed iOS device smoke and Android device smoke evidence.
-- Release-engineering sign-off and final v1.0 certification review.
+IRP's long-term objective is a safe, observable and policy-governed Internet control plane that can continuously measure network conditions, diagnose failures, select and apply bounded changes, verify the result, recover from failure and explain decisions across supported clients and network providers.
 
-## Verification Rules
+## Architecture invariants (unchanged)
 
-A phase is not complete because source files exist. Completion requires acceptance criteria plus repository verification and, where relevant, runtime/online evidence.
+- ResilienceRuntime remains the canonical runtime authority.
+- Never restore NetworkAutopilot as a parallel production control plane.
+- No competing authorities for runtime state, policy, decisions, safety, mutation, execution, verification, recovery, intent, or orchestration.
 
-For every phase:
+## Autonomous engineer checkpoint (2026-10-25)
 
-1. inspect existing implementation before adding abstractions;
-2. preserve compatible contracts unless a breaking change is explicitly required;
-3. add normal, boundary, invalid and failure-path tests;
-4. run repository validation, typecheck, lint, relevant tests and build;
-5. apply security/abuse review to security-sensitive changes;
-6. verify runtime behavior for networking/process/container changes;
-7. update documentation and project state;
-8. require green CI before marking the phase complete.
+- Starting base SHA: 7872f2b298db0694cc869f4d491437770e752ad1 (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 87 multi-interface regression tests covering Interface selection by health, freshness filtering of stale interfaces, and platform/trust capability restrictions. Updated phase-87 evidence map. No runtime authority changes.
+- Branches/PRs: phase/87-multi-interface-evidence (this PR)
+- Actual CI: pending
+- Verified merges: none this run (Phase 86 previously merged)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
+- Next prioritized tasks: durable conflict journal restart tests; Phase 88 multi-path evidence or gaps; continue roadmap to Phase 150.
 
-For networking automation, every mutation must be policy-checked, bounded, observable, reversible and auditable.
+## Autonomous engineer checkpoint (2026-10-26)
 
-## Product Objective
+- Starting base SHA: 3f1bae49a99631e063c028985a6ac559ddf94f41 (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 88 multi-path regression tests covering Route selection by health, stale path rejection, failure-domain diversity fail-closed behavior, and ApplicationPath kind exposure. Updated phase-88 evidence map. No runtime authority changes.
+- Branches/PRs: phase/88-multi-path-regression-evidence (this PR)
+- Actual CI: pending
+- Verified merges: none this run
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
+- Next prioritized tasks: Phase 89 gateway intelligence evidence or gaps; continue roadmap to Phase 150; durable journal tests.
 
-```text
-Observe → Measure → Detect → Diagnose → Decide → Policy/Safety Check
-→ Apply → Verify → Monitor → Failover/Recover → Learn → Explain
-```
+## Autonomous engineer checkpoint (2026-10-26 run 2)
+
+- Starting base SHA: da42060aa31a7fef4ce917da6357de3f1b619a53 (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 89 gateway intelligence regression tests covering Gateway selection by health, stale gateway rejection, failure-domain diversity fail-closed behavior, and inventory attribute exposure (owner, failure domains). Updated phase-89 evidence map. No runtime authority changes.
+- Branches/PRs: phase/89-gateway-intelligence-evidence (this PR)
+- Actual CI: pending
+- Verified merges: none this run (Phase 88 previously merged)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
+- Next prioritized tasks: Phase 90 DNS/Tunnel/Proxy orchestration evidence or gaps; continue roadmap to Phase 150; durable journal tests.
+
+## Autonomous engineer checkpoint (2026-10-26 run 3)
+
+- Starting base SHA: 95d9c5edaa7b20f1d0baf0b1d6cbf63fcdd38a4e (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 90 DNS/Tunnel/Proxy orchestration regression tests covering Resolver/Tunnel/Proxy selection by health, stale rejection, failure-domain diversity fail-closed behavior, and inventory attribute exposure. Updated phase-90 evidence map. No runtime authority changes.
+- Branches/PRs: phase/90-dns-tunnel-proxy-evidence (this PR)
+- Actual CI: pending
+- Verified merges: none this run (Phase 89 previously merged)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
+- Next prioritized tasks: Phase 91 application-aware path selection evidence or gaps; continue roadmap to Phase 150; durable journal tests.
+
+## Autonomous engineer checkpoint (2026-10-26 run 4)
+
+- Starting base SHA: 60bb534781cd641a484b73ab1536a315cf03a17b (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 91 application-aware path selection regression tests covering ApplicationPath/Service/Endpoint selection by health, stale rejection, failure-domain diversity fail-closed behavior, and inventory attribute exposure including application metadata. Updated phase-91 evidence map. No runtime authority changes.
+- Branches/PRs: phase/91-application-aware-path-evidence (this PR)
+- Actual CI: pending
+- Verified merges: none this run (Phase 90 previously merged)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323).
+- Next prioritized tasks: Phase 92 connectivity service assurance evidence or gaps; continue roadmap to Phase 150; durable journal tests.
+
+## Autonomous engineer checkpoint (2026-10-26 run 5)
+
+- Starting base SHA: b5a484c22570c08c63364c2bd3be291d51af35ee (upstream/main, post-Phase 91 merge)
+- Ending base SHA: (pending this PR)
+- Completed this run: added Phase 92 connectivity service assurance regression tests covering fabric health/freshness as assurance signals, observe-only intent drift detection, and confirmation that re-selection remains on the existing fabric.select boundary (no parallel mutation path). Updated phase-92 evidence map and PROJECT_STATE baseline. No runtime authority changes.
+- Branches/PRs: phase/92-connectivity-service-assurance-evidence (this PR)
+- Actual CI: pending
+- Verified merges: Phase 91 previously merged (PR #414)
+- Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage for #13; Linux runtime soak (#254/#323); production PostgreSQL / durable stores (#410/#411); auth lifecycle (#412).
+- Next prioritized tasks: Phase 93 advanced routing control evidence or gaps (if contract exists) or durable store / auth blockers; continue roadmap to Phase 150.

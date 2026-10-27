@@ -91,7 +91,10 @@ describe('InternetResilienceClient', () => {
         status: 406,
         json: async () => ({
           success: false,
-          error: { code: 'API_VERSION_NOT_SUPPORTED', message: 'The requested API version is not supported.' },
+          error: {
+            code: 'API_VERSION_NOT_SUPPORTED',
+            message: 'The requested API version is not supported.',
+          },
         }),
       })) as unknown as typeof fetch,
     });
@@ -111,7 +114,10 @@ describe('InternetResilienceClient', () => {
       fetch: (async () => ({
         ok: false,
         status: 401,
-        json: async () => ({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized.' } }),
+        json: async () => ({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Unauthorized.' },
+        }),
       })) as unknown as typeof fetch,
     });
 

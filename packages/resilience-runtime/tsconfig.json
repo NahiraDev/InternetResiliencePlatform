@@ -3,12 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"],
-    "paths": {
-      "@irp/events": ["../events/src/index.ts"],
-      "@irp/telemetry": ["../telemetry/src/index.ts"],
-      "@irp/failover": ["../failover/src/index.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }

@@ -1,7 +1,7 @@
 import type { Observation, ObservationProviderResult, RuntimeContext } from './domain/types.js';
 import type { ObservationProvider } from './ports/ports.js';
 import { nextId, nowIso } from './domain/ids.js';
-export class ObservationProviderRegistry {
+class ObservationProviderRegistry {
   private readonly providers = new Map<string, ObservationProvider>();
   register(provider: ObservationProvider) {
     this.providers.set(provider.id, provider);

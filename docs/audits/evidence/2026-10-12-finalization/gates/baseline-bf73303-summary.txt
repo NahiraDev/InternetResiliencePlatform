@@ -1,0 +1,12 @@
+validate rc=0 secs=6
+typecheck rc=0 secs=123
+lint rc=0 secs=84
+build rc=0 secs=79
+test rc=0 secs=160
+architecture:check rc=0 secs=1
+architecture:guards rc=0 secs=1
+architecture:test rc=0 secs=1
+certification:test rc=0 secs=1
+bundle:test rc=0 secs=1
+validate:docs rc=0 secs=1
+DONE

@@ -1,4 +1,8 @@
-import type { DecisionModelProvider, DecisionResult, NetworkDecisionContext } from './NetworkDecisionEngine.js';
+import type {
+  DecisionModelProvider,
+  DecisionResult,
+  NetworkDecisionContext,
+} from './NetworkDecisionEngine.js';
 
 /** Structural contract keeps network-intelligence independent from any specific model package. */
 export interface InternetIntelligenceAdvisor {
@@ -48,11 +52,16 @@ export interface InternetIntelligenceBridgeOptions {
 export class InternetIntelligenceBridge {
   private readonly timeoutMs: number;
 
-  constructor(private readonly advisor: InternetIntelligenceAdvisor, options: InternetIntelligenceBridgeOptions = {}) {
+  constructor(
+    private readonly advisor: InternetIntelligenceAdvisor,
+    options: InternetIntelligenceBridgeOptions = {},
+  ) {
     this.timeoutMs = Math.max(1, Math.min(5_000, options.timeoutMs ?? 400));
   }
 
-  async analyze(context: NetworkDecisionContextWithInternetEvidence): Promise<AgentRecommendation | null> {
+  async analyze(
+    context: NetworkDecisionContextWithInternetEvidence,
+  ): Promise<AgentRecommendation | null> {
     const evidence = context.internetEvidence;
     if (!evidence) return null;
     const controller = new AbortController();
@@ -60,7 +69,9 @@ export class InternetIntelligenceBridge {
     try {
       return await Promise.race([
         this.advisor.observe(evidence),
-        new Promise<null>((resolve) => controller.signal.addEventListener('abort', () => resolve(null), { once: true })),
+        new Promise<null>((resolve) =>
+          controller.signal.addEventListener('abort', () => resolve(null), { once: true }),
+        ),
       ]);
     } catch {
       return null;
@@ -75,13 +86,17 @@ export class InternetIntelligenceBridge {
       version: '1.0.0',
       capabilities: ['network-diagnosis', 'parameter-analysis', 'advisory-explanation'],
       evaluate: async (context) => {
-        const recommendation = await this.analyze(context as NetworkDecisionContextWithInternetEvidence);
+        const recommendation = await this.analyze(
+          context as NetworkDecisionContextWithInternetEvidence,
+        );
         if (!recommendation) return {};
         return {
           reasons: [
             `internet-intelligence:${recommendation.diagnosis}`,
             `internet-intelligence-confidence:${recommendation.confidence.toFixed(3)}`,
-            ...recommendation.evidence.slice(0, 4).map((item) => `internet-intelligence-evidence:${item}`),
+            ...recommendation.evidence
+              .slice(0, 4)
+              .map((item) => `internet-intelligence-evidence:${item}`),
           ],
           explanation: recommendation.rationale.slice(0, 500),
         } satisfies Partial<DecisionResult>;

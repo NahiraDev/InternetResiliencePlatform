@@ -9,30 +9,162 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege: this workflow never writes to the repository (no gh/git
+# write commands, no GITHUB_TOKEN write usage) — read-only token.
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
 
-# Keep the primary CI path deterministic and self-contained. Docker runtime
-# verification is intentionally unconditional: a CI run must prove that the
-# production container can build, start, become ready, survive restart, and
-# shut down cleanly. Publishing is a release concern, not a runtime gate.
 defaults:
   run:
     shell: bash
 
 jobs:
+  linux-primary:
+    name: Linux primary device (Debian 13)
+    runs-on: ubuntu-latest
+    container: node:24-trixie
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Debian build tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git dpkg systemd
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          node --version
+          pnpm --version
+
+      - name: Require checked-in pnpm lockfile
+        run: |
+          test -f pnpm-lock.yaml || {
+            echo '::error::pnpm-lock.yaml is missing. CI will not mutate the branch to repair repository state.'
+            exit 1
+          }
+
+      - name: Install dependencies with frozen lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Linux client typecheck
+        run: pnpm --filter @irp/linux-client typecheck
+
+      - name: Linux client lint
+        run: pnpm --filter @irp/linux-client lint
+
+      - name: Linux client tests
+        run: pnpm --filter @irp/linux-client test
+
+      - name: Linux client build
+        run: pnpm --filter @irp/linux-client build
+
+      - name: Verify systemd unit contract
+        run: |
+          node_bin="$(command -v node)"
+          test -n "$node_bin"
+          if [ "$node_bin" != "/usr/bin/node" ]; then
+            ln -sf "$node_bin" /usr/bin/node
+          fi
+          test -x /usr/bin/node
+          if ! getent group irp >/dev/null 2>&1; then
+            groupadd --system irp
+          fi
+          if ! getent passwd irp >/dev/null 2>&1; then
+            useradd --system --gid irp --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin irp
+          fi
+          systemd-analyze verify packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'User=irp' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'Group=irp' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'dist/main.js' packages/linux-client/systemd/irp-linux-client.service
+          grep -Fq 'WorkingDirectory=/usr/lib/irp/linux-client' packages/linux-client/systemd/irp-linux-client.service
+
+      - name: Build Debian package
+        run: |
+          bash scripts/build-linux-deb.sh
+          test -s dist/linux/irp-linux-client_0.1.1_amd64.deb
+          test -s dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
+
+      - name: Verify Debian package metadata and contents
+        run: |
+          set -euo pipefail
+          package="dist/linux/irp-linux-client_0.1.1_amd64.deb"
+          contents="$(mktemp)"
+          trap 'rm -f "$contents"' EXIT
+          dpkg-deb --info "$package"
+          dpkg-deb --contents "$package" > "$contents"
+          grep -Fq './usr/lib/irp/linux-client/dist/index.js' "$contents"
+          grep -Fq './usr/lib/irp/linux-client/dist/main.js' "$contents"
+          grep -Fq './usr/lib/systemd/system/irp-linux-client.service' "$contents"
+          sha256sum -c dist/linux/irp-linux-client_0.1.1_amd64.deb.sha256
+
+      - name: Smoke test packaged Linux client
+        run: |
+          rm -rf /tmp/irp-linux-package
+          mkdir -p /tmp/irp-linux-package
+          dpkg-deb --extract dist/linux/irp-linux-client_0.1.1_amd64.deb /tmp/irp-linux-package
+          node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/index.js
+          node --check /tmp/irp-linux-package/usr/lib/irp/linux-client/dist/main.js
+          test -f /tmp/irp-linux-package/usr/lib/systemd/system/irp-linux-client.service
+
+  architecture:
+    name: Architecture contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Require checked-in pnpm lockfile
+        run: test -f pnpm-lock.yaml
+
+      - name: Install dependencies with frozen lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Enforce IRP architecture contract
+        run: pnpm architecture:check
+
+      - name: Test architecture enforcement
+        run: pnpm architecture:test
   validate:
     name: Validate repository
+    needs: [linux-primary, architecture]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      POSTGRES_PASSWORD: irp_smoke_postgres_password
+      JWT_SECRET: irp_smoke_jwt_secret_012345678901234567890123456789
+      REMOTE_CLIENT_CREDENTIAL_KEY: irp_smoke_credential_key_012345678901234567890123
+      REMOTE_CLIENT_REFRESH_KEY: irp_smoke_refresh_key_012345678901234567890123
 
     steps:
       - name: Checkout repository
@@ -72,6 +204,12 @@ jobs:
       - name: Validate repository integrity
         run: pnpm validate
 
+      - name: Enforce IRP architecture contract
+        run: pnpm architecture:check
+
+      - name: Test architecture enforcement
+        run: pnpm architecture:test
+
       - name: Validate documentation integrity
         run: pnpm validate:docs
 
@@ -84,6 +222,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test production certification and system assurance report checksums
+        run: pnpm certification:test
+
       - name: Fresh coverage
         run: pnpm exec turbo run test --force -- --coverage
 
@@ -93,8 +234,6 @@ jobs:
       - name: Smoke test deterministic examples
         run: pnpm examples:smoke
 
-      # Always run the production runtime smoke test. Do not couple runtime
-      # correctness to image publishing/tag events.
       - name: Run production Docker runtime smoke test
         run: bash scripts/docker-smoke.sh
 

@@ -6,6 +6,12 @@ import type {
   RuntimeContext,
 } from './domain/types.js';
 import { deepFreeze, nextId, nowIso } from './domain/ids.js';
+import {
+  CanonicalNetworkRuntimeAdapter,
+  type CanonicalNetworkControlPlane,
+} from './canonical-network-adapter.js';
+import { CanonicalTunnelRuntimeAdapter } from './canonical-tunnel-adapter.js';
+
 export type RuntimeSubsystem =
   | 'network-intelligence'
   | 'connectivity'
@@ -114,7 +120,9 @@ export class DeterministicRuntimeAdapter implements RuntimeAdapter {
     return createAdapterExecution(plan, context, context.mode !== 'live', 'success');
   }
 }
-export const createDefaultRuntimeAdapterRegistry = () => {
+export const createDefaultRuntimeAdapterRegistry = (
+  networkControlPlane?: CanonicalNetworkControlPlane,
+) => {
   const r = new RuntimeAdapterRegistry();
   const defs: RuntimeAdapterDescriptor[] = [
     ['network-intelligence', 'network-intelligence', ['network.observe'], ['health_reprobe']],
@@ -140,5 +148,8 @@ export const createDefaultRuntimeAdapterRegistry = () => {
     recoverySupport: subsystem === 'failover',
   }));
   for (const d of defs) r.register(new DeterministicRuntimeAdapter(d));
+  if (networkControlPlane) r.register(new CanonicalNetworkRuntimeAdapter(networkControlPlane));
+  if (networkControlPlane?.tunnel)
+    r.register(new CanonicalTunnelRuntimeAdapter(networkControlPlane.tunnel));
   return r;
 };

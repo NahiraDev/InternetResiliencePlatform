@@ -1,8 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import type { ConnectivitySource } from '@irp/connectivity';
-import type { EventBus } from '@irp/events';
 import type { KernelRuntime, Principal } from '@irp/kernel';
-import type { DomainEvent } from '@irp/shared';
 import { createId } from '@irp/shared';
 import type { MetricsRegistry } from '@irp/telemetry';
 
@@ -133,6 +131,183 @@ export interface NetworkPath {
   state: RouteState;
   metadata: Record<string, unknown>;
 }
+export type PathGraphNodeKind =
+  | 'path'
+  | 'interface'
+  | 'route'
+  | 'gateway'
+  | 'provider'
+  | 'tunnel'
+  | 'transport'
+  | 'egress'
+  | 'region'
+  | 'destination';
+export interface PathGraphNode {
+  readonly id: string;
+  readonly kind: PathGraphNodeKind;
+  readonly state: RouteState;
+  readonly metadata: Readonly<Record<string, unknown>>;
+}
+export type PathGraphEdgeKind =
+  | 'connected_to'
+  | 'routes_through'
+  | 'uses_gateway'
+  | 'uses_provider'
+  | 'uses_tunnel'
+  | 'uses_transport'
+  | 'egresses_through'
+  | 'reaches'
+  | 'depends_on';
+export interface PathGraphEdge {
+  readonly from: string;
+  readonly to: string;
+  readonly kind: PathGraphEdgeKind;
+}
+export interface PathGraphEvidence {
+  readonly latencyMs?: number;
+  readonly jitterMs?: number;
+  readonly packetLoss?: number;
+  readonly availability?: number;
+  readonly reliability?: number;
+  readonly confidence?: number;
+  readonly freshness?: string;
+  readonly security?: number;
+  readonly trust?: number;
+  readonly cost?: number;
+  readonly failureDomains: readonly string[];
+}
+export interface PathGraphEntry {
+  readonly path: NetworkPath;
+  readonly evidence: PathGraphEvidence;
+}
+/** Read-only graph projection used by routing decisions; it has no mutation authority. */
+export class NetworkPathGraph {
+  readonly nodes: readonly PathGraphNode[];
+  readonly edges: readonly PathGraphEdge[];
+  readonly entries: readonly PathGraphEntry[];
+  constructor(paths: readonly NetworkPath[], destination?: RoutingDestination) {
+    const entries = paths.map((path) => ({ path, evidence: pathEvidence(path) }));
+    const nodes = new Map<string, PathGraphNode>();
+    const edges: PathGraphEdge[] = [];
+    const addNode = (node: PathGraphNode) => nodes.set(node.id, node);
+    const addEdge = (from: string, to: string, kind: PathGraphEdgeKind) =>
+      edges.push({ from, to, kind });
+    for (const { path } of entries) {
+      const pathId = `path:${path.id}`;
+      addNode({ id: pathId, kind: 'path', state: path.state, metadata: path.metadata });
+      addNode({
+        id: `route:${path.route.id}`,
+        kind: 'route',
+        state: path.route.state,
+        metadata: path.route.metadata,
+      });
+      addEdge(pathId, `route:${path.route.id}`, 'routes_through');
+      if (path.route.interfaceName) {
+        addNode({
+          id: `interface:${path.route.interfaceName}`,
+          kind: 'interface',
+          state: path.state,
+          metadata: {},
+        });
+        addEdge(`route:${path.route.id}`, `interface:${path.route.interfaceName}`, 'connected_to');
+      }
+      if (path.route.gateway) {
+        addNode({
+          id: `gateway:${path.route.gateway}`,
+          kind: 'gateway',
+          state: path.state,
+          metadata: {},
+        });
+        addEdge(`route:${path.route.id}`, `gateway:${path.route.gateway}`, 'uses_gateway');
+      }
+      const provider = path.source?.providerId ?? path.provider?.split(':')[0];
+      if (provider) {
+        addNode({ id: `provider:${provider}`, kind: 'provider', state: path.state, metadata: {} });
+        addEdge(`route:${path.route.id}`, `provider:${provider}`, 'uses_provider');
+      }
+      const transport = path.metadata.transport;
+      if (typeof transport === 'string') {
+        addNode({
+          id: `transport:${transport}`,
+          kind: 'transport',
+          state: path.state,
+          metadata: {},
+        });
+        addEdge(pathId, `transport:${transport}`, 'uses_transport');
+      }
+      if (destination) {
+        const destinationId = `destination:${destination.kind}:${destination.value}`;
+        addNode({
+          id: destinationId,
+          kind: 'destination',
+          state: path.state,
+          metadata: destination.metadata ?? {},
+        });
+        addEdge(pathId, destinationId, 'reaches');
+      }
+    }
+    this.entries = entries;
+    this.nodes = [...nodes.values()];
+    this.edges = edges;
+  }
+  pathsFor(destination?: RoutingDestination): readonly NetworkPath[] {
+    return (
+      destination
+        ? this.entries.filter(({ path }) => routeMatchesDestination(path.route, destination))
+        : this.entries
+    ).map(({ path }) => path);
+  }
+  usablePaths(destination?: RoutingDestination): readonly NetworkPath[] {
+    return this.pathsFor(destination).filter(
+      (path) => !['failed', 'disabled', 'expired'].includes(path.state),
+    );
+  }
+  independentAlternatives(
+    pathId: string,
+    destination?: RoutingDestination,
+  ): readonly NetworkPath[] {
+    const selected = this.entries.find(({ path }) => path.id === pathId);
+    if (!selected) return [];
+    const domains = new Set(selected.evidence.failureDomains);
+    const usable = new Set(this.usablePaths(destination));
+    return this.entries
+      .filter(
+        ({ path, evidence }) =>
+          path.id !== pathId &&
+          usable.has(path) &&
+          evidence.failureDomains.some((domain) => !domains.has(domain)),
+      )
+      .map(({ path }) => path);
+  }
+}
+export const pathFailureDomains = (path: NetworkPath): readonly string[] => {
+  const declared = path.route.metadata.failureDomains;
+  if (Array.isArray(declared)) {
+    const values = declared.filter(
+      (value): value is string => typeof value === 'string' && value.length > 0,
+    );
+    if (values.length) return values;
+  }
+  const inferred = [
+    path.source?.providerId ?? path.provider?.split(':')[0],
+    path.route.gateway,
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  return inferred.length ? inferred : ['unknown'];
+};
+const pathEvidence = (path: NetworkPath): PathGraphEvidence => ({
+  ...(path.health?.latencyMs === undefined ? {} : { latencyMs: path.health.latencyMs }),
+  ...(path.health?.jitterMs === undefined ? {} : { jitterMs: path.health.jitterMs }),
+  ...(path.health?.packetLoss === undefined ? {} : { packetLoss: path.health.packetLoss }),
+  ...(path.health?.score === undefined
+    ? {}
+    : { availability: path.health.score / 100, reliability: path.health.score / 100 }),
+  ...(typeof path.metadata.confidence === 'number' ? { confidence: path.metadata.confidence } : {}),
+  ...(typeof path.metadata.freshness === 'string' ? { freshness: path.metadata.freshness } : {}),
+  ...(typeof path.metadata.security === 'number' ? { security: path.metadata.security } : {}),
+  ...(typeof path.metadata.trust === 'number' ? { trust: path.metadata.trust } : {}),
+  ...(typeof path.metadata.cost === 'number' ? { cost: path.metadata.cost } : {}),
+  failureDomains: pathFailureDomains(path),
+});
 export interface RouteCandidate {
   id: string;
   route: Route;
@@ -277,6 +452,7 @@ export interface RoutingDecision {
   plan: RoutePlan;
   candidates: RouteCandidate[];
   selected?: RouteCandidate | undefined;
+  graph: NetworkPathGraph;
   aiContext: Record<string, unknown>;
 }
 
@@ -416,7 +592,6 @@ export class RoutingEngine {
   private history: { at: number; from?: string | undefined; to?: string | undefined }[] = [];
   constructor(
     private readonly options: {
-      events?: EventBus;
       kernel?: KernelRuntime;
       principal?: Principal;
       metrics?: MetricsRegistry;
@@ -465,6 +640,7 @@ export class RoutingEngine {
     const routes = discovered.map(normalizeRoute);
     const matched = longestPrefix(routes, context.destination);
     const paths = await this.paths(matched, context);
+    const graph = new NetworkPathGraph(paths, context.destination);
     const policyDecisions: RoutingPolicyDecision[] = [];
     const candidateResults: { candidate: RouteCandidate; policies: RoutingPolicyDecision[] }[] = [];
     for (const path of paths) {
@@ -580,12 +756,14 @@ export class RoutingEngine {
       plan,
       candidates,
       selected,
+      graph,
       aiContext: {
         destination: context.destination,
         currentPath: current,
         candidatePaths: paths,
         policies: policyDecisions,
         transitionHistory: this.history.slice(-10),
+        pathGraph: graph,
       },
     };
   }
@@ -599,6 +777,38 @@ export class RoutingEngine {
       return await run;
     } finally {
       this.transitions.delete(key);
+    }
+  }
+
+  /**
+   * Compensates a previously committed route transition using the plan's
+   * captured currentPath. The kernel owns the privileged rollback; the active
+   * path index is updated only after that operation succeeds.
+   */
+  async rollbackPlan(plan: RoutePlan): Promise<boolean> {
+    if (!plan.selectedPath || !this.options.kernel) return false;
+    try {
+      await this.options.kernel.execute('routing', 'rollbackRoutePlan', plan, {
+        ...(this.options.principal ? { principal: this.options.principal } : {}),
+        priority: 'critical',
+        persist: true,
+      });
+      const key = this.key(plan.destination);
+      if (plan.currentPath) this.active.set(key, plan.currentPath);
+      else this.active.delete(key);
+      await this.emit('routing.transition.rolled_back', {
+        planId: plan.id,
+        restoredPathId: plan.currentPath?.id,
+      });
+      this.metric('routing_path_switch_rollback_total', 1);
+      return true;
+    } catch (error) {
+      await this.emit('routing.transition.rollback_failed', {
+        planId: plan.id,
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+      this.metric('routing_path_switch_rollback_failure_total', 1);
+      return false;
     }
   }
   async failover(context: RoutingDecisionContext): Promise<RoutePlan> {
@@ -699,8 +909,7 @@ export class RoutingEngine {
     const intent = context.destination.metadata?.routeIntent as DestinationRouteIntent | undefined;
     if (intent === 'vpn-required' && path.type !== 'vpn')
       reject('destination-requires-vpn', `destination requires VPN but path type is ${path.type}`);
-    else if (intent === 'vpn-preferred' && path.type !== 'vpn')
-      c.policyScore -= 20;
+    else if (intent === 'vpn-preferred' && path.type !== 'vpn') c.policyScore -= 20;
     if (!this.config.allowedPathTypes.includes(path.type))
       reject('unknown-path-type', `path type ${path.type} is not enabled`);
     else if (path.route.state === 'disabled') reject('provider-disabled', 'route is disabled');
@@ -750,7 +959,8 @@ export class RoutingEngine {
       if (decision.scoreAdjustment) c.policyScore += decision.scoreAdjustment;
     }
     const o = context.manualOverride;
-    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime()) return { candidate: c, policies };
+    if (o && o.expiresAt && Date.parse(o.expiresAt) <= now.getTime())
+      return { candidate: c, policies };
     if (o?.mode === 'deny-path' && o.target === path.id) reject('manual-override', o.reason);
     if (o?.mode === 'require-path' && o.target !== path.id) reject('manual-override', o.reason);
     if (o?.mode === 'prefer-path' && o.target === path.id) c.policyScore += 25;
@@ -814,8 +1024,11 @@ export class RoutingEngine {
         priority: 'high',
         persist: true,
       });
-      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((plan: RoutePlan) => Promise<boolean>)[];
-      if (!verifiers.length) throw new Error('Live route application requires at least one verification provider');
+      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((
+        plan: RoutePlan,
+      ) => Promise<boolean>)[];
+      if (!verifiers.length)
+        throw new Error('Live route application requires at least one verification provider');
       let verified = true;
       for (const verify of verifiers) verified = (await verify(plan)) && verified;
       if (!verified) {
@@ -857,17 +1070,12 @@ export class RoutingEngine {
   }
   private isFlapping(now: number): boolean {
     const recent = this.history.filter((h) => now - h.at <= this.config.flappingWindowMs);
-    return recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2;
+    return (
+      recent.length >= this.config.flappingThreshold && new Set(recent.map((h) => h.to)).size <= 2
+    );
   }
-  private async emit(type: string, payload: unknown): Promise<void> {
-    const event: DomainEvent = {
-      id: createId('event'),
-      type,
-      aggregateId: 'routing',
-      occurredAt: new Date(),
-      payload,
-    };
-    await this.options.events?.publish(event);
+  private async emit(_type: string, _payload: unknown): Promise<void> {
+    // Events are handled by the canonical runtime; routing does not maintain its own event bus.
   }
   private metric(name: string, value: number): void {
     this.options.metrics?.record(name, value, { component: 'routing' });
@@ -880,7 +1088,9 @@ function inferFamily(ip: string): Exclude<AddressFamily, 'dual'> {
   return ip.includes(':') ? 'ipv6' : 'ipv4';
 }
 function isIp(value: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'));
+  return (
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(value) || (/^[0-9a-f:]+$/i.test(value) && value.includes(':'))
+  );
 }
 function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint {
   if (family === 'ipv4') return ip.split('.').reduce((a, p) => (a << 8n) + BigInt(Number(p)), 0n);
@@ -889,7 +1099,12 @@ function ipToBigInt(ip: string, family: Exclude<AddressFamily, 'dual'>): bigint 
     .split(':')
     .reduce((a, p) => (a << 16n) + BigInt(Number.parseInt(p || '0', 16)), 0n);
 }
-function cidrContains(cidrIp: string, prefix: number, ip: string, family: Exclude<AddressFamily, 'dual'>): boolean {
+function cidrContains(
+  cidrIp: string,
+  prefix: number,
+  ip: string,
+  family: Exclude<AddressFamily, 'dual'>,
+): boolean {
   if (prefix === 0) return true;
   const bits = BigInt(family === 'ipv4' ? 32 : 128);
   const shift = bits - BigInt(prefix);

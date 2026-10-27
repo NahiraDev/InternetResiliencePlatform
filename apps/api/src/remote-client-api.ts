@@ -20,7 +20,12 @@ const enrollmentSchema = z.object({
   deviceId: z.string().min(1).max(128).optional(),
   platform: devicePlatform,
   label: z.string().min(1).max(256).optional(),
-  ttlSeconds: z.number().int().min(60).max(365 * 24 * 60 * 60).optional(),
+  ttlSeconds: z
+    .number()
+    .int()
+    .min(60)
+    .max(365 * 24 * 60 * 60)
+    .optional(),
   scopes: scopesSchema.optional(),
 });
 
@@ -119,11 +124,7 @@ export const registerRemoteClientRoutes = (
     if (!allowed) throw new ForbiddenAppError();
   };
 
-  const issueAccessToken = (
-    subject: string,
-    scopes: readonly string[],
-    credentialId: string,
-  ) =>
+  const issueAccessToken = (subject: string, scopes: readonly string[], credentialId: string) =>
     jwt.sign({
       sub: subject,
       roles: ['remote_client'],

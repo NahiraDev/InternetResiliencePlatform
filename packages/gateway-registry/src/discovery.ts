@@ -53,7 +53,10 @@ export class GatewayDiscovery {
 
         if (existing.lifecycle === 'retired') {
           result.rejected += 1;
-          result.errors.push({ gatewayId: gateway.id, reason: 'retired gateway cannot be rediscovered' });
+          result.errors.push({
+            gatewayId: gateway.id,
+            reason: 'retired gateway cannot be rediscovered',
+          });
           continue;
         }
 
@@ -71,14 +74,18 @@ export class GatewayDiscovery {
         result.updated += 1;
       } catch (error) {
         result.rejected += 1;
-        result.errors.push({ gatewayId: gateway.id, reason: error instanceof Error ? error.message : String(error) });
+        result.errors.push({
+          gatewayId: gateway.id,
+          reason: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
     for (const gateway of this.registry.list()) {
       if (seen.has(gateway.id) || gateway.lifecycle === 'retired') continue;
       const updatedAt = Date.parse(gateway.updatedAt);
-      if (Number.isFinite(updatedAt) && now - updatedAt > this.options.staleAfterMs) result.stale += 1;
+      if (Number.isFinite(updatedAt) && now - updatedAt > this.options.staleAfterMs)
+        result.stale += 1;
     }
 
     return result;

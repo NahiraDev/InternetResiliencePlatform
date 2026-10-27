@@ -7,8 +7,10 @@ Thank you for helping improve the Internet Resilience Platform.
 1. Create a topic branch from the default branch.
 2. Keep changes focused and documented.
 3. Run local checks before opening a pull request:
-   - `./scripts/lint.sh`
-   - `./scripts/test.sh`
+   - `pnpm lint`
+   - `pnpm test`
+   - `pnpm typecheck`
+   - `pnpm build`
 4. Open a pull request using the repository template.
 
 ## Commit style

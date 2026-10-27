@@ -7,11 +7,24 @@ export interface OllamaProviderOptions {
 }
 
 const diagnoses = new Set<AgentRecommendation['diagnosis']>([
-  'healthy', 'dns_failure', 'transport_failure', 'tls_failure', 'http_failure', 'packet_loss',
-  'latency_degradation', 'ipv6_failure', 'upstream_or_egress_issue', 'possible_interference', 'insufficient_evidence',
+  'healthy',
+  'dns_failure',
+  'transport_failure',
+  'tls_failure',
+  'http_failure',
+  'packet_loss',
+  'latency_degradation',
+  'ipv6_failure',
+  'upstream_or_egress_issue',
+  'possible_interference',
+  'insufficient_evidence',
 ]);
 const kinds = new Set<AgentRecommendation['kind']>([
-  'observe', 'prefer_resolver', 'prefer_path', 'recheck_destination', 'defer_to_decision_engine',
+  'observe',
+  'prefer_resolver',
+  'prefer_path',
+  'recheck_destination',
+  'defer_to_decision_engine',
 ]);
 
 export class OllamaInternetAdvisor implements LocalLLMProvider {
@@ -25,7 +38,11 @@ export class OllamaInternetAdvisor implements LocalLLMProvider {
     this.timeoutMs = options.timeoutMs ?? 4_000;
   }
 
-  async analyze(input: { current: InternetEvidence; history: readonly InternetEvidence[]; baseline: AgentRecommendation }): Promise<AgentRecommendation | null> {
+  async analyze(input: {
+    current: InternetEvidence;
+    history: readonly InternetEvidence[];
+    baseline: AgentRecommendation;
+  }): Promise<AgentRecommendation | null> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
@@ -53,7 +70,11 @@ export class OllamaInternetAdvisor implements LocalLLMProvider {
   }
 }
 
-function buildPrompt(current: InternetEvidence, history: readonly InternetEvidence[], baseline: AgentRecommendation): string {
+function buildPrompt(
+  current: InternetEvidence,
+  history: readonly InternetEvidence[],
+  baseline: AgentRecommendation,
+): string {
   return [
     'You are a network diagnostics advisor. Analyze measurements only; never invent facts.',
     'Return JSON only: {"diagnosis":string,"kind":string,"confidence":number,"rationale":string,"evidence":string[]}.',
@@ -63,14 +84,23 @@ function buildPrompt(current: InternetEvidence, history: readonly InternetEviden
   ].join('\n');
 }
 
-function parseRecommendation(raw: string, baseline: AgentRecommendation): AgentRecommendation | null {
+function parseRecommendation(
+  raw: string,
+  baseline: AgentRecommendation,
+): AgentRecommendation | null {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (typeof parsed.diagnosis !== 'string' || !diagnoses.has(parsed.diagnosis as AgentRecommendation['diagnosis'])) return null;
-    if (typeof parsed.kind !== 'string' || !kinds.has(parsed.kind as AgentRecommendation['kind'])) return null;
+    if (
+      typeof parsed.diagnosis !== 'string' ||
+      !diagnoses.has(parsed.diagnosis as AgentRecommendation['diagnosis'])
+    )
+      return null;
+    if (typeof parsed.kind !== 'string' || !kinds.has(parsed.kind as AgentRecommendation['kind']))
+      return null;
     if (typeof parsed.confidence !== 'number' || !Number.isFinite(parsed.confidence)) return null;
     if (typeof parsed.rationale !== 'string') return null;
-    if (!Array.isArray(parsed.evidence) || parsed.evidence.some((item) => typeof item !== 'string')) return null;
+    if (!Array.isArray(parsed.evidence) || parsed.evidence.some((item) => typeof item !== 'string'))
+      return null;
     const confidence = Math.min(1, Math.max(0, parsed.confidence));
     // A local model cannot override a materially safer deterministic conclusion without evidence.
     if (baseline.confidence >= 0.95 && parsed.diagnosis !== baseline.diagnosis) return null;

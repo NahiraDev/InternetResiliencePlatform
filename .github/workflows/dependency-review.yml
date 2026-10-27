@@ -11,14 +11,10 @@ concurrency:
   group: dependency-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: '24'
-  PNPM_VERSION: '11.21.0'
-
 jobs:
   dependency-review:
     name: Dependency Review
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -27,13 +23,13 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: ${{ env.PNPM_VERSION }}
+          version: '11.21.0'
           run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '24'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 

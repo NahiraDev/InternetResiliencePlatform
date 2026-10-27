@@ -13,22 +13,22 @@ The repository contains documentation in several forms: `docs/`, root governance
 
 ## Canonical documentation domains
 
-| Domain | Canonical home | Current assessment |
-| --- | --- | --- |
-| User entry point | `docs/README.md` | KEEP / expand |
-| Concepts | `docs/concepts/` | KEEP / expand |
-| Architecture | `docs/architecture/` | KEEP / reconcile |
-| API | `docs/api/` | EXPAND |
-| Getting started | `docs/getting-started/` | EXPAND |
-| Guides | `docs/guides/` | EXPAND |
-| Operations | `docs/operations/` | EXPAND |
-| Security | `docs/security/` | CANONICAL |
-| Network | `docs/network/` | EXPAND |
-| Observability | `docs/observability.md` + operations observability | CONSOLIDATE boundary |
-| Reference | `docs/reference/` | EXPAND |
-| Decisions | `docs/adr/` | KEEP / reconcile historical names |
-| Phase evidence | `docs/phases/` + `docs/audits/phase-history-evidence-matrix.md` | RECONSTRUCT 00–44 |
-| Tests policy | `docs/testing/` | EXPAND |
+| Domain           | Canonical home                                                  | Current assessment                |
+| ---------------- | --------------------------------------------------------------- | --------------------------------- |
+| User entry point | `docs/README.md`                                                | KEEP / expand                     |
+| Concepts         | `docs/concepts/`                                                | KEEP / expand                     |
+| Architecture     | `docs/architecture/`                                            | KEEP / reconcile                  |
+| API              | `docs/api/`                                                     | EXPAND                            |
+| Getting started  | `docs/getting-started/`                                         | EXPAND                            |
+| Guides           | `docs/guides/`                                                  | EXPAND                            |
+| Operations       | `docs/operations/`                                              | EXPAND                            |
+| Security         | `docs/security/`                                                | CANONICAL                         |
+| Network          | `docs/network/`                                                 | EXPAND                            |
+| Observability    | `docs/observability.md` + operations observability              | CONSOLIDATE boundary              |
+| Reference        | `docs/reference/`                                               | EXPAND                            |
+| Decisions        | `docs/adr/`                                                     | KEEP / reconcile historical names |
+| Phase evidence   | `docs/phases/` + `docs/audits/phase-history-evidence-matrix.md` | RECONSTRUCT 00–44                 |
+| Tests policy     | `docs/testing/`                                                 | EXPAND                            |
 
 ## Legacy / duplicate surfaces resolved
 

@@ -139,7 +139,18 @@ export const verifyPassword = (password: string, hash: string): boolean => {
   const [, salt, digest] = hash.split('$');
   if (!salt || !digest) return false;
   const candidate = scryptSync(password, salt, 64);
-  return timingSafeEqual(candidate, Buffer.from(digest, 'hex'));
+  let expected: Buffer;
+  try {
+    expected = Buffer.from(digest, 'hex');
+  } catch {
+    return false;
+  }
+  if (candidate.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(candidate, expected);
+  } catch {
+    return false;
+  }
 };
 
 export * from './client-security.js';

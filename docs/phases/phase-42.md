@@ -19,15 +19,15 @@ Connect the Phase 39 remote-client security primitives to the real Fastify API l
 
 ## Routes
 
-| Method | Route | Authorization |
-| --- | --- | --- |
-| POST | `/api/v1/auth/remote/devices/enroll` | existing access token + `runtime.admin` |
-| GET | `/api/v1/auth/remote/devices` | existing access token + `runtime.admin` |
-| POST | `/api/v1/auth/remote/token` | device credential |
-| POST | `/api/v1/auth/remote/refresh` | rotating refresh token |
-| POST | `/api/v1/auth/remote/logout` | rotating refresh token |
-| POST | `/api/v1/auth/remote/devices/:credentialId/revoke` | existing access token + `runtime.admin` |
-| GET | `/api/v1/auth/remote/audit` | existing access token + `runtime.admin` |
+| Method | Route                                              | Authorization                           |
+| ------ | -------------------------------------------------- | --------------------------------------- |
+| POST   | `/api/v1/auth/remote/devices/enroll`               | existing access token + `runtime.admin` |
+| GET    | `/api/v1/auth/remote/devices`                      | existing access token + `runtime.admin` |
+| POST   | `/api/v1/auth/remote/token`                        | device credential                       |
+| POST   | `/api/v1/auth/remote/refresh`                      | rotating refresh token                  |
+| POST   | `/api/v1/auth/remote/logout`                       | rotating refresh token                  |
+| POST   | `/api/v1/auth/remote/devices/:credentialId/revoke` | existing access token + `runtime.admin` |
+| GET    | `/api/v1/auth/remote/audit`                        | existing access token + `runtime.admin` |
 
 ## Security Contract
 

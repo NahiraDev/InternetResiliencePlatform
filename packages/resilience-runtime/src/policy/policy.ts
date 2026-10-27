@@ -3,8 +3,25 @@ import type {
   CandidateAction,
   PolicyEvaluation,
   RuntimeContext,
+  CompiledIntent,
+  PolicySnapshot,
 } from '../domain/types.js';
+import type { IntentConflict } from '../intent/arbitration.js';
+import {
+  arbitrateIntents,
+  enforceAutonomy,
+  InMemoryIntentStore,
+  type IntentStore,
+  type PolicyConflict,
+} from '../intent/arbitration.js';
+import { PolicyRegistry, type PolicyDomain } from './registry.js';
+
 export class RuntimePolicyArbitrator {
+  constructor(
+    private readonly intentStore: IntentStore = new InMemoryIntentStore(),
+    private readonly policyRegistry: PolicyRegistry = new PolicyRegistry(),
+  ) {}
+
   async evaluate(
     target: ActionPlan | CandidateAction,
     context: RuntimeContext,
@@ -21,11 +38,79 @@ export class RuntimePolicyArbitrator {
     if (action.confidence < p.confidenceThreshold)
       reasons.push('candidate confidence is below threshold');
     const required = [
-      ...(p.capabilityRequirements[action.intent] ?? []),
-      ...action.requiredCapabilities,
+      ...new Set([
+        ...(p.capabilityRequirements[action.intent] ?? []),
+        ...action.requiredCapabilities,
+      ]),
     ].sort();
     const missing = required.filter((c) => !context.capabilitySnapshot.capabilities.includes(c));
     if (missing.length) reasons.push(`missing capabilities: ${missing.join(',')}`);
     return { allowed: reasons.length === 0, reasons, requiredCapabilities: required };
+  }
+
+  /** Resolves intent conflicts for the current context. */
+  async resolveIntentConflicts(
+    context: RuntimeContext,
+  ): Promise<{
+    readonly ordered: readonly CompiledIntent[];
+    readonly conflicts: readonly IntentConflict[];
+    /**
+     * True when the conflict journal could not be persisted. Arbitration itself
+     * remains authoritative; only the durable record is missing.
+     */
+    readonly persistenceDegraded: boolean;
+  }> {
+    let activeIntents: readonly CompiledIntent[] = [];
+    let storeDegraded = false;
+    try {
+      activeIntents = await this.intentStore.getActive();
+    } catch {
+      // An optional remote store must never disable local autonomy. The
+      // in-context intents are still arbitrated; the store is simply unavailable.
+      storeDegraded = true;
+    }
+    // Prefer compiledIntents (plural) which already includes compiledIntent, avoid duplication
+    const contextIntents =
+      context.compiledIntents ?? (context.compiledIntent ? [context.compiledIntent] : []);
+    const allIntents = [...activeIntents, ...contextIntents];
+    const arbitration = arbitrateIntents(allIntents, new Date());
+    // Persist arbitration conflicts wherever the runtime persists intents, so
+    // the conflict journal is durable rather than event-only.
+    if (arbitration.conflicts.length > 0 && this.intentStore.recordConflicts !== undefined) {
+      try {
+        await this.intentStore.recordConflicts(arbitration.conflicts);
+      } catch {
+        storeDegraded = true;
+      }
+    }
+    return { ...arbitration, persistenceDegraded: storeDegraded };
+  }
+
+  /** Resolves policy conflicts between two snapshots. */
+  resolvePolicyConflicts(
+    policyA: PolicySnapshot,
+    policyB: PolicySnapshot,
+    strategy: 'union' | 'intersection' | 'hierarchical' = 'hierarchical',
+  ): { readonly merged: PolicySnapshot; readonly conflicts: readonly PolicyConflict[] } {
+    // PolicyRegistry is the canonical conflict resolver. Map the requested
+    // merge strategy onto an existing domain so snapshot resolution does not
+    // maintain a second merge implementation.
+    const domain: PolicyDomain =
+      strategy === 'union' ? 'dns' : strategy === 'intersection' ? 'failover' : 'global';
+    const resolution = this.policyRegistry.resolveConflict(policyA.policy, policyB.policy, domain);
+    return {
+      merged: Object.freeze({ ...policyA, policy: resolution.merged }),
+      conflicts: Object.freeze(
+        resolution.conflicts.map((reason) => ({ policyA, policyB, reason, resolution: strategy })),
+      ),
+    };
+  }
+
+  /** Enforces autonomy at the mutation boundary. */
+  enforceIntentAutonomy(
+    intent: CompiledIntent,
+    actionClass: 'read' | 'advise' | 'safe_mutate' | 'autonomous' | 'high_risk',
+  ): void {
+    enforceAutonomy(intent, actionClass);
   }
 }

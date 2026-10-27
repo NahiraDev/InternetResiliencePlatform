@@ -2,10 +2,12 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { registerUnifiedProductRoutes, PRODUCT_API_MANIFEST } from './unified-product-api.js';
 
-const createTestApp = (options: {
-  principal?: { id: string; roles: string[]; scopes: string[]; organizationId?: string } | null;
-  authorize?: (permission: string) => Promise<boolean>;
-} = {}): FastifyInstance => {
+const createTestApp = (
+  options: {
+    principal?: { id: string; roles: string[]; scopes: string[]; organizationId?: string } | null;
+    authorize?: (permission: string) => Promise<boolean>;
+  } = {},
+): FastifyInstance => {
   const app = Fastify({ logger: false });
   app.decorateRequest('jwtAuth', undefined as never);
   app.decorateRequest('rbac', undefined as never);

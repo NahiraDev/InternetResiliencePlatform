@@ -1,9 +1,4 @@
-import client, {
-  type Counter,
-  type Gauge,
-  type Histogram,
-  type Registry,
-} from 'prom-client';
+import client, { type Counter, type Gauge, type Histogram, type Registry } from 'prom-client';
 import type { InternalMetricsBus, MetricDefinition, MetricPoint } from '@irp/metrics';
 
 export interface PrometheusBridge {
@@ -127,5 +122,6 @@ export const createDefaultPrometheusRegistry = (): Registry => {
   return registry;
 };
 
-export const renderPrometheusRegistry = async (registry: Registry): Promise<string> => registry.metrics();
+export const renderPrometheusRegistry = async (registry: Registry): Promise<string> =>
+  registry.metrics();
 export const prometheusRegistryContentType = (registry: Registry): string => registry.contentType;

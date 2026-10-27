@@ -16,6 +16,17 @@ Phase 65 provides the native iOS Full Client boundary for enrollment, secure ses
 - Malformed tunnel configuration is rejected before network settings are applied.
 - Missing tunnel transport fails closed rather than creating a partially functional VPN.
 
+## Project file
+
+`clients/ios/project.yml` is the source of truth for the Xcode project.
+`clients/ios/IRP.xcodeproj` is generated from it. Regenerate before
+building or opening the project locally (CI does this automatically):
+
+```bash
+brew install xcodegen
+(cd clients/ios && xcodegen generate)
+```
+
 ## Local validation
 
 From the repository root:

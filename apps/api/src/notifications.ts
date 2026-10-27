@@ -4,7 +4,12 @@ import type { DatabaseClient } from '@irp/database';
 
 export const incidentSeveritySchema = z.enum(['info', 'warning', 'critical']);
 export const incidentStatusSchema = z.enum(['open', 'acknowledged', 'resolved']);
-export const notificationTypeSchema = z.enum(['incident-opened', 'incident-updated', 'incident-resolved', 'action-required']);
+export const notificationTypeSchema = z.enum([
+  'incident-opened',
+  'incident-updated',
+  'incident-resolved',
+  'action-required',
+]);
 export type IncidentSeverity = z.infer<typeof incidentSeveritySchema>;
 export type IncidentStatus = z.infer<typeof incidentStatusSchema>;
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
@@ -55,24 +60,37 @@ export interface NotificationRecord {
 export type RuntimeIncidentInput = z.infer<typeof runtimeIncidentInputSchema>;
 
 const severityFor = (classification: string, confidence: number): IncidentSeverity => {
-  if (classification === 'security_failure' || classification === 'policy_violation') return 'critical';
-  if (classification === 'primary_failure' || classification === 'persistent_degradation') return 'warning';
+  if (classification === 'security_failure' || classification === 'policy_violation')
+    return 'critical';
+  if (classification === 'primary_failure' || classification === 'persistent_degradation')
+    return 'warning';
   return confidence >= 0.9 ? 'warning' : 'info';
 };
 
 const fingerprintFor = (input: RuntimeIncidentInput) =>
   createHash('sha256')
-    .update(JSON.stringify({
-      classification: input.classification,
-      rootCause: input.rootCause,
-      affectedComponents: [...input.affectedComponents].sort(),
-    }))
+    .update(
+      JSON.stringify({
+        classification: input.classification,
+        rootCause: input.rootCause,
+        affectedComponents: [...input.affectedComponents].sort(),
+      }),
+    )
     .digest('hex');
 
 const iso = (value: unknown) => new Date(String(value)).toISOString();
 const now = () => new Date().toISOString();
 
-type IncidentDbRow = Omit<IncidentRecord, 'affectedComponents' | 'evidence' | 'firstSeenAt' | 'lastSeenAt' | 'acknowledgedAt' | 'resolvedAt' | 'updatedAt'> & {
+type IncidentDbRow = Omit<
+  IncidentRecord,
+  | 'affectedComponents'
+  | 'evidence'
+  | 'firstSeenAt'
+  | 'lastSeenAt'
+  | 'acknowledgedAt'
+  | 'resolvedAt'
+  | 'updatedAt'
+> & {
   affectedComponents: string[];
   evidence: string[];
   firstSeenAt: unknown;
@@ -82,7 +100,10 @@ type IncidentDbRow = Omit<IncidentRecord, 'affectedComponents' | 'evidence' | 'f
   updatedAt: unknown;
 };
 
-type NotificationDbRow = Omit<NotificationRecord, 'createdAt' | 'readAt'> & { createdAt: unknown; readAt: unknown };
+type NotificationDbRow = Omit<NotificationRecord, 'createdAt' | 'readAt'> & {
+  createdAt: unknown;
+  readAt: unknown;
+};
 
 const mapIncident = (row: IncidentDbRow): IncidentRecord => ({
   ...row,
@@ -118,7 +139,12 @@ export class NotificationIncidentCenter {
       ? {
           ...current,
           title: validated.rootCause,
-          severity: current.severity === 'critical' || severity === 'critical' ? 'critical' : current.severity === 'warning' || severity === 'warning' ? 'warning' : 'info',
+          severity:
+            current.severity === 'critical' || severity === 'critical'
+              ? 'critical'
+              : current.severity === 'warning' || severity === 'warning'
+                ? 'warning'
+                : 'info',
           status: current.status === 'resolved' ? 'open' : current.status,
           rootCause: validated.rootCause,
           affectedComponents: [...validated.affectedComponents],
@@ -154,7 +180,14 @@ export class NotificationIncidentCenter {
         };
 
     await this.persistIncident(incident);
-    await this.emitNotification(incident, !current ? 'incident-opened' : current.status === 'resolved' ? 'incident-opened' : 'incident-updated');
+    await this.emitNotification(
+      incident,
+      !current
+        ? 'incident-opened'
+        : current.status === 'resolved'
+          ? 'incident-opened'
+          : 'incident-updated',
+    );
     return incident;
   }
 
@@ -162,7 +195,12 @@ export class NotificationIncidentCenter {
     const current = await this.get(id);
     if (!current || current.status === 'resolved') return current;
     const timestamp = now();
-    const updated = { ...current, status: 'acknowledged' as const, acknowledgedAt: timestamp, updatedAt: timestamp };
+    const updated = {
+      ...current,
+      status: 'acknowledged' as const,
+      acknowledgedAt: timestamp,
+      updatedAt: timestamp,
+    };
     await this.persistIncident(updated);
     await this.emitNotification(updated, 'incident-updated');
     return updated;
@@ -172,7 +210,12 @@ export class NotificationIncidentCenter {
     const current = await this.get(id);
     if (!current || current.status === 'resolved') return current;
     const timestamp = now();
-    const updated = { ...current, status: 'resolved' as const, resolvedAt: timestamp, updatedAt: timestamp };
+    const updated = {
+      ...current,
+      status: 'resolved' as const,
+      resolvedAt: timestamp,
+      updatedAt: timestamp,
+    };
     await this.persistIncident(updated);
     await this.emitNotification(updated, 'incident-resolved');
     return updated;
@@ -190,7 +233,10 @@ export class NotificationIncidentCenter {
   }
 
   async getByFingerprint(fingerprint: string): Promise<IncidentRecord | null> {
-    if (!this.db) return [...this.memoryIncidents.values()].find((item) => item.fingerprint === fingerprint) ?? null;
+    if (!this.db)
+      return (
+        [...this.memoryIncidents.values()].find((item) => item.fingerprint === fingerprint) ?? null
+      );
     const rows = (await this.db.$queryRaw`
       SELECT id::text AS "id", fingerprint, title, severity, status, source, classification,
              "rootCause", "affectedComponents", evidence, "correlationReason", confidence,
@@ -293,9 +339,10 @@ export class NotificationIncidentCenter {
       type,
       severity: incident.severity,
       title: type === 'incident-resolved' ? `Recovered: ${incident.title}` : incident.title,
-      message: type === 'incident-resolved'
-        ? `Incident resolved after ${incident.occurrenceCount} observed occurrence(s).`
-        : `${incident.classification}: ${incident.rootCause}. ${incident.correlationReason}`,
+      message:
+        type === 'incident-resolved'
+          ? `Incident resolved after ${incident.occurrenceCount} observed occurrence(s).`
+          : `${incident.classification}: ${incident.rootCause}. ${incident.correlationReason}`,
       actionable: incident.severity !== 'info' && incident.status !== 'resolved',
       readAt: null,
       createdAt: now(),

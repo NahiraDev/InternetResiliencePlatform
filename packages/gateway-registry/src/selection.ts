@@ -91,22 +91,38 @@ function getValue<T>(values: Map<string, T> | Record<string, T>, id: string): T 
 }
 
 function assertPolicy(policy: GatewaySelectionPolicy): void {
-  if (!Number.isFinite(policy.minimumHealthScore) || policy.minimumHealthScore < 0 || policy.minimumHealthScore > 100) {
+  if (
+    !Number.isFinite(policy.minimumHealthScore) ||
+    policy.minimumHealthScore < 0 ||
+    policy.minimumHealthScore > 100
+  ) {
     throw new Error('minimumHealthScore must be between 0 and 100');
   }
   if (!Number.isFinite(policy.maximumLatencyMs) || policy.maximumLatencyMs <= 0) {
     throw new Error('maximumLatencyMs must be positive');
   }
-  if (!Number.isFinite(policy.maximumPacketLossPercent) || policy.maximumPacketLossPercent < 0 || policy.maximumPacketLossPercent > 100) {
+  if (
+    !Number.isFinite(policy.maximumPacketLossPercent) ||
+    policy.maximumPacketLossPercent < 0 ||
+    policy.maximumPacketLossPercent > 100
+  ) {
     throw new Error('maximumPacketLossPercent must be between 0 and 100');
   }
-  if (!Number.isFinite(policy.maximumUtilizationPercent) || policy.maximumUtilizationPercent <= 0 || policy.maximumUtilizationPercent > 100) {
+  if (
+    !Number.isFinite(policy.maximumUtilizationPercent) ||
+    policy.maximumUtilizationPercent <= 0 ||
+    policy.maximumUtilizationPercent > 100
+  ) {
     throw new Error('maximumUtilizationPercent must be between 0 and 100');
   }
   if (!Number.isFinite(policy.maxHealthAgeMs) || policy.maxHealthAgeMs <= 0) {
     throw new Error('maxHealthAgeMs must be positive');
   }
-  if (!Number.isFinite(policy.hysteresisScore) || policy.hysteresisScore < 0 || policy.hysteresisScore > 100) {
+  if (
+    !Number.isFinite(policy.hysteresisScore) ||
+    policy.hysteresisScore < 0 ||
+    policy.hysteresisScore > 100
+  ) {
     throw new Error('hysteresisScore must be between 0 and 100');
   }
 }
@@ -118,13 +134,15 @@ function preferredScore(value: string | undefined, preferred: string[]): number 
 }
 
 function qualityScore(health: GatewayHealth, policy: GatewaySelectionPolicy): number {
-  const latency = health.latencyMs === undefined
-    ? 50
-    : clamp(100 - (health.latencyMs / policy.maximumLatencyMs) * 100);
-  const loss = health.packetLossPercent === undefined
-    ? 50
-    : clamp(100 - (health.packetLossPercent / policy.maximumPacketLossPercent) * 100);
-  return (health.score * 0.6) + (latency * 0.25) + (loss * 0.15);
+  const latency =
+    health.latencyMs === undefined
+      ? 50
+      : clamp(100 - (health.latencyMs / policy.maximumLatencyMs) * 100);
+  const loss =
+    health.packetLossPercent === undefined
+      ? 50
+      : clamp(100 - (health.packetLossPercent / policy.maximumPacketLossPercent) * 100);
+  return health.score * 0.6 + latency * 0.25 + loss * 0.15;
 }
 
 function capacityScore(capacity: GatewayCapacity | undefined): number {
@@ -133,14 +151,23 @@ function capacityScore(capacity: GatewayCapacity | undefined): number {
 }
 
 function validateCapacity(capacity: GatewayCapacity): void {
-  if (!Number.isFinite(capacity.utilizationPercent) || capacity.utilizationPercent < 0 || capacity.utilizationPercent > 100) {
+  if (
+    !Number.isFinite(capacity.utilizationPercent) ||
+    capacity.utilizationPercent < 0 ||
+    capacity.utilizationPercent > 100
+  ) {
     throw new Error('capacity utilizationPercent must be between 0 and 100');
   }
-  if (capacity.availableCapacityPercent !== undefined &&
-      (!Number.isFinite(capacity.availableCapacityPercent) || capacity.availableCapacityPercent < 0 || capacity.availableCapacityPercent > 100)) {
+  if (
+    capacity.availableCapacityPercent !== undefined &&
+    (!Number.isFinite(capacity.availableCapacityPercent) ||
+      capacity.availableCapacityPercent < 0 ||
+      capacity.availableCapacityPercent > 100)
+  ) {
     throw new Error('capacity availableCapacityPercent must be between 0 and 100');
   }
-  if (!Number.isFinite(Date.parse(capacity.checkedAt))) throw new Error('capacity checkedAt must be a valid ISO timestamp');
+  if (!Number.isFinite(Date.parse(capacity.checkedAt)))
+    throw new Error('capacity checkedAt must be a valid ISO timestamp');
 }
 
 function reject(
@@ -170,51 +197,106 @@ function evaluateCandidate(
   nowMs: number,
 ): GatewaySelectionCandidate {
   if (!health) {
-    return reject(gateway, {
-      gatewayId: gateway.id,
-      status: 'unknown',
-      score: 0,
-      reason: 'no health evidence',
-    }, capacity, 'health-unacceptable', ['No health evidence is available.']);
+    return reject(
+      gateway,
+      {
+        gatewayId: gateway.id,
+        status: 'unknown',
+        score: 0,
+        reason: 'no health evidence',
+      },
+      capacity,
+      'health-unacceptable',
+      ['No health evidence is available.'],
+    );
   }
 
-  if (gateway.lifecycle !== 'active') return reject(gateway, health, capacity, 'not-active', [`Gateway lifecycle is ${gateway.lifecycle}.`]);
-  if (gateway.trust !== 'trusted') return reject(gateway, health, capacity, 'not-trusted', [`Gateway trust is ${gateway.trust}.`]);
-  if (health.status === 'stale') return reject(gateway, health, capacity, 'stale-health', ['Gateway health evidence is stale.']);
-  if (health.status === 'unreachable' || health.status === 'unknown' || (health.status === 'degraded' && !policy.allowDegradedHealth)) {
-    return reject(gateway, health, capacity, 'health-unacceptable', [`Gateway health status is ${health.status}.`]);
+  if (gateway.lifecycle !== 'active')
+    return reject(gateway, health, capacity, 'not-active', [
+      `Gateway lifecycle is ${gateway.lifecycle}.`,
+    ]);
+  if (gateway.trust !== 'trusted')
+    return reject(gateway, health, capacity, 'not-trusted', [`Gateway trust is ${gateway.trust}.`]);
+  if (health.status === 'stale')
+    return reject(gateway, health, capacity, 'stale-health', ['Gateway health evidence is stale.']);
+  if (
+    health.status === 'unreachable' ||
+    health.status === 'unknown' ||
+    (health.status === 'degraded' && !policy.allowDegradedHealth)
+  ) {
+    return reject(gateway, health, capacity, 'health-unacceptable', [
+      `Gateway health status is ${health.status}.`,
+    ]);
   }
   const checkedAt = health.checkedAt ? Date.parse(health.checkedAt) : NaN;
-  if (policy.requireFreshHealth && (!Number.isFinite(checkedAt) || nowMs - checkedAt > policy.maxHealthAgeMs)) {
-    return reject(gateway, health, capacity, 'stale-health', ['Gateway health evidence is outside the freshness policy.']);
+  if (
+    policy.requireFreshHealth &&
+    (!Number.isFinite(checkedAt) || nowMs - checkedAt > policy.maxHealthAgeMs)
+  ) {
+    return reject(gateway, health, capacity, 'stale-health', [
+      'Gateway health evidence is outside the freshness policy.',
+    ]);
   }
   if (health.score < policy.minimumHealthScore) {
-    return reject(gateway, health, capacity, 'health-unacceptable', [`Health score ${health.score} is below ${policy.minimumHealthScore}.`]);
+    return reject(gateway, health, capacity, 'health-unacceptable', [
+      `Health score ${health.score} is below ${policy.minimumHealthScore}.`,
+    ]);
   }
   if (health.latencyMs !== undefined && health.latencyMs > policy.maximumLatencyMs) {
-    return reject(gateway, health, capacity, 'health-unacceptable', [`Latency ${health.latencyMs}ms exceeds ${policy.maximumLatencyMs}ms.`]);
+    return reject(gateway, health, capacity, 'health-unacceptable', [
+      `Latency ${health.latencyMs}ms exceeds ${policy.maximumLatencyMs}ms.`,
+    ]);
   }
-  if (health.packetLossPercent !== undefined && health.packetLossPercent > policy.maximumPacketLossPercent) {
-    return reject(gateway, health, capacity, 'health-unacceptable', [`Packet loss ${health.packetLossPercent}% exceeds ${policy.maximumPacketLossPercent}%.`]);
+  if (
+    health.packetLossPercent !== undefined &&
+    health.packetLossPercent > policy.maximumPacketLossPercent
+  ) {
+    return reject(gateway, health, capacity, 'health-unacceptable', [
+      `Packet loss ${health.packetLossPercent}% exceeds ${policy.maximumPacketLossPercent}%.`,
+    ]);
   }
   if (capacity) validateCapacity(capacity);
   if (capacity && capacity.utilizationPercent > policy.maximumUtilizationPercent) {
-    return reject(gateway, health, capacity, 'capacity-limit', [`Capacity utilization ${capacity.utilizationPercent}% exceeds ${policy.maximumUtilizationPercent}%.`]);
+    return reject(gateway, health, capacity, 'capacity-limit', [
+      `Capacity utilization ${capacity.utilizationPercent}% exceeds ${policy.maximumUtilizationPercent}%.`,
+    ]);
   }
-  if (policy.allowedRegions.length > 0 && (!gateway.region || !policy.allowedRegions.includes(gateway.region))) {
-    return reject(gateway, health, capacity, 'region-not-allowed', ['Gateway region is outside the allowed region policy.']);
+  if (
+    policy.allowedRegions.length > 0 &&
+    (!gateway.region || !policy.allowedRegions.includes(gateway.region))
+  ) {
+    return reject(gateway, health, capacity, 'region-not-allowed', [
+      'Gateway region is outside the allowed region policy.',
+    ]);
   }
-  if (policy.allowedProviderIds.length > 0 && (!gateway.providerId || !policy.allowedProviderIds.includes(gateway.providerId))) {
-    return reject(gateway, health, capacity, 'provider-not-allowed', ['Gateway provider is outside the allowed provider policy.']);
+  if (
+    policy.allowedProviderIds.length > 0 &&
+    (!gateway.providerId || !policy.allowedProviderIds.includes(gateway.providerId))
+  ) {
+    return reject(gateway, health, capacity, 'provider-not-allowed', [
+      'Gateway provider is outside the allowed provider policy.',
+    ]);
   }
   if (policy.requiredTags.some((tag) => !gateway.tags.includes(tag))) {
-    return reject(gateway, health, capacity, 'tag-missing', ['Gateway does not satisfy all required tags.']);
+    return reject(gateway, health, capacity, 'tag-missing', [
+      'Gateway does not satisfy all required tags.',
+    ]);
   }
-  if (policy.requiredTunnelProtocol && !gateway.capabilities.tunnelProtocols.includes(policy.requiredTunnelProtocol)) {
-    return reject(gateway, health, capacity, 'protocol-missing', [`Gateway does not support ${policy.requiredTunnelProtocol}.`]);
+  if (
+    policy.requiredTunnelProtocol &&
+    !gateway.capabilities.tunnelProtocols.includes(policy.requiredTunnelProtocol)
+  ) {
+    return reject(gateway, health, capacity, 'protocol-missing', [
+      `Gateway does not support ${policy.requiredTunnelProtocol}.`,
+    ]);
   }
-  if (policy.requiredAddressFamily && !gateway.capabilities.addressFamilies.includes(policy.requiredAddressFamily)) {
-    return reject(gateway, health, capacity, 'address-family-missing', [`Gateway does not support ${policy.requiredAddressFamily}.`]);
+  if (
+    policy.requiredAddressFamily &&
+    !gateway.capabilities.addressFamilies.includes(policy.requiredAddressFamily)
+  ) {
+    return reject(gateway, health, capacity, 'address-family-missing', [
+      `Gateway does not support ${policy.requiredAddressFamily}.`,
+    ]);
   }
 
   const healthComponent = health.score;
@@ -224,10 +306,10 @@ function evaluateCandidate(
   const providerComponent = preferredScore(gateway.providerId, policy.preferredProviderIds);
   const score = Math.round(
     healthComponent * 0.4 +
-    qualityComponent * 0.25 +
-    capacityComponent * 0.2 +
-    regionComponent * 0.1 +
-    providerComponent * 0.05,
+      qualityComponent * 0.25 +
+      capacityComponent * 0.2 +
+      regionComponent * 0.1 +
+      providerComponent * 0.05,
   );
 
   const explanation = [
@@ -235,8 +317,10 @@ function evaluateCandidate(
     `Quality score: ${Math.round(qualityComponent)}.`,
     `Capacity score: ${Math.round(capacityComponent)}.`,
   ];
-  if (regionComponent > 0) explanation.push(`Preferred region score: ${Math.round(regionComponent)}.`);
-  if (providerComponent > 0) explanation.push(`Preferred provider score: ${Math.round(providerComponent)}.`);
+  if (regionComponent > 0)
+    explanation.push(`Preferred region score: ${Math.round(regionComponent)}.`);
+  if (providerComponent > 0)
+    explanation.push(`Preferred provider score: ${Math.round(providerComponent)}.`);
 
   return {
     gateway,
@@ -259,32 +343,65 @@ export function selectGateway(request: GatewaySelectionRequest): GatewaySelectio
   const policy: GatewaySelectionPolicy = {
     ...DEFAULT_GATEWAY_SELECTION_POLICY,
     ...(request.policy ?? {}),
-    preferredRegions: [...(request.policy?.preferredRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.preferredRegions)],
-    preferredProviderIds: [...(request.policy?.preferredProviderIds ?? DEFAULT_GATEWAY_SELECTION_POLICY.preferredProviderIds)],
-    allowedRegions: [...(request.policy?.allowedRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.allowedRegions)],
-    allowedProviderIds: [...(request.policy?.allowedProviderIds ?? DEFAULT_GATEWAY_SELECTION_POLICY.allowedProviderIds)],
-    requiredTags: [...(request.policy?.requiredTags ?? DEFAULT_GATEWAY_SELECTION_POLICY.requiredTags)],
+    preferredRegions: [
+      ...(request.policy?.preferredRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.preferredRegions),
+    ],
+    preferredProviderIds: [
+      ...(request.policy?.preferredProviderIds ??
+        DEFAULT_GATEWAY_SELECTION_POLICY.preferredProviderIds),
+    ],
+    allowedRegions: [
+      ...(request.policy?.allowedRegions ?? DEFAULT_GATEWAY_SELECTION_POLICY.allowedRegions),
+    ],
+    allowedProviderIds: [
+      ...(request.policy?.allowedProviderIds ??
+        DEFAULT_GATEWAY_SELECTION_POLICY.allowedProviderIds),
+    ],
+    requiredTags: [
+      ...(request.policy?.requiredTags ?? DEFAULT_GATEWAY_SELECTION_POLICY.requiredTags),
+    ],
   };
   assertPolicy(policy);
   const nowMs = (request.now ?? new Date()).getTime();
   if (!Number.isFinite(nowMs)) throw new Error('now must be a valid date');
 
   const candidates = request.gateways
-    .map((gateway) => evaluateCandidate(gateway, getValue(request.health, gateway.id), getValue(request.capacity ?? new Map(), gateway.id), policy, nowMs))
+    .map((gateway) =>
+      evaluateCandidate(
+        gateway,
+        getValue(request.health, gateway.id),
+        getValue(request.capacity ?? new Map(), gateway.id),
+        policy,
+        nowMs,
+      ),
+    )
     .sort((a, b) => b.score - a.score || a.gateway.id.localeCompare(b.gateway.id));
 
   const eligible = candidates.filter((candidate) => candidate.eligible);
   const selectedCandidate = eligible[0];
-  if (!selectedCandidate) return { candidates, reason: 'No gateway satisfies the selection policy and current evidence.', switched: false };
+  if (!selectedCandidate)
+    return {
+      candidates,
+      reason: 'No gateway satisfies the selection policy and current evidence.',
+      switched: false,
+    };
 
   let selected = selectedCandidate;
-  let switched = request.currentGatewayId !== undefined && request.currentGatewayId !== selected.gateway.id;
+  let switched =
+    request.currentGatewayId !== undefined && request.currentGatewayId !== selected.gateway.id;
   if (request.currentGatewayId) {
     const current = eligible.find((candidate) => candidate.gateway.id === request.currentGatewayId);
-    if (current && selected.gateway.id !== current.gateway.id && selected.score < current.score + policy.hysteresisScore) {
+    if (
+      current &&
+      selected.gateway.id !== current.gateway.id &&
+      selected.score < current.score + policy.hysteresisScore
+    ) {
       selected = {
         ...current,
-        explanation: [...current.explanation, `Retained current gateway because challenger did not exceed hysteresis by ${policy.hysteresisScore} points.`],
+        explanation: [
+          ...current.explanation,
+          `Retained current gateway because challenger did not exceed hysteresis by ${policy.hysteresisScore} points.`,
+        ],
       };
       switched = false;
     }
@@ -293,11 +410,16 @@ export function selectGateway(request: GatewaySelectionRequest): GatewaySelectio
   return {
     selected,
     candidates,
-    reason: switched ? `Selected ${selected.gateway.id} using policy, health and capacity evidence.` : `Retained ${selected.gateway.id} as the deterministic best eligible gateway.`,
+    reason: switched
+      ? `Selected ${selected.gateway.id} using policy, health and capacity evidence.`
+      : `Retained ${selected.gateway.id} as the deterministic best eligible gateway.`,
     switched,
   };
 }
 
-export function gatewayHealthStatusIsSelectable(status: GatewayHealthStatus, allowDegradedHealth: boolean): boolean {
+export function gatewayHealthStatusIsSelectable(
+  status: GatewayHealthStatus,
+  allowDegradedHealth: boolean,
+): boolean {
   return status === 'healthy' || (status === 'degraded' && allowDegradedHealth);
 }

@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UnauthorizedAppError } from '@irp/core';
 import type { Principal } from '@irp/auth';
+import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
 
 export const PRODUCT_API_VERSION = '1' as const;
 export const PRODUCT_API_PATH = `/api/v${PRODUCT_API_VERSION}` as const;
@@ -177,7 +178,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/federation/evidence`],
       authentication: 'none',
       requiredPermissions: [],
-      description: 'Signed probe-evidence ingestion; evidence authenticity remains server-validated.',
+      description:
+        'Signed probe-evidence ingestion; evidence authenticity remains server-validated.',
     },
     {
       id: 'devices.enrollment',
@@ -220,7 +222,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/tunnels`, `${PRODUCT_API_PATH}/tunnels/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.inspect'],
-      description: 'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
+      description:
+        'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
     },
     {
       id: 'policies.control',
@@ -230,7 +233,8 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       paths: [`${PRODUCT_API_PATH}/policies`, `${PRODUCT_API_PATH}/policies/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.admin'],
-      description: 'Server-authoritative policy configuration without client-side policy duplication.',
+      description:
+        'Server-authoritative policy configuration without client-side policy duplication.',
     },
     {
       id: 'analytics.network',
@@ -248,7 +252,10 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
 const normalizeHeaderValues = (value: string | string[] | undefined): string[] => {
   if (value === undefined) return [];
   const values = Array.isArray(value) ? value : [value];
-  return values.flatMap((entry) => entry.split(',')).map((entry) => entry.trim()).filter(Boolean);
+  return values
+    .flatMap((entry) => entry.split(','))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 };
 
 const authorizationVersion = (request: FastifyRequest): string | null => {
@@ -257,7 +264,8 @@ const authorizationVersion = (request: FastifyRequest): string | null => {
   const requested = explicit.length > 0 ? explicit : accepted;
 
   if (requested.length === 0) return null;
-  if (requested.some((version) => !versionSchema.safeParse(version).success)) return requested[0] ?? null;
+  if (requested.some((version) => !versionSchema.safeParse(version).success))
+    return requested[0] ?? null;
   if (requested.some((version) => version !== requested[0])) return requested.join(',');
 
   return requested[0] ?? null;
@@ -284,18 +292,15 @@ const hasCapability = async (
     return capability.authentication === 'none' || capability.authentication === 'bearer';
   }
   for (const permission of capability.requiredPermissions) {
-    if (
-      await request.rbac.authorize({
-        principal,
-        resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
-        action: capability.kind === 'mutate' ? 'POST' : 'GET',
-        requiredPermissions: [permission],
-      })
-    ) {
-      return true;
-    }
+    const allowed = await request.rbac.authorize({
+      principal,
+      resource: capability.paths[0] ?? `${PRODUCT_API_PATH}/product/context`,
+      action: capability.kind === 'mutate' ? 'POST' : 'GET',
+      requiredPermissions: [permission],
+    });
+    if (!allowed) return false;
   }
-  return false;
+  return true;
 };
 
 export interface UnifiedProductApiHandle {
@@ -323,11 +328,13 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
     data: PRODUCT_API_MANIFEST,
   }));
 
-  app.get(`${PRODUCT_API_PATH}/product/context`, async (request) => {
+  const contextRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 60, windowMs: 60_000 }));
+  app.get(`${PRODUCT_API_PATH}/product/context`, { preHandler: contextRateLimit }, async (request) => {
     const principal = await authenticate(request);
     const visibleCapabilities: string[] = [];
     for (const capability of PRODUCT_API_MANIFEST.capabilities) {
-      if (await hasCapability(request, principal, capability)) visibleCapabilities.push(capability.id);
+      if (await hasCapability(request, principal, capability))
+        visibleCapabilities.push(capability.id);
     }
 
     return {

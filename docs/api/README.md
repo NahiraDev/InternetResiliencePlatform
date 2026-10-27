@@ -14,17 +14,17 @@ The API is the product boundary between clients, operators and the authoritative
 
 ## API areas
 
-| Area | Responsibility |
-| --- | --- |
-| Status | Current runtime and network health |
-| Devices | Enrollment, identity and lifecycle |
-| Policies | User/operator network policy |
-| Gateways | Authorized gateway inventory and health |
-| Tunnels | Supported tunnel lifecycle |
-| Diagnostics | Evidence and investigation results |
-| Analytics | Historical and aggregated measurements |
-| Events | Notifications and state changes |
-| Administration | Deployment and operator functions |
+| Area           | Responsibility                          |
+| -------------- | --------------------------------------- |
+| Status         | Current runtime and network health      |
+| Devices        | Enrollment, identity and lifecycle      |
+| Policies       | User/operator network policy            |
+| Gateways       | Authorized gateway inventory and health |
+| Tunnels        | Supported tunnel lifecycle              |
+| Diagnostics    | Evidence and investigation results      |
+| Analytics      | Historical and aggregated measurements  |
+| Events         | Notifications and state changes         |
+| Administration | Deployment and operator functions       |
 
 ## Unified Product API
 

@@ -3,9 +3,18 @@ import { InternetIntelligenceAgent } from './agent.js';
 import type { InternetEvidence } from './types.js';
 
 const healthy: InternetEvidence = {
-  timestamp: '2026-08-29T17:00:00.000Z', latencyMs: 40, jitterMs: 3, packetLossRatio: 0,
-  dnsLookupMs: 30, httpResponseMs: 80, httpsHandshakeMs: 50, ipv4Connectivity: true,
-  ipv6Connectivity: true, gatewayReachable: true, internetReachable: true, qualityScore: 95,
+  timestamp: '2026-08-29T17:00:00.000Z',
+  latencyMs: 40,
+  jitterMs: 3,
+  packetLossRatio: 0,
+  dnsLookupMs: 30,
+  httpResponseMs: 80,
+  httpsHandshakeMs: 50,
+  ipv4Connectivity: true,
+  ipv6Connectivity: true,
+  gatewayReachable: true,
+  internetReachable: true,
+  qualityScore: 95,
 };
 
 describe('InternetIntelligenceAgent', () => {
@@ -17,7 +26,9 @@ describe('InternetIntelligenceAgent', () => {
 
   it('does not treat destination failure as proof of filtering', async () => {
     const result = await new InternetIntelligenceAgent().observe({
-      ...healthy, internetReachable: false, httpsHandshakeMs: null,
+      ...healthy,
+      internetReachable: false,
+      httpsHandshakeMs: null,
     });
     expect(result.diagnosis).toBe('tls_failure');
     expect(result.rationale).not.toMatch(/proof|confirmed.*filter/i);

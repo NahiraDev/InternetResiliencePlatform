@@ -3,6 +3,14 @@ set -euo pipefail
 compose_file=${COMPOSE_FILE:-compose.yaml}
 api_port=${API_PORT:-8080}
 
+# Supply isolated test-only credentials so the production compose contract never
+# relies on committed fallback secrets. CI/local smoke values are intentionally
+# ephemeral and must never be reused for a real deployment.
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-irp_smoke_postgres_password}
+export JWT_SECRET=${JWT_SECRET:-irp_smoke_jwt_secret_012345678901234567890123456789}
+export REMOTE_CLIENT_CREDENTIAL_KEY=${REMOTE_CLIENT_CREDENTIAL_KEY:-irp_smoke_credential_key_012345678901234567890123}
+export REMOTE_CLIENT_REFRESH_KEY=${REMOTE_CLIENT_REFRESH_KEY:-irp_smoke_refresh_key_012345678901234567890123}
+
 docker compose -f "$compose_file" config >/dev/null
 docker compose -f "$compose_file" build --pull
 docker compose -f "$compose_file" down --volumes --remove-orphans
@@ -60,13 +68,31 @@ test "$(docker inspect -f '{{.Config.User}}' "$api_container")" = "irp"
 docker exec "$api_container" sh -c '
   set -eu
   test "$(id -u)" != "0"
-  for path in /app/.local/share/pnpm /app/tmp; do
+  for path in /app/tmp; do
     test -w "$path"
   done
-  pnpm --version >/dev/null
-  pnpm exec prisma --version >/dev/null
+  # pnpm must be absent from the runtime image (issue #16): the entrypoint
+  # runs the Prisma CLI directly from the production dependency closure, and
+  # no part of the startup path may invoke a package manager.
+  if command -v pnpm >/dev/null 2>&1 || [ -x /pnpm/bin/pnpm ]; then
+    echo "runtime image must not contain pnpm" >&2
+    exit 1
+  fi
+  node_modules/.bin/prisma --version >/dev/null
+  test -f packages/database/prisma/schema.prisma
+  test -d packages/database/prisma/migrations
+  # Dev/test tooling must not be present in the runtime dependency closure.
+  for pkg in vitest vite vite-node tinypool esbuild eslint turbo typescript-eslint prettier husky @vitest+coverage-v8; do
+    if ls -d "node_modules/.pnpm/${pkg}@"* >/dev/null 2>&1; then
+      echo "runtime image contains dev-only package: ${pkg}" >&2
+      exit 1
+    fi
+  done
 '
-! docker compose -f "$compose_file" logs --no-color api | grep -Ei 'EACCES.*corepack|password|JWT_SECRET|DATABASE_URL|REMOTE_CLIENT_CREDENTIAL_KEY|REMOTE_CLIENT_REFRESH_KEY' >/dev/null
+# The runtime must never install packages at startup.
+! docker compose -f "$compose_file" logs --no-color api | grep -Eq 'pnpm install|Lockfile is up to date|Packages: [+-]|ERR_PNPM' >/dev/null
+secret_log_pattern='EACCES.*corepack|JWT_SECRET[[:space:]]*[:=]|DATABASE_URL[[:space:]]*[:=]|REMOTE_CLIENT_CREDENTIAL_KEY[[:space:]]*[:=]|REMOTE_CLIENT_REFRESH_KEY[[:space:]]*[:=]|POSTGRES_PASSWORD[[:space:]]*[:=]|"password"[[:space:]]*:[[:space:]]*"'
+! docker compose -f "$compose_file" logs --no-color api | grep -Eiq "$secret_log_pattern" >/dev/null
 
 docker compose -f "$compose_file" restart api
 wait_ready

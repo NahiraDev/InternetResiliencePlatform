@@ -17,9 +17,11 @@ export class RuntimeScheduler {
   runsTotal = 0;
   skippedTotal = 0;
   overlapPreventedTotal = 0;
+  failedTotal = 0;
+  lastFailure: string | undefined;
 
   constructor(
-    private readonly runtime: ResilienceRuntime,
+    private readonly runtime: Pick<ResilienceRuntime, 'cycle'>,
     readonly config: RuntimeSchedulerConfig,
   ) {}
 
@@ -44,18 +46,20 @@ export class RuntimeScheduler {
     try {
       this.runsTotal++;
       const budgetMs = Math.max(1, this.config.executionBudgetMs);
-      await Promise.race([
-        this.runtime.cycle({ mode: this.config.mode }),
-        new Promise<never>((_, reject) => {
-          const timer = setTimeout(
-            () => reject(new Error(`runtime cycle exceeded execution budget of ${budgetMs}ms`)),
-            budgetMs,
-          );
-          timer.unref?.();
-        }),
-      ]);
-    } catch {
+      // The runtime validates this deadline before every mutation via its
+      // canonical validation and safety kernel.  Racing the cycle against a
+      // timer used to mark a still-running cycle as finished, which allowed a
+      // second scheduler tick to contend with it and hid the actual outcome.
+      // Keep the scheduler active until the canonical runtime has completed.
+      await this.runtime.cycle({
+        mode: this.config.mode,
+        deadline: new Date(now + budgetMs).toISOString(),
+      });
+      this.lastFailure = undefined;
+    } catch (error) {
+      this.failedTotal++;
       this.skippedTotal++;
+      this.lastFailure = error instanceof Error ? error.message : String(error);
     } finally {
       this.active--;
     }
@@ -73,6 +77,8 @@ export class RuntimeScheduler {
       runsTotal: this.runsTotal,
       skippedTotal: this.skippedTotal,
       overlapPreventedTotal: this.overlapPreventedTotal,
+      failedTotal: this.failedTotal,
+      ...(this.lastFailure === undefined ? {} : { lastFailure: this.lastFailure }),
     };
   }
 }

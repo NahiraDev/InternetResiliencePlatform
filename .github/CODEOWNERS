@@ -7,3 +7,10 @@ SECURITY.md @NahiraDev
 Dockerfile @NahiraDev
 compose.yaml @NahiraDev
 scripts/validate-repository.mjs @NahiraDev
+
+# Architecture guardrails additionally require repository-owner review.
+docs/architecture/IRP-ARCHITECTURE-CONTRACT.json @nimarahimloo
+docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md @nimarahimloo
+AGENTS.md @nimarahimloo
+scripts/architecture/validate-architecture.mjs @nimarahimloo
+scripts/architecture/validate-architecture.test.mjs @nimarahimloo

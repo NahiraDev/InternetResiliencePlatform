@@ -21,16 +21,16 @@ Check service logs, health/readiness endpoints, database connectivity, and conta
 
 ## Failure classification
 
-| Symptom | First boundary to inspect |
-| --- | --- |
-| Process will not start | Runtime/configuration |
-| API unavailable | Control plane / transport |
-| DNS failures | DNS subsystem / resolver path |
-| TCP works but TLS fails | Transport / TLS |
-| One destination fails | Destination/application path |
-| Regions differ | Regional / egress evidence |
-| Gateway unhealthy | Gateway health / provider adapter |
-| Repeated route switching | Autopilot hysteresis / cooldown |
+| Symptom                    | First boundary to inspect           |
+| -------------------------- | ----------------------------------- |
+| Process will not start     | Runtime/configuration               |
+| API unavailable            | Control plane / transport           |
+| DNS failures               | DNS subsystem / resolver path       |
+| TCP works but TLS fails    | Transport / TLS                     |
+| One destination fails      | Destination/application path        |
+| Regions differ             | Regional / egress evidence          |
+| Gateway unhealthy          | Gateway health / provider adapter   |
+| Repeated route switching   | Autopilot hysteresis / cooldown     |
 | Client differs from server | Session / synchronization lifecycle |
 
 Use the project's measurement and diagnostics surfaces to distinguish DNS, TCP, TLS, HTTP/application, latency, packet loss, IPv4/IPv6, and local runtime failures. Do not infer a network-wide outage from a single HTTP result or probe.

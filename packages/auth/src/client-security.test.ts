@@ -13,9 +13,16 @@ describe('DeviceCredentialService', () => {
   it('issues and authenticates opaque device credentials', () => {
     const service = new DeviceCredentialService(key);
     const now = new Date('2026-01-01T00:00:00.000Z');
-    const issued = service.issue({ platform: 'android', deviceId: 'device-1', ttlSeconds: 3600, now });
+    const issued = service.issue({
+      platform: 'android',
+      deviceId: 'device-1',
+      ttlSeconds: 3600,
+      now,
+    });
     expect(issued.secret).toMatch(/^irp_dc_/);
-    expect(service.authenticate(issued.credentialId, issued.secret, now)?.deviceId).toBe('device-1');
+    expect(service.authenticate(issued.credentialId, issued.secret, now)?.deviceId).toBe(
+      'device-1',
+    );
     expect(service.activeCount(now)).toBe(1);
   });
 
@@ -27,14 +34,30 @@ describe('DeviceCredentialService', () => {
     expect(service.revoke(issued.credentialId, now)).toBe(true);
     expect(service.authenticate(issued.credentialId, issued.secret, now)).toBeNull();
     const expired = service.issue({ platform: 'ios', ttlSeconds: 60, now });
-    expect(service.authenticate(expired.credentialId, expired.secret, new Date('2026-01-01T00:01:01.000Z'))).toBeNull();
+    expect(
+      service.authenticate(
+        expired.credentialId,
+        expired.secret,
+        new Date('2026-01-01T00:01:01.000Z'),
+      ),
+    ).toBeNull();
   });
 
   it('revokes every active credential belonging to a device', () => {
     const service = new DeviceCredentialService(key);
     const now = new Date('2026-01-01T00:00:00.000Z');
-    const first = service.issue({ platform: 'android', deviceId: 'device-1', ttlSeconds: 3600, now });
-    const second = service.issue({ platform: 'android', deviceId: 'device-1', ttlSeconds: 3600, now });
+    const first = service.issue({
+      platform: 'android',
+      deviceId: 'device-1',
+      ttlSeconds: 3600,
+      now,
+    });
+    const second = service.issue({
+      platform: 'android',
+      deviceId: 'device-1',
+      ttlSeconds: 3600,
+      now,
+    });
     expect(service.revokeDevice('device-1', now)).toBe(2);
     expect(service.authenticate(first.credentialId, first.secret, now)).toBeNull();
     expect(service.authenticate(second.credentialId, second.secret, now)).toBeNull();

@@ -32,7 +32,8 @@ export type MobileClientEvent =
 
 export type MobileClientListener = (event: MobileClientEvent) => void;
 
-const isMobilePlatform = (value: string): value is MobilePlatform => value === 'ios' || value === 'android';
+const isMobilePlatform = (value: string): value is MobilePlatform =>
+  value === 'ios' || value === 'android';
 
 export const createMobileClientState = (platform: string): MobileClientState => {
   if (!isMobilePlatform(platform)) {
@@ -82,7 +83,9 @@ export class MobileClientCore {
       throw new Error(`Unsupported diagnostics platform: ${snapshot.platform}`);
     }
     if (snapshot.platform !== this.state.platform) {
-      throw new Error(`Diagnostics platform mismatch: expected ${this.state.platform}, received ${snapshot.platform}`);
+      throw new Error(
+        `Diagnostics platform mismatch: expected ${this.state.platform}, received ${snapshot.platform}`,
+      );
     }
     const previousConnection = this.state.connection;
     this.state = {

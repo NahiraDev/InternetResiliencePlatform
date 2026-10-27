@@ -3,23 +3,20 @@ name: iOS Network Integration
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
   push:
     branches: [main]
-    paths:
-      - 'clients/ios/**'
-      - 'docs/phases/phase-66.md'
-      - '.github/workflows/ios-network-integration.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: ios-network-integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   NODE_VERSION: '24'
   PNPM_VERSION: '11.21.0'
+  DEVELOPER_DIR: /Applications/Xcode_16.1.app/Contents/Developer
 
 defaults:
   run:
@@ -27,13 +24,22 @@ defaults:
 
 jobs:
   ios-network-integration:
-    runs-on: macos-14
+    # Use the standard Intel macOS 15 runner. The larger-runner label is not
+    # required by this validation lane and can fail before a job gets a runner.
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      - name: Verify Xcode toolchain
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          DEVELOPER_DIR="$DEVELOPER_DIR" swift --version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -45,27 +51,77 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Verify Xcode toolchain
-        run: |
-          xcodebuild -version
-          swift --version
+      - name: Verify workspace install
+        run: pnpm install --frozen-lockfile
 
       - name: Validate Swift package
         run: |
           swift test --package-path clients/ios
           swift build --package-path clients/ios
 
-      - name: Validate Xcode project
+      - name: Regenerate Xcode project (XcodeGen)
         run: |
+          set -euo pipefail
+          brew install xcodegen
+          (cd clients/ios && xcodegen generate)
+
+      - name: Validate Xcode project graph
+        run: |
+          set -euo pipefail
+          test -f clients/ios/IRP.xcodeproj/project.pbxproj
           xcodebuild -list -project clients/ios/IRP.xcodeproj
-          xcodebuild -project clients/ios/IRP.xcodeproj \
-            -target IRPPacketTunnel \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            build
+          python3 - <<'PY'
+          import json, subprocess
+          path = 'clients/ios/IRP.xcodeproj/project.pbxproj'
+          pb = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', path]))
+          objects = pb['objects']
+          targets = {
+              o['name']: o
+              for o in objects.values()
+              if o.get('isa') == 'PBXNativeTarget'
+          }
+          assert {'IRP', 'IRPPacketTunnel'} <= set(targets), sorted(targets)
+          assert targets['IRP']['productType'] == 'com.apple.product-type.application'
+          assert targets['IRPPacketTunnel']['productType'] == 'com.apple.product-type.app-extension'
+
+          def target_sources(target_name):
+              names = []
+              for phase_id in targets[target_name]['buildPhases']:
+                  phase = objects[phase_id]
+                  if phase.get('isa') != 'PBXSourcesBuildPhase':
+                      continue
+                  for file_id in phase['files']:
+                      file_ref = objects[objects[file_id]['fileRef']]
+                      names.append(file_ref.get('path') or file_ref.get('name'))
+              return names
+
+          app_phases = [objects[p] for p in targets['IRP']['buildPhases']]
+          embed_phases = [
+              phase for phase in app_phases
+              if phase.get('isa') == 'PBXCopyFilesBuildPhase'
+              and any(
+                  objects.get(objects[f]['fileRef'], {}).get('explicitFileType')
+                  == 'wrapper.app-extension'
+                  or (objects.get(objects[f]['fileRef'], {}).get('path') or '').endswith('.appex')
+                  for f in phase.get('files', [])
+              )
+          ]
+          assert embed_phases, 'IRP must embed the foundation extension (.appex) in a copy-files phase'
+
+          # The app target must depend on the extension target.
+          dependencies = [objects[d] for d in targets['IRP']['dependencies']]
+          assert any(
+              objects[dep['target']]['name'] == 'IRPPacketTunnel' for dep in dependencies
+          ), 'IRP must depend on IRPPacketTunnel'
+
+          extension_sources = target_sources('IRPPacketTunnel')
+          assert 'PacketTunnelProvider.swift' in extension_sources, extension_sources
+          assert 'PacketTunnelConfiguration.swift' not in extension_sources
+          print('Xcode project graph contract passed (semantic)')
+          PY
 
       - name: Validate packet tunnel entitlement
         run: |

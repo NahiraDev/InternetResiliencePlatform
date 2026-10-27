@@ -20,7 +20,9 @@ Each cycle creates a RuntimeContext snapshot, collects observations, correlates 
 
 ## Security and plugins
 
-Security failures fail closed and remain distinct from availability failures. Unknown/untrusted capabilities are rejected. The runtime exposes no arbitrary shell execution and no plugin bypass path; plugin behavior must remain mediated by existing plugin APIs, sandboxing, permissions, capabilities, and policy enforcement.
+Security failures fail closed and remain distinct from availability failures. Unknown/untrusted capabilities are rejected. The runtime exposes no arbitrary shell execution and no plugin bypass path; plugin behavior must remain mediated by existing plugin APIs, permissions, capabilities, and policy enforcement.
+
+The in-process `PluginSandbox` is a containment aid for plugin code that is already trusted by the host; Node.js VM isolation must not be treated as a security boundary against malicious code. Dynamic string and WebAssembly code generation are disabled and host globals are withheld. Plugins that are untrusted or obtained from an untrusted source must execute behind a process/container/OS-level sandbox before being admitted to the runtime.
 
 ## Replay and observability
 

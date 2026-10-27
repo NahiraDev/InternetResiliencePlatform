@@ -37,7 +37,10 @@ const severity: Record<DiagnosticState, number> = {
   unhealthy: 3,
 };
 
-export const classifyDiagnosticFailure = (status: number | undefined, error?: unknown): DiagnosticState => {
+export const classifyDiagnosticFailure = (
+  status: number | undefined,
+  error?: unknown,
+): DiagnosticState => {
   if (status === undefined) return error ? 'unhealthy' : 'unknown';
   if (status >= 200 && status < 300) return 'healthy';
   if (status === 429 || (status >= 500 && status < 600)) return 'unhealthy';
@@ -47,10 +50,14 @@ export const classifyDiagnosticFailure = (status: number | undefined, error?: un
 
 const recommendationFor = (check: DiagnosticCheck): string | undefined => {
   if (check.state === 'healthy') return undefined;
-  if (check.name === 'readiness') return 'Inspect dependency readiness and startup/runtime logs before changing network policy.';
-  if (check.name === 'network') return 'Inspect DNS, transport, route/provider health and application-level reachability before switching paths.';
-  if (check.name === 'platform') return 'Inspect the current route decision, recovery issues and dependency state; do not blindly retry or flap routes.';
-  if (check.name === 'metrics') return 'Restore the local metrics exposition path; diagnostics remain usable without external telemetry collectors.';
+  if (check.name === 'readiness')
+    return 'Inspect dependency readiness and startup/runtime logs before changing network policy.';
+  if (check.name === 'network')
+    return 'Inspect DNS, transport, route/provider health and application-level reachability before switching paths.';
+  if (check.name === 'platform')
+    return 'Inspect the current route decision, recovery issues and dependency state; do not blindly retry or flap routes.';
+  if (check.name === 'metrics')
+    return 'Restore the local metrics exposition path; diagnostics remain usable without external telemetry collectors.';
   return `Investigate the ${check.name} diagnostic check and its structured details.`;
 };
 

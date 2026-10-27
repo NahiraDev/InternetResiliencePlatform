@@ -5,14 +5,26 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/node /usr/lib/irp/linux-client/dist/index.js
+User=irp
+Group=irp
+StateDirectory=irp
+WorkingDirectory=/usr/lib/irp/linux-client
+ExecStart=/usr/bin/node dist/main.js
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=read-only
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
 ReadWritePaths=/var/lib/irp
+# Route mutation requires CAP_NET_ADMIN. This is the minimal capability for
+# ip route add/replace/del operations through the canonical kernel executor.
+# No other host mutation authority is granted.
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
 
 [Install]
 WantedBy=multi-user.target

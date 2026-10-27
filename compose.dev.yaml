@@ -6,14 +6,14 @@ services:
       POSTGRES_PASSWORD: irp_dev_password
       POSTGRES_DB: irp
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
       interval: 5s
       timeout: 5s
       retries: 20
     volumes:
       - postgres-dev-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - '5432:5432'
   api:
     build:
       context: .
@@ -30,7 +30,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - '8080:8080'
 volumes:
   postgres-dev-data:
   pnpm-store:

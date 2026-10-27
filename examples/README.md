@@ -4,14 +4,14 @@ These examples are **capability-oriented**. They demonstrate supported IRP inter
 
 ## Examples
 
-| Example | Purpose | Build required | Live service required | Host mutation |
-| --- | --- | --- | --- | --- |
-| `basic-api` | Call the read-only platform status API | No | Yes | No |
-| `network-measurement` | Perform a bounded DNS measurement | Yes | No | No |
-| `dns-diagnostics` | Inspect DNS resolution timing and addresses | Yes | No | No |
-| `connectivity` | Observe platform connectivity status through the API | No | Yes | No |
-| `failover` | Simulate candidate selection and verification logic | Yes | No | No |
-| `autopilot` | Simulate the policy-controlled decision loop | Yes | No | No |
+| Example               | Purpose                                              | Build required | Live service required | Host mutation |
+| --------------------- | ---------------------------------------------------- | -------------- | --------------------- | ------------- |
+| `basic-api`           | Call the read-only platform status API               | No             | Yes                   | No            |
+| `network-measurement` | Perform a bounded DNS measurement                    | Yes            | No                    | No            |
+| `dns-diagnostics`     | Inspect DNS resolution timing and addresses          | Yes            | No                    | No            |
+| `connectivity`        | Observe platform connectivity status through the API | No             | Yes                   | No            |
+| `failover`            | Simulate candidate selection and verification logic  | Yes            | No                    | No            |
+| `autopilot`           | Simulate the policy-controlled decision loop         | Yes            | No                    | No            |
 
 ## Quick start
 

@@ -10,6 +10,7 @@ Read `PROJECT_STATE.md`, the active phase record and `.github/AGENT_PROTOCOL.md`
 Treat failures as evidence of a defect until proven otherwise. Reproduce the failure, inspect the implementation and contract, then fix the root cause or report the precise blocker.
 
 Test categories to consider:
+
 - normal behavior;
 - boundary values;
 - invalid input;

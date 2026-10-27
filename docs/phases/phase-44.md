@@ -8,6 +8,12 @@
 
 Turn accumulated network, telemetry, historical-analysis, and distributed-probe evidence into a bounded analytics layer that produces trustworthy summaries, trends, anomaly signals, and decision-support data without becoming an independent network mutation engine.
 
+## Implementation references
+
+- Package: `@irp/historical-analysis`
+- Primary sources: `packages/historical-analysis/src/analytics.ts`
+- Tests: `packages/historical-analysis/src/analytics.test.ts`
+
 ## Scope
 
 - bounded time-window analytics over historical measurements and signed regional probe evidence;

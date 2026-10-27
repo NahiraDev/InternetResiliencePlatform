@@ -3,7 +3,7 @@ name: Docker Publish
 on:
   workflow_run:
     workflows:
-      - CI
+      - Release Gate
     types:
       - completed
 
@@ -12,20 +12,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: docker-publish-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: true
+  group: docker-publish-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  NODE_VERSION: "24"
-  PNPM_VERSION: "11.21.0"
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.21.0'
 
 jobs:
   publish:
     name: Build and publish image
     if: >-
-      github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
@@ -37,21 +36,25 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download trusted source artifact
-        uses: actions/download-artifact@v8
+      - name: Checkout current main
+        uses: actions/checkout@v7
         with:
-          name: irp-source-${{ github.event.workflow_run.head_sha }}
-          path: ${{ runner.temp }}/source-artifact
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
+          ref: main
+          fetch-depth: 1
 
-      - name: Extract trusted source artifact
-        shell: bash
+      - name: Verify CI-gated commit
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GATED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          mkdir -p "${GITHUB_WORKSPACE}"
-          tar -xzf "${RUNNER_TEMP}/source-artifact/irp-source.tar.gz" -C "${GITHUB_WORKSPACE}"
+          checked_out_sha="$(git rev-parse HEAD)"
+          current_main_sha="$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          test "$checked_out_sha" = "$current_main_sha"
+          test "$checked_out_sha" = "$GATED_SHA"
+          echo "sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${checked_out_sha:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -69,7 +72,10 @@ jobs:
       - name: Install dependencies with frozen lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Validate repository
+      - name: Test Docker publication policy
+        run: node --test scripts/docker-publication-policy.test.mjs
+
+      - name: Validate CI-gated source
         run: pnpm validate
 
       - name: Set up Docker Buildx
@@ -88,8 +94,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha
-            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+          labels: |
+            io.irp.publication.class=developer-preview
+
+      - name: Enforce developer-preview tag policy
+        run: node scripts/docker-publication-policy.mjs ${{ steps.meta.outputs.tags }}
 
       - name: Build and push Docker image
         id: build
@@ -100,9 +110,43 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           provenance: true
           sbom: true
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.3.1
+
+      - name: Scan published image by immutable digest (fail-closed)
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          test -n "$DIGEST"
+          # Image names must be lowercase. metadata-action lowercases; the scan
+          # must use the same canonical reference.
+          IMAGE_NAME="${REGISTRY}/$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')"
+          # Scan the exact pushed digest, not a re-build. HIGH/CRITICAL findings
+          # fail the workflow so Release Gate cannot pass with an unscanned or
+          # unverified image.
+          trivy image \
+            --format json \
+            --output /tmp/trivy-scan.json \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            "${IMAGE_NAME}@${DIGEST}"
+          test -s /tmp/trivy-scan.json
+          # Report the scanned digest explicitly.
+          printf 'Scanned digest: %s\n' "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Trivy scan result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-scan
+          path: /tmp/trivy-scan.json
+          retention-days: 30
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.1.2
@@ -117,3 +161,20 @@ jobs:
             [ -n "${image_tag}" ] || continue
             cosign sign --yes "${image_tag}@${DIGEST}"
           done <<< "${TAGS}"
+
+      - name: Report signed developer-preview image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test -n "$DIGEST"
+          {
+            printf '## Developer-preview image\n\n'
+            printf 'Source commit: `%s`\n\n' "$SOURCE_SHA"
+            printf 'Published tags:\n```\n%s\n```\n\n' "$TAGS"
+            printf 'Signed image digest: `%s`\n\n' "$DIGEST"
+            printf 'Production certification: not established.\n'
+            printf 'Latest promotion: BLOCKED; no trusted production-certification authority is configured.\n'
+          } >> "$GITHUB_STEP_SUMMARY"

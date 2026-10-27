@@ -22,7 +22,12 @@ const gateway = (id: string, overrides: Partial<GatewayMetadata> = {}): GatewayM
   ...overrides,
 });
 
-const health = (gatewayId: string, score: number, latencyMs: number, checkedAt = '2026-08-25T12:00:00.000Z'): GatewayHealth => ({
+const health = (
+  gatewayId: string,
+  score: number,
+  latencyMs: number,
+  checkedAt = '2026-08-25T12:00:00.000Z',
+): GatewayHealth => ({
   gatewayId,
   status: score >= 80 ? 'healthy' : 'degraded',
   score,
@@ -89,15 +94,33 @@ describe('selectGateway', () => {
     const result = selectGateway({
       gateways: [
         gateway('missing-tag'),
-        gateway('missing-protocol', { capabilities: { tunnelProtocols: ['openvpn'], addressFamilies: ['dual'], transports: ['tcp'], features: [] } }),
-        gateway('missing-family', { capabilities: { tunnelProtocols: ['wireguard'], addressFamilies: ['ipv4'], transports: ['udp'], features: [] } }),
+        gateway('missing-protocol', {
+          capabilities: {
+            tunnelProtocols: ['openvpn'],
+            addressFamilies: ['dual'],
+            transports: ['tcp'],
+            features: [],
+          },
+        }),
+        gateway('missing-family', {
+          capabilities: {
+            tunnelProtocols: ['wireguard'],
+            addressFamilies: ['ipv4'],
+            transports: ['udp'],
+            features: [],
+          },
+        }),
       ],
       health: {
         'missing-tag': health('missing-tag', 95, 40),
         'missing-protocol': health('missing-protocol', 95, 40),
         'missing-family': health('missing-family', 95, 40),
       },
-      policy: { requiredTags: ['trusted-egress'], requiredTunnelProtocol: 'wireguard', requiredAddressFamily: 'ipv6' },
+      policy: {
+        requiredTags: ['trusted-egress'],
+        requiredTunnelProtocol: 'wireguard',
+        requiredAddressFamily: 'ipv6',
+      },
       now: new Date('2026-08-25T12:00:30.000Z'),
     });
 
@@ -156,14 +179,25 @@ describe('selectGateway', () => {
     const capacity = { 'gw-a': { utilizationPercent: 20, checkedAt: '2026-08-25T12:00:00.000Z' } };
     const before = JSON.stringify({ gateways, healthEvidence, capacity });
 
-    selectGateway({ gateways, health: healthEvidence, capacity, now: new Date('2026-08-25T12:00:30.000Z') });
+    selectGateway({
+      gateways,
+      health: healthEvidence,
+      capacity,
+      now: new Date('2026-08-25T12:00:30.000Z'),
+    });
 
     expect(JSON.stringify({ gateways, healthEvidence, capacity })).toBe(before);
   });
 
   it('retains explicit health classification semantics from the health engine', () => {
     const evaluated = evaluateGatewayHealth(
-      { gatewayId: 'gw-a', checkedAt: '2026-08-25T12:00:00.000Z', reachable: true, latencyMs: 80, packetLossPercent: 1 },
+      {
+        gatewayId: 'gw-a',
+        checkedAt: '2026-08-25T12:00:00.000Z',
+        reachable: true,
+        latencyMs: 80,
+        packetLossPercent: 1,
+      },
       Date.parse('2026-08-25T12:00:30.000Z'),
     );
     expect(evaluated.status).toBe('healthy');

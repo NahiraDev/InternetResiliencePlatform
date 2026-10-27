@@ -54,7 +54,7 @@ The endpoint must return at least:
 
 ## GitHub Actions automation
 
-`.github/workflows/regional-validation.yml` provides a manual `workflow_dispatch` job. It requires the operator to supply the explicit probe URL and expected country, prints the structured result into `$GITHUB_STEP_SUMMARY`, and uploads the JSON evidence as a workflow artifact.
+`.github/workflows/regional-validation.yml` provides a manual `workflow_dispatch` job targeting `[self-hosted, linux, iran]`. It requires the operator to supply the explicit probe URL and expected country, prints the structured result into `$GITHUB_STEP_SUMMARY`, and uploads the JSON evidence as a workflow artifact. It never falls back to `ubuntu-latest`, so GitHub-hosted infrastructure cannot silently become a regional vantage point.
 
 This workflow is intentionally not part of the normal repository CI gate because a missing/unavailable external regional vantage point is an environmental validation failure, not a source-code failure.
 

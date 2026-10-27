@@ -1,0 +1,13 @@
+validate rc=0 secs=4
+typecheck rc=143 secs=49
+lint rc=0 secs=81
+build rc=0 secs=72
+test rc=0 secs=137
+architecture:check rc=0 secs=0
+architecture:guards rc=0 secs=1
+architecture:test rc=0 secs=1
+certification:test rc=0 secs=1
+bundle:test rc=0 secs=1
+validate:docs rc=0 secs=0
+DONE
+typecheck rc=0 secs=111 (rerun after sandbox SIGTERM)

@@ -6,6 +6,12 @@
 
 **Verification:** pending CI. Do not mark the phase complete until repository validation, typecheck, lint, tests, build and the applicable runtime gates are green.
 
+## Implementation references
+
+- Package: `@irp/gateway-registry`
+- Primary sources: `packages/gateway-registry/src/index.ts`
+- Tests: `packages/gateway-registry/src/index.test.ts`
+
 ## Objective
 
 Introduce the authoritative gateway inventory contract used by later gateway health, selection, tunnel and fleet phases. The registry stores gateway identity, ownership, endpoint metadata, declared capabilities, trust state, lifecycle state and operator metadata without performing network activation or routing decisions.

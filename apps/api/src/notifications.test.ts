@@ -24,7 +24,11 @@ describe('NotificationIncidentCenter', () => {
 
   it('preserves critical severity for security failures', async () => {
     const center = new NotificationIncidentCenter();
-    const created = await center.open({ ...incident, classification: 'security_failure', confidence: 0.7 });
+    const created = await center.open({
+      ...incident,
+      classification: 'security_failure',
+      confidence: 0.7,
+    });
 
     expect(created.severity).toBe('critical');
     expect(created.status).toBe('open');
@@ -40,7 +44,9 @@ describe('NotificationIncidentCenter', () => {
     expect(acknowledged?.status).toBe('acknowledged');
     expect(resolved?.status).toBe('resolved');
     expect(resolved?.resolvedAt).toBeTruthy();
-    expect((await center.listNotifications()).some((item) => item.type === 'incident-resolved')).toBe(true);
+    expect(
+      (await center.listNotifications()).some((item) => item.type === 'incident-resolved'),
+    ).toBe(true);
   });
 
   it('does not reopen a resolved incident as a new identity', async () => {

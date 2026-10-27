@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sourceFingerprint": "b1bbc30f1927c927b9bc03c5d41844768a6ec6e2d5fc3b359a3d52b70ba5eeeb",
+  "verdict": "PENDING",
+  "contractSha256": "c6d37a9e7e5995e980bc03aa58e0b71ba3e64bd580636106d16f880b08cf92a5",
+  "checks": [
+    {
+      "id": "contract",
+      "status": "pass",
+      "detail": "schemaVersion=1"
+    },
+    {
+      "id": "evidence-bundle",
+      "status": "pending",
+      "detail": "no independently supplied evidence bundle was provided"
+    },
+    {
+      "id": "runtime-probe",
+      "status": "pending",
+      "detail": "runtime URL was not supplied; no live runtime evidence claimed"
+    }
+  ],
+  "runtimeEvidence": null,
+  "suppliedEvidence": null
+}

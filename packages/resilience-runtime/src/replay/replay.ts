@@ -8,7 +8,12 @@ export class DecisionReplayEngine {
       ...input.record.runtimeContext,
       mode: 'simulation',
     });
-    const selectedPlan = await this.planner.plan(input.candidates, context);
+    const intent = context.compiledIntents?.[0] ?? context.compiledIntent;
+    const { plan: selectedPlan } = await this.planner.planAgainstObjectives(
+      input.candidates,
+      context,
+      intent === undefined ? {} : { intent },
+    );
     const original = input.record.selectedPlan?.selectedAction.id;
     const reproduced = selectedPlan.selectedAction.id === original;
     return {

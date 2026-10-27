@@ -15,15 +15,19 @@ describe('gateway health', () => {
 
   it('marks unreachable and stale samples explicitly', () => {
     const checkedAt = '2026-08-24T00:00:00.000Z';
-    expect(evaluateGatewayHealth(
-      { gatewayId: 'gw-1', checkedAt, reachable: false },
-      Date.parse(checkedAt) + 1_000,
-    ).status).toBe('unreachable');
+    expect(
+      evaluateGatewayHealth(
+        { gatewayId: 'gw-1', checkedAt, reachable: false },
+        Date.parse(checkedAt) + 1_000,
+      ).status,
+    ).toBe('unreachable');
 
-    expect(evaluateGatewayHealth(
-      { gatewayId: 'gw-1', checkedAt, reachable: true, latencyMs: 10 },
-      Date.parse(checkedAt) + 61_000,
-    ).status).toBe('stale');
+    expect(
+      evaluateGatewayHealth(
+        { gatewayId: 'gw-1', checkedAt, reachable: true, latencyMs: 10 },
+        Date.parse(checkedAt) + 61_000,
+      ).status,
+    ).toBe('stale');
   });
 
   it('does not manufacture quality from reachability alone', () => {
@@ -50,11 +54,13 @@ describe('gateway health', () => {
   });
 
   it('enforces a hard probe timeout', async () => {
-    await expect(probeGatewayHealth(
-      'gw-1',
-      { host: 'gateway.example.test', port: 443, family: 'dual' },
-      { probe: () => new Promise(() => undefined) },
-      10,
-    )).rejects.toThrow('timed out');
+    await expect(
+      probeGatewayHealth(
+        'gw-1',
+        { host: 'gateway.example.test', port: 443, family: 'dual' },
+        { probe: () => new Promise(() => undefined) },
+        10,
+      ),
+    ).rejects.toThrow('timed out');
   });
 });
