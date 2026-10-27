@@ -64,6 +64,7 @@ import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.
 import {
   generateSpeedInsightsScript,
   injectSpeedInsightsIntoHtml,
+  initializeSpeedInsights,
   defaultSpeedInsightsConfig,
   type SpeedInsightsConfig,
 } from './speed-insights.js';
@@ -1286,6 +1287,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 export {
   generateSpeedInsightsScript,
   injectSpeedInsightsIntoHtml,
+  initializeSpeedInsights,
   defaultSpeedInsightsConfig,
   type SpeedInsightsConfig,
 };
