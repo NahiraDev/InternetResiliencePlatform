@@ -7,6 +7,7 @@ on:
       - System Assurance
       - Linux Primary Device
       - Runtime Lab
+      - CodeQL Advanced
       - Repository Deep Audit
       - Public Runtime Lab
       - Android Client
@@ -59,7 +60,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -89,6 +90,7 @@ jobs:
             "system-assurance.yml"
             "linux-primary-device.yml"
             "runtime-lab.yml"
+            "codeql.yml"
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
@@ -122,21 +124,6 @@ jobs:
 
             echo "PASS $workflow"
           done
-
-          echo "=== verifying GitHub Default Setup CodeQL for $HEAD_SHA ==="
-          check_runs="$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100")"
-          codeql="$(jq -c '[.check_runs[] | select(.name == "CodeQL" or (.name | startswith("CodeQL /")))] | sort_by(.completed_at // "") | last // empty' <<<"$check_runs")"
-          if [ -z "$codeql" ]; then
-            echo "BLOCKED CodeQL: no completed GitHub Default Setup CodeQL check for exact SHA $HEAD_SHA" >&2
-            exit 1
-          fi
-          codeql_status="$(jq -r '.status // "unknown"' <<<"$codeql")"
-          codeql_conclusion="$(jq -r '.conclusion // "unknown"' <<<"$codeql")"
-          echo "CodeQL status=$codeql_status conclusion=$codeql_conclusion"
-          if [ "$codeql_status" != "completed" ] || [ "$codeql_conclusion" != "success" ]; then
-            echo "FAIL CodeQL: latest exact-SHA check is not successful" >&2
-            exit 1
-          fi
 
           echo
           echo "Release Gate: PASS"
