@@ -1,0 +1,40 @@
+name: Apply durable repository refactor
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+      - name: Rewrite API persistence boundary
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('apps/api/src/index.ts')
+          text = path.read_text()
+          if 'createDurableRepositories' in text:
+              raise SystemExit(0)
+          anchor = "import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } from './analytics.js';\n"
+          text = text.replace(anchor, anchor + "import { createDurableRepositories } from './durable-repositories.js';\n")
+          start = text.index('class Store<T extends Entity> {')
+          end = text.index('const isProductionRuntime = () =>', start)
+          text = text[:start] + text[end:]
+          db_anchor = "  const db = createPrismaClient(process.env.DATABASE_URL);\n"
+          text = text.replace(db_anchor, db_anchor + "  const repositories = createDurableRepositories(db);\n  const { users, organizations: orgs, projects, workspaces, sessions } = repositories;\n")
+          auth_start = text.index("  const authRateLimit = rateLimitPreHandler")
+          auth_end = text.index("  app.addHook('onClose'", auth_start)
+          replacement = Path('/tmp/replacement.txt')
+          replacement.write_text('''__REPLACEMENT__''')
+          raise SystemExit('Replacement payload must be injected before enabling this workflow')
+          PY
