@@ -58,3 +58,4 @@ export * from './traffic/index.js';
 export * from './telemetry-plane/index.js';
 export * from './control-security/index.js';
 export * from './fleet/index.js';
+export * from './intelligence/index.js';
