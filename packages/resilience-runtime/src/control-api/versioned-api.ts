@@ -78,7 +78,7 @@ const verCmp = (a: string, b: string): number => { const x = verParts(a); const 
 export interface ControlApiOptions { readonly supportedVersions: readonly string[]; readonly idempotencyTtlMs?: number; readonly idempotencyCapacity?: number; readonly nowMs?: () => number }
 
 export class ControlApi {
-  private readonly routes: ApiRoute<any, any>[] = [];
+  private readonly routes: ApiRoute<Record<string, unknown>, unknown>[] = [];
   private readonly idem = new Map<string, { readonly fingerprint: string; readonly response: ApiResponse; readonly at: number }>();
   private readonly now: () => number;
   constructor(private readonly options: ControlApiOptions) { this.now = options.nowMs ?? (() => Date.now()); }
@@ -87,7 +87,7 @@ export class ControlApi {
     parseVersionOrThrow(route.since);
     if (route.until) { parseVersionOrThrow(route.until); if (verCmp(route.until, route.since) <= 0) throw new Error('route until must be after since'); }
     if (this.routes.some((r) => r.method === route.method && r.path === route.path && verCmp(r.since, route.since) === 0)) throw new Error(`duplicate route ${route.method} ${route.path}@${route.since}`);
-    this.routes.push(route as ApiRoute<any, any>);
+    this.routes.push(route as unknown as ApiRoute<Record<string, unknown>, unknown>);
   }
 
   describe(): readonly { method: string; path: string; since: string; until?: string; capability: string; mutating: boolean }[] {
