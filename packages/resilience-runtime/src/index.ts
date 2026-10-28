@@ -60,3 +60,4 @@ export * from './control-security/index.js';
 export * from './fleet/index.js';
 export * from './intelligence/index.js';
 export * from './dataplane/index.js';
+export * from './control-api/index.js';
