@@ -55,3 +55,4 @@ export * from './intent/compiler.js';
 
 export * from './autopilot/autopilot.js';
 export * from './traffic/index.js';
+export * from './telemetry-plane/index.js';
