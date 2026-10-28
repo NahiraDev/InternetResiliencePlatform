@@ -38,9 +38,9 @@ Use the [Historical Phase Evidence Matrix](../audits/phase-history-evidence-matr
 
 A historical evidence entry is not a completion claim. A phase becomes a canonical completed record only after its capability cluster is mapped to the applicable product contract and its acceptance evidence is sufficiently reconstructed.
 
-## Future phase records
+## Phase records 94–150
 
-Do not create speculative implementation reports for phases that have not started. Planned scope remains in the current roadmap until its phase is authorized for execution.
+Phases 94–150 have implementation records (`phase-94.md`…`phase-150.md`) written against local implementation and tests; all remain PARTIAL pending exact-SHA CI evidence. Do not create speculative reports for phases that have not started.
 
 |   Range | Product track                          |
 | ------: | -------------------------------------- |

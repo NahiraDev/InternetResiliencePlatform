@@ -4,7 +4,7 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation baseline: **Phase 93 — Advanced Routing Control implementation and local regression evidence complete**. Exact-SHA CI evidence remains required. ResilienceRuntime remains the sole production mutation authority.
+- Current implementation baseline: **Phases 94–150 implemented locally** (branch `phase/94-150-implementation`, PARTIAL pending exact-SHA CI). Phase 93 and earlier unchanged. ResilienceRuntime remains the sole production mutation authority.
 - Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**, **#410**, **#412**, **#413**, **#420**.
 - Main branch: `main`
 - Current main commit reviewed: `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`.

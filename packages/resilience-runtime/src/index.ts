@@ -54,3 +54,12 @@ export * from './scenario-lab/seed.js';
 export * from './intent/compiler.js';
 
 export * from './autopilot/autopilot.js';
+export * from './traffic/index.js';
+export * from './telemetry-plane/index.js';
+export * from './control-security/index.js';
+export * from './fleet/index.js';
+export * from './intelligence/index.js';
+export * from './dataplane/index.js';
+export * from './control-api/index.js';
+export * from './governance/index.js';
+export * from './scale/index.js';
