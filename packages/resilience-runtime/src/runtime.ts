@@ -1,4 +1,9 @@
-import { createRuntimeContext } from './context/context.js';
+import {
+  createCapabilitySnapshot,
+  createPolicySnapshot,
+  createRuntimeContext,
+  defaultPolicy,
+} from './context/context.js';
 import type {
   RuntimeContext,
   RuntimeSnapshot,
@@ -12,6 +17,7 @@ import type {
   ActionPlan,
   ActionValidation,
   ActionExecution,
+  ActionIntent,
 } from './domain/types.js';
 import { nextId, nowIso } from './domain/ids.js';
 import { RuntimeStateMachine } from './state/state-machine.js';
@@ -26,6 +32,7 @@ import { RuntimeActionVerifier } from './verification/verification.js';
 import { FailoverRecoveryProvider } from './recovery/recovery.js';
 import { createDecisionRecord } from './decisions/records.js';
 import { InMemoryDecisionStore, InMemoryIncidentStore } from './stores/memory.js';
+import type { DecisionStore, IncidentStore } from './ports/ports.js';
 import {
   EvidencePreservingEventSink,
   type EvidenceExporter,
@@ -74,6 +81,13 @@ export interface ResilienceRuntimeOptions {
   eventExporter?: EvidenceExporter;
   safetyKernel?: SafetyKernelOptions;
   intentStore?: IntentStore;
+  /**
+   * Where decision records are kept. Defaults to memory, which is lost on restart; production
+   * hosts pass a durable store so history survives crashes.
+   */
+  decisionStore?: DecisionStore;
+  /** Where incidents are kept. Same durability note as `decisionStore`. */
+  incidentStore?: IncidentStore;
   /** Canonical knowledge boundary for outcome-driven ranking. */
   knowledgeStore?: KnowledgeStore;
   /**
@@ -95,6 +109,21 @@ export interface ResilienceRuntimeOptions {
    * closed rather than granting whatever the plan happens to require.
    */
   actorCapabilities?: readonly string[];
+  /**
+   * Host-owned trust. The composition root (daemon) — never a cycle caller —
+   * declares which capabilities and action intents this runtime may exercise.
+   * When set, every cycle's security context, capability snapshot and policy
+   * allow-list are derived from it and any caller-supplied values for those
+   * fields are discarded, so trust cannot be forged per request. When omitted
+   * the runtime stays fail-closed (untrusted context).
+   */
+  hostTrust?: HostTrust;
+}
+
+export interface HostTrust {
+  readonly principal: string;
+  readonly capabilities: readonly string[];
+  readonly allowedActions: readonly ActionIntent[];
 }
 
 export class ResilienceRuntime {
@@ -119,8 +148,8 @@ export class ResilienceRuntime {
   readonly events: EvidencePreservingEventSink;
   readonly telemetry: TelemetrySink;
   readonly telemetryRegistry: MetricsRegistry;
-  readonly decisions = new InMemoryDecisionStore();
-  readonly incidents = new InMemoryIncidentStore();
+  readonly decisions: DecisionStore;
+  readonly incidents: IncidentStore;
   /**
    * Assigned in the constructor: it depends on `events`, which itself depends
    * on constructor options, so a field initializer would run too early.
@@ -138,6 +167,7 @@ export class ResilienceRuntime {
   readonly learningLoop: OutcomeLearningLoop;
   readonly outcomeProbes: readonly OutcomeProbe[];
   readonly actorCapabilities: readonly string[];
+  private readonly hostTrust: HostTrust | undefined;
   private readonly safetyKernel: SafetyRollbackRecoveryKernel;
   private readonly networkControlPlane: CanonicalNetworkControlPlane | undefined;
   private readonly policyArbitrator: RuntimePolicyArbitrator;
@@ -148,6 +178,8 @@ export class ResilienceRuntime {
     private readonly providers: readonly ObservationProvider[] = [],
     options: ResilienceRuntimeOptions = {},
   ) {
+    this.decisions = options.decisionStore ?? new InMemoryDecisionStore();
+    this.incidents = options.incidentStore ?? new InMemoryIncidentStore();
     this.runtimeId = options.runtimeId ?? 'runtime-default';
     this.telemetry = new ClassifiedTelemetrySink(options.telemetrySink);
     this.events = new EvidencePreservingEventSink({
@@ -195,7 +227,8 @@ export class ResilienceRuntime {
         this.knowledgeStore !== undefined ? { knowledgeStore: this.knowledgeStore } : {},
       );
     this.outcomeProbes = options.outcomeProbes ?? [];
-    this.actorCapabilities = options.actorCapabilities ?? [];
+    this.actorCapabilities = options.actorCapabilities ?? options.hostTrust?.capabilities ?? [];
+    this.hostTrust = options.hostTrust;
   }
   capabilities() {
     return this.adapters.list();
@@ -221,6 +254,20 @@ export class ResilienceRuntime {
       compiledIntent: compiledIntents[0],
       compiledIntents,
     });
+  }
+  private applyHostTrust(input: Partial<RuntimeContext>): Partial<RuntimeContext> {
+    const trust = this.hostTrust;
+    if (trust === undefined) return input;
+    const mode = input.mode ?? input.configuration?.mode ?? 'safe';
+    return {
+      ...input,
+      securityContext: { trusted: true, principal: trust.principal },
+      capabilitySnapshot: createCapabilitySnapshot(trust.capabilities, true),
+      policySnapshot: createPolicySnapshot({
+        ...defaultPolicy(mode),
+        allowedActions: [...trust.allowedActions],
+      }),
+    };
   }
   async cycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {
     if (input.idempotencyKey && this.idempotency.has(input.idempotencyKey))
@@ -261,7 +308,7 @@ export class ResilienceRuntime {
     // mutation time. This ensures a stale decision made against an older epoch
     // is rejected when the epoch has advanced between decision and apply.
     const decisionEpoch = this.mutationBoundary.currentEpoch();
-    let context = createRuntimeContext(input);
+    let context = createRuntimeContext(this.applyHostTrust(input));
     const before = this.state.current();
     this.counters = { ...this.counters, cyclesTotal: this.counters.cyclesTotal + 1 };
     await this.events.emit('runtime.cycle.started', { correlationId: context.correlationId });

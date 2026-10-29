@@ -365,6 +365,9 @@ importers:
       '@irp/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@irp/linux-client':
+        specifier: workspace:*
+        version: link:../../packages/linux-client
       '@irp/logger':
         specifier: workspace:*
         version: link:../../packages/logger

@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { Application, createAllBuiltinProviders, IntelligentDnsEngine } from '@irp/core';
 import { loadConfig } from '@irp/config';
@@ -12,11 +13,13 @@ import {
   type NetworkPath,
 } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
+import { createLinuxNetworkControlPlane } from '@irp/linux-client';
 import {
   BoundedClosedLoopController,
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
   createCanonicalRuntime,
+  type HostTrust,
   negotiatePlatformCapabilities,
   NetworkEventStormGuard,
   ObservationDedupCache,
@@ -24,6 +27,8 @@ import {
   classifyFailure,
   withOperationTimeout,
   RuntimeScheduler,
+  FileDecisionStore,
+  FileIncidentStore,
   TunnelRegistryControlPlane,
   type ClosedLoopOptions,
   type Observation,
@@ -43,6 +48,8 @@ import {
 } from '@irp/security';
 import { AutoOptimizationHost } from './auto-optimization-host.js';
 import { PluginHost } from './plugin-host.js';
+import { ControlServer, type ControlPort } from './control-server.js';
+import { resolveControlSocketPath, resolveRuntimeMode, resolveStateDirectory } from './daemon-config.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -326,10 +333,52 @@ export class LinuxObservationProvider implements ObservationProvider {
   }
 }
 
+/**
+ * Trust the daemon host grants its own runtime. Observation and the safe
+ * actions are always allowed; privileged network mutation capabilities and
+ * intents exist only when the operator passed the live-mutation double
+ * opt-in (IRP_RUNTIME_MODE=live and IRP_ENABLE_LIVE_ROUTE_MUTATION=true).
+ */
+export const daemonHostTrust = (liveMutation: boolean): HostTrust => ({
+  principal: 'irp-daemon',
+  capabilities: liveMutation
+    ? ['network.observe', 'route.write', 'connectivity.failover', 'dns.write']
+    : ['network.observe'],
+  allowedActions: liveMutation
+    ? ['health_reprobe', 'noop', 'degraded_mode', 'recovery', 'rollback', 'route_change', 'connectivity_failover', 'dns_switch']
+    : ['health_reprobe', 'noop', 'degraded_mode', 'recovery', 'rollback'],
+});
+
 export class RuntimeDaemonHost {
   lifecycle: 'created' | 'initialized' | 'ready' | 'running' | 'stopping' | 'stopped' = 'created';
-  readonly connectivity = new ConnectivityManager();
-  readonly routing = new RoutingEngine();
+  /** Durable state root; undefined only for hermetic test runs that named no directory. */
+  readonly stateDirectory = resolveStateDirectory(process.env);
+  /** Fixed by daemon configuration. Nothing received over the control socket can change it. */
+  readonly modeResolution = resolveRuntimeMode(process.env);
+  /**
+   * On Linux the daemon observes and routes through the real host composition: interface and
+   * route discovery via iproute2, route mutation through the kernel contract (only when live
+   * mutation is explicitly enabled) and an on-disk rollback journal. Other platforms keep an
+   * empty manager, which reports "no sources" rather than inventing any.
+   */
+  private readonly linuxPlane =
+    process.platform === 'linux'
+      ? createLinuxNetworkControlPlane({
+          enableLiveRouteMutation: this.modeResolution.liveRouteMutation,
+          registerStarlink: process.env.IRP_STARLINK_ENABLED === '1',
+          ...(this.stateDirectory ? { stateDirectory: this.stateDirectory } : {}),
+        })
+      : undefined;
+  readonly connectivity = this.linuxPlane?.connectivity ?? new ConnectivityManager();
+  readonly routing = this.linuxPlane?.routing ?? new RoutingEngine();
+  private readonly decisionStore = this.stateDirectory
+    ? new FileDecisionStore(join(this.stateDirectory, 'decisions.jsonl'))
+    : undefined;
+  private readonly incidentStore = this.stateDirectory
+    ? new FileIncidentStore(join(this.stateDirectory, 'incidents.jsonl'))
+    : undefined;
+  routeRecovery: Awaited<ReturnType<NonNullable<typeof this.linuxPlane>['routeExecutor']['recoverInterrupted']>> | undefined;
+  private controlServer: ControlServer | undefined;
   readonly dnsProviders = createAllBuiltinProviders();
   readonly dns = new IntelligentDnsEngine(this.dnsProviders, {
     check: async (provider) => provider.health(),
@@ -353,7 +402,10 @@ export class RuntimeDaemonHost {
     executionMode: 'real',
     observationProviders: [this.observer],
     runtimeId: 'daemon-runtime',
+    hostTrust: daemonHostTrust(this.modeResolution.liveRouteMutation),
     decisionProvider: this.decisionProvider,
+    ...(this.decisionStore ? { decisionStore: this.decisionStore } : {}),
+    ...(this.incidentStore ? { incidentStore: this.incidentStore } : {}),
     networkControlPlane: {
       connectivity: this.connectivity,
       routing: this.routing,
@@ -424,7 +476,7 @@ export class RuntimeDaemonHost {
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {
       enabled: false,
-      mode: 'safe',
+      mode: this.modeResolution.mode,
       cycleIntervalMs: 30_000,
       maxConcurrentCycles: 1,
       cooldownMs: 5_000,
@@ -691,6 +743,19 @@ export class RuntimeDaemonHost {
     return negotiatePlatformCapabilities('linux', requestedCapabilities);
   }
   async initialize() {
+    // Before anything observes or mutates: undo any route change that was issued but never
+    // verified because the previous process died. Failures are surfaced, not swallowed.
+    if (this.linuxPlane) {
+      this.routeRecovery = await this.linuxPlane.routeExecutor.recoverInterrupted();
+      const r = this.routeRecovery;
+      if (r.rolledBack.length || r.failed.length || r.corrupt.length || r.pruned.length)
+        await this.runtime.events.emit('daemon.route-recovery', {
+          rolledBack: r.rolledBack,
+          failed: r.failed,
+          corrupt: r.corrupt,
+          pruned: r.pruned,
+        });
+    }
     await this.connectivity.discoverResources();
     await this.dns.evaluate();
     this.lifecycle = 'ready';
@@ -701,10 +766,38 @@ export class RuntimeDaemonHost {
     this.lifecycle = 'running';
     this.scheduler.start();
   }
+  /** Starts the owner-only control socket when a path is configured. */
+  async startControl(socketPath = resolveControlSocketPath(process.env)): Promise<string | undefined> {
+    if (!socketPath) return undefined;
+    this.controlServer = new ControlServer(socketPath, this.controlPort());
+    await this.controlServer.start();
+    return socketPath;
+  }
+
+  controlPort(): ControlPort {
+    return {
+      health: () => this.health(),
+      snapshot: () => this.runtime.getRuntimeSnapshot(),
+      decisions: () => this.runtime.decisions.list(),
+      incidents: () => this.runtime.incidents.list(),
+      capabilities: () => this.runtime.capabilities(),
+      // The requested mode is limited to simulation/safe by the control server; the daemon's
+      // own configured mode is what the scheduler uses for live operation.
+      cycle: (mode) => this.runtime.cycle({ mode }),
+      reload: async () => {
+        await this.connectivity.discoverResources();
+        return { reloaded: true, sources: this.connectivity.getAvailableSources().length };
+      },
+    };
+  }
+
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
+    await this.controlServer?.stop();
     await this.plugins.stop();
+    this.decisionStore?.close();
+    this.incidentStore?.close();
     this.lifecycle = 'stopped';
   }
   /**
@@ -890,6 +983,14 @@ if (process.argv[1]?.endsWith('index.js')) {
   const host = createRuntimeDaemonHost({ enabled: process.env.IRP_RUNTIME_ENABLED === '1' });
   await host.start();
   await daemon.start();
+  const controlSocket = await host.startControl();
+  daemon.logger.info('daemon ready', {
+    mode: host.modeResolution.mode,
+    stateDirectory: host.stateDirectory ?? 'memory-only',
+    controlSocket: controlSocket ?? 'disabled',
+    connectivitySources: host.connectivity.getAvailableSources().map((x) => x.sourceId),
+    routeRecovery: host.routeRecovery ?? null,
+  });
   // Issue #11 / Phase 78: when IRP_LOOP_* is set, the production entrypoint
   // drives the canonical bounded closed loop. It is cooperative: SIGTERM/SIGINT
   // aborts before the next cycle starts (BoundedClosedLoopController checks the

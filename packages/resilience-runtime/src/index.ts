@@ -63,3 +63,4 @@ export * from './dataplane/index.js';
 export * from './control-api/index.js';
 export * from './governance/index.js';
 export * from './scale/index.js';
+export * from './persistence/file-stores.js';
