@@ -406,11 +406,28 @@ describe('LinuxRouteExecutor', () => {
     it('verifies route exists after apply', async () => {
       const plan = makePlan();
       runner.setResult('show', 'default', {
-        stdout: JSON.stringify([{ dst: 'default', gateway: '10.0.0.1' }]),
+        // `ip -j route show` always reports the device alongside the gateway.
+        stdout: JSON.stringify([{ dst: 'default', gateway: '10.0.0.1', dev: 'eth0' }]),
       });
 
       const verified = await executor.verifyRoutePlan(plan);
       expect(verified).toBe(true);
+    });
+
+    it('rejects a route to the same prefix through a different gateway', async () => {
+      const plan = makePlan();
+      runner.setResult('show', 'default', {
+        stdout: JSON.stringify([{ dst: 'default', gateway: '10.0.0.254', dev: 'eth0' }]),
+      });
+      expect(await executor.verifyRoutePlan(plan)).toBe(false);
+    });
+
+    it('rejects a route to the same prefix on a different device', async () => {
+      const plan = makePlan();
+      runner.setResult('show', 'default', {
+        stdout: JSON.stringify([{ dst: 'default', gateway: '10.0.0.1', dev: 'wlan0' }]),
+      });
+      expect(await executor.verifyRoutePlan(plan)).toBe(false);
     });
 
     it('returns false when route does not exist', async () => {

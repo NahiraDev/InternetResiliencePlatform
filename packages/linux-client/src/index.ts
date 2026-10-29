@@ -424,3 +424,7 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
   await server.start();
   return server;
 }
+
+export * from './route-journal.js';
+export * from './linux-network-control-plane.js';
+export * from './linux-route-executor.js';
