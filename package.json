@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "pg": "8.23.1",
-    "prisma": "7.10.0"
+    "prisma": "7.10.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
