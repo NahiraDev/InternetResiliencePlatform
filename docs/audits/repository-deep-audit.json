@@ -1,7 +1,7 @@
 {
-  "generatedAt": "6702fada9d045695d5f4ff4117910dfcdda9b61a17c65719108748a0a9559ffc",
+  "generatedAt": "6406e402fecee5d7d1cb7c936fcf586b915f093aae8fd25f926100fd0c88475d",
   "workspaceCount": 43,
-  "workflowCount": 17,
+  "workflowCount": 18,
   "findings": [],
   "workspaces": [
     {
@@ -33,8 +33,8 @@
     {
       "name": "@irp/daemon",
       "path": "apps/daemon/package.json",
-      "sourceFiles": 3,
-      "testFiles": 4,
+      "sourceFiles": 6,
+      "testFiles": 7,
       "scripts": [
         "build",
         "lint",
@@ -205,8 +205,8 @@
     {
       "name": "@irp/linux-client",
       "path": "packages/linux-client/package.json",
-      "sourceFiles": 7,
-      "testFiles": 7,
+      "sourceFiles": 8,
+      "testFiles": 8,
       "scripts": [
         "build",
         "lint",
@@ -414,8 +414,8 @@
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
-      "sourceFiles": 90,
-      "testFiles": 49,
+      "sourceFiles": 162,
+      "testFiles": 71,
       "scripts": [
         "build",
         "coverage",
