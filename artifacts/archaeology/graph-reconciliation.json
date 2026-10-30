@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "c657996ed305285aa264caeb9bfd5d78dfb4bfd982f4d506901b7818210d4ba0",
+  "generatedAt": "14bd72052bf2eca993e9b8cc8ea090c22db9fd42b05c2094906ae3acb07fc425",
   "graphs": [
     {
       "graph": "docs/architecture/system-integration-map.json",
