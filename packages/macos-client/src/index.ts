@@ -1,6 +1,16 @@
 import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { join } from 'node:path';
+import type { AddressInfo } from 'node:net';
 import { promisify } from 'node:util';
+import {
+  guardRequest,
+  guardStateChange,
+  issueControlToken,
+  parseAutonomyRequest,
+  readBoundedBody,
+  type GuardVerdict,
+} from './http-guard.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -89,7 +99,7 @@ const html = (snapshot: MacOSNetworkSnapshot, policy: MacOSClientPolicy): string
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IRP macOS Client</title><style>body{font:15px system-ui,sans-serif;max-width:1100px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style></head>
 <body><h1>Internet Resilience Platform</h1><p>macOS Full Client</p><p>Autonomous mode: <strong>${policy.autonomousMode ? 'enabled' : 'disabled'}</strong></p>
-<form method="post" action="/policy"><button name="autonomousMode" value="${policy.autonomousMode ? 'false' : 'true'}">${policy.autonomousMode ? 'Disable' : 'Enable'} autonomous mode</button></form>
+<p>Read-only page. Changing autonomous mode requires an authenticated JSON <code>POST /policy</code>.</p>
 <div class="grid"><section><h2>Network interfaces</h2><pre>${escapeHtml(snapshot.interfaces)}</pre></section><section><h2>Default route</h2><pre>${escapeHtml(snapshot.routes)}</pre></section><section><h2>DNS</h2><pre>${escapeHtml(snapshot.dns)}</pre></section><section><h2>Network services</h2><pre>${escapeHtml(snapshot.networkServices)}</pre></section><section><h2>VPN services</h2><pre>${escapeHtml(snapshot.vpnServices)}</pre></section></div></body></html>`;
 
 export class MacOSClientServer {
@@ -97,7 +107,13 @@ export class MacOSClientServer {
     (request, response) => void this.handle(request, response),
   );
 
-  constructor(private readonly system: MacOSSystem) {}
+  private port = 0;
+
+  /** Without `controlToken`, `POST /policy` is disabled (fail-closed). */
+  constructor(
+    private readonly system: MacOSSystem,
+    private readonly controlToken?: string,
+  ) {}
 
   async start(port = 17862, host = '127.0.0.1'): Promise<void> {
     await new Promise<void>((resolve, reject) => {
@@ -113,6 +129,11 @@ export class MacOSClientServer {
       this.server.once('listening', onListening);
       this.server.listen(port, host);
     });
+    this.port = (this.server.address() as AddressInfo).port;
+  }
+
+  address(): string | AddressInfo | null {
+    return this.server.address();
   }
 
   async stop(): Promise<void> {
@@ -121,9 +142,18 @@ export class MacOSClientServer {
     );
   }
 
+  private refuse(response: ServerResponse, verdict: GuardVerdict): void {
+    response.statusCode = verdict.status;
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({ error: verdict.reason }));
+  }
+
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.setHeader('Cache-Control', 'no-store');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    const verdict = guardRequest(request, this.port);
+    if (!verdict.ok) return this.refuse(response, verdict);
     if (request.method === 'GET' && request.url === '/') {
       response.end(html(await this.system.snapshot(), this.system.getPolicy()));
       return;
@@ -139,14 +169,16 @@ export class MacOSClientServer {
       return;
     }
     if (request.method === 'POST' && request.url === '/policy') {
-      const chunks: Buffer[] = [];
-      for await (const chunk of request) chunks.push(Buffer.from(chunk));
-      const body = Buffer.concat(chunks).toString('utf8');
-      const enabled = /autonomousMode=true(?:&|$)/.test(body);
-      await this.system.setAutonomousMode(enabled);
-      response.statusCode = 303;
-      response.setHeader('Location', '/');
-      response.end();
+      const gate = guardStateChange(request, this.controlToken);
+      if (!gate.ok) return this.refuse(response, gate);
+      const body = await readBoundedBody(request);
+      if (typeof body !== 'string') return this.refuse(response, body);
+      const parsed = parseAutonomyRequest(body);
+      if ('ok' in parsed) return this.refuse(response, parsed);
+      await this.system.setAutonomousMode(parsed.enabled);
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ autonomousMode: parsed.enabled }));
       return;
     }
     response.statusCode = 404;
@@ -155,7 +187,9 @@ export class MacOSClientServer {
 }
 
 export async function runMacOSClient(): Promise<MacOSClientServer> {
-  const server = new MacOSClientServer(new MacOSSystem());
+  const stateDirectory = process.env.IRP_STATE_DIR;
+  const token = stateDirectory ? issueControlToken(join(stateDirectory, 'macos-client.token')) : undefined;
+  const server = new MacOSClientServer(new MacOSSystem(), token);
   await server.start();
   return server;
 }
