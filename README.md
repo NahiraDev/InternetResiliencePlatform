@@ -98,7 +98,8 @@ The long-term goal is to evaluate degradation, choose an authorized recovery pat
 7. [API reference](docs/api/platform-status-api.md)
 8. [Examples](examples/README.md)
 9. [Security architecture](docs/security/security-architecture.md)
-10. [Linux primary device contract](docs/release/linux-primary-platform.md)
+10. [Running the daemon on Linux](docs/operations/running-the-daemon.md) and [platform verification status](docs/operations/platform-verification.md)
+11. [Linux primary device contract](docs/release/linux-primary-platform.md)
 
 ### For maintainers
 

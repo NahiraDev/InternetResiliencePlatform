@@ -61,7 +61,12 @@ describe('Architecture invariants (section 109)', () => {
 
   it('CLI cannot bypass safety', () => {
     const cli = read('apps/cli/src/index.ts');
-    expect(cli).toContain('cannot be bypassed by CLI');
+    // Live cycles are refused before any request is made, and the only cycle request the CLI can
+    // send carries mode safe|simulation. The CLI never builds a runtime that mutates the host.
+    expect(cli).toContain('live cycles cannot be requested from the CLI');
+    expect(cli).toMatch(/mode: opts\.simulate \? 'simulation' : 'safe'/);
+    expect(cli).not.toMatch(/new\s+ResilienceRuntime/);
+    expect(cli).not.toMatch(/executionMode:\s*'(real|live)'/);
   });
 
   it('daemon and Linux client use the same canonical composition boundary', () => {
