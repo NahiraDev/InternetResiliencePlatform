@@ -1,0 +1,27 @@
+{
+  "name": "@irp/tunnel",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./secure": "./dist/secure.js",
+    "./wireguard": "./dist/wireguard.js",
+    "./openvpn": "./dist/openvpn.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@irp/events": "workspace:*",
+    "@irp/shared": "workspace:*",
+    "@irp/telemetry": "workspace:*"
+  }
+}

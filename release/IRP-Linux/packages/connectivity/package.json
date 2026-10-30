@@ -1,0 +1,37 @@
+{
+  "name": "@irp/connectivity",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./starlink": {
+      "types": "./dist/starlink.d.ts",
+      "import": "./dist/starlink.js"
+    },
+    "./starlink-gateway": {
+      "types": "./dist/starlink-gateway.d.ts",
+      "import": "./dist/starlink-gateway.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@irp/events": "workspace:*",
+    "@irp/kernel": "workspace:*",
+    "@irp/network": "workspace:*",
+    "@irp/telemetry": "workspace:*",
+    "@irp/shared": "workspace:^"
+  }
+}

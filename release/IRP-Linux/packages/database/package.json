@@ -1,0 +1,22 @@
+{
+  "name": "@irp/database",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "cd ../.. && DATABASE_URL=${DATABASE_URL:-postgresql://irp:irp@localhost:5432/irp} pnpm exec prisma validate --schema packages/database/prisma/schema.prisma",
+    "prisma:migrate:deploy": "cd ../.. && PRISMA_GENERATE_SKIP_AUTOINSTALL=1 pnpm exec prisma migrate deploy --schema packages/database/prisma/schema.prisma",
+    "prisma:migrate:reset": "cd ../.. && PRISMA_GENERATE_SKIP_AUTOINSTALL=1 pnpm exec prisma migrate reset --schema packages/database/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  }
+}

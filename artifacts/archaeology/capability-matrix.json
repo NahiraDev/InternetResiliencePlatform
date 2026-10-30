@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "14bd72052bf2eca993e9b8cc8ea090c22db9fd42b05c2094906ae3acb07fc425",
+  "generatedAt": "1b0b7ba1525e4302ae09656cb08332ff7f5a1f944d0ba510a36c1e02a497bdc9",
   "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
@@ -172,10 +172,12 @@
         "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
+        "@irp/daemon",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:connectivity"
       ],
       "consumers": [
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-network-adapter.ts",
@@ -183,6 +185,7 @@
         "packages/resilience-runtime/src/scenario-lab/scenario.ts"
       ],
       "runtimePaths": [
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#connectivity",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -334,15 +337,20 @@
         "packages/resilience-runtime/src/adapter-registry.ts#network-intelligence"
       ],
       "owners": [
+        "@irp/daemon",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:network-intelligence"
       ],
       "consumers": [
+        "apps/daemon/src/control-server.test.ts",
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-network-adapter.ts"
       ],
       "runtimePaths": [
+        "apps/daemon/src/control-server.test.ts",
+        "apps/daemon/src/index.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#network-intelligence",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -415,11 +423,13 @@
         "packages/resilience-runtime/src/platform/capabilities.ts"
       ],
       "owners": [
+        "@irp/daemon",
         "@irp/linux-client",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:routing"
       ],
       "consumers": [
+        "apps/daemon/src/index.ts",
         "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -428,6 +438,7 @@
         "packages/resilience-runtime/src/scenario-lab/scenario.ts"
       ],
       "runtimePaths": [
+        "apps/daemon/src/index.ts",
         "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#routing",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-25T21:44:25.776Z",
+  "generatedAt": "2026-10-30T09:58:01.296Z",
   "commit": "unknown",
   "nodes": [
     {
@@ -1431,7 +1431,25 @@
     },
     {
       "source": "@irp/daemon",
+      "target": "@irp/linux-client",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
       "target": "@irp/logger",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/daemon",
+      "target": "@irp/network",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",
@@ -1450,15 +1468,6 @@
     {
       "source": "@irp/daemon",
       "target": "@irp/plugin-sdk",
-      "contract": "workspace dependency",
-      "transport": "node module import/link",
-      "status": "CONNECTED_BUT_UNVERIFIED",
-      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
-      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
-    },
-    {
-      "source": "@irp/daemon",
-      "target": "@irp/network",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",
