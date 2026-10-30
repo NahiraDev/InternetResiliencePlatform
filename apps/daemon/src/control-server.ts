@@ -16,9 +16,11 @@
  */
 
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
-import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { connect } from 'node:net';
 import { dirname } from 'node:path';
+
+export { ControlClientError, controlRequest } from '@irp/resilience-runtime';
 
 export interface ControlPort {
   health(): Promise<unknown>;
@@ -113,31 +115,3 @@ export class ControlServer {
     }
   }
 }
-
-/** Thin client used by the CLI. */
-export class ControlClientError extends Error {
-  constructor(readonly code: 'unreachable' | 'http', message: string, readonly status?: number) {
-    super(message);
-    this.name = 'ControlClientError';
-  }
-}
-
-export const controlRequest = (socketPath: string, method: 'GET' | 'POST', path: string, body?: unknown, timeoutMs = 30_000): Promise<unknown> =>
-  new Promise((resolve, reject) => {
-    const payload = body === undefined ? undefined : JSON.stringify(body);
-    const req = httpRequest({ socketPath, method, path, timeout: timeoutMs, headers: payload ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } : {} }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (c: Buffer) => chunks.push(c));
-      res.on('end', () => {
-        let parsed: unknown;
-        try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { parsed = undefined; }
-        if ((res.statusCode ?? 500) >= 400)
-          reject(new ControlClientError('http', (parsed as { error?: string } | undefined)?.error ?? `daemon returned ${res.statusCode}`, res.statusCode));
-        else resolve(parsed);
-      });
-    });
-    req.on('timeout', () => { req.destroy(); reject(new ControlClientError('unreachable', `daemon did not answer within ${timeoutMs}ms`)); });
-    req.on('error', (e: NodeJS.ErrnoException) => reject(new ControlClientError('unreachable', e.code === 'ENOENT' || e.code === 'ECONNREFUSED' ? `no daemon is listening on ${socketPath}` : e.message)));
-    if (payload) req.write(payload);
-    req.end();
-  });

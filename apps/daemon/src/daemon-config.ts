@@ -6,7 +6,6 @@
  * a single stray variable can never switch the daemon from observing to changing the host.
  */
 
-import { join } from 'node:path';
 import type { RuntimeMode } from '@irp/resilience-runtime';
 
 export interface DaemonEnvironment {
@@ -41,34 +40,4 @@ export const resolveRuntimeMode = (env: DaemonEnvironment): DaemonModeResolution
   return { mode: raw, liveRouteMutation: raw === 'live' };
 };
 
-/**
- * Where durable state lives. Returns `undefined` when persistence is intentionally off, which is
- * only the case for hermetic test runs that did not name a directory.
- */
-export const resolveStateDirectory = (
-  env: DaemonEnvironment,
-  options: { readonly uid?: number; readonly home?: string } = {},
-): string | undefined => {
-  if (env.IRP_STATE_DIR) return env.IRP_STATE_DIR;
-  if (env.VITEST) return undefined;
-  const uid = options.uid ?? (typeof process.getuid === 'function' ? process.getuid() : undefined);
-  if (uid === 0) return '/var/lib/irp';
-  if (env.XDG_STATE_HOME) return join(env.XDG_STATE_HOME, 'irp');
-  const home = options.home ?? env.HOME;
-  if (home) return join(home, '.local', 'state', 'irp');
-  return undefined;
-};
-
-/** Unix socket for the local control channel; owner-only, never a network listener. */
-export const resolveControlSocketPath = (
-  env: DaemonEnvironment,
-  options: { readonly uid?: number } = {},
-): string | undefined => {
-  if (env.IRP_CONTROL_SOCKET) return env.IRP_CONTROL_SOCKET === 'disabled' ? undefined : env.IRP_CONTROL_SOCKET;
-  if (env.VITEST) return undefined;
-  const uid = options.uid ?? (typeof process.getuid === 'function' ? process.getuid() : undefined);
-  if (uid === 0) return '/run/irp/irp.sock';
-  if (env.XDG_RUNTIME_DIR) return join(env.XDG_RUNTIME_DIR, 'irp', 'irp.sock');
-  const state = resolveStateDirectory(env, options);
-  return state ? join(state, 'irp.sock') : undefined;
-};
+export { resolveControlSocketPath, resolveStateDirectory } from '@irp/resilience-runtime';
