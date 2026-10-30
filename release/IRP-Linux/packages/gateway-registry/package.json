@@ -1,0 +1,16 @@
+{
+  "name": "@irp/gateway-registry",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
+    "lint": "pnpm -w exec eslint packages/gateway-registry",
+    "test": "vitest run",
+    "typecheck": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json --noEmit"
+  }
+}

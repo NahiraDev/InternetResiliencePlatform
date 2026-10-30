@@ -1,0 +1,30 @@
+{
+  "name": "@irp/dns",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./provider-registry": {
+      "types": "./dist/provider-registry.d.ts",
+      "import": "./dist/provider-registry.js"
+    },
+    "./provider-catalog": {
+      "types": "./dist/provider-catalog.d.ts",
+      "import": "./dist/provider-catalog.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
