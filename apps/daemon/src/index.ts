@@ -48,6 +48,7 @@ import {
 } from '@irp/security';
 import { AutoOptimizationHost } from './auto-optimization-host.js';
 import { PluginHost } from './plugin-host.js';
+import { DnsRestoreJournal } from './dns-restore.js';
 import { ControlServer, type ControlPort } from './control-server.js';
 import { resolveControlSocketPath, resolveRuntimeMode, resolveStateDirectory } from './daemon-config.js';
 
@@ -371,6 +372,10 @@ export class RuntimeDaemonHost {
       : undefined;
   readonly connectivity = this.linuxPlane?.connectivity ?? new ConnectivityManager();
   readonly routing = this.linuxPlane?.routing ?? new RoutingEngine();
+  private readonly dnsJournal = new DnsRestoreJournal(
+    this.stateDirectory ? join(this.stateDirectory, 'dns-original.json') : undefined,
+    async (file, args) => execFileAsync(file, [...args], { timeout: 5_000, maxBuffer: 64 * 1024 }),
+  );
   private readonly decisionStore = this.stateDirectory
     ? new FileDecisionStore(join(this.stateDirectory, 'decisions.jsonl'))
     : undefined;
@@ -725,6 +730,7 @@ export class RuntimeDaemonHost {
     const servers = provider.metadata().endpoints.ipv4;
     if (servers.length === 0)
       throw new Error(`DNS provider ${providerId} has no IPv4 resolver endpoints`);
+    await this.dnsJournal.captureBeforeChange(interfaceName);
     await execFileAsync('resolvectl', ['dns', interfaceName, ...servers], {
       timeout: 5_000,
       maxBuffer: 64 * 1024,
@@ -745,6 +751,7 @@ export class RuntimeDaemonHost {
   async initialize() {
     // Before anything observes or mutates: undo any route change that was issued but never
     // verified because the previous process died. Failures are surfaced, not swallowed.
+    await this.restoreDns('startup-recovery');
     if (this.linuxPlane) {
       this.routeRecovery = await this.linuxPlane.routeExecutor.recoverInterrupted();
       const r = this.routeRecovery;
@@ -791,10 +798,24 @@ export class RuntimeDaemonHost {
     };
   }
 
+  /** Puts back the resolvers IRP replaced; a failure is reported, never hidden. */
+  private async restoreDns(reason: 'startup-recovery' | 'shutdown'): Promise<void> {
+    if (!this.dnsJournal.pending()) return;
+    try {
+      const result = await this.dnsJournal.restore();
+      await this.runtime.events.emit('daemon.dns-restored', { reason, ...result });
+    } catch (error) {
+      await this.runtime.events.emit('daemon.dns-restore-failed', {
+        reason,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
     await this.controlServer?.stop();
+    await this.restoreDns('shutdown');
     await this.plugins.stop();
     this.decisionStore?.close();
     this.incidentStore?.close();
