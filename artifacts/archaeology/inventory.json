@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "14bd72052bf2eca993e9b8cc8ea090c22db9fd42b05c2094906ae3acb07fc425",
+  "generatedAt": "1b0b7ba1525e4302ae09656cb08332ff7f5a1f944d0ba510a36c1e02a497bdc9",
   "packages": [
     {
       "group": "apps",
@@ -185,6 +185,7 @@
         "@irp/config",
         "@irp/connectivity",
         "@irp/core",
+        "@irp/linux-client",
         "@irp/logger",
         "@irp/network",
         "@irp/plugin-manager",
@@ -194,8 +195,8 @@
         "@irp/security",
         "@irp/tunnel"
       ],
-      "sourceFiles": 7,
-      "testFiles": 4,
+      "sourceFiles": 13,
+      "testFiles": 7,
       "hasTests": true
     },
     {
@@ -357,8 +358,8 @@
         "@irp/routing",
         "@irp/telemetry"
       ],
-      "sourceFiles": 14,
-      "testFiles": 7,
+      "sourceFiles": 16,
+      "testFiles": 8,
       "hasTests": true
     },
     {
@@ -681,8 +682,8 @@
         "@irp/tunnel",
         "@irp/utils"
       ],
-      "sourceFiles": 160,
-      "testFiles": 69,
+      "sourceFiles": 162,
+      "testFiles": 71,
       "hasTests": true
     },
     {
@@ -887,7 +888,7 @@
     "nativeClients": 2,
     "packagesWithoutTests": 0,
     "workflows": 18,
-    "docs": 229,
+    "docs": 231,
     "phaseDocs": 115
   },
   "infrastructure": {
@@ -1073,7 +1074,9 @@
       "docs/operations/docker.md",
       "docs/operations/incident-response.md",
       "docs/operations/observability.md",
+      "docs/operations/platform-verification.md",
       "docs/operations/recovery.md",
+      "docs/operations/running-the-daemon.md",
       "docs/operations/runtime-production-mode.md",
       "docs/phases/README.md",
       "docs/phases/phase-00.md",
