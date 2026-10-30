@@ -1,0 +1,36 @@
+[Unit]
+Description=Internet Resilience Platform daemon
+Documentation=https://github.com/NahiraDev/InternetResiliencePlatform
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=irp
+Group=irp
+EnvironmentFile=-/etc/irp/irp.env
+Environment=IRP_STATE_DIR=/var/lib/irp
+Environment=IRP_CONTROL_SOCKET=/run/irp/irp.sock
+StateDirectory=irp
+StateDirectoryMode=0700
+RuntimeDirectory=irp
+RuntimeDirectoryMode=0700
+WorkingDirectory=/opt/irp/daemon
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+# Route mutation needs CAP_NET_ADMIN only when live mode is enabled in /etc/irp/irp.env.
+# The daemon starts in safe (observe-only) mode, which needs no capability.
+CapabilityBoundingSet=CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN
+
+[Install]
+WantedBy=multi-user.target
