@@ -32,6 +32,15 @@ export interface ControlPort {
   reload(): Promise<unknown>;
 }
 
+/** Thrown by a ControlPort when the request is valid but conflicts with current runtime state. */
+export class ControlConflictError extends Error {
+  readonly status = 409;
+  constructor(message: string) {
+    super(message);
+    this.name = 'ControlConflictError';
+  }
+}
+
 const MAX_BODY_BYTES = 4 * 1024;
 
 const send = (response: ServerResponse, status: number, body: unknown): void => {
