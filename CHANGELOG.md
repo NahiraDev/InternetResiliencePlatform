@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Daemon: durable decision/incident stores, real Linux control plane, startup recovery of interrupted route changes, original-DNS restore, owner-only Unix control socket, and host-owned runtime trust (`hostTrust`). See `docs/operations/running-the-daemon.md`.
+- `scripts/install-linux.sh` and `infra/systemd/irp-daemon.service`.
+- `docs/operations/platform-verification.md`: what is verified per platform and what is not.
+
+### Changed
+
+- `irp` CLI talks to the running daemon over the control socket and exits non-zero when none is reachable. Commands that only printed canned output (`autopilot approve|reject|rollback|circuit-breaker`, `runtime conflicts`, the old `reload`) were removed; in-process simulation is the labeled `irp runtime local-simulation`.
+
+### Fixed
+
+- Linux route executor: invalid `ip -f ipv4` family argument, rollback that left the applied route behind when metrics differed, and verification that accepted any route for the prefix.
+
 ### Security
 
 - WP2.2a (PR #10): vitest and @vitest/coverage-v8 3.2.7 → 4.1.11, resolving GHSA-82fw-gwwq-j7x9 (vitest/@vitest/mocker) and GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr (tinypool, no longer in the dependency graph). `pnpm audit` reports no vulnerabilities for the full and production graphs.

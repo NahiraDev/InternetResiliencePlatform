@@ -30,6 +30,7 @@
  */
 
 import { execFile } from 'node:child_process';
+import { MemoryRouteJournal, type RouteJournal, type RouteJournalEntry } from './route-journal.js';
 import { promisify } from 'node:util';
 import type { RoutePlan, RoutingDestination } from '@irp/routing';
 
@@ -52,6 +53,22 @@ export interface RouteExecutorOptions {
   /** Network namespace for isolated execution (testing). */
   readonly netns?: string;
   readonly timeoutMs?: number;
+  /**
+   * Journal that persists snapshots and rollback commands before the kernel is mutated.
+   * Defaults to an in-memory journal, which cannot survive a crash; production composition
+   * supplies a {@link FileRouteJournal}.
+   */
+  readonly journal?: RouteJournal;
+  /** How long verified journal entries stay available for late rollback. Default 24 hours. */
+  readonly verifiedRetentionMs?: number;
+}
+
+/** Outcome of reconciling the journal after a restart. */
+export interface RouteRecoveryReport {
+  readonly rolledBack: readonly string[];
+  readonly failed: readonly { readonly planId: string; readonly error: string }[];
+  readonly pruned: readonly string[];
+  readonly corrupt: readonly string[];
 }
 
 /**
@@ -147,6 +164,14 @@ export class RouteExecutorError extends Error {
   }
 }
 
+/**
+ * iproute2 accepts `inet`/`inet6` for `-f`; the symbolic names `ipv4`/`ipv6` are rejected
+ * with "invalid protocol family". Translate the canonical family to the tool's vocabulary.
+ */
+function ipFamilyArg(family: 'ipv4' | 'ipv6'): 'inet' | 'inet6' {
+  return family === 'ipv6' ? 'inet6' : 'inet';
+}
+
 function familyFor(destination: RoutingDestination): 'ipv4' | 'ipv6' {
   if (destination.family === 'ipv4') return 'ipv4';
   if (destination.family === 'ipv6') return 'ipv6';
@@ -193,7 +218,7 @@ function showArgs(
 ): readonly string[] {
   const args: string[] = [];
   if (options.netns) args.push('-n', options.netns);
-  args.push('-j', '-f', family, 'route', 'show', 'table', table, target);
+  args.push('-j', '-f', ipFamilyArg(family), 'route', 'show', 'table', table, target);
   return args;
 }
 
@@ -210,7 +235,7 @@ function mutationArgs(
   if (!route) throw new RouteExecutorError('NO_SELECTED_PATH', 'Plan has no selected path');
   const args: string[] = [];
   if (options.netns) args.push('-n', options.netns);
-  args.push('-f', family, 'route', action, target);
+  args.push('-f', ipFamilyArg(family), 'route', action, target);
   if (route.gateway) args.push('via', route.gateway);
   if (route.interfaceName) args.push('dev', route.interfaceName);
   if (route.metric && route.metric !== 0) args.push('metric', String(route.metric));
@@ -257,7 +282,7 @@ function restoreArgsFromRoute(
   if (!dst) return undefined;
   const args: string[] = [];
   if (options.netns) args.push('-n', options.netns);
-  args.push('-f', family, 'route', 'replace', dst);
+  args.push('-f', ipFamilyArg(family), 'route', 'replace', dst);
   if (typeof raw.gateway === 'string') args.push('via', raw.gateway);
   if (typeof raw.dev === 'string') args.push('dev', raw.dev);
   if (typeof raw.metric === 'number') args.push('metric', String(raw.metric));
@@ -278,11 +303,77 @@ function restoreArgsFromRoute(
  */
 export class LinuxRouteExecutor {
   private readonly snapshots = new Map<string, RouteSnapshot>();
+  private readonly journal: RouteJournal;
+  private readonly journalEntries = new Map<string, RouteJournalEntry>();
 
   constructor(
     private readonly runner: RouteCommandRunner = new ExecFileRouteCommandRunner(),
     private readonly options: RouteExecutorOptions = {},
-  ) {}
+  ) {
+    this.journal = options.journal ?? new MemoryRouteJournal();
+    // Rehydrate so a plan applied before a restart can still be rolled back by id.
+    for (const entry of this.journal.list().entries) {
+      this.snapshots.set(entry.planId, entry.snapshot);
+      this.journalEntries.set(entry.planId, entry);
+    }
+  }
+
+  /**
+   * The ordered commands that return the host to its pre-mutation state.
+   *
+   * `ip route replace` identifies a route by prefix, table and metric. When the planned route
+   * has a different metric than the one it displaced, the apply step *adds* a second route and
+   * replaying the original only adds the original back, so the applied route must also be
+   * deleted. When the keys are equal the replace already overwrote it, and deleting afterwards
+   * would remove the restored route, so only the restore runs.
+   */
+  private rollbackCommandsFor(plan: RoutePlan, snapshot: RouteSnapshot): readonly (readonly string[])[] {
+    const target = targetFor(plan);
+    const table = tableFor(plan);
+    const family = familyFor(plan.destination);
+    const deleteApplied = mutationArgs('del', plan, target, table, family, this.options);
+    if (!snapshot.exists) return [deleteApplied];
+    if (snapshot.restoreArgs.length === 0) return [];
+    const original = snapshot.rawRoutes[0] as Record<string, unknown> | undefined;
+    const originalMetric = typeof original?.metric === 'number' ? original.metric : 0;
+    const appliedMetric = plan.selectedPath?.route.metric ?? 0;
+    return originalMetric === appliedMetric
+      ? [snapshot.restoreArgs]
+      : [snapshot.restoreArgs, deleteApplied];
+  }
+
+  private async runRollback(
+    commands: readonly (readonly string[])[],
+    ignoreAbsent: boolean,
+  ): Promise<{ ok: boolean; error?: string; result?: RouteCommandResult }> {
+    let last: RouteCommandResult | undefined;
+    for (const args of commands) {
+      const result = await this.runner.run(IP_BINARY, args, {
+        timeoutMs: this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      });
+      last = result;
+      const absent = ignoreAbsent && result.exitCode !== 0 && /No such process|not found/i.test(result.stderr);
+      if (result.exitCode !== 0 && !absent) {
+        return {
+          ok: false,
+          error: `ip ${args.join(' ')} failed (exit ${result.exitCode}): ${result.stderr || 'unknown error'}`,
+          result,
+        };
+      }
+    }
+    return last ? { ok: true, result: last } : { ok: true };
+  }
+
+  private persist(entry: RouteJournalEntry): void {
+    this.journal.write(entry);
+    this.journalEntries.set(entry.planId, entry);
+  }
+
+  private forget(planId: string): void {
+    this.journal.remove(planId);
+    this.journalEntries.delete(planId);
+    this.snapshots.delete(planId);
+  }
 
   /**
    * Captures pre-mutation route state for a plan. Called before any mutation.
@@ -407,10 +498,23 @@ export class LinuxRouteExecutor {
       const table = tableFor(plan);
       const family = familyFor(plan.destination);
       const args = mutationArgs('replace', plan, target, table, family, this.options);
+      // Persist the undo command before touching the kernel: if the process dies after the
+      // replace, the next start can still restore the prior route.
+      const rollbackCommands = this.rollbackCommandsFor(plan, snapshot);
+      this.persist({
+        schemaVersion: 1,
+        planId: plan.id,
+        state: 'applying',
+        snapshot,
+        rollbackCommands,
+        updatedAt: new Date().toISOString(),
+      });
       const result = await this.runner.run(IP_BINARY, args, {
         timeoutMs: this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       });
       if (result.exitCode !== 0) {
+        // `ip route replace` is atomic: a failure leaves the prior route untouched.
+        this.forget(plan.id);
         return {
           ok: false,
           planId: plan.id,
@@ -444,49 +548,28 @@ export class LinuxRouteExecutor {
         error: `No snapshot captured for plan ${plan.id}; cannot roll back`,
       };
     }
-
     try {
-      if (!snapshot.exists) {
-        // Route did not exist before mutation — delete the applied route.
-        const args = mutationArgs('del', plan, snapshot.target, snapshot.table, snapshot.family, this.options);
-        const result = await this.runner.run(IP_BINARY, args, {
-          timeoutMs: this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        });
-        if (result.exitCode !== 0) {
-          return {
-            ok: false,
-            planId: plan.id,
-            error: `ip route del failed (exit ${result.exitCode}): ${result.stderr || 'unknown error'}`,
-            result,
-          };
-        }
-        this.snapshots.delete(plan.id);
-        return { ok: true, planId: plan.id, result };
-      }
-
-      if (snapshot.restoreArgs.length === 0) {
-        // Multiple prior routes or unparseable state — refuse to fake rollback.
+      if (snapshot.exists && snapshot.restoreArgs.length === 0) {
+        // Multiple prior routes or unparseable state: refuse to fake a rollback.
         return {
           ok: false,
           planId: plan.id,
           error: `Snapshot for plan ${plan.id} captured ${snapshot.rawRoutes.length} prior routes; cannot replay exactly — manual intervention required`,
         };
       }
-
-      // Restore the exact prior route via `ip route replace`.
-      const result = await this.runner.run(IP_BINARY, snapshot.restoreArgs, {
-        timeoutMs: this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      });
-      if (result.exitCode !== 0) {
+      const commands =
+        this.journalEntries.get(plan.id)?.rollbackCommands ?? this.rollbackCommandsFor(plan, snapshot);
+      const outcome = await this.runRollback(commands, false);
+      if (!outcome.ok) {
         return {
           ok: false,
           planId: plan.id,
-          error: `ip route replace (restore) failed (exit ${result.exitCode}): ${result.stderr || 'unknown error'}`,
-          result,
+          error: outcome.error ?? 'rollback failed',
+          ...(outcome.result ? { result: outcome.result } : {}),
         };
       }
-      this.snapshots.delete(plan.id);
-      return { ok: true, planId: plan.id, result };
+      this.forget(plan.id);
+      return { ok: true, planId: plan.id, ...(outcome.result ? { result: outcome.result } : {}) };
     } catch (error) {
       return {
         ok: false,
@@ -509,12 +592,66 @@ export class LinuxRouteExecutor {
       timeoutMs: this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     });
     if (result.exitCode !== 0) return false;
+    let routes: unknown;
     try {
-      const parsed = JSON.parse(result.stdout);
-      return Array.isArray(parsed) && parsed.length > 0;
+      routes = JSON.parse(result.stdout);
     } catch {
       return false;
     }
+    if (!Array.isArray(routes) || routes.length === 0) return false;
+    // A route merely existing is not enough: a pre-existing route to the same prefix through a
+    // different gateway or device would otherwise be reported as a successful change.
+    const wanted = plan.selectedPath?.route;
+    const matches = routes.some((entry) => {
+      if (typeof entry !== 'object' || entry === null) return false;
+      const r = entry as Record<string, unknown>;
+      if (wanted?.gateway && r.gateway !== wanted.gateway) return false;
+      if (wanted?.interfaceName && r.dev !== wanted.interfaceName) return false;
+      return true;
+    });
+    if (matches) {
+      const entry = this.journalEntries.get(plan.id);
+      if (entry && entry.state !== 'verified') {
+        this.persist({ ...entry, state: 'verified', updatedAt: new Date().toISOString() });
+      }
+    }
+    return matches;
+  }
+
+  /**
+   * Reconciles the journal after a restart. Mutations that were issued but never verified are
+   * undone with the rollback command recorded before they ran; verified entries older than the
+   * retention window are pruned. Failures are reported, never swallowed, and the entry is kept
+   * so the next start retries.
+   */
+  async recoverInterrupted(now: () => number = Date.now): Promise<RouteRecoveryReport> {
+    const { entries, corrupt } = this.journal.list();
+    const rolledBack: string[] = [];
+    const failed: { planId: string; error: string }[] = [];
+    const pruned: string[] = [];
+    const retention = this.options.verifiedRetentionMs ?? 24 * 60 * 60 * 1000;
+    for (const entry of entries) {
+      if (entry.state === 'verified') {
+        if (now() - Date.parse(entry.updatedAt) > retention) {
+          this.forget(entry.planId);
+          pruned.push(entry.planId);
+        }
+        continue;
+      }
+      if (entry.rollbackCommands.length === 0) {
+        failed.push({ planId: entry.planId, error: 'journal entry has no rollback command' });
+        continue;
+      }
+      // Deleting a route that is already gone means that step never took effect.
+      const outcome = await this.runRollback(entry.rollbackCommands, true);
+      if (outcome.ok) {
+        this.forget(entry.planId);
+        rolledBack.push(entry.planId);
+      } else {
+        failed.push({ planId: entry.planId, error: outcome.error ?? 'rollback failed' });
+      }
+    }
+    return { rolledBack, failed, pruned, corrupt };
   }
 
   /** Clears all captured snapshots (for testing). */

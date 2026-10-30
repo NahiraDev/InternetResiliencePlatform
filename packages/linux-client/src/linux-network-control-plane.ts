@@ -30,7 +30,10 @@ import {
   type RouteDiscoveryProvider,
 } from '@irp/routing';
 import { MetricsRegistry } from '@irp/telemetry';
+import { join } from 'node:path';
 import { createLinuxRoutingContract } from './linux-routing-contract.js';
+import type { LinuxRouteExecutor } from './linux-route-executor.js';
+import { FileRouteJournal } from './route-journal.js';
 import { LinuxRouteDiscoveryProvider } from './linux-route-discovery.js';
 import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provider.js';
 import type { CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
@@ -61,6 +64,12 @@ export interface LinuxNetworkControlPlaneOptions {
   };
   /** Custom route discovery provider (for testing). */
   readonly routeDiscoveryProvider?: RouteDiscoveryProvider;
+  /**
+   * Directory for durable state. When set, route mutations are journaled to
+   * `<stateDirectory>/route-journal` before the kernel is touched so an interrupted mutation
+   * can be rolled back after a crash. Without it the journal is in-memory only.
+   */
+  readonly stateDirectory?: string;
 }
 
 export interface LinuxNetworkControlPlane {
@@ -68,6 +77,8 @@ export interface LinuxNetworkControlPlane {
   readonly routing: RoutingEngine;
   readonly connectivity: ConnectivityManager;
   readonly controlPlane: CanonicalNetworkControlPlane;
+  /** Concrete route executor; call `recoverInterrupted()` once at startup. */
+  readonly routeExecutor: LinuxRouteExecutor;
   /** The principal authorized for network.route capability. */
   readonly principal: Principal;
 }
@@ -93,8 +104,11 @@ export function createLinuxNetworkControlPlane(
 
   // 1. Create the kernel and register the production routing contract.
   const kernel = new KernelRuntime(undefined, NETWORK_ROUTE_PRINCIPAL);
-  const { contract: routingContract } = createLinuxRoutingContract({
+  const { contract: routingContract, executor: routeExecutor } = createLinuxRoutingContract({
     ...(netns ? { netns } : {}),
+    ...(options.stateDirectory
+      ? { journal: new FileRouteJournal(join(options.stateDirectory, 'route-journal')) }
+      : {}),
   });
   kernel.registerContract(routingContract);
 
@@ -155,6 +169,7 @@ export function createLinuxNetworkControlPlane(
     routing,
     connectivity,
     controlPlane,
+    routeExecutor,
     principal: NETWORK_ROUTE_PRINCIPAL,
   };
 }

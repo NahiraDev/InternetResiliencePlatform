@@ -5,8 +5,19 @@ import { Application } from '@irp/core';
 import { createLogger } from '@irp/logger';
 import { ConnectivityMonitor, NetworkMonitoringService } from '@irp/network';
 import { MetricsRegistry } from '@irp/telemetry';
-import { createCanonicalRuntime } from '@irp/resilience-runtime';
-import type { DecisionRecord } from '@irp/resilience-runtime';
+import {
+  ControlClientError,
+  controlRequest,
+  createCanonicalRuntime,
+  resolveControlSocketPath,
+} from '@irp/resilience-runtime';
+
+export class CliError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CliError';
+  }
+}
 
 export const createRuntime = () => new Application(loadConfig(), createLogger('error'));
 export const printJson = (value: unknown) => console.log(JSON.stringify(value, null, 2));
@@ -18,10 +29,6 @@ export const createProgram = (): Command => {
     .command('version')
     .description('Show version information')
     .action(() => console.log('InternetResiliencePlatform 0.1.0'));
-  program
-    .command('status')
-    .description('Show platform status')
-    .action(() => printJson({ status: createRuntime().state }));
   program
     .command('config')
     .description('Print effective configuration')
@@ -50,10 +57,6 @@ export const createProgram = (): Command => {
     .command('events')
     .description('Print recent runtime events')
     .action(() => printJson(createRuntime().events.snapshot()));
-  program
-    .command('reload')
-    .description('Validate configuration reload')
-    .action(() => printJson({ reloaded: true, config: loadConfig() }));
   const network = program.command('network').description('Network intelligence commands');
   network
     .command('status')
@@ -73,169 +76,98 @@ export const createProgram = (): Command => {
         detectedIssues: snapshot.issues,
       });
     });
-  const runtime = program.command('runtime').description('Resilience runtime commands');
-  const getRuntimeInstance = async () =>
-    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
-  runtime
-    .command('status')
-    .option('--json', 'print JSON output')
-    .description('Show resilience runtime status')
-    .action(async () => {
-      const rt = await getRuntimeInstance();
-      const snapshot = await rt.getRuntimeSnapshot();
-      printJson({
-        runtimeId: rt.runtimeId,
-        instanceId: rt.instanceId,
-        state: snapshot.state,
-        mode: snapshot.mode,
-        health: snapshot.health,
-      });
-    });
-  runtime
-    .command('capabilities')
-    .option('--json', 'print JSON output')
-    .description('List resilience runtime capabilities')
-    .action(async () => {
-      const rt = await getRuntimeInstance();
-      printJson(rt.capabilities());
-    });
-  runtime
-    .command('snapshot')
-    .option('--json', 'print JSON output')
-    .description('Show resilience runtime snapshot')
-    .action(async () => {
-      const rt = await getRuntimeInstance();
-      printJson(await rt.getRuntimeSnapshot());
-    });
-  runtime
-    .command('decisions')
-    .option('--json', 'print JSON output')
-    .description('List resilience runtime decisions')
-    .action(async () => {
-      const rt = await getRuntimeInstance();
-      printJson(await rt.decisions.list());
-    });
-  runtime
-    .command('incidents')
-    .option('--json', 'print JSON output')
-    .description('List resilience runtime incidents')
-    .action(async () => {
-      const rt = await getRuntimeInstance();
-      printJson(await rt.incidents.list());
-    });
-  runtime
-    .command('conflicts')
-    .option('--json', 'print JSON output')
-    .option('--limit <number>', 'maximum number of conflicts to show', '25')
-    .description('List arbitration conflicts')
-    .action(async () => {
-      printJson({
-        conflicts: [],
-        message: 'Conflict listing requires a ConflictApiStore implementation',
-      });
-    });
-  runtime
-    .command('cycle')
-    .description('Run a resilience runtime cycle')
-    .option('--simulate', 'force simulation mode')
-    .option('--safe', 'run safe mode')
-    .option(
-      '--live',
-      'request live mode; requires runtime authorization and is blocked by local CLI',
-    )
-    .option('--json', 'print JSON output')
-    .action(async (opts: { simulate?: boolean; safe?: boolean; live?: boolean }) => {
-      if (opts.live)
-        throw new Error(
-          'live runtime cycle requires API authorization and cannot be bypassed by CLI',
+  const socketFor = (opts: { socket?: string }): string => {
+    const path = opts.socket ?? resolveControlSocketPath(process.env);
+    if (!path) throw new CliError('no control socket path could be resolved; pass --socket <path>');
+    return path;
+  };
+  const ask = async (
+    opts: { socket?: string },
+    method: 'GET' | 'POST',
+    path: string,
+    body?: unknown,
+  ): Promise<unknown> => {
+    try {
+      return await controlRequest(socketFor(opts), method, path, body);
+    } catch (error) {
+      if (error instanceof ControlClientError && error.code === 'unreachable')
+        throw new CliError(
+          `${error.message}. Start the daemon (systemctl start irp-daemon) or pass --socket <path>.`,
         );
-      const rt = await getRuntimeInstance();
-      const record = await rt.cycle({ mode: opts.safe ? 'safe' : 'simulation' });
-      printJson(record);
-    });
+      throw error;
+    }
+  };
+  const remote = (command: Command): Command =>
+    command.option('--socket <path>', 'daemon control socket (default: resolved from environment)');
 
-  const autopilot = program
-    .command('autopilot')
-    .description('Canonical resilience-runtime compatibility commands');
-  const getAutopilotRuntime = async () =>
-    (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
-  autopilot
-    .command('status')
-    .description('Show canonical runtime status')
-    .action(async () => {
-      const rt = await getAutopilotRuntime();
-      printJson(await rt.getRuntimeSnapshot());
-    });
-  autopilot
-    .command('runs')
-    .description('List canonical runtime decision records')
-    .action(async () => printJson(await (await getAutopilotRuntime()).decisions.list()));
-  autopilot
-    .command('run <id>')
-    .description('Show canonical runtime decision record by id')
-    .action(async (id: string) => {
-      const run = (await (await getAutopilotRuntime()).decisions.list()).find(
-        (decision: DecisionRecord) => decision.decisionId === id,
+  remote(program.command('status').description('Show the running daemon health')).action(
+    async (opts: { socket?: string }) => printJson(await ask(opts, 'GET', '/v1/health')),
+  );
+  remote(program.command('reload').description('Ask the running daemon to reload its configuration')).action(
+    async (opts: { socket?: string }) => printJson(await ask(opts, 'POST', '/v1/reload')),
+  );
+
+  const runtime = program
+    .command('runtime')
+    .description('Inspect and drive the running daemon runtime (talks to the daemon, not a copy)');
+  const view = (name: string, path: string, description: string) =>
+    remote(runtime.command(name).description(description)).action(async (opts: { socket?: string }) =>
+      printJson(await ask(opts, 'GET', path)),
+    );
+  view('status', '/v1/health', 'Show daemon runtime health');
+  view('snapshot', '/v1/snapshot', 'Show the daemon runtime snapshot');
+  view('decisions', '/v1/decisions', 'List decisions recorded by the daemon');
+  view('incidents', '/v1/incidents', 'List incidents recorded by the daemon');
+  view('capabilities', '/v1/capabilities', 'List adapter capabilities of the daemon runtime');
+  remote(
+    runtime
+      .command('cycle')
+      .description('Run one runtime cycle in the daemon (safe by default; never live)')
+      .option('--simulate', 'run the cycle in simulation mode')
+      .option('--live', 'refused: live mode is configured on the daemon, not requested by the CLI'),
+  ).action(async (opts: { socket?: string; simulate?: boolean; live?: boolean }) => {
+    if (opts.live)
+      throw new CliError(
+        'live cycles cannot be requested from the CLI; configure the daemon with IRP_RUNTIME_MODE=live and IRP_ENABLE_LIVE_ROUTE_MUTATION=true',
       );
-      printJson(run ?? { error: 'not found', id });
+    printJson(await ask(opts, 'POST', '/v1/cycle', { mode: opts.simulate ? 'simulation' : 'safe' }));
+  });
+  runtime
+    .command('local-simulation')
+    .description('SIMULATION ONLY: run a throwaway in-process runtime. Not the daemon; changes nothing.')
+    .action(async () => {
+      const rt = (await createCanonicalRuntime({ executionMode: 'simulation' })).runtime;
+      printJson({
+        notice: 'local in-process simulation; this is NOT the running daemon',
+        snapshot: await rt.getRuntimeSnapshot(),
+      });
     });
-  autopilot
-    .command('actions')
-    .description('List actions selected by canonical runtime decisions')
-    .action(async () =>
-      printJson(
-        (await (await getAutopilotRuntime()).decisions.list()).flatMap((decision: DecisionRecord) =>
-          decision.selectedPlan ? [decision.selectedPlan.selectedAction] : [],
-        ),
-      ),
-    );
-  autopilot
-    .command('policy')
-    .description('Show canonical runtime policy snapshot')
-    .action(async () =>
-      printJson((await (await getAutopilotRuntime()).getRuntimeSnapshot()).policySnapshot),
-    );
-  autopilot
-    .command('approve <action>')
-    .description('Approve pending autopilot action through API workflow')
-    .action((action: string) =>
-      printJson({ action, status: 'approval must be submitted to authenticated API' }),
-    );
-  autopilot
-    .command('reject <action>')
-    .description('Reject pending autopilot action through API workflow')
-    .action((action: string) =>
-      printJson({ action, status: 'rejection must be submitted to authenticated API' }),
-    );
-  autopilot
-    .command('rollback <action>')
-    .description('Request governed rollback through API workflow')
-    .action((action: string) =>
-      printJson({ action, status: 'rollback must be submitted to authenticated API' }),
-    );
-  autopilot
-    .command('circuit-breaker')
-    .description('Explain legacy circuit-breaker compatibility status')
-    .action(() =>
-      printJson({
-        state: 'NOT_APPLICABLE',
-        reason:
-          'canonical runtime uses bounded cycles and validation locks instead of a legacy autopilot circuit breaker',
-      }),
-    );
 
-  program
-    .command('doctor')
-    .option('--full', 'run full diagnostics')
-    .description('Run environment diagnostics')
-    .action(async (opts: { full?: boolean }) =>
-      printJson({
-        full: Boolean(opts.full),
-        network: await new ConnectivityMonitor().status(),
-        providers: createRuntime().providers.length,
-      }),
-    );
+  remote(
+    program
+      .command('doctor')
+      .option('--full', 'also run local network probes')
+      .description('Diagnose: is the daemon reachable, and what can it do on this host'),
+  ).action(async (opts: { socket?: string; full?: boolean }) => {
+    const report: Record<string, unknown> = { socket: opts.socket ?? resolveControlSocketPath(process.env) ?? null };
+    try {
+      report.daemon = { reachable: true, health: await ask(opts, 'GET', '/v1/health') };
+      report.capabilities = await ask(opts, 'GET', '/v1/capabilities');
+    } catch (error) {
+      report.daemon = { reachable: false, reason: error instanceof Error ? error.message : String(error) };
+      process.exitCode = 1;
+    }
+    if (opts.full) report.localNetwork = await new ConnectivityMonitor().status();
+    printJson(report);
+  });
   return program;
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) createProgram().parse();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  createProgram()
+    .parseAsync()
+    .catch((error: unknown) => {
+      console.error(`irp: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    });
+}
