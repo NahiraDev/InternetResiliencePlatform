@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "c657996ed305285aa264caeb9bfd5d78dfb4bfd982f4d506901b7818210d4ba0",
+  "generatedAt": "14bd72052bf2eca993e9b8cc8ea090c22db9fd42b05c2094906ae3acb07fc425",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -27,6 +27,16 @@
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "AGENT_MESSAGE_TYPES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/agent-protocol.ts"
+    },
+    {
+      "symbol": "AI_CONTEXT_ALLOW_LIST",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/intelligence/ai-assistance.ts"
+    },
+    {
       "symbol": "AutopilotDomainError",
       "kind": "class",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
@@ -37,14 +47,124 @@
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "CAUSAL_LAYERS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/telemetry-plane/correlation.ts"
+    },
+    {
+      "symbol": "checkLeastPrivilege",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/governance/governance-controls.ts"
+    },
+    {
       "symbol": "CircuitBreakerOpenError",
       "kind": "class",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "ClassificationRuleError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/traffic/classification.ts"
+    },
+    {
+      "symbol": "CONGESTION_LEVELS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/congestion.ts"
+    },
+    {
+      "symbol": "CONTROL_CHANNEL_KINDS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/control-plane-security.ts"
+    },
+    {
+      "symbol": "DataPlaneValidationError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/abstraction.ts"
+    },
+    {
+      "symbol": "DEFAULT_ANOMALY_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/telemetry-plane/anomaly.ts"
+    },
+    {
+      "symbol": "DEFAULT_CHANNEL_REQUIREMENTS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/control-plane-security.ts"
+    },
+    {
+      "symbol": "DEFAULT_CONGESTION_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/congestion.ts"
+    },
+    {
+      "symbol": "DEFAULT_CORRELATION_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/telemetry-plane/correlation.ts"
+    },
+    {
+      "symbol": "DEFAULT_DETECTION_RULES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/security-monitoring.ts"
+    },
+    {
       "symbol": "DEFAULT_FABRIC_MAX_AGE_MS",
       "kind": "const",
       "declaredIn": "packages/resilience-runtime/src/fabric-lifecycle.ts"
+    },
+    {
+      "symbol": "DEFAULT_FLEET_SLO",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/fleet/fleet-health.ts"
+    },
+    {
+      "symbol": "DEFAULT_FLOW_TABLE_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/flow-lifecycle.ts"
+    },
+    {
+      "symbol": "DEFAULT_KEY_ROTATION_POLICY",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/key-lifecycle.ts"
+    },
+    {
+      "symbol": "DEFAULT_PREDICTIVE_FAILOVER_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/predictive-failover.ts"
+    },
+    {
+      "symbol": "DEFAULT_PROTECTED_FLOWS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/nat-firewall.ts"
+    },
+    {
+      "symbol": "DEFAULT_QOS_POLICIES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/qos.ts"
+    },
+    {
+      "symbol": "DEFAULT_REACHABILITY_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/reachability.ts"
+    },
+    {
+      "symbol": "DEFAULT_RELEASE_GATES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/intelligence/release-readiness.ts"
+    },
+    {
+      "symbol": "DEFAULT_RETENTION_TIERS",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/telemetry-plane/time-series.ts"
+    },
+    {
+      "symbol": "DEFAULT_ROLLOUT_STAGES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/fleet/config-distribution.ts"
+    },
+    {
+      "symbol": "DEFAULT_ROUTE_OPTIMIZATION_CONFIG",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/route-optimization.ts"
     },
     {
       "symbol": "defaultAutopilotPolicy",
@@ -57,9 +177,64 @@
       "declaredIn": "packages/resilience-runtime/src/fabric.ts"
     },
     {
+      "symbol": "diffRuleSets",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/nat-firewall.ts"
+    },
+    {
+      "symbol": "evidenceDigest",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/governance/compliance-evidence.ts"
+    },
+    {
       "symbol": "FAILURE_LAYERS",
       "kind": "const",
       "declaredIn": "packages/resilience-runtime/src/learning/adaptive-control.ts"
+    },
+    {
+      "symbol": "fingerprintPublicKey",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/device-identity.ts"
+    },
+    {
+      "symbol": "finiteOr",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/analytics/series.ts"
+    },
+    {
+      "symbol": "flowKeyString",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/flow-lifecycle.ts"
+    },
+    {
+      "symbol": "formatCidr",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/cidr.ts"
+    },
+    {
+      "symbol": "GENESIS_HASH",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/governance/immutable-history.ts"
+    },
+    {
+      "symbol": "lastWriterWins",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/scale/consistency.ts"
+    },
+    {
+      "symbol": "mergeVectors",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/scale/consistency.ts"
+    },
+    {
+      "symbol": "NETWORK_STATES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/intelligence/state-prediction.ts"
+    },
+    {
+      "symbol": "observationFromAssurance",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/telemetry-plane/closed-loop-assurance.ts"
     },
     {
       "symbol": "PolicyDeniedError",
@@ -67,14 +242,44 @@
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "QosConfigError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/qos.ts"
+    },
+    {
+      "symbol": "requiredBump",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-api/compatibility.ts"
+    },
+    {
       "symbol": "SafetyGateError",
       "kind": "class",
       "declaredIn": "packages/resilience-runtime/src/autopilot/autopilot.ts"
     },
     {
+      "symbol": "scopeCovers",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/control-security/capability-grants.ts"
+    },
+    {
       "symbol": "SINKS",
       "kind": "const",
       "declaredIn": "packages/resilience-runtime/src/security/secrets.ts"
+    },
+    {
+      "symbol": "TRAFFIC_CLASSES",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/traffic/classification.ts"
+    },
+    {
+      "symbol": "TwinChangeError",
+      "kind": "class",
+      "declaredIn": "packages/resilience-runtime/src/intelligence/digital-twin.ts"
+    },
+    {
+      "symbol": "validateRule",
+      "kind": "const",
+      "declaredIn": "packages/resilience-runtime/src/dataplane/abstraction.ts"
     }
   ],
   "duplicateContracts": [
@@ -94,10 +299,31 @@
       ]
     },
     {
+      "name": "AssuranceStatus",
+      "declaredIn": [
+        "packages/network-intelligence/src/identity/IdentityAssurance.ts",
+        "packages/resilience-runtime/src/telemetry-plane/closed-loop-assurance.ts"
+      ]
+    },
+    {
+      "name": "CircuitBreaker",
+      "declaredIn": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/scale/backpressure.ts"
+      ]
+    },
+    {
       "name": "CircuitBreakerState",
       "declaredIn": [
         "packages/dns/src/index.ts",
         "packages/resilience-runtime/src/autopilot/autopilot.ts"
+      ]
+    },
+    {
+      "name": "compareVersions",
+      "declaredIn": [
+        "packages/plugin-loader/src/index.ts",
+        "packages/resilience-runtime/src/fleet/inventory.ts"
       ]
     },
     {
@@ -113,6 +339,20 @@
         "packages/linux-client/src/linux-host-connectivity-provider.ts",
         "packages/linux-client/src/linux-route-discovery.ts",
         "packages/linux-client/src/linux-route-executor.ts"
+      ]
+    },
+    {
+      "name": "DependencyGraph",
+      "declaredIn": [
+        "packages/failover/src/index.ts",
+        "packages/resilience-runtime/src/telemetry-plane/topology.ts"
+      ]
+    },
+    {
+      "name": "DeviceIdentity",
+      "declaredIn": [
+        "packages/resilience-runtime/src/control-security/device-identity.ts",
+        "packages/security/src/index.ts"
       ]
     },
     {
@@ -180,6 +420,13 @@
       ]
     },
     {
+      "name": "LifecycleState",
+      "declaredIn": [
+        "packages/kernel/src/index.ts",
+        "packages/resilience-runtime/src/fleet/device-lifecycle.ts"
+      ]
+    },
+    {
       "name": "ManualOverrideMode",
       "declaredIn": [
         "packages/connectivity/src/index.ts",
@@ -198,6 +445,20 @@
       "declaredIn": [
         "packages/resilience-runtime/src/domain/ids.ts",
         "packages/utils/src/index.ts"
+      ]
+    },
+    {
+      "name": "PluginManifest",
+      "declaredIn": [
+        "packages/plugin-sdk/src/index.ts",
+        "packages/resilience-runtime/src/control-api/plugin-lifecycle.ts"
+      ]
+    },
+    {
+      "name": "PolicyConflict",
+      "declaredIn": [
+        "packages/resilience-runtime/src/dataplane/app-policy.ts",
+        "packages/resilience-runtime/src/intent/arbitration.ts"
       ]
     },
     {
@@ -237,6 +498,20 @@
       ]
     },
     {
+      "name": "RoutingPolicyContext",
+      "declaredIn": [
+        "packages/resilience-runtime/src/traffic/policy-routing.ts",
+        "packages/routing/src/index.ts"
+      ]
+    },
+    {
+      "name": "RoutingPolicyDecision",
+      "declaredIn": [
+        "packages/resilience-runtime/src/traffic/policy-routing.ts",
+        "packages/routing/src/index.ts"
+      ]
+    },
+    {
       "name": "RuntimeContext",
       "declaredIn": [
         "packages/core/src/index.ts",
@@ -251,10 +526,24 @@
       ]
     },
     {
+      "name": "satisfies",
+      "declaredIn": [
+        "packages/plugin-loader/src/index.ts",
+        "packages/resilience-runtime/src/control-api/semver.ts"
+      ]
+    },
+    {
       "name": "Scheduler",
       "declaredIn": [
         "packages/core/src/index.ts",
         "packages/network-intelligence/src/core/Scheduler.ts"
+      ]
+    },
+    {
+      "name": "SecurityEvent",
+      "declaredIn": [
+        "packages/resilience-runtime/src/control-security/security-monitoring.ts",
+        "packages/security/src/index.ts"
       ]
     }
   ],
@@ -262,8 +551,8 @@
   "summary": {
     "orphanTests": 0,
     "orphanModules": 3,
-    "orphanExports": 13,
-    "duplicateContracts": 25,
+    "orphanExports": 54,
+    "duplicateContracts": 37,
     "unreferencedPersistenceModels": 0
   }
 }
