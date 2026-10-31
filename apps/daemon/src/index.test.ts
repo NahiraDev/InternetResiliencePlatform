@@ -294,7 +294,9 @@ describe('control port before startup completes', () => {
     vi.spyOn(host.connectivity, 'discoverResources').mockImplementation(
       () => new Promise<never>(() => { /* intentionally pending */ }),
     );
-    vi.spyOn(host.dns, 'evaluate').mockImplementation(() => new Promise<never>(() => { /* intentionally pending */ }));
+    vi.spyOn(host.dns, 'evaluate').mockImplementation(
+      () => new Promise<never>(() => { /* intentionally pending */ }),
+    );
 
     await host.start();
 
