@@ -106,6 +106,37 @@ export const DEFAULT_CAPABILITY_RULES: readonly CapabilityRule[] = Object.freeze
     minimumBoundary: 'remote-node',
     description: 'Submit signed remote probe evidence.',
   }),
+  // The capability names below are the ones the canonical decision provider and the platform
+  // adapters actually request (`route.write`, `dns.write`, `connectivity.failover`,
+  // `tunnel.write`, `network.observe`). They were missing from this table, and because an unknown
+  // capability is denied, a live mutation planned by the real decision path could never be
+  // authorized. Privileged ones stay bound to the canonical runtime boundary: plugins, remote
+  // nodes, external clients and AI can never hold them.
+  Object.freeze({
+    capability: 'network.observe',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Observe host network state without changing it.',
+  }),
+  Object.freeze({
+    capability: 'route.write',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Add, replace or delete host routes.',
+  }),
+  Object.freeze({
+    capability: 'dns.write',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Change the host resolver configuration.',
+  }),
+  Object.freeze({
+    capability: 'connectivity.failover',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Switch the active connectivity source.',
+  }),
+  Object.freeze({
+    capability: 'tunnel.write',
+    minimumBoundary: 'canonical-runtime',
+    description: 'Create, switch or tear down a tunnel.',
+  }),
   Object.freeze({
     capability: 'network.mutate',
     minimumBoundary: 'canonical-runtime',

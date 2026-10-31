@@ -58,9 +58,15 @@ describe('CLI command registration', () => {
 
 describe('CLI talks to the running daemon', () => {
   it('status/decisions read from the daemon socket', async () => {
-    const socket = await serve((url) => (url === '/v1/health' ? { status: 'ok', from: 'daemon' } : [{ id: 'd1' }]));
-    expect(JSON.parse(await run('status', '--socket', socket))).toEqual({ status: 'ok', from: 'daemon' });
-    expect(JSON.parse(await run('runtime', 'decisions', '--socket', socket))).toEqual([{ id: 'd1' }]);
+    const socket = await serve((url) => {
+      if (url === '/v1/health') return { lifecycle: 'running', authorization: { requestedMode: 'safe', effectiveMode: 'safe', liveActive: false, blockers: [] }, storage: { persistent: true }, scheduler: { enabled: true } };
+      if (url === '/v1/snapshot') return { health: { status: 'healthy' } };
+      return [{ decisionId: 'd1', outcome: 'noop' }];
+    });
+    const status = JSON.parse(await run('status', '--socket', socket));
+    expect(status).toMatchObject({ reachable: true, state: 'healthy', effectiveMode: 'safe', storage: 'persistent' });
+    expect(process.exitCode).toBe(0);
+    expect(JSON.parse(await run('runtime', 'decisions', '--socket', socket))).toEqual([expect.objectContaining({ decisionId: 'd1', outcome: 'noop', execution: 'none', executedAndVerified: false })]);
   });
 
   it('cycle posts safe by default, simulation on request', async () => {
@@ -85,8 +91,9 @@ describe('CLI talks to the running daemon', () => {
 
   it('doctor reports unreachable daemon and exits non-zero', async () => {
     const socket = join(tmpdir(), 'irp-cli-missing', 'none.sock');
-    const out = JSON.parse(await run('doctor', '--socket', socket)) as { daemon: { reachable: boolean } };
-    expect(out.daemon.reachable).toBe(false);
-    expect(process.exitCode).toBe(1);
+    const out = JSON.parse(await run('doctor', '--socket', socket)) as { running: boolean; state: string };
+    expect(out.running).toBe(false);
+    expect(out.state).toBe('unreachable');
+    expect(process.exitCode).toBe(3);
   });
 });
