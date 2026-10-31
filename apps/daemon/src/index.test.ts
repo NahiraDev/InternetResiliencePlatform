@@ -1,8 +1,9 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, vi } from 'vitest';
 import { BoundedClosedLoopController, createCapabilitySnapshot, type DecisionRecord } from '@irp/resilience-runtime';
 import { createDaemon, createRuntimeDaemonHost } from './index.js';
 
 afterEach(() => {
+  vi.restoreAllMocks();
   delete process.env.IRP_TUNNEL_ENABLED;
   delete process.env.IRP_GATEWAY_SELECTION_ENABLED;
   delete process.env.IRP_LOOP_MAX_CYCLES;
@@ -288,6 +289,25 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
 });
 
 describe('control port before startup completes', () => {
+  it('reaches running with explicit degraded evidence when startup network probes hang', async () => {
+    const host = createRuntimeDaemonHost();
+    vi.spyOn(host.connectivity, 'discoverResources').mockImplementation(
+      () => new Promise(() => {}),
+    );
+    vi.spyOn(host.dns, 'evaluate').mockImplementation(() => new Promise(() => {}));
+
+    await host.start();
+
+    expect(host.lifecycle).toBe('running');
+    const health = (await host.health()) as {
+      startup: { warnings: string[] };
+    };
+    expect(health.startup.warnings).toHaveLength(2);
+    expect(health.startup.warnings.join(' ')).toMatch(/connectivity-discovery/);
+    expect(health.startup.warnings.join(' ')).toMatch(/dns-evaluation/);
+    await host.stop();
+  }, 20_000);
+
   it('answers health while initializing but refuses cycles with a conflict until running', async () => {
     const host = createRuntimeDaemonHost();
     const port = host.controlPort();
