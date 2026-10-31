@@ -334,6 +334,9 @@ export class LinuxObservationProvider implements ObservationProvider {
   }
 }
 
+/** Longest the daemon waits for a running cycle to finish before exiting. */
+const SHUTDOWN_DRAIN_MS = 20_000;
+
 export class RuntimeDaemonHost {
   lifecycle: 'created' | 'initialized' | 'ready' | 'running' | 'stopping' | 'stopped' = 'created';
   /** Durable state root; undefined only for hermetic test runs that named no directory. */
@@ -819,7 +822,14 @@ export class RuntimeDaemonHost {
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
+    // Stop taking new requests, then let any cycle already running reach verification or its own
+    // rollback. Exiting mid-mutation would leave an unverified change for the next start to undo.
     await this.controlServer?.stop();
+    const drained =
+      (await this.scheduler.whenIdle(SHUTDOWN_DRAIN_MS)) &&
+      (await this.runtime.whenIdle(SHUTDOWN_DRAIN_MS));
+    if (!drained)
+      await this.runtime.events.emit('daemon.shutdown-with-active-cycle', { waitedMs: SHUTDOWN_DRAIN_MS });
     await this.restoreDns('shutdown');
     await this.plugins.stop();
     this.decisionStore?.close();

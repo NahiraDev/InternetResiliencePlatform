@@ -57,12 +57,29 @@ export class RuntimeScheduler {
       });
       this.lastFailure = undefined;
     } catch (error) {
-      this.failedTotal++;
+      const message = error instanceof Error ? error.message : String(error);
       this.skippedTotal++;
-      this.lastFailure = error instanceof Error ? error.message : String(error);
+      if (message === 'runtime cycle already active') {
+        // Another caller (e.g. an operator-requested cycle) holds the runtime: that is overlap
+        // prevention working, not a scheduler failure.
+        this.overlapPreventedTotal++;
+      } else {
+        this.failedTotal++;
+        this.lastFailure = message;
+      }
     } finally {
       this.active--;
     }
+  }
+
+  /** Resolves once no scheduled cycle is running (or false after `timeoutMs`). */
+  async whenIdle(timeoutMs: number): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    while (this.active > 0) {
+      if (Date.now() >= deadline) return false;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return true;
   }
 
   stop() {
