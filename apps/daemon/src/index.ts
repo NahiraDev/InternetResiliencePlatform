@@ -790,6 +790,10 @@ export class RuntimeDaemonHost {
       // The requested mode is limited to simulation/safe by the control server; the daemon's
       // own configured mode is what the scheduler uses for live operation.
       cycle: async (mode) => {
+        // Startup discovery can take a long time on a broken network; refuse cycles until the
+        // runtime has finished initializing rather than cycling against half-built state.
+        if (this.lifecycle !== 'running')
+          throw new ControlConflictError(`daemon is ${this.lifecycle}; retry when it is running`);
         try {
           return await this.runtime.cycle({ mode });
         } catch (error) {
@@ -1038,9 +1042,12 @@ export const createRuntimeDaemonHost = (config?: Partial<RuntimeSchedulerConfig>
 if (process.argv[1]?.endsWith('index.js')) {
   const daemon = createDaemon();
   const host = createRuntimeDaemonHost({ enabled: process.env.IRP_RUNTIME_ENABLED === '1' });
+  // Open the control channel BEFORE startup discovery: discovery probes the network, and a
+  // degraded network is exactly when the operator needs `irp status` to answer (lifecycle is
+  // reported as it progresses; cycles are refused with 409 until the daemon is running).
+  const controlSocket = await host.startControl();
   await host.start();
   await daemon.start();
-  const controlSocket = await host.startControl();
   daemon.logger.info('daemon ready', {
     mode: host.modeResolution.mode,
     stateDirectory: host.stateDirectory ?? 'memory-only',
