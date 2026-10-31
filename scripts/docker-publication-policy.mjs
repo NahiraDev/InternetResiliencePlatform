@@ -25,7 +25,7 @@ export function verifyPreviewPublication({ image, sourceSha, tags }) {
     sourceSha,
     tags: published,
     latestPromotion: 'BLOCKED',
-    reason: 'CI Release Gate success is not production certification.',
+    reason: 'Successful main-branch CI is not production certification.',
   };
 }
 

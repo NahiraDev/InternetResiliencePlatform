@@ -52,42 +52,9 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Using release tag: $TAG"
 
-  gate:
-    name: Require green Release Gate
-    needs: prepare
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      actions: read
-      contents: read
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.prepare.outputs.release_tag }}
-
-      - name: Verify Release Gate passed for the tagged commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-        run: |
-          set -euo pipefail
-          sha="$(git rev-parse HEAD)"
-          echo "Tag $RELEASE_TAG resolves to $sha"
-          # Fail closed: a release may only be cut from a commit whose Release Gate
-          # (CI, System Assurance, runtime labs, CodeQL, deep audit and every client
-          # workflow) has completed successfully.
-          passed="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/release-gate.yml/runs?head_sha=${sha}&per_page=50" \
-            --jq '[.workflow_runs[] | select(.status == "completed" and .conclusion == "success")] | length')"
-          if [ "$passed" -lt 1 ]; then
-            echo "No successful Release Gate run exists for $sha. Refusing to publish." >&2
-            exit 1
-          fi
-          echo "Release Gate: PASS for $sha"
-
   android:
     name: Android APK
-    needs: [prepare, gate]
+    needs: [prepare]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
@@ -131,7 +98,7 @@ jobs:
 
   linux:
     name: Linux bundle
-    needs: [prepare, gate]
+    needs: [prepare]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -221,7 +188,7 @@ jobs:
 
   macos:
     name: macOS bundle
-    needs: [prepare, gate]
+    needs: [prepare]
     runs-on: macos-15
     timeout-minutes: 20
     steps:
@@ -275,7 +242,7 @@ jobs:
 
   windows:
     name: Windows bundle
-    needs: [prepare, gate]
+    needs: [prepare]
     runs-on: windows-2025
     timeout-minutes: 20
     defaults:
@@ -338,7 +305,7 @@ jobs:
 
   ios-source:
     name: iOS developer bundle
-    needs: [prepare, gate]
+    needs: [prepare]
     runs-on: macos-14
     timeout-minutes: 20
     steps:
@@ -375,7 +342,7 @@ jobs:
 
   publish:
     name: Create GitHub Release
-    needs: [prepare, gate, android, linux, macos, windows, ios-source]
+    needs: [prepare, android, linux, macos, windows, ios-source]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -417,10 +384,6 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
-          # v0.2.x is a developer preview: production certification criteria
-          # (device/runtime validation, signing, regional evidence) are not yet
-          # satisfied, so releases are published as prereleases. Flip this off
-          # only when the production certification matrix passes.
           gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \

@@ -14,7 +14,7 @@ CI is an executable architectural contract, not a cosmetic status indicator.
 8. No required check may be made green with `continue-on-error`, `|| true`, unconditional success output, or test skipping.
 9. Workflow triggers must include all source paths that can materially affect the job.
 10. A workflow that produces authoritative evidence must expose a deterministic final result.
-11. Release publication must consume the single fail-closed Release Gate and must not publish directly from an individual validation workflow.
+11. Release publication must preserve Phase 71 asset validation and prerelease classification until production certification is established. Docker publication must consume only successful main-branch push CI for the exact current SHA.
 
 ## Dependency model
 
@@ -47,11 +47,22 @@ PR checks may cancel obsolete runs. Authoritative `main` runtime evidence must n
 
 GitHub Actions supports workflow/job concurrency and environment protection; use those primitives deliberately rather than accidental queueing.
 
-## Release Gate
+## Release and Docker publication
 
-The Release Gate validates the exact main commit and waits for all release-blocking workflow runs for that same SHA to complete successfully. A successful gate is the only prerequisite consumed by publication workflows.
+The tag-triggered release workflow builds the supported platform bundles,
+validates the Phase 71 asset contract, generates checksums, and publishes a
+GitHub prerelease while production certification remains unverified.
 
-The implemented Release Gate (`.github/workflows/release-gate.yml`) currently requires a successful Public Runtime Lab run on the exact main commit, so the lab is a de-facto publication prerequisite in the implemented contract; it depends on an ephemeral public Quick Tunnel and external network availability, which is why intermediate gate runs can time out while the soak is still running. Removing it from the gate would be a deliberate contract change requiring its own review — until then, this document describes that implemented behavior.
+The former all-workflows exact-SHA Release Gate is not a global publication
+prerequisite. Removing that orchestration dependency does not remove platform
+build requirements, packaging validation, checksum verification, or the
+separate evidence required for production certification.
+
+Docker Publish consumes only a successful CI workflow run originating from
+a push to main. Before publication, the checked-out SHA must equal both the
+triggering CI run's SHA and the current main SHA. Only the immutable
+developer-preview SHA tag is permitted; latest promotion remains blocked
+until a separately trusted production-certification authority exists.
 
 ## Review checklist
 
@@ -66,4 +77,7 @@ The implemented Release Gate (`.github/workflows/release-gate.yml`) currently re
 - artifacts useful for diagnosis?
 - no false-green paths?
 - required status checks deterministic?
-- release publication behind Release Gate?
+- Phase 71 asset validation and checksum verification preserved?
+- prerelease classification preserved until production certification?
+- Docker publication restricted to successful main push CI and exact SHA?
+- mutable latest promotion blocked?

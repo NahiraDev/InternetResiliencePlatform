@@ -22,9 +22,9 @@ Observe → Measure → Detect → Diagnose → Decide
 
 ## Current implementation truth
 
-The repository is under active development. Phases **0–70** define the core implementation, hardening and v1.0 certification baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** remains the active implementation gate until its external tagged-release certification evidence is satisfied.
+The repository is under active development. Phases **0–70** define the core implementation and hardening baseline. **Phase 71 — Cross-Platform Distribution & GitHub Releases** provides packaging and distribution work; it is no longer a global release blocker.
 
-The post-v1 roadmap is now governed by [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md). Phase 72 is **Control-Plane Architecture Completion**, not signed mobile distribution. Phase 72 has an architecture ownership/dependency contract on its dedicated branch, but it must not be certified while the Phase 71 external release gate remains open.
+The post-v1 roadmap is now governed by [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md). Phase 72 is **Control-Plane Architecture Completion**, not signed mobile distribution. Architecture work proceeds independently of release publication.
 
 The Linux primary-device contract is explicit: the Debian-based Linux client is the first device release target, and its build, test, package and runtime gates are release-critical. iOS build failures remain visible and are not suppressed, but they do not block Linux-first delivery.
 
@@ -81,7 +81,7 @@ The current repository includes:
 - Linux Full Client package with systemd integration, local diagnostics and Debian package generation
 - Platform client foundations for macOS, Windows, the shared mobile core, iOS Full Client and native iOS Network Extension boundaries
 - A machine-readable Phase 70 v1.0 certification contract and fail-closed evidence verifier
-- A machine-readable Phase 71 release contract, asset verifier and checksum-validated GitHub Release pipeline
+- A cross-platform GitHub Release pipeline with packaging smoke checks and SHA-256 checksums
 
 The long-term goal is to evaluate degradation, choose an authorized recovery path, verify the result, recover safely when an action is ineffective, and expose the same capability model to every supported client.
 

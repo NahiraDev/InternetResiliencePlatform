@@ -14,7 +14,7 @@ const workflow = readFileSync(
   'utf8',
 );
 
-test('a CI-gated commit may publish a SHA preview, never production approval', () => {
+test('a successful main-branch CI commit may publish a SHA preview, never production approval', () => {
   const policy = verifyPreviewPublication({ image, sourceSha: sha, tags: preview });
   assert.equal(policy.publicationClass, 'developer-preview');
   assert.equal(policy.latestPromotion, 'BLOCKED');
@@ -50,7 +50,7 @@ test('metadata cannot implicitly or explicitly introduce latest', () => {
     .split('      - name: Extract Docker metadata\n')[1]
     .split('\n      - name:')[0];
   assert.match(metadata, /flavor:\s*\|\s*\n\s*latest=false/);
-  assert.match(metadata, /type=raw,value=sha-\$\{\{ steps.source.outputs.short_sha \}\}/);
+  assert.match(metadata, /type=sha,prefix=sha-,format=short/);
   assert.doesNotMatch(metadata, /value=latest|enable=.*certif/i);
   assert.match(metadata, /org.opencontainers.image.revision=\$\{\{ steps.source.outputs.sha \}\}/);
 });
@@ -68,6 +68,7 @@ test('policy is enforced before pushing; provenance, SBOM, signing and digest re
   assert.match(workflow, /Signed image digest:/);
   assert.match(workflow, /workflow_run\.conclusion == 'success'/);
   assert.match(workflow, /workflow_run\.head_branch == 'main'/);
+  assert.match(workflow, /workflow_run\.event == 'push'/);
   assert.doesNotMatch(workflow, /continue-on-error:|\|\| true/);
 });
 
@@ -83,7 +84,7 @@ function verifySource({ local = sha, main = sha, gated = sha } = {}) {
     const output = join(directory, 'output');
     writeFileSync(output, '');
     const step = workflow
-      .split('      - name: Verify CI-gated commit\n')[1]
+      .split('      - name: Verify successful main CI commit\n')[1]
       .split('\n      - name:')[0];
     const script = step.split('        run: |\n')[1].replace(/^ {10}/gm, '');
     const result = spawnSync('bash', ['-c', script], {
@@ -106,7 +107,7 @@ function verifySource({ local = sha, main = sha, gated = sha } = {}) {
   }
 }
 
-test('publication source must match both current main and the successful CI gate SHA', () => {
+test('publication source must match both current main and the triggering CI SHA', () => {
   assert.deepEqual(verifySource(), { code: 0, output: `sha=${sha}\nshort_sha=14499f9\n` });
   for (const mismatch of [
     { local: 'a'.repeat(40) },
