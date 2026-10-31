@@ -292,9 +292,9 @@ describe('control port before startup completes', () => {
   it('reaches running with explicit degraded evidence when startup network probes hang', async () => {
     const host = createRuntimeDaemonHost();
     vi.spyOn(host.connectivity, 'discoverResources').mockImplementation(
-      () => new Promise(() => {}),
+      () => new Promise<never>(() => { /* intentionally pending */ }),
     );
-    vi.spyOn(host.dns, 'evaluate').mockImplementation(() => new Promise(() => {}));
+    vi.spyOn(host.dns, 'evaluate').mockImplementation(() => new Promise<never>(() => { /* intentionally pending */ }));
 
     await host.start();
 
