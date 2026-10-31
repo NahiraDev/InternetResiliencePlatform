@@ -4,10 +4,10 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation baseline: **Phases 94–150 implemented locally** (branch `phase/94-150-implementation`, PARTIAL pending exact-SHA CI). Phase 93 and earlier unchanged. ResilienceRuntime remains the sole production mutation authority.
-- Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**, **#410**, **#412**, **#413**, **#420**.
+- Current implementation baseline: **Phases 94–150 merged to main** (via PR #428). Each phase is PARTIAL pending exact-SHA CI evidence and external runtime validation. Phase 93 and earlier unchanged. ResilienceRuntime remains the sole production mutation authority.
+- Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**, **#410**, **#411**, **#412**, **#413**, **#420**.
 - Main branch: `main`
-- Current main commit reviewed: `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`.
+- Current main commit reviewed: `6432d32be2cd19f6bc2f1401666637ef7fc84f6b`.
 - Phase 71 status: implementation/release contract work exists; external release certification remains open. Published GitHub Release v0.2.1 is developer-preview evidence only.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
 - Current work must close source → contract → consumer → entrypoint → execution → outcome gaps without creating a second control plane or declaring completion from source presence alone.
