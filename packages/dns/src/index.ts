@@ -630,9 +630,9 @@ export class IntelligentDnsEngine extends EventEmitter {
   }
 
   async evaluate(): Promise<ProviderScore[]> {
-    for (const provider of this.providers) {
-      await this.recordHealth(provider);
-    }
+    // Providers are probed concurrently: probing them one after another makes evaluation take
+    // (providers x timeout) when the network drops DNS, which delayed daemon startup by minutes.
+    await Promise.all(this.providers.map((provider) => this.recordHealth(provider)));
     const ranked = this.rankProviders();
     const best = ranked[0];
     if (best) {

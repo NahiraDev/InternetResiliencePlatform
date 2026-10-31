@@ -75,6 +75,24 @@ describe('IntelligentDnsEngine', () => {
     );
   });
 
+  it('probes providers concurrently so a dropped network costs one timeout, not one per provider', async () => {
+    const PROBE_MS = 150;
+    const health: DnsHealthCheck = {
+      check: async () => {
+        await new Promise((r) => setTimeout(r, PROBE_MS));
+        return { healthy: false, latencyMs: PROBE_MS, checkedAt: new Date().toISOString() };
+      },
+    };
+    const providers = Array.from({ length: 8 }, (_, i) => provider(`p${i}`, 10));
+    const engine = new IntelligentDnsEngine(providers, health);
+    const started = Date.now();
+    const ranked = await engine.evaluate();
+    const elapsed = Date.now() - started;
+    expect(ranked).toHaveLength(8);
+    // Sequential probing would take 8 x 150ms = 1200ms.
+    expect(elapsed).toBeLessThan(PROBE_MS * 4);
+  });
+
   it('applies block rules deterministically by priority', async () => {
     const health: DnsHealthCheck = {
       check: async () => ({
