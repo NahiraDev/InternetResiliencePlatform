@@ -286,3 +286,16 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
     expect(result.records).toHaveLength(1);
   });
 });
+
+describe('control port before startup completes', () => {
+  it('answers health while initializing but refuses cycles with a conflict until running', async () => {
+    const host = createRuntimeDaemonHost();
+    const port = host.controlPort();
+    expect(host.lifecycle).toBe('created');
+    expect(((await port.health()) as { lifecycle: string }).lifecycle).toBe('created');
+    await expect(port.cycle('safe')).rejects.toMatchObject({ status: 409 });
+    await host.start();
+    await expect(port.cycle('safe')).resolves.toBeDefined();
+    await host.stop();
+  }, 60_000);
+});

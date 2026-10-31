@@ -29,6 +29,17 @@ const DAEMON = join(here, '..', 'dist', 'index.js');
 const CLI = join(here, '..', '..', 'cli', 'dist', 'index.js');
 const NS = 'irp-accept-ns';
 
+/**
+ * The CAP_NET_ADMIN-drop and network-namespace scenarios need real root. On an unprivileged
+ * runner they are reported as skipped (visible in the vitest summary), never as passed. Set
+ * IRP_ACCEPTANCE_REQUIRE_PRIVILEGED=1 (e.g. in a root CI job) to make a missing privilege a
+ * hard failure instead.
+ */
+const isRoot = typeof process.geteuid === 'function' && process.geteuid() === 0;
+const requirePrivileged = process.env.IRP_ACCEPTANCE_REQUIRE_PRIVILEGED === '1';
+const privilegedIt = isRoot || requirePrivileged ? it : it.skip;
+const privilegedDescribe = isRoot || requirePrivileged ? describe : describe.skip;
+
 const cleanup: Array<() => Promise<void> | void> = [];
 afterEach(async () => {
   while (cleanup.length) await cleanup.pop()!();
@@ -55,13 +66,14 @@ const waitForDaemon = async (socket: string, exited: Running['exited']): Promise
   while (Date.now() < deadline) {
     if (finished) throw new Error('daemon exited before becoming ready');
     try {
-      await controlRequest(socket, 'GET', '/v1/health', undefined, 2_000);
-      return;
+      const health = (await controlRequest(socket, 'GET', '/v1/health', undefined, 2_000)) as { lifecycle?: string };
+      if (health.lifecycle === 'running') return;
+      await new Promise((r) => setTimeout(r, 150));
     } catch {
       await new Promise((r) => setTimeout(r, 150));
     }
   }
-  throw new Error('daemon did not become ready within 30s');
+  throw new Error('daemon did not reach lifecycle=running within 30s');
 };
 
 const startDaemon = async (
@@ -264,7 +276,7 @@ describe('host authorization for live mode', () => {
     expect(out).toMatch(/IRP_ENABLE_LIVE_ROUTE_MUTATION/);
   }, 60_000);
 
-  it('degrades to safe and says why when the process lacks CAP_NET_ADMIN', async () => {
+  privilegedIt('degrades to safe and says why when the process lacks CAP_NET_ADMIN', async () => {
     const dir = tmp();
     const daemon = await startDaemon({ dir, env: live, wrap: ['setpriv', '--bounding-set=-net_admin', '--inh-caps=-net_admin'] });
     const health = (await controlRequest(daemon.socket, 'GET', '/v1/health')) as { authorization: { requestedMode: string; effectiveMode: string; liveActive: boolean; blockers: string[]; evidence: { capNetAdmin: boolean } } };
@@ -336,7 +348,7 @@ describe('DNS restore after an interrupted change (stub resolvectl)', () => {
   }, 90_000);
 });
 
-describe('crash recovery against a real kernel (isolated network namespace)', () => {
+privilegedDescribe('crash recovery against a real kernel (isolated network namespace)', () => {
   const ipns = (args: string[]) => execFileAsync('ip', ['-n', NS, ...args], { timeout: 5_000 });
   const routes = async () => (await ipns(['route', 'show'])).stdout;
 
