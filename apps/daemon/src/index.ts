@@ -744,6 +744,9 @@ export class RuntimeDaemonHost {
     .flatMap((descriptor) => [...descriptor.capabilities])) {
     return negotiatePlatformCapabilities('linux', requestedCapabilities);
   }
+  /** Startup dependency failures are visible to operators; they never masquerade as healthy probes. */
+  private readonly startupWarnings: string[] = [];
+
   async initialize() {
     // Before anything observes or mutates: undo any route change that was issued but never
     // verified because the previous process died. Failures are surfaced, not swallowed.
@@ -759,8 +762,37 @@ export class RuntimeDaemonHost {
           pruned: r.pruned,
         });
     }
-    await this.connectivity.discoverResources();
-    await this.dns.evaluate();
+
+    // Startup must remain observable even when the host has no network or a platform
+    // probe hangs. Bound discovery and DNS evaluation independently and run them in
+    // parallel; a timeout degrades startup evidence but must not prevent the local
+    // control socket from becoming usable. The observation provider applies the same
+    // deadline when discovery is retried during a runtime cycle.
+    const startupProbes = [
+      {
+        name: 'connectivity-discovery',
+        run: () => this.connectivity.discoverResources(),
+      },
+      {
+        name: 'dns-evaluation',
+        run: () => this.dns.evaluate(),
+      },
+    ] as const;
+    await Promise.all(
+      startupProbes.map(async ({ name, run }) => {
+        try {
+          await withOperationTimeout(
+            `startup-${name}`,
+            Promise.resolve().then(run),
+            OPERATION_TIMEOUT_MS,
+          );
+        } catch (error) {
+          this.startupWarnings.push(
+            `${name}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }),
+    );
     this.lifecycle = 'ready';
   }
   async start() {
@@ -877,6 +909,7 @@ export class RuntimeDaemonHost {
   async health() {
     return {
       lifecycle: this.lifecycle,
+      startup: { warnings: [...this.startupWarnings] },
       scheduler: this.scheduler.status(),
       runtimeId: this.runtime.runtimeId,
       instanceId: this.runtime.instanceId,
