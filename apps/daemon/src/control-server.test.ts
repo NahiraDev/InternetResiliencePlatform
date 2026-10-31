@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { ControlClientError, ControlServer, controlRequest, type ControlPort } from './control-server.js';
+import { ControlClientError, ControlConflictError, ControlServer, controlRequest, type ControlPort } from './control-server.js';
 
 const dirs: string[] = [];
 const servers: ControlServer[] = [];
@@ -84,5 +84,34 @@ describe('ControlServer', () => {
     const error = await controlRequest(path, 'GET', '/v1/health').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ControlClientError);
     expect((error as ControlClientError).code).toBe('unreachable');
+  });
+});
+
+describe('ControlServer concurrency', () => {
+  it('reports an overlapping cycle as 409 and runs only one at a time', async () => {
+    const path = fresh();
+    let release: () => void = () => undefined;
+    let active = 0;
+    let maxActive = 0;
+    const slow: ControlPort = {
+      ...port,
+      cycle: async () => {
+        if (active > 0) throw new ControlConflictError('a runtime cycle is already running');
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise<void>((resolve) => { release = resolve; });
+        active -= 1;
+        return { ok: true };
+      },
+    };
+    const s = new ControlServer(path, slow);
+    await s.start();
+    servers.push(s);
+    const first = controlRequest(path, 'POST', '/v1/cycle', { mode: 'safe' });
+    await new Promise((r) => setTimeout(r, 50));
+    await expect(controlRequest(path, 'POST', '/v1/cycle', { mode: 'safe' })).rejects.toMatchObject({ status: 409 });
+    release();
+    await expect(first).resolves.toEqual({ ok: true });
+    expect(maxActive).toBe(1);
   });
 });
