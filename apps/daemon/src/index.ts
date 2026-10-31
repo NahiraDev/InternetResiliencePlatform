@@ -19,7 +19,6 @@ import {
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
   createCanonicalRuntime,
-  type HostTrust,
   negotiatePlatformCapabilities,
   NetworkEventStormGuard,
   ObservationDedupCache,
@@ -48,8 +47,9 @@ import {
 } from '@irp/security';
 import { AutoOptimizationHost } from './auto-optimization-host.js';
 import { PluginHost } from './plugin-host.js';
+import { authorizeHost, classifyAdapters, probeHostFacts, type HostAuthorization } from './host-authorization.js';
 import { DnsRestoreJournal } from './dns-restore.js';
-import { ControlServer, type ControlPort } from './control-server.js';
+import { ControlConflictError, ControlServer, type ControlPort } from './control-server.js';
 import { resolveControlSocketPath, resolveRuntimeMode, resolveStateDirectory } from './daemon-config.js';
 
 const execFileAsync = promisify(execFile);
@@ -334,21 +334,8 @@ export class LinuxObservationProvider implements ObservationProvider {
   }
 }
 
-/**
- * Trust the daemon host grants its own runtime. Observation and the safe
- * actions are always allowed; privileged network mutation capabilities and
- * intents exist only when the operator passed the live-mutation double
- * opt-in (IRP_RUNTIME_MODE=live and IRP_ENABLE_LIVE_ROUTE_MUTATION=true).
- */
-export const daemonHostTrust = (liveMutation: boolean): HostTrust => ({
-  principal: 'irp-daemon',
-  capabilities: liveMutation
-    ? ['network.observe', 'route.write', 'connectivity.failover', 'dns.write']
-    : ['network.observe'],
-  allowedActions: liveMutation
-    ? ['health_reprobe', 'noop', 'degraded_mode', 'recovery', 'rollback', 'route_change', 'connectivity_failover', 'dns_switch']
-    : ['health_reprobe', 'noop', 'degraded_mode', 'recovery', 'rollback'],
-});
+/** Longest the daemon waits for a running cycle to finish before exiting. */
+const SHUTDOWN_DRAIN_MS = 20_000;
 
 export class RuntimeDaemonHost {
   lifecycle: 'created' | 'initialized' | 'ready' | 'running' | 'stopping' | 'stopped' = 'created';
@@ -356,6 +343,15 @@ export class RuntimeDaemonHost {
   readonly stateDirectory = resolveStateDirectory(process.env);
   /** Fixed by daemon configuration. Nothing received over the control socket can change it. */
   readonly modeResolution = resolveRuntimeMode(process.env);
+  /**
+   * What this process is actually authorized to do: the operator's request intersected with
+   * facts probed from the host (CAP_NET_ADMIN, iproute2, resolvectl, uid). Trust comes only from
+   * here; a live request the host cannot honour degrades to safe and records why.
+   */
+  readonly authorization: HostAuthorization = authorizeHost(
+    this.modeResolution,
+    probeHostFacts(),
+  );
   /**
    * On Linux the daemon observes and routes through the real host composition: interface and
    * route discovery via iproute2, route mutation through the kernel contract (only when live
@@ -365,7 +361,7 @@ export class RuntimeDaemonHost {
   private readonly linuxPlane =
     process.platform === 'linux'
       ? createLinuxNetworkControlPlane({
-          enableLiveRouteMutation: this.modeResolution.liveRouteMutation,
+          enableLiveRouteMutation: this.authorization.liveActive,
           registerStarlink: process.env.IRP_STARLINK_ENABLED === '1',
           ...(this.stateDirectory ? { stateDirectory: this.stateDirectory } : {}),
         })
@@ -407,7 +403,7 @@ export class RuntimeDaemonHost {
     executionMode: 'real',
     observationProviders: [this.observer],
     runtimeId: 'daemon-runtime',
-    hostTrust: daemonHostTrust(this.modeResolution.liveRouteMutation),
+    hostTrust: this.authorization.trust,
     decisionProvider: this.decisionProvider,
     ...(this.decisionStore ? { decisionStore: this.decisionStore } : {}),
     ...(this.incidentStore ? { incidentStore: this.incidentStore } : {}),
@@ -481,7 +477,7 @@ export class RuntimeDaemonHost {
   constructor(config: Partial<RuntimeSchedulerConfig> = {}) {
     this.scheduler = new RuntimeScheduler(this.runtime, {
       enabled: false,
-      mode: this.modeResolution.mode,
+      mode: this.authorization.effectiveMode,
       cycleIntervalMs: 30_000,
       maxConcurrentCycles: 1,
       cooldownMs: 5_000,
@@ -787,10 +783,22 @@ export class RuntimeDaemonHost {
       snapshot: () => this.runtime.getRuntimeSnapshot(),
       decisions: () => this.runtime.decisions.list(),
       incidents: () => this.runtime.incidents.list(),
-      capabilities: () => this.runtime.capabilities(),
+      capabilities: () => ({
+        hostGrantedCapabilities: this.authorization.trust.capabilities,
+        adapters: classifyAdapters(this.runtime.capabilities(), this.authorization),
+      }),
       // The requested mode is limited to simulation/safe by the control server; the daemon's
       // own configured mode is what the scheduler uses for live operation.
-      cycle: (mode) => this.runtime.cycle({ mode }),
+      cycle: async (mode) => {
+        try {
+          return await this.runtime.cycle({ mode });
+        } catch (error) {
+          // The runtime refuses overlapping cycles; surface that as a conflict, not a server fault.
+          if (error instanceof Error && error.message === 'runtime cycle already active')
+            throw new ControlConflictError('a runtime cycle is already running; retry when it finishes');
+          throw error;
+        }
+      },
       reload: async () => {
         await this.connectivity.discoverResources();
         return { reloaded: true, sources: this.connectivity.getAvailableSources().length };
@@ -814,7 +822,14 @@ export class RuntimeDaemonHost {
   async stop() {
     this.lifecycle = 'stopping';
     this.scheduler.stop();
+    // Stop taking new requests, then let any cycle already running reach verification or its own
+    // rollback. Exiting mid-mutation would leave an unverified change for the next start to undo.
     await this.controlServer?.stop();
+    const drained =
+      (await this.scheduler.whenIdle(SHUTDOWN_DRAIN_MS)) &&
+      (await this.runtime.whenIdle(SHUTDOWN_DRAIN_MS));
+    if (!drained)
+      await this.runtime.events.emit('daemon.shutdown-with-active-cycle', { waitedMs: SHUTDOWN_DRAIN_MS });
     await this.restoreDns('shutdown');
     await this.plugins.stop();
     this.decisionStore?.close();
@@ -884,6 +899,27 @@ export class RuntimeDaemonHost {
         duplicates: this.observer.dedupStatus(),
       },
       platform: this.platformNegotiation(),
+      authorization: {
+        requestedMode: this.authorization.requestedMode,
+        effectiveMode: this.authorization.effectiveMode,
+        liveActive: this.authorization.liveActive,
+        hostGrantedCapabilities: this.authorization.trust.capabilities,
+        hostAllowedActions: this.authorization.trust.allowedActions,
+        blockers: this.authorization.blockers,
+        evidence: this.authorization.evidence,
+      },
+      storage: {
+        persistent: this.stateDirectory !== undefined,
+        stateDirectory: this.stateDirectory ?? null,
+        decisions: this.decisionStore?.status() ?? { persistent: false },
+        incidents: this.incidentStore?.status() ?? { persistent: false },
+      },
+      recovery: {
+        routeJournalEnabled: this.linuxPlane !== undefined && this.stateDirectory !== undefined,
+        // Evidence from this process's startup recovery pass, not a promise about the future.
+        lastStartupRouteRecovery: this.routeRecovery ?? null,
+        dnsRestorePending: this.dnsJournal.pending(),
+      },
       capabilities: this.runtime.capabilities(),
       security: await this.buildSecurityStatus(),
     };
