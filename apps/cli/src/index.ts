@@ -12,8 +12,14 @@ import {
   resolveControlSocketPath,
 } from '@irp/resilience-runtime';
 
+import { assessDaemon, EXIT, summarizeDecision } from './diagnostics.js';
+import { existsSync } from 'node:fs';
+
 export class CliError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly exitCode: number = EXIT.error,
+  ) {
     super(message);
     this.name = 'CliError';
   }
@@ -93,6 +99,7 @@ export const createProgram = (): Command => {
       if (error instanceof ControlClientError && error.code === 'unreachable')
         throw new CliError(
           `${error.message}. Start the daemon (systemctl start irp-daemon) or pass --socket <path>.`,
+          EXIT.unreachable,
         );
       throw error;
     }
@@ -100,9 +107,21 @@ export const createProgram = (): Command => {
   const remote = (command: Command): Command =>
     command.option('--socket <path>', 'daemon control socket (default: resolved from environment)');
 
-  remote(program.command('status').description('Show the running daemon health')).action(
-    async (opts: { socket?: string }) => printJson(await ask(opts, 'GET', '/v1/health')),
-  );
+  const probe = async (opts: { socket?: string }) => {
+    const [health, snapshot, decisions] = await Promise.all([
+      ask(opts, 'GET', '/v1/health'),
+      ask(opts, 'GET', '/v1/snapshot'),
+      ask(opts, 'GET', '/v1/decisions'),
+    ]);
+    return { health, snapshot, decisions, assessment: assessDaemon({ health, snapshot, decisions }) };
+  };
+  remote(
+    program.command('status').description('One-screen daemon state: reachable, mode, health, last decision'),
+  ).action(async (opts: { socket?: string }) => {
+    const { assessment } = await probe(opts);
+    printJson({ reachable: true, state: assessment.state, ...assessment.summary, findings: assessment.findings });
+    process.exitCode = assessment.exitCode;
+  });
   remote(program.command('reload').description('Ask the running daemon to reload its configuration')).action(
     async (opts: { socket?: string }) => printJson(await ask(opts, 'POST', '/v1/reload')),
   );
@@ -116,7 +135,15 @@ export const createProgram = (): Command => {
     );
   view('status', '/v1/health', 'Show daemon runtime health');
   view('snapshot', '/v1/snapshot', 'Show the daemon runtime snapshot');
-  view('decisions', '/v1/decisions', 'List decisions recorded by the daemon');
+  remote(
+    runtime
+      .command('decisions')
+      .description('List recorded decisions: outcome, why blocked, executed vs verified')
+      .option('--raw', 'print the full decision records'),
+  ).action(async (opts: { socket?: string; raw?: boolean }) => {
+    const records = (await ask(opts, 'GET', '/v1/decisions')) as unknown[];
+    printJson(opts.raw ? records : records.map(summarizeDecision));
+  });
   view('incidents', '/v1/incidents', 'List incidents recorded by the daemon');
   view('capabilities', '/v1/capabilities', 'List adapter capabilities of the daemon runtime');
   remote(
@@ -146,16 +173,42 @@ export const createProgram = (): Command => {
   remote(
     program
       .command('doctor')
-      .option('--full', 'also run local network probes')
-      .description('Diagnose: is the daemon reachable, and what can it do on this host'),
+      .option('--full', 'also run local network probes (read-only)')
+      .description('Diagnose installation, daemon reachability, authorization and recovery state (read-only)'),
   ).action(async (opts: { socket?: string; full?: boolean }) => {
-    const report: Record<string, unknown> = { socket: opts.socket ?? resolveControlSocketPath(process.env) ?? null };
+    const socket = opts.socket ?? resolveControlSocketPath(process.env) ?? null;
+    const installed = {
+      systemdUnit: existsSync('/etc/systemd/system/irp-daemon.service') || existsSync('/lib/systemd/system/irp-daemon.service'),
+      installDirectory: existsSync('/opt/irp/daemon/dist/index.js'),
+    };
+    const report: Record<string, unknown> = { socket, installed };
     try {
-      report.daemon = { reachable: true, health: await ask(opts, 'GET', '/v1/health') };
-      report.capabilities = await ask(opts, 'GET', '/v1/capabilities');
+      const { health, assessment } = await probe(opts);
+      const h = health as Record<string, unknown>;
+      report.running = true;
+      report.state = assessment.state;
+      report.summary = assessment.summary;
+      report.findings = assessment.findings;
+      report.authorization = h.authorization;
+      report.storage = h.storage;
+      report.recovery = h.recovery;
+      process.exitCode = assessment.exitCode;
     } catch (error) {
-      report.daemon = { reachable: false, reason: error instanceof Error ? error.message : String(error) };
-      process.exitCode = 1;
+      if (!(error instanceof CliError) && !(error instanceof ControlClientError)) throw error;
+      report.running = false;
+      report.state = 'unreachable';
+      report.findings = [
+        {
+          level: 'error',
+          code: 'daemon-unreachable',
+          message: error.message,
+          hint:
+            installed.systemdUnit || installed.installDirectory
+              ? 'IRP is installed but not running: systemctl start irp-daemon (then journalctl -u irp-daemon)'
+              : 'IRP does not appear to be installed here: run scripts/install-linux.sh, or start apps/daemon manually',
+        },
+      ];
+      process.exitCode = EXIT.unreachable;
     }
     if (opts.full) report.localNetwork = await new ConnectivityMonitor().status();
     printJson(report);
@@ -168,6 +221,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .parseAsync()
     .catch((error: unknown) => {
       console.error(`irp: ${error instanceof Error ? error.message : String(error)}`);
-      process.exitCode = 1;
+      process.exitCode = error instanceof CliError ? error.exitCode : EXIT.error;
     });
 }

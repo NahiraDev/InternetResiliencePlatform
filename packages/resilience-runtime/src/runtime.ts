@@ -255,18 +255,45 @@ export class ResilienceRuntime {
       compiledIntents,
     });
   }
+  /**
+   * Resolves true once no cycle is running, false if one is still running after `timeoutMs`.
+   * Used by hosts at shutdown so a mutation in flight is allowed to reach verification (or its
+   * rollback) instead of being cut off by process exit.
+   */
+  async whenIdle(timeoutMs: number): Promise<boolean> {
+    const pending = this.inFlight;
+    if (!pending) return true;
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<'timeout'>((resolve) => {
+      timer = setTimeout(() => resolve('timeout'), timeoutMs);
+    });
+    try {
+      const result = await Promise.race([pending.then(() => 'done' as const, () => 'done' as const), timeout]);
+      return result === 'done';
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
   private applyHostTrust(input: Partial<RuntimeContext>): Partial<RuntimeContext> {
     const trust = this.hostTrust;
     if (trust === undefined) return input;
     const mode = input.mode ?? input.configuration?.mode ?? 'safe';
+    // Mutation authority is granted for live cycles only. A `safe` or `simulation` cycle (which is
+    // all an operator can request over the control channel) is observe-and-decide: it gets the
+    // non-mutating intents and no privileged capability, even on a host that is live-authorized.
+    const mutating = mode === 'live';
+    const observeOnly = new Set<ActionIntent>(defaultPolicy('safe').allowedActions);
+    const allowedActions = mutating
+      ? [...trust.allowedActions]
+      : trust.allowedActions.filter((action) => observeOnly.has(action));
+    const capabilities = mutating
+      ? trust.capabilities
+      : trust.capabilities.filter((capability) => capability === 'network.observe' || capability.endsWith('.read'));
     return {
       ...input,
       securityContext: { trusted: true, principal: trust.principal },
-      capabilitySnapshot: createCapabilitySnapshot(trust.capabilities, true),
-      policySnapshot: createPolicySnapshot({
-        ...defaultPolicy(mode),
-        allowedActions: [...trust.allowedActions],
-      }),
+      capabilitySnapshot: createCapabilitySnapshot(capabilities, true),
+      policySnapshot: createPolicySnapshot({ ...defaultPolicy(mode), allowedActions }),
     };
   }
   async cycle(input: Partial<RuntimeContext> & { idempotencyKey?: string } = {}) {

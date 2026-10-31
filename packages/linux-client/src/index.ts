@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { AddressInfo } from 'node:net';
 import {
@@ -14,7 +15,16 @@ import {
   type RuntimeAdapterDescriptor,
   type RuntimeContext,
   type RuntimeSnapshot,
+  resolveStateDirectory,
 } from '@irp/resilience-runtime';
+import {
+  guardRequest,
+  guardStateChange,
+  issueControlToken,
+  parseAutonomyRequest,
+  readBoundedBody,
+  type GuardVerdict,
+} from './http-guard.js';
 import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane } from './linux-network-control-plane.js';
 
 const execFileAsync = promisify(execFile);
@@ -329,7 +339,7 @@ const html = (
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IRP Linux Client</title><style>body{font:15px system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}</style></head>
 <body><h1>Internet Resilience Platform</h1><p>Linux Full Client</p><p>Autonomous mode: <strong>${policy.autonomousMode ? 'enabled' : 'disabled'}</strong></p>
-<form method="post" action="/policy"><button name="autonomousMode" value="${policy.autonomousMode ? 'false' : 'true'}">${policy.autonomousMode ? 'Disable' : 'Enable'} autonomous mode</button></form>
+<p>This page is read-only. Autonomous mode is changed with an authenticated <code>POST /policy</code> (JSON body, bearer token from the control token file); the daemon's Unix control socket is the canonical control interface.</p>
 <h2>Canonical runtime status</h2><pre>${escapeHtml(JSON.stringify(runtimeStatus, null, 2))}</pre>
 <h2>Network diagnostics</h2><pre>${escapeHtml(JSON.stringify(snapshot, null, 2))}</pre></body></html>`;
 
@@ -353,9 +363,16 @@ export class LinuxClientServer {
     (request, response) => void this.handle(request, response),
   );
 
+  private port = 0;
+
+  /**
+   * @param controlToken Bearer token required for state changes. When undefined, `POST /policy`
+   *   is disabled (fail-closed): the page stays readable but nothing can be changed over HTTP.
+   */
   constructor(
     private readonly system: LinuxSystemAdapter,
     private readonly runtime: LinuxRuntime = new LinuxClientRuntime(system),
+    private readonly controlToken?: string,
   ) {}
 
   async start(port = 17861, host = '127.0.0.1'): Promise<void> {
@@ -364,6 +381,7 @@ export class LinuxClientServer {
       this.server.once('error', reject);
       this.server.listen(port, host, () => resolve());
     });
+    this.port = (this.server.address() as AddressInfo).port;
   }
 
   address(): string | AddressInfo | null {
@@ -376,9 +394,19 @@ export class LinuxClientServer {
     );
   }
 
+  private refuse(response: ServerResponse, verdict: GuardVerdict): void {
+    response.statusCode = verdict.status;
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.end(JSON.stringify({ error: verdict.reason }));
+  }
+
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.setHeader('Cache-Control', 'no-store');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'");
+    const verdict = guardRequest(request, this.port);
+    if (!verdict.ok) return this.refuse(response, verdict);
     if (request.method === 'GET' && request.url === '/') {
       response.end(
         html(await this.system.snapshot(), this.system.getPolicy(), await this.runtime.status()),
@@ -391,15 +419,17 @@ export class LinuxClientServer {
       return;
     }
     if (request.method === 'POST' && request.url === '/policy') {
-      const chunks: Buffer[] = [];
-      for await (const chunk of request) chunks.push(Buffer.from(chunk));
-      const body = Buffer.concat(chunks).toString('utf8');
-      const enabled = /autonomousMode=true(?:&|$)/.test(body);
-      await this.runtime.setAutonomousMode(enabled);
-      await this.system.setAutonomousMode(enabled);
-      response.statusCode = 303;
-      response.setHeader('Location', '/');
-      response.end();
+      const gate = guardStateChange(request, this.controlToken);
+      if (!gate.ok) return this.refuse(response, gate);
+      const body = await readBoundedBody(request);
+      if (typeof body !== 'string') return this.refuse(response, body);
+      const parsed = parseAutonomyRequest(body);
+      if ('ok' in parsed) return this.refuse(response, parsed);
+      await this.runtime.setAutonomousMode(parsed.enabled);
+      await this.system.setAutonomousMode(parsed.enabled);
+      response.statusCode = 200;
+      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({ autonomousMode: parsed.enabled }));
       return;
     }
     response.statusCode = 404;
@@ -420,7 +450,13 @@ export async function runLinuxClient(): Promise<LinuxClientServer> {
     enableLiveRouteMutation: executionMode === 'real',
     executionMode,
   });
-  const server = new LinuxClientServer(system, runtime);
+  // State changes over HTTP need a token only the service user can read. If no state directory is
+  // resolvable the endpoint stays disabled rather than falling back to an open one.
+  const stateDirectory = resolveStateDirectory(process.env);
+  const controlToken = stateDirectory
+    ? issueControlToken(join(stateDirectory, 'linux-client.token'))
+    : undefined;
+  const server = new LinuxClientServer(system, runtime, controlToken);
   await server.start();
   return server;
 }
