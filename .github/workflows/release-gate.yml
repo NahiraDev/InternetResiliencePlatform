@@ -7,7 +7,6 @@ on:
       - System Assurance
       - Linux Primary Device
       - Runtime Lab
-      - CodeQL Advanced
       - Repository Deep Audit
       - Public Runtime Lab
       - Android Client
@@ -90,7 +89,6 @@ jobs:
             "system-assurance.yml"
             "linux-primary-device.yml"
             "runtime-lab.yml"
-            "codeql.yml"
             "repository-deep-audit.yml"
             "public-runtime-lab.yml"
             "android-client.yml"
@@ -128,3 +126,4 @@ jobs:
           echo
           echo "Release Gate: PASS"
           echo "Certified commit: $HEAD_SHA"
+          echo "Note: CodeQL is provided by GitHub default setup (advanced workflow removed to resolve conflict; see #420)."
