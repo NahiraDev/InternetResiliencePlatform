@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-08T14:55:51.870Z",
+  "generatedAt": "2026-10-30T13:08:31.741Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -13,8 +13,8 @@
     "docs/phases",
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
-  "componentCount": 223,
-  "sourceFileCount": 391,
+  "componentCount": 225,
+  "sourceFileCount": 621,
   "components": [
     {
       "componentId": "packages::auth",
@@ -25,7 +25,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 4,
+      "sourceFiles": 7,
       "upstreamDependencies": [
         "@irp/shared"
       ],
@@ -49,7 +49,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/resilience-runtime"
       ],
@@ -72,7 +72,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "yaml",
         "zod"
@@ -99,7 +99,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 6,
+      "sourceFiles": 9,
       "upstreamDependencies": [
         "@irp/events",
         "@irp/kernel",
@@ -129,7 +129,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 6,
+      "sourceFiles": 9,
       "upstreamDependencies": [
         "@irp/config",
         "@irp/logger",
@@ -157,7 +157,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 7,
+      "sourceFiles": 11,
       "upstreamDependencies": [
         "pg"
       ],
@@ -181,7 +181,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 8,
+      "sourceFiles": 11,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "apps/api",
@@ -204,7 +204,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/shared"
       ],
@@ -231,7 +231,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -252,7 +252,7 @@
       "entrypoint": null,
       "buildCommand": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 16,
+      "sourceFiles": 19,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -273,7 +273,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 4,
+      "sourceFiles": 7,
       "upstreamDependencies": [
         "@irp/database"
       ],
@@ -297,7 +297,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 8,
+      "sourceFiles": 11,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -318,7 +318,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 3,
+      "sourceFiles": 6,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/connectivity",
@@ -342,7 +342,7 @@
       "entrypoint": "pnpm --dir packages/linux-client start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 14,
+      "sourceFiles": 19,
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/kernel",
@@ -350,7 +350,9 @@
         "@irp/routing",
         "@irp/telemetry"
       ],
-      "downstreamDependencies": [],
+      "downstreamDependencies": [
+        "apps/daemon"
+      ],
       "owningPhases": [],
       "realEnvironment": {
         "status": "PENDING",
@@ -375,7 +377,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "pino",
         "pino-pretty"
@@ -402,7 +404,7 @@
       "entrypoint": "pnpm --dir packages/macos-client start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
       "owningPhases": [],
@@ -429,7 +431,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "apps/api",
@@ -451,7 +453,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "apps/api",
@@ -475,7 +477,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 38,
+      "sourceFiles": 41,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -496,7 +498,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk",
         "@irp/security"
@@ -520,7 +522,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk",
         "@irp/security"
@@ -544,7 +546,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk"
       ],
@@ -567,7 +569,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk",
         "@irp/plugin-registry"
@@ -591,7 +593,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-runtime",
         "@irp/plugin-loader",
@@ -618,7 +620,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk"
       ],
@@ -643,7 +645,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk",
         "@irp/plugin-api",
@@ -671,7 +673,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk"
       ],
@@ -695,7 +697,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/plugin-sdk",
         "@irp/security",
@@ -720,7 +722,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "apps/daemon",
@@ -750,7 +752,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/shared"
       ],
@@ -773,7 +775,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 140,
+      "sourceFiles": 234,
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/core",
@@ -811,7 +813,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 4,
+      "sourceFiles": 7,
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/events",
@@ -840,7 +842,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/kernel"
       ],
@@ -861,7 +863,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 3,
+      "sourceFiles": 6,
       "upstreamDependencies": [
         "@irp/auth",
         "@irp/shared"
@@ -888,7 +890,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "zod"
       ],
@@ -917,7 +919,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 12,
+      "sourceFiles": 15,
       "upstreamDependencies": [
         "@irp/metrics",
         "@irp/types",
@@ -956,7 +958,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 12,
+      "sourceFiles": 15,
       "upstreamDependencies": [
         "@irp/events",
         "@irp/shared",
@@ -982,7 +984,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/telemetry"
@@ -1003,7 +1005,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -1024,7 +1026,7 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [],
       "downstreamDependencies": [],
       "owningPhases": [],
@@ -1043,7 +1045,7 @@
       "entrypoint": "pnpm --dir apps/api start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 21,
+      "sourceFiles": 25,
       "upstreamDependencies": [
         "@fastify/cors",
         "@fastify/helmet",
@@ -1096,7 +1098,7 @@
       "entrypoint": "pnpm --dir apps/cli start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 2,
+      "sourceFiles": 5,
       "upstreamDependencies": [
         "@irp/config",
         "@irp/core",
@@ -1132,16 +1134,17 @@
       "entrypoint": "pnpm --dir apps/daemon start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 7,
+      "sourceFiles": 16,
       "upstreamDependencies": [
         "@irp/auto-optimization",
         "@irp/config",
         "@irp/connectivity",
         "@irp/core",
+        "@irp/linux-client",
         "@irp/logger",
+        "@irp/network",
         "@irp/plugin-manager",
         "@irp/plugin-sdk",
-        "@irp/network",
         "@irp/resilience-runtime",
         "@irp/routing",
         "@irp/security",
@@ -1275,6 +1278,34 @@
     {
       "componentId": "infra::kubernetes",
       "path": "infra/kubernetes",
+      "type": "operations",
+      "capability": "docker",
+      "executable": true,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "PENDING",
+        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
+        "evidenceIds": [
+          "platform-runtime",
+          "release-engineering"
+        ],
+        "environment": "real-container-host",
+        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
+        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
+        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
+        "evidenceRequired": true
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": "infra::systemd",
+      "path": "infra/systemd",
       "type": "operations",
       "capability": "docker",
       "executable": true,
@@ -1556,10 +1587,48 @@
       "evidenceId": null
     },
     {
+      "componentId": ".github::workflows::opencode.yml",
+      "path": ".github/workflows/opencode.yml",
+      "type": "workflow",
+      "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
       "componentId": ".github::workflows::public-runtime-lab.yml",
       "path": ".github/workflows/public-runtime-lab.yml",
       "type": "workflow",
       "capability": "other",
+      "executable": false,
+      "entrypoint": null,
+      "buildCommand": null,
+      "testCommand": null,
+      "sourceFiles": 0,
+      "upstreamDependencies": [],
+      "downstreamDependencies": [],
+      "owningPhases": [],
+      "realEnvironment": {
+        "status": "NOT_APPLICABLE",
+        "evidenceRequired": false
+      },
+      "evidenceId": null
+    },
+    {
+      "componentId": ".github::workflows::regional-validation.yml",
+      "path": ".github/workflows/regional-validation.yml",
+      "type": "workflow",
+      "capability": "regional-validation",
       "executable": false,
       "entrypoint": null,
       "buildCommand": null,
@@ -4888,33 +4957,6 @@
       "evidenceId": null
     },
     {
-      "componentId": "assurance::regional-validation",
-      "path": "ops/release/real-environment::regional-validation",
-      "type": "assurance-surface",
-      "capability": "regional-validation",
-      "executable": false,
-      "entrypoint": null,
-      "buildCommand": null,
-      "testCommand": null,
-      "sourceFiles": 0,
-      "upstreamDependencies": [],
-      "downstreamDependencies": [],
-      "owningPhases": [],
-      "realEnvironment": {
-        "status": "PENDING",
-        "assurancePath": "ops/release/real-environment/ASSURANCE_REGISTRY.json",
-        "evidenceIds": [
-          "regional-evidence"
-        ],
-        "environment": "real-regional-sites",
-        "failureInjection": "Required by evidence schema; adapter must record the injected degradation/failure.",
-        "recoveryVerification": "Required by evidence schema; adapter must verify recovery on the real path.",
-        "telemetryEvidence": "Required by evidence schema; adapter must provide traceId and observed telemetry.",
-        "evidenceRequired": true
-      },
-      "evidenceId": null
-    },
-    {
       "componentId": "assurance::backup-restore",
       "path": "ops/release/real-environment::backup-restore",
       "type": "assurance-surface",
@@ -5041,7 +5083,77 @@
       77,
       78,
       79,
-      80
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150
     ],
     "canonicalPhaseRecords": [
       39,
@@ -5129,5 +5241,5 @@
       "fail"
     ]
   },
-  "reportSha256": "117a8eee6469d2e689dbccf2a878afacacac12c262e82ff315115476c09573e0"
+  "reportSha256": "26368ffb43649793b5f26bbb410d009cb9c4d6b27d08810c3a922b19d392c878"
 }
