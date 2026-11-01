@@ -2,7 +2,7 @@
 
 ## Status
 
-**Contract formalized + foundational regression evidence added.** Existing fabric route selection already ranks by health/cost/trust, filters by freshness, honors preferred failure domains, and fails closed on diversity shortfalls. Regression tests demonstrate these advanced ranking and constraint behaviors remain pure, deterministic, and confined to the existing `fabric.select` boundary. Full policy-driven dynamic optimization and live re-routing under continuous conditions remain **NOT STARTED**. Disposition **PARTIAL** (contract + foundational evidence).
+**Implemented pending exact-SHA CI evidence.** Advanced ranking and bounded intent-derived route preferences are implemented in the canonical fabric selection boundary. This phase remains **PARTIAL** until exact-SHA CI evidence is recorded; it does not claim live traffic engineering or device-level routing validation.
 
 ## Objective
 
@@ -39,14 +39,14 @@ Provide policy-bounded advanced routing control that selects, ranks, and re-sele
 - Predictive or ML-driven routing (later phases).
 - Production multi-region or live traffic engineering evidence.
 
-## Evidence map
+## Evidence map (planned)
 
 | Criterion | Location |
 |-----------|----------|
-| Advanced route ranking by health/freshness/diversity | `packages/resilience-runtime/tests/phase-93-advanced-routing.test.ts` |
-| Intent-constrained route preference (preferredFailureDomains) | same |
-| Fail-closed on insufficient candidates / stale | same |
-| Re-routing through existing fabric.select boundary | same |
+| Advanced route ranking by health/freshness/diversity/application affinity | `packages/resilience-runtime/tests/phase-93-advanced-routing.test.ts` |
+| Intent-constrained route preference | same |
+| Fail-closed on invalid intent, stale, or insufficient candidates | same |
+| Re-routing remains within existing fabric.select / safety boundary | `packages/resilience-runtime/src/fabric.ts` |
 
 ## Acceptance criteria
 
@@ -73,4 +73,17 @@ Provide policy-bounded advanced routing control that selects, ranks, and re-sele
 - Tracking: open roadmap workstream
 - External blockers remain in issues #4, #254, #323
 
-Disposition remains PARTIAL pending exact-SHA CI on the owning package tests and full continuous assurance.
+### Supported intent-routing vocabulary
+
+The fabric consumes only these bounded, read-only compiled-intent values: target or
+constraint `routing.application` (with `application`, `workload`, and `service`
+target aliases), and numeric constraints `routing.maximumCost` and
+`routing.minimumTrust`. `routing.preferredFailureDomain` and
+`routing.requiredCapability` are also supported as singular deterministic
+preferences. Unknown intent constraints are never interpreted as route authority.
+Invalid numeric routing constraints fail selection closed. Fabric selection creates
+audit evidence only; admission, transactions, mutations, verification, and recovery
+remain owned by the existing canonical runtime and safety kernel.
+
+Disposition remains PARTIAL until regression evidence receives exact-SHA CI and the
+external runtime/release gates have their required independent evidence.
