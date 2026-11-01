@@ -8,6 +8,10 @@
     "pnpm": ">=11.21.0"
   },
   "scripts": {
+    "dev": "docker-compose -f compose.dev.yaml up --build",
+    "dev:down": "docker-compose -f compose.dev.yaml down",
+    "dev:logs": "docker-compose -f compose.dev.yaml logs -f --tail=100",
+    "dev:ps": "docker-compose -f compose.dev.yaml ps",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
