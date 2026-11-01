@@ -5,6 +5,7 @@ import { registerProbeFederationRoutes } from './probe-federation-api.js';
 import { registerUnifiedProductRoutes } from './unified-product-api.js';
 import { registerNotificationIncidentRoutes } from './notifications-api.js';
 import { registerHistoryRoutes } from './history-api.js';
+import { dashboardCss, dashboardHtml, dashboardScript } from './dashboard.js';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
@@ -376,8 +377,9 @@ export const buildServer = async (): Promise<FastifyInstance> => {
   await app.register(helmet);
   await app.register(swagger, {
     openapi: {
+      openapi: '3.1.0',
       info: { title: 'InternetResiliencePlatform API', version: config.app.version },
-      servers: [{ url: '/api/v1' }],
+      servers: [{ url: '/' }],
     },
   });
   // @fastify/swagger-ui pulls @fastify/static, which has a CJS/ESM conflict
@@ -387,6 +389,17 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     const swaggerUi = (await import('@fastify/swagger-ui')).default;
     await app.register(swaggerUi, { routePrefix: '/docs' });
   }
+  const serveDashboard = async (_request: FastifyRequest, reply: import('fastify').FastifyReply) =>
+    reply.header('cache-control', 'no-store').type('text/html; charset=utf-8').send(dashboardHtml);
+  app.get('/', serveDashboard);
+  app.get('/dashboard', serveDashboard);
+  app.get('/assets/dashboard.css', async (_request, reply) =>
+    reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(dashboardCss),
+  );
+  app.get('/assets/dashboard.js', async (_request, reply) =>
+    reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(dashboardScript),
+  );
+
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
   app.get('/api/v1/ready', async (_request, reply) => {
     let database: 'healthy' | 'degraded' = 'healthy';

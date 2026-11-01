@@ -262,3 +262,38 @@ describe('phase 29 observability API', () => {
     await app.close();
   });
 });
+
+
+describe('control center dashboard and OpenAPI document', () => {
+  it('serves a live dashboard shell and same-origin assets', async () => {
+    const app = await buildServer();
+    const dashboard = await app.inject({ method: 'GET', url: '/' });
+    expect(dashboard.statusCode).toBe(200);
+    expect(dashboard.headers['content-type']).toContain('text/html');
+    expect(dashboard.body).toContain('IRP Control Center');
+    expect(dashboard.body).toContain('/assets/dashboard.js');
+
+    const alias = await app.inject({ method: 'GET', url: '/dashboard' });
+    expect(alias.statusCode).toBe(200);
+
+    const css = await app.inject({ method: 'GET', url: '/assets/dashboard.css' });
+    expect(css.statusCode).toBe(200);
+    expect(css.headers['content-type']).toContain('text/css');
+
+    const script = await app.inject({ method: 'GET', url: '/assets/dashboard.js' });
+    expect(script.statusCode).toBe(200);
+    expect(script.headers['content-type']).toContain('javascript');
+    expect(script.body).toContain('/api/v1/platform/status');
+    await app.close();
+  });
+
+  it('publishes an explicit OpenAPI 3.1 specification', async () => {
+    const app = await buildServer();
+    await app.ready();
+    const specification = app.swagger() as { openapi?: string; servers?: Array<{ url: string }> };
+    expect(specification.openapi).toBe('3.1.0');
+    expect(specification.info).toBeDefined();
+    expect(specification.servers).toEqual([{ url: '/' }]);
+    await app.close();
+  });
+});
