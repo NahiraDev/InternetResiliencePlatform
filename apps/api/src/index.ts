@@ -44,13 +44,15 @@ import {
   JwtAuthenticationProvider,
   JwtService,
   RbacAuthorization,
-  hashPassword,
-  verifyPassword,
   type Principal,
 } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
+import { AuthService } from './identity/auth-service.js';
+import { resolveEmailSender, type EmailSender } from './identity/mailer.js';
+import { resolveIdentityRepositories } from './identity/resolve.js';
+import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
   explainDecision,
@@ -60,7 +62,7 @@ import {
   type ObservationProvider,
 } from '@irp/resilience-runtime';
 import { registerIntentRoutes } from './intent-api.js';
-import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
+import { sharedRateLimitPreHandler } from './security/rate-limit.js';
 import {
   generateSpeedInsightsScript,
   injectSpeedInsightsIntoHtml,
@@ -71,38 +73,8 @@ import {
 import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } from './analytics.js';
 
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
-type User = Entity & {
-  email: string;
-  name: string;
-  passwordHash: string;
-  status: 'pending' | 'active' | 'suspended';
-  emailVerifiedAt?: string;
-  roles: string[];
-  permissions: string[];
-};
-type Organization = Entity & { name: string; slug: string };
-type Project = Entity & {
-  organizationId: string;
-  name: string;
-  slug: string;
-  description?: string;
-};
-type Workspace = Entity & {
-  organizationId: string;
-  projectId?: string;
-  name: string;
-  slug: string;
-  environment: string;
-};
 type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
 type NetworkMeasurement = NetworkSnapshot['measurements'][number];
-type Session = {
-  id: string;
-  userId: string;
-  refreshToken: string;
-  expiresAt: string;
-  revokedAt?: string;
-};
 const now = () => new Date().toISOString();
 const slugify = (v: string) =>
   v
@@ -112,12 +84,12 @@ const slugify = (v: string) =>
     .replace(/(^-|-$)/g, '');
 const ok = <T>(data: T, meta?: unknown) => ({ success: true, data, ...(meta ? { meta } : {}) });
 const created = <T extends Entity>(data: T) => ok(data);
-const publicUser = (user: User) => ({
+const publicUser = (user: UserRecord) => ({
   id: user.id,
   email: user.email,
   name: user.name,
   status: user.status,
-  emailVerifiedAt: user.emailVerifiedAt ?? null,
+  emailVerifiedAt: user.emailVerifiedAt,
   roles: user.roles,
   permissions: user.permissions,
   createdAt: user.createdAt,
@@ -153,52 +125,6 @@ const runtimeCycleSchema = z.object({
   mode: z.enum(['simulation', 'safe', 'live']).default('simulation'),
 });
 const idParams = z.object({ id: z.string().uuid() });
-class Store<T extends Entity> {
-  private readonly rows = new Map<string, T>();
-  list(query: z.infer<typeof paginationSchema>, filter: (item: T) => boolean = () => true) {
-    const items = [...this.rows.values()]
-      .filter((i) => !i.deletedAt)
-      .filter(filter)
-      .sort((a, b) =>
-        query.order === 'asc'
-          ? String(a[query.sort as keyof T] ?? '').localeCompare(
-              String(b[query.sort as keyof T] ?? ''),
-            )
-          : String(b[query.sort as keyof T] ?? '').localeCompare(
-              String(a[query.sort as keyof T] ?? ''),
-            ),
-      );
-    const start = (query.page - 1) * query.pageSize;
-    return {
-      items: items.slice(start, start + query.pageSize),
-      total: items.length,
-      page: query.page,
-      pageSize: query.pageSize,
-    };
-  }
-  get(id: string) {
-    const item = this.rows.get(id);
-    return item && !item.deletedAt ? item : null;
-  }
-  put(row: T) {
-    this.rows.set(row.id, row);
-    return row;
-  }
-  find(fn: (item: T) => boolean) {
-    return [...this.rows.values()].find((i) => !i.deletedAt && fn(i)) ?? null;
-  }
-  softDelete(id: string) {
-    const row = this.get(id);
-    if (!row) throw new NotFoundAppError('resource');
-    row.deletedAt = now();
-    row.updatedAt = now();
-  }
-}
-const users = new Store<User>();
-const orgs = new Store<Organization>();
-const projects = new Store<Project>();
-const workspaces = new Store<Workspace>();
-const sessions = new Map<string, Session>();
 const isProductionRuntime = () =>
   ['production', 'staging'].includes((process.env.NODE_ENV ?? '').toLowerCase());
 const resolveJwtSecret = () => {
@@ -213,8 +139,6 @@ const bootstrapAdminEmails = (): string[] =>
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
-const isBootstrapAdminEmail = (email: string): boolean =>
-  bootstrapAdminEmails().includes(email.toLowerCase());
 const permissions = [
   'users:read',
   'users:write',
@@ -260,7 +184,13 @@ declare module 'fastify' {
     observabilityContext: { requestId: string; traceId?: string; spanId?: string };
   }
 }
-export const buildServer = async (): Promise<FastifyInstance> => {
+export interface BuildServerOptions {
+  /** Inject repositories (tests). Production resolves PostgreSQL and fails closed without it. */
+  identity?: IdentityRepositories;
+  /** Inject an email sender (tests). Production requires IRP_EMAIL_WEBHOOK_URL. */
+  mailer?: EmailSender;
+}
+export const buildServer = async (options: BuildServerOptions = {}): Promise<FastifyInstance> => {
   const config = loadConfig();
   const serviceName = config.telemetry.serviceName;
   const telemetryState = bootstrapOpenTelemetry({
@@ -303,7 +233,23 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     genReqId: (request) => request.headers['x-request-id']?.toString() ?? crypto.randomUUID(),
   });
   const jwt = new JwtService(resolveJwtSecret(), 'irp');
-  const jwtAuth = new JwtAuthenticationProvider(jwt);
+  const repos = options.identity ?? resolveIdentityRepositories();
+  const mailer = options.mailer ?? resolveEmailSender();
+  const baseJwtAuth = new JwtAuthenticationProvider(jwt);
+  // Access tokens are only honoured while their session is live, so logout/reset/reuse-detection
+  // revoke access immediately instead of after the 15-minute token lifetime.
+  const jwtAuth: JwtAuthenticationProvider = Object.assign(Object.create(baseJwtAuth) as JwtAuthenticationProvider, {
+    async authenticate(request: Parameters<JwtAuthenticationProvider['authenticate']>[0]) {
+      const principal = await baseJwtAuth.authenticate(request);
+      if (!principal) return null;
+      const sid = principal.metadata?.sessionId;
+      if (typeof sid !== 'string' || !(await repos.sessions.isActive(sid, new Date().toISOString()))) return null;
+      return principal;
+    },
+  });
+  const auth = new AuthService({
+    repos, mailer, jwt, bootstrapAdminEmails, adminPermissions: permissions, publicBaseUrl: process.env.IRP_PUBLIC_BASE_URL,
+  });
   const rbac = new RbacAuthorization();
   const events = new InMemoryEventBus();
   const queue = new MemoryQueue();
@@ -334,7 +280,7 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     });
     reply.status(mapped.statusCode).send(mapped.body);
   });
-  const generalRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 100, windowMs: 60_000 }));
+  const generalRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'general', max: 100, windowMs: 60_000 });
   app.addHook('onRequest', async (request, reply) => {
     request.jwtAuth = jwtAuth;
     request.rbac = rbac;
@@ -393,7 +339,7 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     let dbLatencyMs: number | undefined;
     try {
       const health = await observeDependency('postgresql', 'readiness', () =>
-        checkDatabaseHealth(db),
+        (async () => { await repos.ping(); return checkDatabaseHealth(db); })(),
       );
       dbLatencyMs = health.latencyMs;
     } catch (error) {
@@ -684,7 +630,7 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
     let dbLatencyMs: number | undefined;
     try {
       const health = await observeDependency('postgresql', 'readiness', () =>
-        checkDatabaseHealth(db),
+        (async () => { await repos.ping(); return checkDatabaseHealth(db); })(),
       );
       dbLatencyMs = health.latencyMs;
     } catch (error) {
@@ -1035,250 +981,159 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     return ok(snapshot);
   });
 
-  const authRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 10, windowMs: 60_000 }));
+  const ctxOf = (request: FastifyRequest) => ({ ip: request.ip, userAgent: request.headers['user-agent'] });
+  const scopeOf = (principal: Principal): TenantScope =>
+    principal.roles.includes('platform_admin') ? { kind: 'all' } : { kind: 'owner', userId: principal.id };
+  const authRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'auth', max: 10, windowMs: 60_000 });
   app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
     const input = registerSchema.parse(request.body);
-    if (users.find((u) => u.email === input.email))
-      throw new ConflictAppError('Email is already registered.');
-    const user = users.put({
-      id: crypto.randomUUID(),
-      email: input.email,
-      name: input.name,
-      passwordHash: hashPassword(input.password),
-      status: 'active',
-      roles: isBootstrapAdminEmail(input.email) ? ['platform_admin'] : ['member'],
-      permissions: isBootstrapAdminEmail(input.email) ? permissions : [],
-      createdAt: now(),
-      updatedAt: now(),
-    });
+    const { user, emailDelivery } = await auth.register(input, ctxOf(request));
     await events.publish(createDomainEvent('user.registered', user.id, { email: user.email }));
-
-    // Track user registration in Vercel Analytics
-    await trackServerEvent('user_registered', {
-      status: user.status,
-    });
-
-    return reply.code(201).send(created(publicUser(user) as never));
+    await trackServerEvent('user_registered', { status: user.status });
+    return reply.code(201).send(created({ ...publicUser(user), emailDelivery } as never));
+  });
+  app.post('/api/v1/auth/email-verification/confirm', { preHandler: authRateLimit }, async (request) => {
+    const { token } = z.object({ token: z.string().min(16).max(512) }).parse(request.body);
+    return ok(publicUser(await auth.verifyEmail(token, ctxOf(request))));
+  });
+  app.post('/api/v1/auth/email-verification/request', { preHandler: authRateLimit }, async (request) => {
+    const { email } = z.object({ email: z.string().email().toLowerCase() }).parse(request.body);
+    await auth.requestEmailVerification(email, ctxOf(request));
+    return ok({ accepted: true });
   });
   app.post('/api/v1/auth/login', { preHandler: authRateLimit }, async (request) => {
     const input = loginSchema.parse(request.body);
-    const user = users.find((u) => u.email === input.email);
-    if (!user || user.status !== 'active' || !verifyPassword(input.password, user.passwordHash))
-      throw new UnauthorizedAppError('Invalid credentials');
-    const session: Session = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      refreshToken: crypto.randomUUID(),
-      expiresAt: new Date(Date.now() + 30 * 86400_000).toISOString(),
-    };
-    sessions.set(session.id, session);
-    const accessToken = jwt.sign({
-      sub: user.id,
-      roles: user.roles,
-      scopes: user.permissions,
-      sessionId: session.id,
-      type: 'access',
-      ttlSeconds: 900,
-    });
-
-    // Track successful login in Vercel Analytics
-    await trackServerEvent('user_login', {
-      method: 'password',
-    });
-
-    const refreshToken = jwt.sign({
-      sub: user.id,
-      roles: user.roles,
-      scopes: user.permissions,
-      sessionId: session.id,
-      type: 'refresh',
-      ttlSeconds: 30 * 86400,
-    });
-    return ok({ accessToken, refreshToken, expiresIn: 900, user: publicUser(user) });
+    const result = await auth.login(input.email, input.password, ctxOf(request));
+    await trackServerEvent('user_login', { method: 'password' });
+    return ok({ accessToken: result.accessToken, refreshToken: result.refreshToken, expiresIn: result.expiresIn, user: publicUser(result.user) });
   });
   app.post('/api/v1/auth/refresh', { preHandler: authRateLimit }, async (request) => {
-    const token = z.object({ refreshToken: z.string() }).parse(request.body).refreshToken;
-    const claims = jwt.verify(token, 'refresh');
-    const user = users.get(claims.sub);
-    const session = claims.sessionId ? sessions.get(claims.sessionId) : undefined;
-    const sessionExpired = session ? Date.now() >= Date.parse(session.expiresAt) : true;
-    if (!user || user.status !== 'active' || !session || session.revokedAt || sessionExpired)
-      throw new UnauthorizedAppError();
-    sessions.delete(session.id);
-    const rotated: Session = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      refreshToken: crypto.randomUUID(),
-      expiresAt: new Date(Date.now() + 30 * 86400_000).toISOString(),
-    };
-    sessions.set(rotated.id, rotated);
-    return ok({
-      accessToken: jwt.sign({
-        sub: user.id,
-        roles: user.roles,
-        scopes: user.permissions,
-        sessionId: rotated.id,
-        type: 'access',
-        ttlSeconds: 900,
-      }),
-      refreshToken: jwt.sign({
-        sub: user.id,
-        roles: user.roles,
-        scopes: user.permissions,
-        sessionId: rotated.id,
-        type: 'refresh',
-        ttlSeconds: 30 * 86400,
-      }),
-      expiresIn: 900,
-    });
+    const { refreshToken } = z.object({ refreshToken: z.string().min(16).max(512) }).parse(request.body);
+    return ok(await auth.refresh(refreshToken, ctxOf(request)));
   });
   app.post('/api/v1/auth/logout', { preHandler: generalRateLimit }, async (request) => {
     const p = await requireAuth(request);
-    const sid = String(p.metadata?.sessionId ?? '');
-    sessions.delete(sid);
+    await auth.logout(String(p.metadata?.sessionId ?? ''), p.id, ctxOf(request));
     return ok({ loggedOut: true });
   });
-  app.post('/api/v1/auth/password-reset/request', { preHandler: generalRateLimit }, async (request) => {
-    z.object({ email: z.string().email() }).parse(request.body);
+  app.post('/api/v1/auth/password-reset/request', { preHandler: authRateLimit }, async (request) => {
+    const { email } = z.object({ email: z.string().email().toLowerCase() }).parse(request.body);
+    await auth.requestPasswordReset(email, ctxOf(request));
     return ok({ accepted: true });
   });
-  app.post('/api/v1/auth/email-verification/request', { preHandler: generalRateLimit }, async (request) => {
-    await requireAuth(request);
-    return ok({ accepted: true });
+  app.post('/api/v1/auth/password-reset/confirm', { preHandler: authRateLimit }, async (request) => {
+    const input = z.object({ token: z.string().min(16).max(512), password }).parse(request.body);
+    await auth.confirmPasswordReset(input.token, input.password, ctxOf(request));
+    return ok({ reset: true });
   });
   const listUsers = async (request: FastifyRequest) => {
     await requirePermission(request, 'users:read');
     const q = paginationSchema.parse(request.query);
-    const result = users.list(
-      q,
-      (u) => !q.search || u.email.includes(q.search) || u.name.includes(q.search),
-    );
-    return ok(result.items.map(publicUser), {
-      total: result.total,
-      page: result.page,
-      pageSize: result.pageSize,
-    });
+    const result = await repos.users.list(q);
+    return ok(result.items.map(publicUser), { total: result.total, page: result.page, pageSize: result.pageSize });
   };
   app.get('/api/v1/users', listUsers);
   app.get('/api/v1/users/:id', { preHandler: generalRateLimit }, async (request) => {
     await requirePermission(request, 'users:read');
-    const user = users.get(idParams.parse(request.params).id);
+    const user = await repos.users.findById(idParams.parse(request.params).id);
     if (!user) throw new NotFoundAppError('user');
     return ok(publicUser(user));
   });
   app.get('/api/v1/me', { preHandler: generalRateLimit }, async (request) => {
     const p = await requireAuth(request);
-    const user = users.get(p.id);
+    const user = await repos.users.findById(p.id);
     if (!user) throw new NotFoundAppError('user');
     return ok(publicUser(user));
   });
+  const conflictOnDuplicate = async <T>(fn: () => Promise<T>, message: string): Promise<T> => {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e instanceof DuplicateError) throw new ConflictAppError(message);
+      throw e;
+    }
+  };
   app.get('/api/v1/organizations', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'organizations:read');
-    const q = paginationSchema.parse(request.query);
-    const r = orgs.list(q, (o) => !q.search || o.name.includes(q.search));
+    const p = await requirePermission(request, 'organizations:read');
+    const r = await repos.organizations.list(paginationSchema.parse(request.query), scopeOf(p));
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
   app.post('/api/v1/organizations', { preHandler: generalRateLimit }, async (request, reply) => {
-    await requirePermission(request, 'organizations:write');
+    const p = await requirePermission(request, 'organizations:write');
     const i = nameSchema.parse(request.body);
-    const slug = i.slug ?? slugify(i.name);
-    if (orgs.find((o) => o.slug === slug))
-      throw new ConflictAppError('Organization slug already exists.');
-    return reply.code(201).send(
-      created(
-        orgs.put({
-          id: crypto.randomUUID(),
-          name: i.name,
-          slug,
-          createdAt: now(),
-          updatedAt: now(),
-        }),
-      ),
+    const t = now();
+    const org = await conflictOnDuplicate(
+      () => repos.organizations.create({ id: crypto.randomUUID(), name: i.name, slug: i.slug ?? slugify(i.name), ownerUserId: p.id, createdAt: t, updatedAt: t, deletedAt: null }),
+      'Organization slug already exists.',
     );
+    return reply.code(201).send(created(org));
   });
   app.get('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'organizations:read');
-    const o = orgs.get(idParams.parse(request.params).id);
+    const p = await requirePermission(request, 'organizations:read');
+    const o = await repos.organizations.findById(idParams.parse(request.params).id, scopeOf(p));
     if (!o) throw new NotFoundAppError('organization');
     return ok(o);
   });
   app.delete('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'organizations:write');
-    orgs.softDelete(idParams.parse(request.params).id);
+    const p = await requirePermission(request, 'organizations:write');
+    if (!(await repos.organizations.softDelete(idParams.parse(request.params).id, scopeOf(p), now()))) throw new NotFoundAppError('resource');
     return ok({ deleted: true });
   });
   app.get('/api/v1/projects', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'projects:read');
-    const q = paginationSchema.parse(request.query);
-    const r = projects.list(q);
+    const p = await requirePermission(request, 'projects:read');
+    const r = await repos.projects.list(paginationSchema.parse(request.query), scopeOf(p));
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
   app.post('/api/v1/organizations/:id/projects', { preHandler: generalRateLimit }, async (request, reply) => {
-    await requirePermission(request, 'projects:write');
+    const p = await requirePermission(request, 'projects:write');
     const organizationId = idParams.parse(request.params).id;
-    if (!orgs.get(organizationId)) throw new NotFoundAppError('organization');
+    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
     const i = nameSchema.parse(request.body);
-    const slug = i.slug ?? slugify(i.name);
-    return reply.code(201).send(
-      created(
-        projects.put({
-          id: crypto.randomUUID(),
-          organizationId,
-          name: i.name,
-          slug,
-          ...(i.description ? { description: i.description } : {}),
-          createdAt: now(),
-          updatedAt: now(),
-        }),
-      ),
+    const t = now();
+    const project = await conflictOnDuplicate(
+      () => repos.projects.create({ id: crypto.randomUUID(), organizationId, name: i.name, slug: i.slug ?? slugify(i.name), ...(i.description ? { description: i.description } : {}), createdAt: t, updatedAt: t, deletedAt: null }),
+      'Project slug already exists in this organization.',
     );
+    return reply.code(201).send(created(project));
   });
   app.get('/api/v1/projects/:id', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'projects:read');
-    const p = projects.get(idParams.parse(request.params).id);
-    if (!p) throw new NotFoundAppError('project');
-    return ok(p);
+    const p = await requirePermission(request, 'projects:read');
+    const project = await repos.projects.findById(idParams.parse(request.params).id, scopeOf(p));
+    if (!project) throw new NotFoundAppError('project');
+    return ok(project);
   });
   app.get('/api/v1/workspaces', { preHandler: generalRateLimit }, async (request) => {
-    await requirePermission(request, 'workspaces:read');
-    const q = paginationSchema.parse(request.query);
-    const r = workspaces.list(q);
+    const p = await requirePermission(request, 'workspaces:read');
+    const r = await repos.workspaces.list(paginationSchema.parse(request.query), scopeOf(p));
     return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
   });
   app.post('/api/v1/organizations/:id/workspaces', { preHandler: generalRateLimit }, async (request, reply) => {
-    await requirePermission(request, 'workspaces:write');
+    const p = await requirePermission(request, 'workspaces:write');
     const organizationId = idParams.parse(request.params).id;
-    if (!orgs.get(organizationId)) throw new NotFoundAppError('organization');
+    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
     const i = workspaceSchema.parse(request.body);
-    if (i.projectId && !projects.get(i.projectId)) throw new NotFoundAppError('project');
-    const slug = i.slug ?? slugify(i.name);
-    return reply.code(201).send(
-      created(
-        workspaces.put({
-          id: crypto.randomUUID(),
-          organizationId,
-          ...(i.projectId ? { projectId: i.projectId } : {}),
-          name: i.name,
-          slug,
-          environment: i.environment,
-          createdAt: now(),
-          updatedAt: now(),
-        }),
-      ),
+    if (i.projectId) {
+      const project = await repos.projects.findById(i.projectId, scopeOf(p));
+      // A workspace may only reference a project of its own organization (cross-tenant reference guard).
+      if (!project || project.organizationId !== organizationId) throw new NotFoundAppError('project');
+    }
+    const t = now();
+    const workspace = await conflictOnDuplicate(
+      () => repos.workspaces.create({ id: crypto.randomUUID(), organizationId, ...(i.projectId ? { projectId: i.projectId } : {}), name: i.name, slug: i.slug ?? slugify(i.name), environment: i.environment, createdAt: t, updatedAt: t, deletedAt: null }),
+      'Workspace slug already exists in this organization.',
     );
+    return reply.code(201).send(created(workspace));
   });
-  const workspaceReadRateLimit = rateLimitPreHandler(
-    new InMemoryRateLimiter({ max: 120, windowMs: 60_000 }),
-    (request) => `${request.ip}:workspace-read`,
-  );
+  const workspaceReadRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'workspace-read', max: 120, windowMs: 60_000 });
   app.get('/api/v1/workspaces/:id', { preHandler: workspaceReadRateLimit }, async (request) => {
-    await requirePermission(request, 'workspaces:read');
-    const w = workspaces.get(idParams.parse(request.params).id);
+    const p = await requirePermission(request, 'workspaces:read');
+    const w = await repos.workspaces.findById(idParams.parse(request.params).id, scopeOf(p));
     if (!w) throw new NotFoundAppError('workspace');
     return ok(w);
   });
   app.addHook('onClose', async () => {
     await db.$disconnect();
+    await repos.close();
   });
   return app;
 };

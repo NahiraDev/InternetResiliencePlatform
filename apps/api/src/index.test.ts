@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { buildServer } from './index.js';
+import { CapturingEmailSender } from './identity/mailer.js';
+
+const mailer = new CapturingEmailSender();
+/** Completes the (now mandatory) email-verification step using the captured, never-delivered message. */
+const verifyEmail = async (app: Awaited<ReturnType<typeof buildServer>>, email: string) => {
+  const message = mailer.last('email_verification', email);
+  if (!message) throw new Error(`no verification email captured for ${email}`);
+  const res = await app.inject({ method: 'POST', url: '/api/v1/auth/email-verification/confirm', payload: { token: message.token } });
+  if (res.statusCode !== 200) throw new Error(`verification failed: ${res.statusCode} ${res.body}`);
+};
 
 describe('phase 5 core API', () => {
   it('registers, authenticates, and protects organization resources', async () => {
     process.env.IRP_BOOTSTRAP_ADMIN_EMAILS = 'cto@example.com';
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const register = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: { email: 'cto@example.com', name: 'CTO', password: 'Production12345' },
     });
     expect(register.statusCode).toBe(201);
+    await verifyEmail(app, 'cto@example.com');
     const login = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
@@ -48,7 +59,7 @@ describe('phase 5 core API', () => {
 
 describe('phase 6 network intelligence API', () => {
   it('runs probes and returns network measurements', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const run = await app.inject({ method: 'POST', url: '/api/v1/probes/run' });
     expect(run.statusCode).toBe(200);
     expect(run.json().data.score.score).toBeGreaterThanOrEqual(0);
@@ -65,13 +76,14 @@ describe('phase 6 network intelligence API', () => {
 describe('canonical autopilot compatibility API', () => {
   it('projects the bounded canonical runtime and never instantiates a legacy action engine', async () => {
     process.env.IRP_BOOTSTRAP_ADMIN_EMAILS = 'autopilot@example.com';
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const register = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: { email: 'autopilot@example.com', name: 'Autopilot', password: 'Production12345' },
     });
     expect(register.statusCode).toBe(201);
+    await verifyEmail(app, 'autopilot@example.com');
     const login = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
@@ -141,7 +153,7 @@ describe('phase 21.3 stabilization API', () => {
   });
 
   it('streams Phase 24 live visualization metrics as server-sent events', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const response = await app.inject({ method: 'GET', url: '/api/v1/platform/metrics/stream' });
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toContain('text/event-stream');
@@ -160,7 +172,7 @@ describe('phase 21.3 stabilization API', () => {
   }, 15000);
 
   it('exposes live platform state for Electron without demo fixtures', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const status = await app.inject({ method: 'GET', url: '/api/v1/platform/status' });
     expect(status.statusCode).toBe(200);
     const data = status.json().data;
@@ -175,11 +187,12 @@ describe('phase 21.3 stabilization API', () => {
 
 describe('security review fixes', () => {
   it('registers unprivileged members by default and denies protected resources', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const register = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'member@example.com', name: 'Member', password: 'Production12345' } });
     expect(register.statusCode).toBe(201);
     expect(register.json().data.roles).toEqual(['member']);
     expect(register.json().data.permissions).toEqual([]);
+    await verifyEmail(app, 'member@example.com');
     const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'member@example.com', password: 'Production12345' } });
     expect(login.statusCode).toBe(200);
     const token = login.json().data.accessToken;
@@ -189,8 +202,9 @@ describe('security review fixes', () => {
   }, 15000);
 
   it('rotates refresh tokens and rejects replayed or logged-out tokens', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { email: 'rotate@example.com', name: 'Rotate', password: 'Production12345' } });
+    await verifyEmail(app, 'rotate@example.com');
     const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'rotate@example.com', password: 'Production12345' } });
     const first = login.json().data.refreshToken;
     const refreshed = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: first } });
@@ -199,15 +213,17 @@ describe('security review fixes', () => {
     expect(replay.statusCode).toBe(401);
     const rotated = refreshed.json().data.refreshToken;
     const access = refreshed.json().data.accessToken;
-    const logout = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { authorization: `Bearer ${access}` } });
-    expect(logout.statusCode).toBe(200);
-    const afterLogout = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: rotated } });
-    expect(afterLogout.statusCode).toBe(401);
+    // Replaying an already-rotated token is treated as theft: the whole session family is revoked,
+    // so the successor refresh token and its access token are dead too.
+    const afterReplay = await app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken: rotated } });
+    expect(afterReplay.statusCode).toBe(401);
+    const accessAfterReplay = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { authorization: `Bearer ${access}` } });
+    expect(accessAfterReplay.statusCode).toBe(401);
     await app.close();
   }, 15000);
 
   it('rate limits repeated auth attempts per client IP', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     let limited = false;
     for (let attempt = 0; attempt < 15 && !limited; attempt += 1) {
       const response = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email: 'nobody@example.com', password: 'NotARealPassword1' } });
@@ -220,7 +236,7 @@ describe('security review fixes', () => {
 
 describe('phase 29 observability API', () => {
   it('propagates request ids and records bounded HTTP metrics', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const response = await app.inject({
       method: 'GET',
       url: '/api/v1/health?token=secret',
@@ -238,7 +254,7 @@ describe('phase 29 observability API', () => {
   });
 
   it('reports telemetry diagnostics on readiness', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const ready = await app.inject({ method: 'GET', url: '/api/v1/ready' });
     expect(ready.statusCode).toBe(200);
     const body = ready.json();
@@ -249,7 +265,7 @@ describe('phase 29 observability API', () => {
   });
 
   it('emits sanitized classified errors without leaking authorization secrets to clients', async () => {
-    const app = await buildServer();
+    const app = await buildServer({ mailer });
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
