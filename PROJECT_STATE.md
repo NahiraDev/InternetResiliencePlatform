@@ -16,7 +16,7 @@
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `9d6c1d562e5c3b0e868cc03b3acd3993b0346a13`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Release state:** Existing `v0.2.0` and `v0.2.1` are historical developer-preview releases. The release workflow now publishes normal GitHub Releases from version tags after platform bundles and packaging smoke checks succeed; it no longer requires a separate exact-SHA Release Gate. Production readiness remains a separate evidence-based claim.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
 - **Phases 93–150:** Phase 93 contract formalized and foundational regression evidence added (ranking, preferred domains, fail-closed, select boundary). Implementation for full advanced control and 94+ remains not started. No new runtime authority introduced. ResilienceRuntime remains the sole production mutation authority.
 
@@ -24,9 +24,9 @@
 
 Phases 79–83 establish the intent model, API ingestion boundary, pure compilation to CompiledIntent, intent-scoped admission/enforcement, and deterministic multi-intent conflict resolution (priority/version supersession, overlapping scope detection) without introducing a second control plane. Downstream phases must consume these contracts.
 
-## Phase 71 certification prerequisites
+## Release and production readiness
 
-The Phase 71 gate is limited to the release/distribution contract defined by `docs/phases/phase-71.md`. Remaining production certification (device smoke, regional validation, signing, security sign-off) is tracked in open issues and `docs/release/RELEASE_GATE_ROADMAP.md`.
+Release publication is handled by the version-tag workflow and does not wait for a global exact-SHA gate. Production readiness remains separate and requires real device, regional, signing, security, deployment, rollback and recovery evidence. See `docs/release/RELEASE_GATE_ROADMAP.md`.
 
 ## Canonical evidence locations
 

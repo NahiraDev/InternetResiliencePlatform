@@ -2,15 +2,13 @@ name: Public Runtime Lab
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '0 3 * * 0'
 
 permissions:
   contents: read
 
-# Public main-branch evidence is authoritative. Do not cancel an older
-# evidence run merely because a newer main commit arrived. The explicit
-# concurrency group serializes access to the single public lab environment.
+# Weekly public runtime soak. Run manually when validating a specific candidate.
 concurrency:
   group: public-runtime-lab-main
   cancel-in-progress: false
