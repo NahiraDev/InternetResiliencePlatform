@@ -1,4 +1,4 @@
-export const dashboardHtml = String.raw\`<!doctype html>
+export const dashboardHtml = String.raw`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -154,9 +154,9 @@ export const dashboardHtml = String.raw\`<!doctype html>
     <footer class="footer"><span>IRP Control Center</span><span>Live API data · Read-only dashboard · No host-network changes</span></footer>
   </div>
 </body>
-</html>\`;
+</html>`;
 
-export const dashboardCss = String.raw\`
+export const dashboardCss = String.raw`
 :root{color-scheme:dark;--bg:#080d18;--surface:#101827;--surface-2:#131e30;--border:#243248;--text:#e8eef9;--muted:#91a0b6;--blue:#68a7ff;--cyan:#55d5cf;--green:#4bd49a;--yellow:#f4c66a;--red:#ff777e;--radius:17px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(ellipse at 50% -30%,#172b49 0,transparent 48%),var(--bg);color:var(--text);min-width:320px}
@@ -269,9 +269,9 @@ h2{font-size:15px;letter-spacing:-.2px;margin:0;font-weight:650}
 .footer{display:flex;justify-content:space-between;gap:15px;padding:20px 0 25px;color:#63748d;font-size:9px;border-top:1px solid rgba(145,160,182,.13)}
 @media(max-width:900px){.shell{padding:0 22px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{gap:12px}.bottom-grid{grid-template-columns:1fr}}
 @media(max-width:640px){.shell{padding:0 14px}.topbar{height:auto;min-height:70px;align-items:flex-start;padding:15px 0;flex-direction:column}.topbar-actions{width:100%;flex-wrap:wrap}.page-heading{align-items:flex-start;flex-direction:column}.updated-block{text-align:left}.content-grid{grid-template-columns:1fr}.metric-card{padding:14px;min-height:123px}.metric-value strong{font-size:27px}.panel{padding:16px}.dependency-grid{grid-template-columns:1fr 1fr}.dependency-grid>div:last-child{grid-column:span 2}.footer{flex-direction:column}.api-links{grid-template-columns:1fr}.brand-copy{font-size:9px}}
-\`;
+`;
 
-export const dashboardScript = String.raw\`
+export const dashboardScript = String.raw`
 (function () {
   'use strict';
   const $ = (selector) => document.querySelector(selector);
@@ -480,4 +480,4 @@ export const dashboardScript = String.raw\`
   refresh();
   scheduleRefresh();
 })();
-\`;
+`;
