@@ -63,6 +63,25 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v7
 
+    # The repository validator (scripts/validate-repository.mjs) requires every workflow to pin
+    # the same pnpm and Node toolchain as CI; JavaScript/TypeScript analysis also benefits from
+    # resolved workspace dependencies.
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        version: 11.21.0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install dependencies with frozen lockfile
+      if: matrix.language == 'javascript-typescript'
+      run: pnpm install --frozen-lockfile
+
     # Add any setup steps before running the `github/codeql-action/init` action.
     # This includes steps like installing compilers or runtimes (`actions/setup-node`
     # or others). This is typically only required for manual builds.
