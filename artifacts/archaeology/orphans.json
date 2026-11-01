@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "0855eee0fa48865349113df95ba5c82691b91090d552b26fc0217b81f17efaa1",
+  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -391,6 +391,27 @@
       ]
     },
     {
+      "name": "guardRequest",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
+      "name": "guardStateChange",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
+      "name": "GuardVerdict",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
       "name": "HealthState",
       "declaredIn": [
         "packages/network-intelligence/src/decision/NetworkDecisionEngine.ts",
@@ -420,6 +441,27 @@
       ]
     },
     {
+      "name": "isAllowedHost",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
+      "name": "isLoopbackPeer",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
+      "name": "issueControlToken",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
       "name": "LifecycleState",
       "declaredIn": [
         "packages/kernel/src/index.ts",
@@ -434,6 +476,13 @@
       ]
     },
     {
+      "name": "MAX_CONTROL_BODY_BYTES",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
+    },
+    {
       "name": "NetworkSnapshot",
       "declaredIn": [
         "packages/linux-client/src/index.ts",
@@ -445,6 +494,13 @@
       "declaredIn": [
         "packages/resilience-runtime/src/domain/ids.ts",
         "packages/utils/src/index.ts"
+      ]
+    },
+    {
+      "name": "parseAutonomyRequest",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
       ]
     },
     {
@@ -481,6 +537,13 @@
       "declaredIn": [
         "packages/dns/src/index.ts",
         "packages/tunnel/src/index.ts"
+      ]
+    },
+    {
+      "name": "readBoundedBody",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
       ]
     },
     {
@@ -545,6 +608,13 @@
         "packages/resilience-runtime/src/control-security/security-monitoring.ts",
         "packages/security/src/index.ts"
       ]
+    },
+    {
+      "name": "tokenMatches",
+      "declaredIn": [
+        "packages/linux-client/src/http-guard.ts",
+        "packages/macos-client/src/http-guard.ts"
+      ]
     }
   ],
   "persistenceModels": [],
@@ -552,7 +622,7 @@
     "orphanTests": 0,
     "orphanModules": 3,
     "orphanExports": 54,
-    "duplicateContracts": 37,
+    "duplicateContracts": 47,
     "unreferencedPersistenceModels": 0
   }
 }
