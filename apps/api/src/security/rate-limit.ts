@@ -90,3 +90,36 @@ export const rateLimitPreHandler = (limiter: InMemoryRateLimiter, key = defaultR
     }
   };
 };
+
+/** Minimal shape of a shared counter store (see identity RateLimitStore); keeps this module dependency-free. */
+export interface SharedRateLimitStore {
+  hit(key: string, max: number, windowMs: number): Promise<RateLimitDecision>;
+}
+
+/**
+ * Store-backed limiter: with the PostgreSQL store the window is shared by every API instance.
+ * If the store errors the request is rejected (503) rather than silently allowed: fail closed.
+ */
+export const sharedRateLimitPreHandler = (
+  store: SharedRateLimitStore,
+  policy: { name: string; max: number; windowMs: number },
+  key = defaultRateLimitKey,
+) => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    let decision: RateLimitDecision;
+    try {
+      decision = await store.hit(`rl:${policy.name}:${key(request)}`, policy.max, policy.windowMs);
+    } catch {
+      reply.code(503).send({ success: false, error: { code: 'RATE_LIMIT_UNAVAILABLE', message: 'Service temporarily unavailable.' } });
+      return;
+    }
+    const resetSeconds = Math.max(1, Math.ceil((decision.resetAt - Date.now()) / 1000));
+    reply.header('RateLimit-Limit', decision.limit);
+    reply.header('RateLimit-Remaining', decision.remaining);
+    reply.header('RateLimit-Reset', resetSeconds);
+    if (!decision.allowed) {
+      reply.header('Retry-After', resetSeconds);
+      reply.code(429).send({ success: false, error: 'Too Many Requests', message: 'Rate limit exceeded. Retry later.' });
+    }
+  };
+};

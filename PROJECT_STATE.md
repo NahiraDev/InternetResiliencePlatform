@@ -4,8 +4,8 @@
 
 ## Current implementation gate
 
-- **Current implementation baseline:** Phases 94–150 modules and phase documents present on `main` (additive, pure/injected-clock, advisory, mutation only via PrivilegedMutationBoundary). Each remains PARTIAL pending exact-SHA CI evidence, review, and external runtime evidence. Phase 93 and earlier baselines are merged. ResilienceRuntime remains the sole production mutation authority.
-- **Current main HEAD inspected (2026-11-01):** `3a5ce2dd3c4f14356e374c6853a77fb0119951d1` (post-PR #441 daemon startup probe fix).
+- **Current implementation baseline:** Phases 94–150 implemented locally on branch `phase/94-150-implementation` (authorized by the repository owner's explicit request); each phase is PARTIAL pending exact-SHA CI evidence. Phase 93 and earlier baselines are unchanged.
+- **Current main HEAD inspected (2026-11-01):** `200de484edb0ed3105f094fba8daf85dab81158c` (previous line named `9d6c1d5`, which was stale). Independent audit and the durable identity/auth work package are in `docs/audit/` (branch `fix/durable-identity-auth`, not merged; exact-SHA GitHub CI evidence pending).
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #254 (Linux Client runtime wiring), #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #284 (Workstream: Full Verification, CI/CD, Deployment & Final Evidence), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411/#412 (durable stores / auth / PostgreSQL), #413 (reconcile project state), #420 (CodeQL workflow).
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.

@@ -31,6 +31,8 @@ model User {
   name String?
   passwordHash String
   status UserStatus @default(pending)
+  roles String[] @default([])
+  permissions String[] @default([])
   emailVerifiedAt DateTime?
   lastLoginAt DateTime?
   deletedAt DateTime?
@@ -46,6 +48,7 @@ model Organization {
   id String @id @default(uuid()) @db.Uuid
   name String
   slug String @unique
+  ownerUserId String? @db.Uuid
   deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,6 +130,7 @@ model RolePermission {
 model Session {
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
+  familyId String @db.Uuid
   refreshTokenHash String @unique
   userAgent String?
   ipAddress String?
@@ -311,4 +315,10 @@ model IntentConflictRecord {
   ownerScopeKey String @db.VarChar(384)
   recordedAt  DateTime
   @@index([ownerScopeKey, recordedAt])
+}
+model RateLimitBucket {
+  key String @id
+  count Int
+  resetAt DateTime
+  @@index([resetAt])
 }
