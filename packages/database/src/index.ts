@@ -71,6 +71,64 @@ export const createGeneratedPrismaClient = async (
   databaseUrl = process.env.DATABASE_URL,
   options: DatabaseClientOptions = {},
 ): Promise<DatabaseClient> => createPrismaClient(databaseUrl, options);
+/**
+ * Parameterised SQL access with real transactions. Unlike the tagged `$queryRaw` helper this exposes
+ * `query(text, values)` (needed for dynamic ORDER BY / multi-statement atomicity) and `transaction()`.
+ * There is intentionally NO in-memory fallback: callers that have no DATABASE_URL must choose an
+ * explicitly-labelled in-memory repository instead of a SQL client that silently pretends to succeed.
+ */
+export interface SqlExecutor {
+  query<T = Record<string, unknown>>(text: string, values?: readonly unknown[]): Promise<T[]>;
+}
+export interface SqlClient extends SqlExecutor {
+  transaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T>;
+  end(): Promise<void>;
+}
+export interface SqlClientOptions extends DatabaseClientOptions {
+  connectionTimeoutMs?: number;
+  idleTimeoutMs?: number;
+  statementTimeoutMs?: number;
+}
+export const createSqlClient = (databaseUrl: string, options: SqlClientOptions = {}): SqlClient => {
+  if (!databaseUrl) throw new Error('createSqlClient requires a DATABASE_URL.');
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: options.max ?? 5,
+    connectionTimeoutMillis: options.connectionTimeoutMs ?? 5_000,
+    idleTimeoutMillis: options.idleTimeoutMs ?? 10_000,
+    statement_timeout: options.statementTimeoutMs ?? 15_000,
+  });
+  pool.on('error', options.onIdleClientError ?? reportIdleClientError);
+  return {
+    async query<T>(text: string, values: readonly unknown[] = []): Promise<T[]> {
+      const result = await pool.query(text, [...values]);
+      return result.rows as T[];
+    },
+    async transaction<T>(fn: (tx: SqlExecutor) => Promise<T>): Promise<T> {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const tx: SqlExecutor = {
+          async query<R>(text: string, values: readonly unknown[] = []): Promise<R[]> {
+            return (await client.query(text, [...values])).rows as R[];
+          },
+        };
+        const out = await fn(tx);
+        await client.query('COMMIT');
+        return out;
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+    async end() {
+      await pool.end();
+    },
+  };
+};
+
 export interface DatabaseHealth {
   ok: boolean;
   latencyMs: number;
