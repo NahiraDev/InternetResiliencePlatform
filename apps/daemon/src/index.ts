@@ -768,31 +768,28 @@ export class RuntimeDaemonHost {
     // parallel; a timeout degrades startup evidence but must not prevent the local
     // control socket from becoming usable. The observation provider applies the same
     // deadline when discovery is retried during a runtime cycle.
-    const startupProbes = [
-      {
-        name: 'connectivity-discovery',
-        run: () => this.connectivity.discoverResources(),
-      },
-      {
-        name: 'dns-evaluation',
-        run: () => this.dns.evaluate(),
-      },
-    ] as const;
-    await Promise.all(
-      startupProbes.map(async ({ name, run }) => {
-        try {
-          await withOperationTimeout(
-            `startup-${name}`,
-            Promise.resolve().then(run),
-            OPERATION_TIMEOUT_MS,
-          );
-        } catch (error) {
-          this.startupWarnings.push(
-            `${name}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-      }),
-    );
+    const runStartupProbe = async <T>(
+      name: string,
+      run: () => Promise<T>,
+    ): Promise<void> => {
+      try {
+        await withOperationTimeout(
+          `startup-${name}`,
+          Promise.resolve().then(run),
+          OPERATION_TIMEOUT_MS,
+        );
+      } catch (error) {
+        this.startupWarnings.push(
+          `${name}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+    await Promise.all([
+      runStartupProbe('connectivity-discovery', () =>
+        this.connectivity.discoverResources(),
+      ),
+      runStartupProbe('dns-evaluation', () => this.dns.evaluate()),
+    ]);
     this.lifecycle = 'ready';
   }
   async start() {
