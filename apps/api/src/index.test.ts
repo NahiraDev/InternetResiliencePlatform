@@ -290,7 +290,7 @@ describe('control center dashboard and OpenAPI document', () => {
   it('publishes an explicit OpenAPI 3.1 specification', async () => {
     const app = await buildServer();
     await app.ready();
-    const specification = app.swagger() as { openapi?: string; servers?: Array<{ url: string }> };
+    const specification = app.swagger() as { openapi?: string; info?: { title?: string }; servers?: Array<{ url: string }> };
     expect(specification.openapi).toBe('3.1.0');
     expect(specification.info).toBeDefined();
     expect(specification.servers).toEqual([{ url: '/' }]);
