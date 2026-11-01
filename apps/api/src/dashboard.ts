@@ -298,9 +298,9 @@ export const dashboardScript = String.raw`
 
   function stateClass(value) {
     const status = String(value == null ? '' : value).toLowerCase();
-    if (/healthy|available|passed|success|up|closed/.test(status)) return 'status-healthy';
-    if (/degraded|partial|observe|review|not-configured|unknown/.test(status)) return 'status-degraded';
     if (/unhealthy|unavailable|failed|error|down|critical/.test(status)) return 'status-unhealthy';
+    if (/degraded|partial|observe|review|not-configured|unknown/.test(status)) return 'status-degraded';
+    if (/healthy|available|passed|success|up|closed/.test(status)) return 'status-healthy';
     return 'status-waiting';
   }
 
