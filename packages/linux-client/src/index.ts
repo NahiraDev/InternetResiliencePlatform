@@ -1,4 +1,5 @@
 export { LinuxObservationProvider } from './linux-observation-provider.js';
+export { LinuxWireGuardObservationProvider } from './linux-wireguard-observation-provider.js';
 
 import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -35,6 +36,8 @@ import { LinuxObservationProvider } from './linux-observation-provider.js';
 import type { RouteRecoveryReport } from './linux-route-executor.js';
 import { parseDestination } from '@irp/routing';
 import { createLinuxWireGuardIntegrationFromEnvironment } from './linux-wireguard.js';
+import { LinuxWireGuardObservationProvider } from './linux-wireguard-observation-provider.js';
+import { authorizeLinuxHost, probeLinuxHostFacts, type LinuxHostAuthorization } from './linux-host-authorization.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -149,6 +152,8 @@ export type LinuxRuntimeStatus = {
   tunnelConfigured: boolean;
   tunnelActive: boolean;
   activeTunnel?: string;
+  managedTunnel?: string;
+  authorization?: Pick<LinuxHostAuthorization, 'requestedLive' | 'effectiveMode' | 'liveActive' | 'tunnelActive' | 'blockers' | 'evidence'>;
 };
 
 /** The Linux client runtime for the canonical, safe-by-default composition. */
@@ -256,6 +261,8 @@ export interface LinuxProductionRuntimeOptions {
   readonly observationProviders?: readonly ObservationProvider[];
   readonly enableGatewaySelection?: boolean;
   readonly scheduler?: Partial<Pick<RuntimeSchedulerConfig, 'cycleIntervalMs' | 'cooldownMs' | 'executionBudgetMs'>>;
+  /** Host facts and the operator request, resolved by the Linux process—not supplied over HTTP. */
+  readonly hostAuthorization?: LinuxHostAuthorization;
 }
 
 type LinuxSchedulerSettings = { cycleIntervalMs: number; cooldownMs: number; executionBudgetMs: number };
@@ -281,9 +288,11 @@ export class LinuxProductionRuntime {
   readonly composition: CanonicalRuntimeComposition;
   readonly controlPlane: LinuxNetworkControlPlane;
   readonly observer: LinuxObservationProvider;
+  private readonly hostAuthorization: LinuxHostAuthorization | undefined;
 
   constructor(system: Pick<LinuxSystemAdapter, 'snapshot'>, options: LinuxProductionRuntimeOptions = {}) {
     this.schedulerMode = options.executionMode ?? 'real';
+    this.hostAuthorization = options.hostAuthorization;
     this.schedulerSettings = {
       cycleIntervalMs: schedulerInteger(options.scheduler?.cycleIntervalMs, 30_000, 'cycleIntervalMs', 1_000, 3_600_000),
       cooldownMs: schedulerInteger(options.scheduler?.cooldownMs, 5_000, 'cooldownMs', 0, 3_600_000),
@@ -313,6 +322,7 @@ export class LinuxProductionRuntime {
       ],
       runtimeId: 'linux-production-runtime',
       networkControlPlane: this.controlPlane.controlPlane,
+      ...(options.hostAuthorization ? { hostTrust: options.hostAuthorization.trust } : {}),
     });
     this.runtime = this.composition.runtime;
   }
@@ -367,7 +377,7 @@ export class LinuxProductionRuntime {
     this.scheduler = undefined;
     this.autonomousMode = false;
     const tunnel = this.controlPlane.controlPlane.tunnel;
-    if (tunnel?.activeTunnel !== undefined && !(await tunnel.rollback())) {
+    if ((tunnel?.managedTunnel ?? tunnel?.activeTunnel) !== undefined && !(await tunnel.rollback())) {
       throw new Error('Linux runtime shutdown failed to disconnect the active tunnel');
     }
   }
@@ -376,6 +386,7 @@ export class LinuxProductionRuntime {
     const capabilities = this.runtime.capabilities();
     const tunnel = this.controlPlane.controlPlane.tunnel;
     const activeTunnel = tunnel?.activeTunnel;
+    const managedTunnel = tunnel?.managedTunnel ?? activeTunnel;
     return {
       runtime: await this.runtime.getRuntimeSnapshot(),
       autonomousMode: this.autonomousMode,
@@ -385,6 +396,17 @@ export class LinuxProductionRuntime {
       tunnelConfigured: tunnel?.configured ?? false,
       tunnelActive: activeTunnel !== undefined,
       ...(activeTunnel ? { activeTunnel } : {}),
+      ...(managedTunnel ? { managedTunnel } : {}),
+      ...(this.hostAuthorization ? {
+        authorization: {
+          requestedLive: this.hostAuthorization.requestedLive,
+          effectiveMode: this.hostAuthorization.effectiveMode,
+          liveActive: this.hostAuthorization.liveActive,
+          tunnelActive: this.hostAuthorization.tunnelActive,
+          blockers: this.hostAuthorization.blockers,
+          evidence: this.hostAuthorization.evidence,
+        },
+      } : {}),
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -561,19 +583,31 @@ function destinationConfigurationFromEnvironment(
 }
 
 export async function runLinuxClient(
-  options: Omit<LinuxProductionRuntimeOptions, 'executionMode' | 'enableLiveRouteMutation'> = {},
+  options: Omit<LinuxProductionRuntimeOptions, 'executionMode' | 'enableLiveRouteMutation' | 'hostAuthorization'> = {},
 ): Promise<LinuxClientServer> {
-  // Live autonomous mutation remains behind two independent explicit opt-ins.
-  const liveMutationExplicitlyEnabled =
+  // Environment controls express operator intent; host facts independently decide authority.
+  const liveMutationRequested =
     process.env.IRP_EXECUTION_MODE === 'real' &&
     process.env.IRP_ENABLE_AUTONOMOUS_LIVE_MUTATION === 'true';
-  const executionMode = liveMutationExplicitlyEnabled ? ('real' as const) : ('simulation' as const);
   const system = new LinuxSystem();
   const stateDirectory = options.stateDirectory ?? resolveStateDirectory(process.env);
   const destination = destinationConfigurationFromEnvironment(process.env);
   const wireGuardIntegration = options.canonicalExtensions?.tunnel
     ? undefined
     : createLinuxWireGuardIntegrationFromEnvironment(process.env);
+  const hostAuthorization = authorizeLinuxHost(
+    { requestedLive: liveMutationRequested, wireGuardConfigured: wireGuardIntegration !== undefined },
+    probeLinuxHostFacts(process.env),
+  );
+  const executionMode = hostAuthorization.effectiveMode;
+  const observationProviders = [
+    ...(options.observationProviders ?? []),
+    ...(wireGuardIntegration ? [new LinuxWireGuardObservationProvider({
+      controlPlane: wireGuardIntegration.controlPlane,
+      autoConnect: wireGuardIntegration.configuration.autoConnect,
+      maxRecoveryAttempts: 2,
+    })] : []),
+  ];
   const routeDiscoveryProviders = [
     ...(options.routeDiscoveryProviders ?? []),
     ...(wireGuardIntegration ? [wireGuardIntegration.routeDiscoveryProvider] : []),
@@ -593,7 +627,9 @@ export async function runLinuxClient(
   };
   const runtime = new LinuxProductionRuntime(system, {
     ...options,
-    enableLiveRouteMutation: executionMode === 'real',
+    hostAuthorization,
+    observationProviders,
+    enableLiveRouteMutation: hostAuthorization.liveActive,
     executionMode,
     ...(stateDirectory ? { stateDirectory } : {}),
     ...(options.destinationProbe || !destination ? {} : { destinationProbe: destination.probe }),
@@ -616,3 +652,4 @@ export * from './linux-destination-probe.js';
 
 export * from './linux-observation-provider.js';
 export * from './linux-wireguard.js';
+export * from './linux-host-authorization.js';
