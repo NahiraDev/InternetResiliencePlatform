@@ -15,6 +15,7 @@ import {
   type DiscoveredRoute,
   type RouteDiscoveryProvider,
   type RoutePlan,
+  type RouteHealth,
   type RoutingDecisionContext,
   type RouteProtocol,
   type RouteScope,
@@ -22,6 +23,13 @@ import {
 } from '@irp/routing';
 
 const execFileAsync = promisify(execFile);
+
+/** Health source for a managed VPN interface that may outlive a runtime process. */
+export interface LinuxRouteInterfaceMonitor {
+  readonly interfaceName: string;
+  readonly providerId: string;
+  health(): Promise<Pick<RouteHealth, 'score' | 'status' | 'checkedAt'>>;
+}
 
 export const IP_BINARY = 'ip';
 export const DEFAULT_TIMEOUT_MS = 5_000;
@@ -135,6 +143,7 @@ export class LinuxRouteDiscoveryProvider implements RouteDiscoveryProvider {
           options: { timeoutMs: number },
         ): Promise<{ stdout: string; stderr: string; exitCode: number }>;
       };
+      readonly interfaceMonitors?: readonly LinuxRouteInterfaceMonitor[];
     } = {},
   ) {}
 
@@ -179,7 +188,34 @@ export class LinuxRouteDiscoveryProvider implements RouteDiscoveryProvider {
     try {
       const parsed = JSON.parse(result.stdout);
       if (!Array.isArray(parsed)) return [];
-      return parsed.map((entry) => ipRouteToDiscovered(entry as IpRouteJson));
+      const routes = parsed.map((entry) => ipRouteToDiscovered(entry as IpRouteJson));
+      return await Promise.all(routes.map(async (route) => {
+        const monitor = this.options.interfaceMonitors?.find(
+          (candidate) => candidate.interfaceName === route.interfaceName,
+        );
+        if (!monitor) return route;
+
+        let health: Pick<RouteHealth, 'score' | 'status' | 'checkedAt'>;
+        try {
+          health = await monitor.health();
+        } catch {
+          health = {
+            score: 0,
+            status: 'unhealthy',
+            checkedAt: new Date().toISOString(),
+          };
+        }
+        return {
+          ...route,
+          health,
+          metadata: {
+            ...route.metadata,
+            pathType: 'vpn',
+            provider: monitor.providerId,
+            interfaceHealthMonitored: true,
+          },
+        };
+      }));
     } catch {
       return [];
     }
