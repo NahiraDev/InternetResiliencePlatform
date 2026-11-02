@@ -211,7 +211,7 @@ export class SystemdWireGuardCredentialStore implements WireGuardCredentialStore
       return privateKey;
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('WireGuard credential')) throw error;
-      throw new Error(\`WireGuard credential "\${credentialRef}" is unavailable or unsafe\`, { cause: error });
+      throw new Error('WireGuard credential "' + credentialRef + '" is unavailable or unsafe', { cause: error });
     } finally {
       await handle?.close().catch(() => undefined);
     }
