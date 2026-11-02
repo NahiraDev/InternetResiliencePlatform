@@ -228,7 +228,28 @@ export class LinuxRouteDiscoveryProvider implements RouteDiscoveryProvider {
    */
   async verify(plan: RoutePlan): Promise<boolean> {
     const routes = await this.installedRoutes(plan);
-    return routes !== undefined && routes.length > 0;
+    const expected = plan.selectedPath?.route;
+    if (routes === undefined || routes.length === 0 || !expected) return false;
+
+    // Presence alone is not enough: a pre-existing route through another
+    // interface/gateway must not verify a candidate that was meant to use the
+    // selected tunnel or uplink. Check every path attribute the plan specified.
+    return routes.some((route) => {
+      if (expected.interfaceName !== undefined && route['dev'] !== expected.interfaceName) {
+        return false;
+      }
+      if (expected.gateway !== undefined && route['gateway'] !== expected.gateway) {
+        return false;
+      }
+      if (
+        expected.gateway === undefined &&
+        expected.interfaceName !== undefined &&
+        typeof route['gateway'] === 'string'
+      ) {
+        return false;
+      }
+      return true;
+    });
   }
 
   /**
