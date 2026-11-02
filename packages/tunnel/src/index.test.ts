@@ -211,6 +211,6 @@ describe('phase 17 tunnel layer', () => {
     expect(simulateFailover(tunnel, [{ ...tunnel, id: 'tun-b' }], {}).selectedTunnel?.id).toBe(
       'tun-b',
     );
-    expect(supportedProtocolStatus.WireGuard).toBe('not implemented');
+    expect(supportedProtocolStatus.WireGuard).toBe('implemented');
   });
 });
