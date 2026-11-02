@@ -690,7 +690,7 @@ export const supportedProtocolStatus: Record<
   'WireGuard' | 'OpenVPN' | 'SOCKS5' | 'HTTP CONNECT' | 'HTTPS proxy',
   'implemented' | 'not implemented'
 > = {
-  WireGuard: 'not implemented',
+  WireGuard: 'implemented',
   OpenVPN: 'not implemented',
   SOCKS5: 'not implemented',
   'HTTP CONNECT': 'not implemented',
