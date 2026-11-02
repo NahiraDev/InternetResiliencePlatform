@@ -237,6 +237,7 @@ export interface LinuxProductionRuntimeOptions {
   readonly netns?: string;
   readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
   readonly registerStarlink?: boolean;
+  readonly registerHostConnectivity?: boolean;
   readonly starlinkOptions?: { readonly target?: string; readonly grpcurlCommand?: string };
   readonly composition?: CanonicalRuntimeComposition;
   readonly stateDirectory?: string;
@@ -283,6 +284,7 @@ export class LinuxProductionRuntime {
       ...(options.netns ? { netns: options.netns } : {}),
       ...(options.connectivityProviders ? { connectivityProviders: options.connectivityProviders } : {}),
       ...(options.registerStarlink !== undefined ? { registerStarlink: options.registerStarlink } : {}),
+      ...(options.registerHostConnectivity !== undefined ? { registerHostConnectivity: options.registerHostConnectivity } : {}),
       ...(options.starlinkOptions ? { starlinkOptions: options.starlinkOptions } : {}),
       ...(options.stateDirectory ? { stateDirectory: options.stateDirectory } : {}),
       ...(options.destinationProbe ? { destinationProbe: options.destinationProbe } : {}),
