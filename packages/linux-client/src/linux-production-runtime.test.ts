@@ -149,6 +149,10 @@ describe('LinuxProductionRuntime wiring', () => {
   it('runs recurring canonical cycles only after autonomy is explicitly enabled', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
       scheduler: { cycleIntervalMs: 60_000, cooldownMs: 0, executionBudgetMs: 10_000 },
     });
     await runtime.start();
@@ -179,6 +183,8 @@ describe('LinuxProductionRuntime wiring', () => {
   it('starts a canonical runtime cycle without host mutation', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
     });
 
     await runtime.start();
@@ -194,6 +200,8 @@ describe('LinuxClientServer with production runtime', () => {
     const system = new StubLinuxSystem();
     const runtime = new LinuxProductionRuntime(system, {
       enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
     });
     const server = new LinuxClientServer(system, runtime);
     await server.start(0);
