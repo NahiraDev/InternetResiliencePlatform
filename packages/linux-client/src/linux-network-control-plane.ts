@@ -71,8 +71,10 @@ export interface LinuxNetworkControlPlaneOptions {
   readonly canonicalExtensions?: LinuxCanonicalNetworkExtensions;
   /** Enable the existing gateway selector. Disabled unless explicitly enabled. */
   readonly enableGatewaySelection?: boolean;
-  /** Custom route discovery provider (for testing). */
+  /** Custom primary route discovery provider (for testing). */
   readonly routeDiscoveryProvider?: RouteDiscoveryProvider;
+  /** Additional route discovery providers, such as authenticated VPN tunnel routes. */
+  readonly routeDiscoveryProviders?: readonly RouteDiscoveryProvider[];
   /**
    * Directory for durable state. When set, route mutations are journaled to
    * `<stateDirectory>/route-journal` before the kernel is touched so an interrupted mutation
@@ -145,6 +147,12 @@ export function createLinuxNetworkControlPlane(
     options.routeDiscoveryProvider ??
     new LinuxRouteDiscoveryProvider({ ...(netns ? { netns } : {}) });
   routing.registerProvider(discoveryProvider);
+  for (const provider of options.routeDiscoveryProviders ?? []) {
+    if (provider.id === discoveryProvider.id) {
+      throw new Error('route discovery provider IDs must be unique');
+    }
+    routing.registerProvider(provider);
+  }
 
   // 3. Create the connectivity manager and register providers.
   const connectivity = new ConnectivityManager({});
