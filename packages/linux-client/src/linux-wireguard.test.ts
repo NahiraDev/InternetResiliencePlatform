@@ -63,6 +63,7 @@ describe('Linux WireGuard configuration', () => {
     const parsed = parseLinuxWireGuardConfiguration(environment());
     expect(parsed.interfaceName).toBe('irpwg0');
     expect(parsed.allowedIPs).toEqual(['10.20.0.0/16']);
+    expect(parsed.autoConnect).toBe(false);
     expect(parsed.tunnel).toMatchObject({
       routingMode: 'splitTunnel',
       endpoint: { host: '198.51.100.10', port: 51820, protocol: 'wireguard' },
@@ -85,6 +86,8 @@ describe('Linux WireGuard configuration', () => {
     expect(() => parseLinuxWireGuardConfiguration(environment({
       IRP_WIREGUARD_ROUTING_MODE: 'fullTunnel',
     }))).toThrow(/splitTunnel only/);
+    expect(parseLinuxWireGuardConfiguration(environment({ IRP_WIREGUARD_AUTOCONNECT: '1' })).autoConnect).toBe(true);
+    expect(() => parseLinuxWireGuardConfiguration(environment({ IRP_WIREGUARD_AUTOCONNECT: 'true' }))).toThrow(/exactly 0 or 1/);
     expect(() => parseLinuxWireGuardConfiguration(environment({
       IRP_WIREGUARD_ALLOWED_IPS: '0.0.0.0/0',
     }))).toThrow(/Default-route AllowedIPs/);
