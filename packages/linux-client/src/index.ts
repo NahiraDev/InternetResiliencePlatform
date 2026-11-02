@@ -147,6 +147,8 @@ export type LinuxRuntimeStatus = {
   routeRecovery?: RouteRecoveryReport;
   scheduler?: ReturnType<RuntimeScheduler['status']>;
   tunnelConfigured: boolean;
+  tunnelActive: boolean;
+  activeTunnel?: string;
 };
 
 /** The Linux client runtime for the canonical, safe-by-default composition. */
@@ -203,6 +205,7 @@ export class LinuxClientRuntime {
       autonomousMode: this.autonomousMode,
       ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
       tunnelConfigured: false,
+      tunnelActive: false,
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -359,17 +362,25 @@ export class LinuxProductionRuntime {
     }
     this.scheduler = undefined;
     this.autonomousMode = false;
+    const tunnel = this.controlPlane.controlPlane.tunnel;
+    if (tunnel?.activeTunnel !== undefined && !(await tunnel.rollback())) {
+      throw new Error('Linux runtime shutdown failed to disconnect the active tunnel');
+    }
   }
 
   async status(): Promise<LinuxRuntimeStatus> {
     const capabilities = this.runtime.capabilities();
+    const tunnel = this.controlPlane.controlPlane.tunnel;
+    const activeTunnel = tunnel?.activeTunnel;
     return {
       runtime: await this.runtime.getRuntimeSnapshot(),
       autonomousMode: this.autonomousMode,
       ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
       ...(this.routeRecovery ? { routeRecovery: this.routeRecovery } : {}),
       ...(this.scheduler ? { scheduler: this.scheduler.status() } : {}),
-      tunnelConfigured: this.controlPlane.controlPlane.tunnel?.configured ?? false,
+      tunnelConfigured: tunnel?.configured ?? false,
+      tunnelActive: activeTunnel !== undefined,
+      ...(activeTunnel ? { activeTunnel } : {}),
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -468,17 +479,25 @@ export class LinuxClientServer {
   }
 
   async stop(): Promise<void> {
-    let runtimeStopError: unknown;
+    let shutdownError: unknown;
     try {
       await this.runtime.stop?.();
+    } catch (error) {
+      shutdownError = error;
+    }
+    try {
       await this.system.setAutonomousMode(false);
     } catch (error) {
-      runtimeStopError = error;
+      shutdownError ??= error;
     }
-    await new Promise<void>((resolve, reject) =>
-      this.server.close((error) => (error ? reject(error) : resolve())),
-    );
-    if (runtimeStopError) throw runtimeStopError;
+    try {
+      await new Promise<void>((resolve, reject) =>
+        this.server.close((error) => (error ? reject(error) : resolve())),
+      );
+    } catch (error) {
+      shutdownError ??= error;
+    }
+    if (shutdownError) throw shutdownError;
   }
 
   private refuse(response: ServerResponse, verdict: GuardVerdict): void {
