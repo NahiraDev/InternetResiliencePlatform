@@ -377,7 +377,8 @@ export class LinuxProductionRuntime {
     this.scheduler = undefined;
     this.autonomousMode = false;
     const tunnel = this.controlPlane.controlPlane.tunnel;
-    if ((tunnel?.managedTunnel ?? tunnel?.activeTunnel) !== undefined && !(await tunnel.rollback())) {
+    const managedTunnel = tunnel?.managedTunnel ?? tunnel?.activeTunnel;
+    if (tunnel && managedTunnel !== undefined && !(await tunnel.rollback())) {
       throw new Error('Linux runtime shutdown failed to disconnect the active tunnel');
     }
   }
