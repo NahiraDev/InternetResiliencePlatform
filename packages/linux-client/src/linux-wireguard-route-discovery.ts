@@ -22,7 +22,7 @@ type IpFamily = 'ipv4' | 'ipv6';
 
 function parseAllowedIp(value: string): { address: string; prefix: number; family: IpFamily } {
   const parts = value.split('/');
-  if (parts.length !== 2 || !parts[0] || !/^\\d+$/.test(parts[1] ?? '')) {
+  if (parts.length !== 2 || !parts[0] || !/^\d+$/.test(parts[1] ?? '')) {
     throw new Error(`Invalid WireGuard AllowedIP CIDR: ${value}`);
   }
   const version = isIP(parts[0]);
