@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LinuxObservationProvider, RuntimeDaemonHost } from './index.js';
+import { RuntimeDaemonHost } from './index.js';
+import { LinuxObservationProvider } from '@irp/linux-client';
 import { ConnectivityManager } from '@irp/connectivity';
 import {
   NetworkEventStormGuard,
