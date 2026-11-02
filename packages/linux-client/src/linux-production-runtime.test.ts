@@ -15,6 +15,7 @@ import {
   LinuxClientServer,
   LinuxSystem,
   type LinuxSystemAdapter,
+  type LinuxRuntime,
   type NetworkSnapshot,
 } from './index.js';
 
@@ -137,6 +138,59 @@ describe('LinuxProductionRuntime wiring', () => {
     expect(runtime.runtime.capabilities().some(d => d.adapterId === 'canonical-tunnel-control-plane')).toBe(true);
   });
 
+  it('reports active tunnel state and disconnects the tunnel on production runtime shutdown', async () => {
+    let activeTunnel: string | undefined = 'wg-test';
+    let rollbackCalls = 0;
+    const tunnelPlane = {
+      configured: true,
+      get activeTunnel() { return activeTunnel; },
+      connect: async () => ({ tunnelId: 'wg-test', providerId: 'wireguard', connectionId: 'wg-conn-test' }),
+      verify: async () => true,
+      rollback: async () => {
+        rollbackCalls += 1;
+        activeTunnel = undefined;
+        return true;
+      },
+    };
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      canonicalExtensions: { tunnel: tunnelPlane },
+    });
+    await runtime.start();
+    expect(await runtime.status()).toMatchObject({
+      tunnelConfigured: true,
+      tunnelActive: true,
+      activeTunnel: 'wg-test',
+    });
+    expect(runtime.controlPlane.controlPlane.tunnel).toBe(tunnelPlane);
+    await runtime.stop();
+    expect(rollbackCalls).toBe(1);
+    expect(await runtime.status()).toMatchObject({
+      tunnelConfigured: true,
+      tunnelActive: false,
+    });
+  });
+
+  it('fails production runtime shutdown when an active tunnel cannot be rolled back', async () => {
+    const tunnelPlane = {
+      configured: true,
+      activeTunnel: 'wg-unrecoverable',
+      connect: async () => ({ tunnelId: 'wg-unrecoverable', providerId: 'wireguard', connectionId: 'wg-conn-failed' }),
+      verify: async () => false,
+      rollback: async () => false,
+    };
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      canonicalExtensions: { tunnel: tunnelPlane },
+    });
+    await runtime.start();
+    await expect(runtime.stop()).rejects.toThrow(/failed to disconnect the active tunnel/);
+  });
+
   it('recovers the route journal before the first runtime cycle', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
@@ -198,6 +252,24 @@ describe('LinuxProductionRuntime wiring', () => {
 });
 
 describe('LinuxClientServer with production runtime', () => {
+  it('disables autonomous mode and closes the server even when runtime shutdown fails', async () => {
+    const system = new StubLinuxSystem();
+    const runtime: LinuxRuntime = {
+      start: async () => undefined,
+      status: async () => ({}) as never,
+      setAutonomousMode: async () => undefined,
+      stop: async () => {
+        throw new Error('simulated tunnel rollback failure');
+      },
+    };
+    const server = new LinuxClientServer(system, runtime);
+    await server.start(0);
+    await system.setAutonomousMode(true);
+    await expect(server.stop()).rejects.toThrow(/simulated tunnel rollback failure/);
+    expect(system.getPolicy().autonomousMode).toBe(false);
+    expect(server.address()).toBeNull();
+  });
+
   it('serves production runtime status over the local client boundary', async () => {
     const system = new StubLinuxSystem();
     const runtime = new LinuxProductionRuntime(system, {

@@ -47,6 +47,8 @@ export interface CanonicalDnsControlPlane {
 }
 
 export interface CanonicalTunnelControlPlane {
+  /** Active tunnel ID when a provider connection is currently tracked. */
+  readonly activeTunnel?: string | undefined;
   readonly connect: (request?: { providerId?: string }) => Promise<{
     tunnelId: string;
     providerId: string;

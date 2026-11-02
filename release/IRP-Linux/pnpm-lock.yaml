@@ -207,6 +207,9 @@ importers:
       '@irp/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+      '@irp/tunnel':
+        specifier: workspace:*
+        version: link:../tunnel
 
   packages/logger:
     dependencies:

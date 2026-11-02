@@ -7,6 +7,9 @@ Wants=network-online.target
 Type=simple
 User=irp
 Group=irp
+EnvironmentFile=-/etc/irp/irp.env
+# Uncomment after provisioning the source key file with restrictive permissions.
+# LoadCredential=irp_wireguard_private_key:/etc/irp/credentials/wireguard-private-key
 StateDirectory=irp
 WorkingDirectory=/usr/lib/irp/linux-client
 ExecStart=/usr/bin/node dist/main.js
