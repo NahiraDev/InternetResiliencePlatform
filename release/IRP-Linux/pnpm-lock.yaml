@@ -209,7 +209,7 @@ importers:
         version: link:../telemetry
       '@irp/tunnel':
         specifier: workspace:*
-        version: link:../../packages/tunnel
+        version: link:../tunnel
 
   packages/logger:
     dependencies:
