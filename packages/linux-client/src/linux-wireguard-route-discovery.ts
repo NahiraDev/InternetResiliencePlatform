@@ -90,7 +90,6 @@ export class LinuxWireGuardRouteDiscoveryProvider implements RouteDiscoveryProvi
 
     const tunnelId = this.options.controlPlane.activeTunnel;
     if (!tunnelId) return [];
-    const checkedAt = health.checkedAt;
     const failureDomain = this.options.failureDomain ?? `wireguard:${this.options.interfaceName}`;
     return this.allowedIPs.map(({ value, address, prefix, family }, index) => ({
       id: `wireguard:${this.options.interfaceName}:${index}`,
