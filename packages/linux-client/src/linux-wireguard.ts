@@ -25,6 +25,7 @@ export interface LinuxWireGuardConfiguration {
   readonly peerPublicKey: string;
   readonly allowedIPs: readonly string[];
   readonly keepaliveSeconds: number;
+  readonly autoConnect: boolean;
   readonly tunnel: TunnelConfiguration;
 }
 
@@ -124,6 +125,12 @@ export function parseLinuxWireGuardConfiguration(
     throw new Error('IRP_WIREGUARD_ROUTING_MODE supports splitTunnel only; fullTunnel requires the separate route/egress integration');
   }
 
+  const autoConnectRaw = env.IRP_WIREGUARD_AUTOCONNECT?.trim() || '0';
+  if (autoConnectRaw !== '0' && autoConnectRaw !== '1') {
+    throw new Error('IRP_WIREGUARD_AUTOCONNECT must be exactly 0 or 1');
+  }
+  const autoConnect = autoConnectRaw === '1';
+
   const keepaliveRaw = env.IRP_WIREGUARD_KEEPALIVE_SECONDS?.trim() || '25';
   if (!/^\d+$/.test(keepaliveRaw)) {
     throw new Error('IRP_WIREGUARD_KEEPALIVE_SECONDS must be an integer between 0 and 65535');
@@ -172,6 +179,7 @@ export function parseLinuxWireGuardConfiguration(
     peerPublicKey,
     allowedIPs,
     keepaliveSeconds,
+    autoConnect,
     tunnel,
   };
 }

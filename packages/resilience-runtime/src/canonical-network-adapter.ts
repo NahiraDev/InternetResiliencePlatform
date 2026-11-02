@@ -49,7 +49,15 @@ export interface CanonicalDnsControlPlane {
 export interface CanonicalTunnelControlPlane {
   /** Active tunnel ID when a provider connection is currently tracked. */
   readonly activeTunnel?: string | undefined;
+  /** Managed tunnel ID remains available for recovery when its last connect failed. */
+  readonly managedTunnel?: string | undefined;
   readonly connect: (request?: { providerId?: string }) => Promise<{
+    tunnelId: string;
+    providerId: string;
+    connectionId: string;
+  }>;
+  /** Reconnects the existing managed tunnel without creating a second tunnel object. */
+  readonly reconnect?: (request?: { providerId?: string; tunnelId?: string }) => Promise<{
     tunnelId: string;
     providerId: string;
     connectionId: string;
