@@ -82,6 +82,12 @@ describe('Linux WireGuard configuration', () => {
     expect(() => parseLinuxWireGuardConfiguration(environment({
       IRP_WIREGUARD_ROUTING_MODE: 'fullTunnel',
     }))).toThrow(/splitTunnel only/);
+    expect(() => parseLinuxWireGuardConfiguration(environment({
+      IRP_WIREGUARD_ALLOWED_IPS: '0.0.0.0/0',
+    }))).toThrow(/Default-route AllowedIPs/);
+    expect(() => createLinuxWireGuardIntegrationFromEnvironment(environment({
+      IRP_TUNNEL_ENABLED: 'true',
+    }))).toThrow(/exactly 0 or 1/);
   });
 });
 
