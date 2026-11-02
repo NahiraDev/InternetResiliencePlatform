@@ -34,6 +34,7 @@ import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane, type Lin
 import { LinuxObservationProvider } from './linux-observation-provider.js';
 import type { RouteRecoveryReport } from './linux-route-executor.js';
 import { parseDestination } from '@irp/routing';
+import { createLinuxWireGuardIntegrationFromEnvironment } from './linux-wireguard.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -145,6 +146,7 @@ export type LinuxRuntimeStatus = {
   capabilityStatus: readonly LinuxCapabilityStatus[];
   routeRecovery?: RouteRecoveryReport;
   scheduler?: ReturnType<RuntimeScheduler['status']>;
+  tunnelConfigured: boolean;
 };
 
 /** The Linux client runtime for the canonical, safe-by-default composition. */
@@ -366,6 +368,7 @@ export class LinuxProductionRuntime {
       ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
       ...(this.routeRecovery ? { routeRecovery: this.routeRecovery } : {}),
       ...(this.scheduler ? { scheduler: this.scheduler.status() } : {}),
+      tunnelConfigured: this.controlPlane.controlPlane.tunnel?.configured ?? false,
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -544,8 +547,14 @@ export async function runLinuxClient(
   const system = new LinuxSystem();
   const stateDirectory = options.stateDirectory ?? resolveStateDirectory(process.env);
   const destination = destinationConfigurationFromEnvironment(process.env);
+  const wireGuardIntegration = options.canonicalExtensions?.tunnel
+    ? undefined
+    : createLinuxWireGuardIntegrationFromEnvironment(process.env);
   const canonicalExtensions: LinuxCanonicalNetworkExtensions = {
     ...(options.canonicalExtensions ?? {}),
+    ...(options.canonicalExtensions?.tunnel === undefined && wireGuardIntegration
+      ? { tunnel: wireGuardIntegration.controlPlane }
+      : {}),
     ...(options.canonicalExtensions?.destination === undefined && destination
       ? { destination: destination.destination }
       : {}),
@@ -572,3 +581,4 @@ export * from './linux-route-executor.js';
 export * from './linux-destination-probe.js';
 
 export * from './linux-observation-provider.js';
+export * from './linux-wireguard.js';
