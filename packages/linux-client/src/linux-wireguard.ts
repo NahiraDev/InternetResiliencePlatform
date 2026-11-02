@@ -1,3 +1,4 @@
+import type { RouteDiscoveryProvider } from '@irp/routing';
 import { constants as fsConstants } from 'node:fs';
 import { open, realpath } from 'node:fs/promises';
 import { isIP } from 'node:net';
@@ -9,6 +10,7 @@ import {
   type CommandRunner,
   type WireGuardCredentialStore,
 } from '@irp/tunnel/wireguard';
+import { LinuxWireGuardRouteDiscoveryProvider } from './linux-wireguard-route-discovery.js';
 
 const WIREGUARD_KEY_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
 const CREDENTIAL_REFERENCE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
@@ -31,6 +33,7 @@ export interface LinuxWireGuardIntegration {
   readonly provider: WireGuardProvider;
   readonly registry: TunnelProviderRegistry;
   readonly controlPlane: TunnelRegistryControlPlane;
+  readonly routeDiscoveryProvider: RouteDiscoveryProvider;
   readonly configuration: LinuxWireGuardConfiguration;
 }
 
@@ -255,5 +258,12 @@ export function createLinuxWireGuardIntegrationFromEnvironment(
     },
   });
 
-  return { provider, registry, controlPlane, configuration };
+  const routeDiscoveryProvider = new LinuxWireGuardRouteDiscoveryProvider({
+    controlPlane,
+    interfaceName: configuration.interfaceName,
+    allowedIPs: configuration.allowedIPs,
+    failureDomain: 'wireguard:' + configuration.endpointHost + ':' + configuration.endpointPort,
+  });
+
+  return { provider, registry, controlPlane, routeDiscoveryProvider, configuration };
 }
