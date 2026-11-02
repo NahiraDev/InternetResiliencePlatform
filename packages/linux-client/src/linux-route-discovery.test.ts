@@ -158,3 +158,90 @@ describe('LinuxRouteDiscoveryProvider real network state', () => {
     }
   });
 });
+
+/**
+ * Regression: iproute2 rejects `-f ipv4` / `-f ipv6` ("invalid protocol family") and only accepts
+ * `inet` / `inet6`. The provider used to pass the symbolic names, so against a real kernel
+ * `verify()` always returned false and every live route change rolled itself back. The assertion
+ * above (`typeof verified === 'boolean'`) could not catch that, so this checks the exact arguments.
+ */
+describe('LinuxRouteDiscoveryProvider.verify command line', () => {
+  const planFor = (destination: Record<string, unknown>, family: 'ipv4' | 'ipv6') =>
+    ({
+      id: 'verify-args',
+      destination,
+      selectedPath: {
+        id: 'path:verify-args',
+        type: 'direct',
+        hops: [],
+        route: {
+          id: 'route:verify-args',
+          destination: 'x',
+          prefix: 0,
+          protocol: 'static',
+          metric: 0,
+          table: { id: 'main', kind: 'main', name: 'main' },
+          family,
+          scope: 'global',
+          state: 'active',
+          priority: 0,
+          capabilities: [family],
+          metadata: {},
+        },
+        capabilities: [family],
+        state: 'active',
+        metadata: {},
+      },
+    }) as never;
+
+  const recorder = (stdout: string) => {
+    const calls: (readonly string[])[] = [];
+    return {
+      calls,
+      runner: {
+        async run(_binary: string, args: readonly string[]) {
+          calls.push(args);
+          return { stdout, stderr: '', exitCode: 0 };
+        },
+      },
+    };
+  };
+
+  it('asks iproute2 for the inet family and sees a present route', async () => {
+    const { calls, runner } = recorder('[{"dst":"10.98.0.10","gateway":"10.99.1.2","dev":"vp-a"}]');
+    const provider = new LinuxRouteDiscoveryProvider({ netns: 'lab', commandRunner: runner });
+    const verified = await provider.verify(
+      planFor({ kind: 'ip', value: '10.98.0.10', family: 'ipv4' }, 'ipv4'),
+    );
+    expect(verified).toBe(true);
+    expect(calls).toEqual([
+      ['-n', 'lab', '-j', '-f', 'inet', 'route', 'show', 'table', 'main', '10.98.0.10/32'],
+    ]);
+  });
+
+  it('asks iproute2 for the inet6 family for IPv6 destinations', async () => {
+    const { calls, runner } = recorder('[{"dst":"2001:db8::10"}]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    await provider.verify(planFor({ kind: 'ip', value: '2001:db8::10', family: 'ipv6' }, 'ipv6'));
+    expect(calls[0]).toEqual(['-j', '-f', 'inet6', 'route', 'show', 'table', 'main', '2001:db8::10/128']);
+  });
+
+  it('never passes the symbolic ipv4/ipv6 family names that iproute2 rejects', async () => {
+    const { calls, runner } = recorder('[]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    await provider.verify(planFor({ kind: 'default', value: 'default', family: 'ipv4' }, 'ipv4'));
+    await provider.verify(planFor({ kind: 'ip', value: '2001:db8::1', family: 'ipv6' }, 'ipv6'));
+    for (const args of calls) {
+      const family = args[args.indexOf('-f') + 1];
+      expect(['inet', 'inet6']).toContain(family);
+    }
+  });
+
+  it('reports an absent route as unverified', async () => {
+    const { runner } = recorder('[]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    expect(
+      await provider.verify(planFor({ kind: 'ip', value: '10.98.0.10', family: 'ipv4' }, 'ipv4')),
+    ).toBe(false);
+  });
+});

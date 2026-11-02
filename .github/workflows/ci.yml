@@ -67,6 +67,13 @@ jobs:
       - name: Linux client tests
         run: pnpm --filter @irp/linux-client test
 
+      - name: Linux client network-namespace end-to-end chain (privileged, required)
+        # The unprivileged test step above reports this suite as skipped. Here it runs as root in
+        # throwaway namespaces and a missing capability is a hard failure, so a skip cannot pass as green.
+        run: |
+          sudo -E env "PATH=$PATH" IRP_REQUIRE_NETNS_E2E=1 \
+            pnpm --filter @irp/linux-client exec vitest run src/linux-chain.e2e.test.ts
+
       - name: Linux client build
         run: pnpm --filter @irp/linux-client build
 

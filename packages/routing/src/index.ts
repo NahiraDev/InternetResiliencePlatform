@@ -361,6 +361,11 @@ export interface RouteDiscoveryProvider {
   discoverRoutes(context: RoutingDecisionContext): Promise<DiscoveredRoute[]>;
   discoverPaths?(routes: Route[], context: RoutingDecisionContext): Promise<NetworkPath[]>;
   verify?(plan: RoutePlan): Promise<boolean>;
+  /**
+   * Confirms from observed system state that the plan's selected route is no longer installed
+   * (rollback took effect). Distinct from `verify`, which confirms the route IS installed.
+   */
+  verifyRolledBack?(plan: RoutePlan): Promise<boolean>;
 }
 export interface RoutingPluginExtension {
   routeProviders?: RouteDiscoveryProvider[];
@@ -811,6 +816,49 @@ export class RoutingEngine {
       return false;
     }
   }
+  /**
+   * Tells the kernel's routing capability that an applied plan has been verified end to end, so
+   * its journal can stop treating it as interrupted. Returns false (never throws) when the kernel
+   * cannot confirm; the plan then stays journaled as unconfirmed and a restart reverts it, which
+   * is the safe direction.
+   */
+  async confirmPlan(plan: RoutePlan): Promise<boolean> {
+    if (!this.options.kernel) return false;
+    try {
+      // The kernel bus resolves `undefined` (it does not throw) when no handler is registered for
+      // an operation, so only an explicit acknowledgement counts as confirmation.
+      const acknowledgement = await this.options.kernel.execute<RoutePlan, { ok?: boolean } | undefined>(
+        'routing',
+        'confirmRoutePlan',
+        plan,
+        {
+          ...(this.options.principal ? { principal: this.options.principal } : {}),
+          priority: 'high',
+          persist: true,
+        },
+      );
+      return acknowledgement?.ok === true;
+    } catch {
+      return false;
+    }
+  }
+  /**
+   * Proves a rollback from observed state. Fails closed: with no provider able to observe the
+   * outcome, or if any provider errors or disagrees, the rollback is reported as unproven.
+   */
+  async verifyRollback(plan: RoutePlan): Promise<boolean> {
+    const observers = this.providers.filter((p) => typeof p.verifyRolledBack === 'function');
+    if (!observers.length) return false;
+    let proven = true;
+    for (const provider of observers) {
+      try {
+        proven = (await provider.verifyRolledBack!(plan)) && proven;
+      } catch {
+        proven = false;
+      }
+    }
+    return proven;
+  }
   async failover(context: RoutingDecisionContext): Promise<RoutePlan> {
     await this.emit('routing.failover.started', { destination: context.destination });
     const decision = await this.decide(context);
@@ -1017,6 +1065,9 @@ export class RoutingEngine {
   }
   private async commit(plan: RoutePlan, key: string): Promise<RoutePlan> {
     await this.emit('routing.transition.started', { planId: plan.id });
+    // True once the kernel has accepted the mutation. From then on any failure must compensate,
+    // because the system is no longer in its pre-mutation state.
+    let kernelApplied = false;
     try {
       if (!this.options.kernel) throw new Error('Live route application requires a KernelRuntime');
       await this.options.kernel.execute('routing', 'applyRoutePlan', plan, {
@@ -1024,9 +1075,12 @@ export class RoutingEngine {
         priority: 'high',
         persist: true,
       });
-      const verifiers = this.providers.map((p) => p.verify).filter(Boolean) as ((
-        plan: RoutePlan,
-      ) => Promise<boolean>)[];
+      kernelApplied = true;
+      // Bind each verifier to its provider: class-based providers read `this`, and a detached
+      // method call throws a TypeError that would otherwise surface as a failed transition.
+      const verifiers = this.providers
+        .filter((p) => typeof p.verify === 'function')
+        .map((p) => (routePlan: RoutePlan) => p.verify!(routePlan));
       if (!verifiers.length)
         throw new Error('Live route application requires at least one verification provider');
       let verified = true;
@@ -1060,6 +1114,22 @@ export class RoutingEngine {
       return plan;
     } catch (error) {
       plan.verification.status = 'failed';
+      if (kernelApplied && this.options.kernel) {
+        // The route was already written. Undo it rather than leave an unverified mutation behind.
+        try {
+          await this.options.kernel.execute('routing', 'rollbackRoutePlan', plan, {
+            ...(this.options.principal ? { principal: this.options.principal } : {}),
+            priority: 'critical',
+            persist: true,
+          });
+        } catch (rollbackError) {
+          await this.emit('routing.transition.rollback_failed', {
+            planId: plan.id,
+            error: rollbackError instanceof Error ? rollbackError.message : 'unknown',
+          });
+          this.metric('routing_path_switch_rollback_failure_total', 1);
+        }
+      }
       await this.emit('routing.transition.failed', {
         planId: plan.id,
         error: error instanceof Error ? error.message : 'unknown',

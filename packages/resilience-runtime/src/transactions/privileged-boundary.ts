@@ -769,9 +769,34 @@ export function createPrivilegedMutationBoundary(ports: {
       },
       compensate: async (plan: ActionPlan, context: RuntimeContext, snapshot: MutationSnapshot) => {
         const rollbackExecution = await ports.safetyKernel.rollbackCheckpoint(plan, context, snapshot.previousState.checkpoint);
-        return { compensated: rollbackExecution !== undefined, reasons: rollbackExecution ? [] : ['rollback-failed'], snapshot };
+        if (rollbackExecution !== undefined) return { compensated: true, reasons: [], snapshot };
+        // No checkpoint rollback is configured. Compensation must still reach the mutation's own
+        // adapter, which owns the undo (for routes: the kernel executor's journaled rollback).
+        // Reporting `rollback-failed` here without trying left the mutation applied while the
+        // transaction went on to report itself recovered.
+        const adapter = ports.adapters.findForAction(plan.selectedAction.intent, plan.requiredCapabilities);
+        if (!adapter?.rollback || !adapter.descriptor.recoverySupport) {
+          return { compensated: false, reasons: ['rollback-failed'], snapshot };
+        }
+        try {
+          const undone = await adapter.rollback(plan, context);
+          const ok = undone.status === 'success';
+          return { compensated: ok, reasons: ok ? [] : [`adapter-rollback:${undone.status}`], snapshot };
+        } catch (error) {
+          return {
+            compensated: false,
+            reasons: [`adapter-rollback-threw:${error instanceof Error ? error.message : 'unknown'}`],
+            snapshot,
+          };
+        }
       },
       verifyRollback: async (plan: ActionPlan, context: RuntimeContext, _snapshot: MutationSnapshot) => {
+        const adapter = ports.adapters.findForAction(plan.selectedAction.intent, plan.requiredCapabilities);
+        if (adapter?.verifyRollback) {
+          const proof = await adapter.verifyRollback(plan, context);
+          const proven = proof.status === 'success';
+          return { verified: proven, reasons: proven ? [] : ['rollback-verification-failed'] };
+        }
         const verifier = new RuntimeActionVerifier(ports.adapters);
         const execution: ActionExecution = { status: 'success' } as ActionExecution;
         const result = await verifier.verify(plan, execution, context);

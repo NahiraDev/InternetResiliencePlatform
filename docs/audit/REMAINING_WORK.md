@@ -15,7 +15,7 @@ Priority P0 = production blocker, P1 = needed for certification, P2 = hardening.
 | 9   | P1  | Replace the legacy `$queryRaw` fake-success memory client in non-production paths with explicit failure (D9)                                                                                                                                                                | database                  | none             | no query returns `[{ok:1}]` for non-health SQL                 | none                                                           |
 | 10  | P1  | Retention/cleanup job for `Session`, `Token`, `RateLimitBucket`, `AuditLog`                                                                                                                                                                                                 | api                       | none             | bounded table growth test                                      | none                                                           |
 | 11  | P1  | Run `prisma migrate deploy` in CI against the Postgres service and compare to `schema.prisma` (drift check)                                                                                                                                                                 | database/ci               | none             | CI fails on drift                                              | none (needs Prisma engine download; allowed on GitHub runners) |
-| 12  | P1  | Trace and prove the full Linux chain Observation→Diagnosis→Intent→Decision→Policy→Security→Safety→Plan→Transaction→Kernel→Destination verification→Commit/Rollback in a netns; make the `linux-acceptance` capability test tolerate or explicitly assert missing `ip` (D11) | daemon/resilience-runtime | none             | one end-to-end netns test with destination probe               | none                                                           |
+| 12  | P1  | **DONE (see "Row 12 evidence" below).** Trace and prove the full Linux chain Observation→Diagnosis→Intent→Decision→Policy→Security→Safety→Plan→Transaction→Kernel→Destination verification→Commit/Rollback in a netns; make the `linux-acceptance` capability test tolerate or explicitly assert missing `ip` (D11) | daemon/resilience-runtime | none             | one end-to-end netns test with destination probe               | none                                                           |
 | 13  | P1  | systemd service execution test on a real unit                                                                                                                                                                                                                               | clients/linux             | 12               | unit starts, recovers after kill                               | needs systemd host                                             |
 | 14  | P1  | CodeQL: choose a single operating model (disable GitHub Default Setup or drop the Advanced workflow), add Swift if iOS code is analysed, verify real Actions result (D12)                                                                                                   | ci                        | repo admin       | green `Analyze` checks, no neutral/skipped                     | BLOCKED_EXTERNAL (repo settings)                               |
 | 15  | P1  | Reconcile release inventory vs tags/releases/assets; exact-SHA CI evidence in `PROJECT_STATE.md` / `.github/ACTIVE_WORK.md`                                                                                                                                                 | docs                      | GitHub API token | evidence table matches GitHub                                  | needs authenticated API (rate-limited here)                    |
@@ -23,3 +23,31 @@ Priority P0 = production blocker, P1 = needed for certification, P2 = hardening.
 | 17  | P2  | Audit not covered this session: network intelligence, intent/policy, connectivity fabric, strategy/optimisation, learning, federation, macOS/Windows/Android/iOS native vs mocked                                                                                           | various                   | none             | per-area findings                                              | none                                                           |
 | 18  | P2  | Optional: refresh-token grace window for lost-response retries (currently any replay revokes the family; secure but may log out a client that retried)                                                                                                                      | api                       | none             | documented trade-off + test                                    | none                                                           |
 | 19  | P2  | Account-enumeration on `register` (409 on existing email) — consider uniform response                                                                                                                                                                                       | api                       | product decision | documented                                                     | none                                                           |
+
+## Row 12 evidence: Linux chain proven in a network namespace
+
+`packages/linux-client/src/linux-chain.e2e.test.ts` drives the canonical `ResilienceRuntime` through
+Observation → Diagnosis → Intent → Decision → Policy → Security → Safety → Plan → Transaction → Kernel →
+Destination verification → Commit/Rollback against a real kernel in two throwaway namespaces
+(`irp-e2e-src`, `irp-e2e-dst`, joined by a veth pair created inside the namespaces, so the host namespace is never
+addressed). Destination verification is a real TCP connect (`LinuxTcpDestinationProbe`) from the source namespace
+to a listener in the destination namespace. Covered: commit with kernel route + journal `verified`; durability across
+an executor restart; rollback when the destination probe fails (route removed, journal cleared, no `committed` event);
+an unproven rollback is not reported as rolled back; policy and security gates refuse before any mutation; simulation
+leaves the kernel untouched. Each scenario compares a host network fingerprint before and after.
+
+Missing capabilities are explicit: `detectNetnsLabSupport()` reports the exact reasons (platform, `ip`, CAP_NET_ADMIN,
+CAP_SYS_ADMIN, kernel refusal). Unprivileged runs report the lab suite as skipped with that reason;
+`IRP_REQUIRE_NETNS_E2E=1` (set in `ci.yml`) turns it into a hard failure. D11 is fixed in
+`apps/daemon/src/linux-acceptance.test.ts`: the live-authority test branches on `capNetAdmin && ipBinary`, and a
+deterministic empty-`PATH` test asserts the safe-mode fallback and blocker when `ip` is absent.
+
+Defects the test exposed and this change fixes: placeholder adapters shadowing the live canonical adapter;
+`RouteDiscoveryProvider.verify` rejected by iproute2 (`-f ipv4`); an unbound verifier throwing after the kernel applied a
+route; the privileged boundary reporting `recovered` while the route remained; a committed route reverted on restart
+because nothing marked the journal entry `verified` (`confirmRoutePlan`).
+
+Remaining operational gaps: IPv4 only in the lab (IPv6 route mutation is unit-tested, not netns-tested); one route
+mutation shape (/32 via gateway); TCP probe only (no ICMP/DNS/HTTP semantics); the e2e needs root + iproute2 and has not
+yet run on a GitHub-hosted runner; no multi-host or real-uplink failover (row 17); systemd supervision of the daemon
+under kill (row 13).

@@ -298,13 +298,36 @@ describe('host authorization for live mode', () => {
   it('activates live authority only where the host truly holds CAP_NET_ADMIN (no cycle is run)', async () => {
     const dir = tmp();
     const daemon = await startDaemon({ dir, env: live });
-    const health = (await controlRequest(daemon.socket, 'GET', '/v1/health')) as { authorization: { effectiveMode: string; liveActive: boolean; hostGrantedCapabilities: string[]; evidence: { capNetAdmin: boolean | null } } };
-    if (health.authorization.evidence.capNetAdmin) {
+    const health = (await controlRequest(daemon.socket, 'GET', '/v1/health')) as { authorization: { effectiveMode: string; liveActive: boolean; hostGrantedCapabilities: string[]; blockers: string[]; evidence: { capNetAdmin: boolean | null; ipBinary: boolean } } };
+    // Live authority needs BOTH CAP_NET_ADMIN and the `ip` binary (host-authorization.ts), so a
+    // privileged host without iproute2 must stay safe and say why, rather than fail this test.
+    const { capNetAdmin, ipBinary } = health.authorization.evidence;
+    if (capNetAdmin && ipBinary) {
       expect(health.authorization.liveActive).toBe(true);
       expect(health.authorization.hostGrantedCapabilities).toContain('route.write');
     } else {
       expect(health.authorization.liveActive).toBe(false);
+      expect(health.authorization.effectiveMode).toBe('safe');
+      expect(health.authorization.hostGrantedCapabilities).not.toContain('route.write');
+      if (!ipBinary) expect(health.authorization.blockers.join(' ')).toMatch(/`ip` \(iproute2\)/);
     }
+    await stop(daemon, 'SIGTERM');
+  }, 90_000);
+
+  // Deterministic on every host: an empty PATH removes `ip` regardless of what is installed, so the
+  // "missing ip" branch is asserted instead of depending on the runner's image.
+  it('stays safe and names the missing `ip` binary when iproute2 is not on PATH', async () => {
+    const dir = tmp();
+    const emptyBin = join(dir, 'empty-bin');
+    mkdirSync(emptyBin, { recursive: true });
+    const daemon = await startDaemon({ dir, env: { ...live, PATH: emptyBin } });
+    const health = (await controlRequest(daemon.socket, 'GET', '/v1/health')) as { authorization: { requestedMode: string; effectiveMode: string; liveActive: boolean; hostGrantedCapabilities: string[]; blockers: string[]; evidence: { ipBinary: boolean } } };
+    expect(health.authorization.requestedMode).toBe('live');
+    expect(health.authorization.evidence.ipBinary).toBe(false);
+    expect(health.authorization.liveActive).toBe(false);
+    expect(health.authorization.effectiveMode).toBe('safe');
+    expect(health.authorization.hostGrantedCapabilities).toEqual(['network.observe']);
+    expect(health.authorization.blockers.join(' ')).toMatch(/`ip` \(iproute2\)/);
     await stop(daemon, 'SIGTERM');
   }, 90_000);
 });

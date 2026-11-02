@@ -147,6 +147,7 @@ const dnsSelectionMetadata = (
 export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
   private readonly previousDnsProviders = new Map<string, string | undefined>();
   private readonly appliedRoutePlans = new Map<string, RoutePlan>();
+  private readonly rolledBackRoutePlans = new Map<string, RoutePlan>();
 
   readonly descriptor: RuntimeAdapterDescriptor = {
     adapterId: 'canonical-network-control-plane',
@@ -358,7 +359,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           destination,
           connectivitySources: sources,
         });
-        return this.verifyDestinationOutcome(
+        const verification = await this.verifyDestinationOutcome(
           plan,
           context,
           createAdapterVerification(
@@ -367,6 +368,12 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
             decision.selected && decision.plan.selectedPath ? 'success' : 'failed',
           ),
         );
+        if (verification.status === 'success') {
+          // Only a change whose destination was verified is confirmed to the data plane.
+          const applied = this.appliedRoutePlans.get(plan.selectedAction.id);
+          if (applied) await this.controlPlane.routing.confirmPlan?.(applied);
+        }
+        return verification;
       }
 
       if (plan.selectedAction.intent === 'dns_switch') {
@@ -414,6 +421,24 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
     }
   }
 
+  async verifyRollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionVerification> {
+    if (context.mode !== 'live') return createAdapterVerification(plan, context, 'success');
+    if (plan.selectedAction.intent === 'route_change') {
+      // A rollback is proven by the system's own state, not by the rollback call returning.
+      const routePlan = this.rolledBackRoutePlans.get(plan.selectedAction.id);
+      if (!routePlan) return createAdapterVerification(plan, context, 'failed');
+      try {
+        const proven = await this.controlPlane.routing.verifyRollback(routePlan);
+        if (proven) this.rolledBackRoutePlans.delete(plan.selectedAction.id);
+        return createAdapterVerification(plan, context, proven ? 'success' : 'failed');
+      } catch {
+        return createAdapterVerification(plan, context, 'failed');
+      }
+    }
+    // Other intents keep their existing check: the post-mutation verification.
+    return this.verify(plan, createAdapterExecution(plan, context, false, 'success'), context);
+  }
+
   async rollback(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution> {
     if (context.mode !== 'live') return createAdapterExecution(plan, context, true);
 
@@ -454,7 +479,10 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
       const routePlan = this.appliedRoutePlans.get(plan.selectedAction.id);
       if (!routePlan) return createAdapterExecution(plan, context, false, 'failed');
       const rolledBack = await this.controlPlane.routing.rollbackPlan(routePlan);
-      if (rolledBack) this.appliedRoutePlans.delete(plan.selectedAction.id);
+      if (rolledBack) {
+        this.appliedRoutePlans.delete(plan.selectedAction.id);
+        this.rolledBackRoutePlans.set(plan.selectedAction.id, routePlan);
+      }
       return createAdapterExecution(plan, context, false, rolledBack ? 'success' : 'failed');
     }
 
