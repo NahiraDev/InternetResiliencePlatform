@@ -23,6 +23,8 @@ Configure these values in `/etc/irp/irp.env`:
 | `IRP_WIREGUARD_INTERFACE_NAME` | no | Defaults to `irpwg0` |
 | `IRP_WIREGUARD_KEEPALIVE_SECONDS` | no | Defaults to `25`; use `0` to disable keepalive |
 
+Live tunnel operations still run through the canonical runtime and require the existing explicit operation controls (`IRP_EXECUTION_MODE=real` and `IRP_ENABLE_AUTONOMOUS_LIVE_MUTATION=true`) plus the host's required `CAP_NET_ADMIN` privilege.
+
 The private key must **not** be placed in `irp.env`. Provision it as a systemd credential instead. Create the source file with restrictive permissions, then uncomment the `LoadCredential=` line in `packages/linux-client/systemd/irp-linux-client.service` and set `IRP_WIREGUARD_CREDENTIAL_REF=irp_wireguard_private_key`. systemd supplies `CREDENTIALS_DIRECTORY`; the client accepts only a safe basename, opens without following symlinks, requires a regular file with no group/other permissions, and validates the WireGuard key before use.
 
 When tunnel integration is enabled but configuration or systemd credentials are missing/invalid, Linux client startup fails closed. When disabled, no WireGuard provider is registered. The configured provider is available to the canonical tunnel adapter; enabling the environment flag does not independently start a tunnel.
