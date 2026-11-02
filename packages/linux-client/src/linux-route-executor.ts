@@ -619,6 +619,22 @@ export class LinuxRouteExecutor {
   }
 
   /**
+   * Marks an applied plan as confirmed good. Called by the canonical chain only after the
+   * destination itself has been verified, so a crash before that point still rolls the change back
+   * on restart, while a confirmed change survives it.
+   */
+  async confirmRoutePlan(plan: RoutePlan): Promise<{ ok: boolean; planId: string; error?: string }> {
+    const entry = this.journalEntries.get(plan.id);
+    if (!entry) {
+      return { ok: false, planId: plan.id, error: `No journal entry for plan ${plan.id}; cannot confirm` };
+    }
+    if (entry.state !== 'verified') {
+      this.persist({ ...entry, state: 'verified', updatedAt: new Date().toISOString() });
+    }
+    return { ok: true, planId: plan.id };
+  }
+
+  /**
    * Reconciles the journal after a restart. Mutations that were issued but never verified are
    * undone with the rollback command recorded before they ran; verified entries older than the
    * retention window are pruned. Failures are reported, never swallowed, and the entry is kept

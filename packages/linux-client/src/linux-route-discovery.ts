@@ -185,14 +185,11 @@ export class LinuxRouteDiscoveryProvider implements RouteDiscoveryProvider {
     }
   }
 
-  /**
-   * Verifies that an applied route plan's target route exists in the kernel
-   * routing table.
-   */
-  async verify(plan: RoutePlan): Promise<boolean> {
+  /** Routes currently installed for the plan's target, or undefined if they cannot be read. */
+  private async installedRoutes(plan: RoutePlan): Promise<readonly Record<string, unknown>[] | undefined> {
     const dest = plan.destination;
     const selected = plan.selectedPath;
-    if (!selected) return false;
+    if (!selected) return undefined;
 
     const family = dest.family === 'ipv6' ? 'ipv6' : 'ipv4';
     const target =
@@ -204,21 +201,50 @@ export class LinuxRouteDiscoveryProvider implements RouteDiscoveryProvider {
             ? `${dest.value}/${family === 'ipv6' ? 128 : 32}`
             : undefined;
 
-    if (!target) return false;
+    if (!target) return undefined;
 
     const table = selected.route.table.name || 'main';
     const args: string[] = [];
     if (this.options.netns) args.push('-n', this.options.netns);
-    args.push('-j', '-f', family, 'route', 'show', 'table', table, target);
+    // iproute2 accepts `inet`/`inet6` for `-f`; the symbolic `ipv4`/`ipv6` are rejected with
+    // "invalid protocol family", which made every verification fail against a real kernel and
+    // every live route change roll itself back.
+    args.push('-j', '-f', family === 'ipv6' ? 'inet6' : 'inet', 'route', 'show', 'table', table, target);
 
     const result = await this.run(args);
-    if (result.exitCode !== 0) return false;
+    if (result.exitCode !== 0) return undefined;
 
     try {
       const parsed = JSON.parse(result.stdout);
-      return Array.isArray(parsed) && parsed.length > 0;
+      return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : undefined;
     } catch {
-      return false;
+      return undefined;
     }
+  }
+
+  /**
+   * Verifies that an applied route plan's target route exists in the kernel
+   * routing table.
+   */
+  async verify(plan: RoutePlan): Promise<boolean> {
+    const routes = await this.installedRoutes(plan);
+    return routes !== undefined && routes.length > 0;
+  }
+
+  /**
+   * Verifies a rollback from kernel state: no route to the plan's target still goes through the
+   * selected path's gateway and device. A route the rollback restored (a different gateway or
+   * device) does not count against it. An unreadable table is "unproven", never "rolled back".
+   */
+  async verifyRolledBack(plan: RoutePlan): Promise<boolean> {
+    const wanted = plan.selectedPath?.route;
+    if (!wanted) return false;
+    const routes = await this.installedRoutes(plan);
+    if (routes === undefined) return false;
+    return !routes.some(
+      (entry) =>
+        (wanted.gateway === undefined || entry['gateway'] === wanted.gateway) &&
+        (wanted.interfaceName === undefined || entry['dev'] === wanted.interfaceName),
+    );
   }
 }

@@ -44,6 +44,12 @@ export interface RuntimeAdapter {
     context: RuntimeContext,
   ): Promise<ActionVerification>;
   rollback?(plan: ActionPlan, context: RuntimeContext): Promise<ActionExecution>;
+  /**
+   * Proves from observed state that `rollback` took effect. When absent, the boundary falls back
+   * to re-running `verify`, which checks the post-mutation postconditions and so cannot confirm a
+   * rollback of a mutation that failed verification.
+   */
+  verifyRollback?(plan: ActionPlan, context: RuntimeContext): Promise<ActionVerification>;
 }
 export class RuntimeAdapterRegistry {
   private readonly adapters = new Map<string, RuntimeAdapter>();
@@ -147,9 +153,14 @@ export const createDefaultRuntimeAdapterRegistry = (
     verificationSupport: true,
     recoverySupport: subsystem === 'failover',
   }));
-  for (const d of defs) r.register(new DeterministicRuntimeAdapter(d));
+  // `findForAction` returns the first registered match, so the canonical adapters must be
+  // registered BEFORE the deterministic placeholders. Registered after them, the placeholder for
+  // the same action (supportsLive: false) always won, and every live route/failover/DNS action was
+  // rejected at validation with "adapter ... does not support live execution" without ever
+  // reaching the kernel executor.
   if (networkControlPlane) r.register(new CanonicalNetworkRuntimeAdapter(networkControlPlane));
   if (networkControlPlane?.tunnel)
     r.register(new CanonicalTunnelRuntimeAdapter(networkControlPlane.tunnel));
+  for (const d of defs) r.register(new DeterministicRuntimeAdapter(d));
   return r;
 };

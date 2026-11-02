@@ -58,6 +58,17 @@ export function createLinuxRoutingContract(
           return { ok: true, planId: plan.id, snapshot: executor.getSnapshot(plan.id) };
         },
       },
+      confirmRoutePlan: {
+        capability: 'network.route',
+        execute: async (input: unknown) => {
+          const plan = input as RoutePlan;
+          const result = await executor.confirmRoutePlan(plan);
+          if (!result.ok) {
+            throw new Error(`route confirm failed: ${result.error}`);
+          }
+          return { ok: true, planId: plan.id };
+        },
+      },
       rollbackRoutePlan: {
         capability: 'network.route',
         execute: async (input: unknown) => {

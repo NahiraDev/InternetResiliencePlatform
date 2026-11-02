@@ -36,6 +36,7 @@ import type { LinuxRouteExecutor } from './linux-route-executor.js';
 import { FileRouteJournal } from './route-journal.js';
 import { LinuxRouteDiscoveryProvider } from './linux-route-discovery.js';
 import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provider.js';
+import { createLinuxDestinationVerifier } from './linux-destination-probe.js';
 import type { CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
 
 export interface LinuxNetworkControlPlaneOptions {
@@ -70,6 +71,18 @@ export interface LinuxNetworkControlPlaneOptions {
    * can be rolled back after a crash. Without it the journal is in-memory only.
    */
   readonly stateDirectory?: string;
+  /**
+   * Enables real destination-reachability verification after a route mutation by wiring a TCP
+   * probe into the canonical `verifyDestination` hook. The probe connects to the destination on
+   * `port` from the same network namespace the executor mutates (`netns`, or the host).
+   *
+   * Without it no `verifyDestination` is provided, and the canonical adapter fails live mutations
+   * closed rather than accepting a route that merely exists in the kernel table.
+   */
+  readonly destinationProbe?: {
+    readonly port: number;
+    readonly timeoutMs?: number;
+  };
 }
 
 export interface LinuxNetworkControlPlane {
@@ -162,6 +175,17 @@ export function createLinuxNetworkControlPlane(
     connectivity,
     routing,
     // destination is optional; the runtime supplies it per-cycle.
+    ...(options.destinationProbe
+      ? {
+          verifyDestination: createLinuxDestinationVerifier({
+            port: options.destinationProbe.port,
+            ...(options.destinationProbe.timeoutMs !== undefined
+              ? { timeoutMs: options.destinationProbe.timeoutMs }
+              : {}),
+            ...(netns ? { netns } : {}),
+          }),
+        }
+      : {}),
   };
 
   return {
