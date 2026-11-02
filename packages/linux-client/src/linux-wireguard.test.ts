@@ -2,6 +2,8 @@ import { chmod, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
+import { parseDestination } from '@irp/routing';
+import { createLinuxNetworkControlPlane } from './linux-network-control-plane.js';
 import {
   createLinuxWireGuardIntegrationFromEnvironment,
   parseLinuxWireGuardConfiguration,
@@ -34,6 +36,7 @@ const environment = (overrides: Record<string, string> = {}): Record<string, str
 class FakeWireGuardCommandRunner implements CommandRunner {
   readonly calls: Array<{ command: string; args: string[] }> = [];
   private interfaceCreated = false;
+  handshakeAgeSeconds = 1;
 
   async run(command: string, args: string[]) {
     this.calls.push({ command, args: [...args] });
@@ -45,7 +48,7 @@ class FakeWireGuardCommandRunner implements CommandRunner {
     if (command === 'ip' && args[0] === 'link' && args[1] === 'add') this.interfaceCreated = true;
     if (command === 'ip' && args[0] === 'link' && args[1] === 'del') this.interfaceCreated = false;
     if (command === 'wg' && args[0] === 'show') {
-      return { stdout: `peer ${Math.floor(Date.now() / 1000) - 1}\n`, stderr: '', exitCode: 0 };
+      return { stdout: `peer ${Math.floor(Date.now() / 1000) - this.handshakeAgeSeconds}\n`, stderr: '', exitCode: 0 };
     }
     return { stdout: '', stderr: '', exitCode: 0 };
   }
@@ -123,6 +126,39 @@ describe('SystemdWireGuardCredentialStore', () => {
 });
 
 describe('Linux WireGuard canonical control-plane integration', () => {
+  it('advertises its AllowedIPs as VPN routes only while the canonical tunnel handshake is healthy', async () => {
+    const commandRunner = new FakeWireGuardCommandRunner();
+    const integration = createLinuxWireGuardIntegrationFromEnvironment(environment(), {
+      credentialStore: { getPrivateKey: async () => PRIVATE_KEY },
+      commandRunner,
+    });
+    expect(integration).toBeDefined();
+    expect(await integration!.routeDiscoveryProvider.discoverRoutes({} as never)).toEqual([]);
+
+    const connection = await integration!.controlPlane.connect();
+    expect(connection.providerId).toBe('wireguard');
+
+    const network = createLinuxNetworkControlPlane({
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      routeDiscoveryProvider: { id: 'empty-linux-routes', discoverRoutes: async () => [] },
+      routeDiscoveryProviders: [integration!.routeDiscoveryProvider],
+    });
+    const decision = await network.routing.decide({
+      destination: parseDestination('10.20.0.42'),
+      connectivitySources: [],
+    });
+    expect(decision.selected?.path.type).toBe('vpn');
+    expect(decision.selected?.route.interfaceName).toBe('irpwg0');
+    expect(decision.selected?.route.destination).toBe('10.20.0.0');
+    expect(decision.selected?.route.prefix).toBe(16);
+
+    commandRunner.handshakeAgeSeconds = 3_600;
+    expect(await integration!.routeDiscoveryProvider.discoverRoutes({} as never)).toEqual([]);
+    expect(await integration!.controlPlane.rollback()).toBe(true);
+  });
+
   it('registers the real provider and verifies its handshake through TunnelRegistryControlPlane', async () => {
     const commandRunner = new FakeWireGuardCommandRunner();
     const integration = createLinuxWireGuardIntegrationFromEnvironment(environment(), {
