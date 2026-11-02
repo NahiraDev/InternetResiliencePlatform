@@ -202,6 +202,7 @@ export class LinuxClientRuntime {
       runtime: await this.runtime.getRuntimeSnapshot(),
       autonomousMode: this.autonomousMode,
       ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
+      tunnelConfigured: false,
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
