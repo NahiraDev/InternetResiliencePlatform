@@ -19,6 +19,7 @@ import {
   GatewayRegistrySelectionPlane,
   CanonicalDecisionProvider,
   createCanonicalRuntime,
+  type Observation,
   negotiatePlatformCapabilities,
   evaluateSelfHealth,
   classifyFailure,
