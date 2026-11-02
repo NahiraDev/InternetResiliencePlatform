@@ -173,8 +173,19 @@ describe('Linux WireGuard canonical control-plane integration', () => {
 
     const connection = await integration!.controlPlane.connect();
     expect(connection.providerId).toBe('wireguard');
+    expect(integration!.controlPlane.managedTunnel).toBe(connection.tunnelId);
     await expect(integration!.controlPlane.verify(connection.tunnelId)).resolves.toBe(true);
+
+    const reconnected = await integration!.controlPlane.reconnect({
+      providerId: 'wireguard',
+      tunnelId: connection.tunnelId,
+    });
+    expect(reconnected.tunnelId).toBe(connection.tunnelId);
+    expect(integration!.controlPlane.activeTunnel).toBe(connection.tunnelId);
+    await expect(integration!.controlPlane.verify(connection.tunnelId)).resolves.toBe(true);
+
     await expect(integration!.controlPlane.rollback()).resolves.toBe(true);
+    expect(integration!.controlPlane.managedTunnel).toBeUndefined();
     expect(commandRunner.calls.some((call) => call.command === 'wg' && call.args[0] === 'set')).toBe(true);
     expect(commandRunner.calls.some((call) => call.command === 'ip' && call.args[0] === 'address')).toBe(true);
   });
