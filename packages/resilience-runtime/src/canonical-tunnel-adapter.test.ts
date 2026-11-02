@@ -18,6 +18,7 @@ const reconnectPlan = (): ActionPlan => ({
       reconnect: true,
     },
   },
+  expectedPostconditions: ['tunnel handshake verified'],
 } as unknown as ActionPlan);
 
 describe('CanonicalTunnelRuntimeAdapter reconnect', () => {
