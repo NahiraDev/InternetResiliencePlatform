@@ -166,7 +166,11 @@ describe('LinuxRouteDiscoveryProvider real network state', () => {
  * above (`typeof verified === 'boolean'`) could not catch that, so this checks the exact arguments.
  */
 describe('LinuxRouteDiscoveryProvider.verify command line', () => {
-  const planFor = (destination: Record<string, unknown>, family: 'ipv4' | 'ipv6') =>
+  const planFor = (
+    destination: Record<string, unknown>,
+    family: 'ipv4' | 'ipv6',
+    selectedRoute: { interfaceName?: string; gateway?: string } = {},
+  ) =>
     ({
       id: 'verify-args',
       destination,
@@ -178,6 +182,8 @@ describe('LinuxRouteDiscoveryProvider.verify command line', () => {
           id: 'route:verify-args',
           destination: 'x',
           prefix: 0,
+          ...(selectedRoute.interfaceName ? { interfaceName: selectedRoute.interfaceName } : {}),
+          ...(selectedRoute.gateway ? { gateway: selectedRoute.gateway } : {}),
           protocol: 'static',
           metric: 0,
           table: { id: 'main', kind: 'main', name: 'main' },
@@ -235,6 +241,48 @@ describe('LinuxRouteDiscoveryProvider.verify command line', () => {
       const family = args[args.indexOf('-f') + 1];
       expect(['inet', 'inet6']).toContain(family);
     }
+  });
+
+  it('does not accept an unrelated interface route as verification of a tunnel route', async () => {
+    const { runner } = recorder('[{"dst":"10.98.0.10","dev":"eth0"}]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    expect(
+      await provider.verify(
+        planFor(
+          { kind: 'ip', value: '10.98.0.10', family: 'ipv4' },
+          'ipv4',
+          { interfaceName: 'irpwg0' },
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it('verifies that a route is installed through the selected WireGuard interface', async () => {
+    const { runner } = recorder('[{"dst":"10.98.0.10","dev":"irpwg0"}]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    expect(
+      await provider.verify(
+        planFor(
+          { kind: 'ip', value: '10.98.0.10', family: 'ipv4' },
+          'ipv4',
+          { interfaceName: 'irpwg0' },
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not verify a selected gateway when a different gateway is installed', async () => {
+    const { runner } = recorder('[{"dst":"10.98.0.10","gateway":"192.0.2.1","dev":"eth0"}]');
+    const provider = new LinuxRouteDiscoveryProvider({ commandRunner: runner });
+    expect(
+      await provider.verify(
+        planFor(
+          { kind: 'ip', value: '10.98.0.10', family: 'ipv4' },
+          'ipv4',
+          { interfaceName: 'eth0', gateway: '192.0.2.254' },
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('reports an absent route as unverified', async () => {
