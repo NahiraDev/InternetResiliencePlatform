@@ -138,7 +138,11 @@ describe('LinuxProductionRuntime wiring', () => {
   });
 
   it('recovers the route journal before the first runtime cycle', async () => {
-    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), { enableLiveRouteMutation: false });
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+    });
     await runtime.start();
     expect((await runtime.status()).routeRecovery).toMatchObject({
       rolledBack: [], failed: [], pruned: [], corrupt: [],
@@ -149,8 +153,6 @@ describe('LinuxProductionRuntime wiring', () => {
   it('runs recurring canonical cycles only after autonomy is explicitly enabled', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
-      registerHostConnectivity: false,
-      registerStarlink: false,
       registerHostConnectivity: false,
       registerStarlink: false,
       scheduler: { cycleIntervalMs: 60_000, cooldownMs: 0, executionBudgetMs: 10_000 },
