@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { parseDestination } from '@irp/routing';
 import {
   LinuxProductionRuntime,
   LinuxClientServer,
@@ -97,6 +98,74 @@ describe('LinuxProductionRuntime wiring', () => {
     expect(networkAdapter!.supportedActions).toContain('route_change');
   });
 
+
+  it('composes existing DNS, tunnel, gateway and destination-verification ports into the canonical runtime', () => {
+    const tunnelPlane = {
+      configured: true,
+      connect: async () => ({ tunnelId: 'tunnel-1', providerId: 'wireguard', connectionId: 'connection-1' }),
+      verify: async () => true,
+      rollback: async () => true,
+    };
+    const dnsPlane = {
+      engine: { evaluate: async () => [], status: () => ({ activeProviderId: undefined }) },
+      applyProvider: async () => undefined,
+    };
+    const gatewayPlane = {
+      configured: true,
+      currentGatewayId: undefined,
+      gateways: () => [],
+      synchronize: async () => undefined,
+      evaluate: async () => ({ switched: false, reason: 'no switch required', candidates: [] }),
+      apply: async () => undefined,
+    };
+    const verifyDestination = async () => ({ status: 'reachable' as const });
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: true,
+      canonicalExtensions: {
+        dns: dnsPlane as never,
+        tunnel: tunnelPlane as never,
+        gatewaySelection: gatewayPlane as never,
+        destination: parseDestination('203.0.113.10'),
+        verifyDestination,
+      },
+    });
+    expect(runtime.controlPlane.controlPlane.dns).toBe(dnsPlane);
+    expect(runtime.controlPlane.controlPlane.tunnel).toBe(tunnelPlane);
+    expect(runtime.controlPlane.controlPlane.gatewaySelection).toBe(gatewayPlane);
+    expect(runtime.controlPlane.controlPlane.verifyDestination).toBe(verifyDestination);
+    expect(runtime.controlPlane.controlPlane.destination).toEqual(parseDestination('203.0.113.10'));
+    expect(runtime.runtime.capabilities().some(d => d.adapterId === 'canonical-tunnel-control-plane')).toBe(true);
+  });
+
+  it('recovers the route journal before the first runtime cycle', async () => {
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+    });
+    await runtime.start();
+    expect((await runtime.status()).routeRecovery).toMatchObject({
+      rolledBack: [], failed: [], pruned: [], corrupt: [],
+    });
+    await runtime.stop();
+  });
+
+  it('runs recurring canonical cycles only after autonomy is explicitly enabled', async () => {
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      scheduler: { cycleIntervalMs: 60_000, cooldownMs: 0, executionBudgetMs: 10_000 },
+    });
+    await runtime.start();
+    expect((await runtime.status()).scheduler).toBeUndefined();
+    await runtime.setAutonomousMode(true);
+    expect((await runtime.status()).scheduler).toMatchObject({ enabled: true, active: 0 });
+    await runtime.setAutonomousMode(false);
+    expect((await runtime.status()).scheduler).toBeUndefined();
+    await runtime.stop();
+  });
+
   it('exposes route mutation capability status', () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: true,
@@ -116,6 +185,8 @@ describe('LinuxProductionRuntime wiring', () => {
   it('starts a canonical runtime cycle without host mutation', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
     });
 
     await runtime.start();
@@ -131,6 +202,8 @@ describe('LinuxClientServer with production runtime', () => {
     const system = new StubLinuxSystem();
     const runtime = new LinuxProductionRuntime(system, {
       enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
     });
     const server = new LinuxClientServer(system, runtime);
     await server.start(0);

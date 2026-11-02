@@ -1,11 +1,16 @@
+export { LinuxObservationProvider } from './linux-observation-provider.js';
+
 import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import type { AddressInfo } from 'node:net';
+import { isIP, type AddressInfo } from 'node:net';
 import {
   BoundedClosedLoopController,
   createCanonicalRuntime,
+  RuntimeScheduler,
+  type RuntimeSchedulerConfig,
+  type CanonicalExecutionMode,
   type CanonicalRuntimeComposition,
   type ClosedLoopResult,
   ResilienceRuntime,
@@ -25,7 +30,10 @@ import {
   readBoundedBody,
   type GuardVerdict,
 } from './http-guard.js';
-import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane } from './linux-network-control-plane.js';
+import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane, type LinuxCanonicalNetworkExtensions } from './linux-network-control-plane.js';
+import { LinuxObservationProvider } from './linux-observation-provider.js';
+import type { RouteRecoveryReport } from './linux-route-executor.js';
+import { parseDestination } from '@irp/routing';
 
 const execFileAsync = promisify(execFile);
 
@@ -135,6 +143,8 @@ export type LinuxRuntimeStatus = {
   lastAutonomyCycle?: ClosedLoopResult;
   capabilities: readonly RuntimeAdapterDescriptor[];
   capabilityStatus: readonly LinuxCapabilityStatus[];
+  routeRecovery?: RouteRecoveryReport;
+  scheduler?: ReturnType<RuntimeScheduler['status']>;
 };
 
 /** The Linux client runtime for the canonical, safe-by-default composition. */
@@ -202,6 +212,8 @@ export class LinuxClientRuntime {
       })),
     };
   }
+
+  async stop(): Promise<void> {}
 }
 
 /**
@@ -221,47 +233,87 @@ export class LinuxClientRuntime {
  * mutation boundary before reaching the kernel routing contract and the
  * Linux route executor.
  */
+export interface LinuxProductionRuntimeOptions {
+  readonly enableLiveRouteMutation?: boolean;
+  readonly executionMode?: CanonicalExecutionMode;
+  readonly netns?: string;
+  readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
+  readonly registerStarlink?: boolean;
+  readonly registerHostConnectivity?: boolean;
+  readonly starlinkOptions?: { readonly target?: string; readonly grpcurlCommand?: string };
+  readonly composition?: CanonicalRuntimeComposition;
+  readonly stateDirectory?: string;
+  readonly destinationProbe?: { readonly port: number; readonly timeoutMs?: number };
+  readonly canonicalExtensions?: LinuxCanonicalNetworkExtensions;
+  readonly observationProviders?: readonly ObservationProvider[];
+  readonly enableGatewaySelection?: boolean;
+  readonly scheduler?: Partial<Pick<RuntimeSchedulerConfig, 'cycleIntervalMs' | 'cooldownMs' | 'executionBudgetMs'>>;
+}
+
+type LinuxSchedulerSettings = { cycleIntervalMs: number; cooldownMs: number; executionBudgetMs: number };
+
+const schedulerInteger = (value: number | undefined, fallback: number, name: string, minimum: number, maximum: number): number => {
+  const candidate = value ?? fallback;
+  if (!Number.isInteger(candidate) || candidate < minimum || candidate > maximum) {
+    throw new RangeError(`${name} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return candidate;
+};
+
+/** One canonical production runtime for Linux observations, networking and recovery. */
 export class LinuxProductionRuntime {
   readonly runtime: ResilienceRuntime;
   private started = false;
   private autonomousMode = false;
   private lastAutonomyCycle: ClosedLoopResult | undefined;
-
+  private routeRecovery: RouteRecoveryReport | undefined;
+  private scheduler: RuntimeScheduler | undefined;
+  private readonly schedulerSettings: LinuxSchedulerSettings;
+  private readonly schedulerMode: CanonicalExecutionMode;
   readonly composition: CanonicalRuntimeComposition;
   readonly controlPlane: LinuxNetworkControlPlane;
+  readonly observer: LinuxObservationProvider;
 
-  constructor(
-    system: Pick<LinuxSystemAdapter, 'snapshot'>,
-    options: {
-      readonly enableLiveRouteMutation?: boolean;
-      readonly executionMode?: import('@irp/resilience-runtime').CanonicalExecutionMode;
-      readonly netns?: string;
-      readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
-      readonly registerStarlink?: boolean;
-      readonly starlinkOptions?: { readonly target?: string; readonly grpcurlCommand?: string };
-      readonly composition?: CanonicalRuntimeComposition;
-    } = {},
-  ) {
+  constructor(system: Pick<LinuxSystemAdapter, 'snapshot'>, options: LinuxProductionRuntimeOptions = {}) {
+    this.schedulerMode = options.executionMode ?? 'real';
+    this.schedulerSettings = {
+      cycleIntervalMs: schedulerInteger(options.scheduler?.cycleIntervalMs, 30_000, 'cycleIntervalMs', 1_000, 3_600_000),
+      cooldownMs: schedulerInteger(options.scheduler?.cooldownMs, 5_000, 'cooldownMs', 0, 3_600_000),
+      executionBudgetMs: schedulerInteger(options.scheduler?.executionBudgetMs, 10_000, 'executionBudgetMs', 100, 120_000),
+    };
     this.controlPlane = createLinuxNetworkControlPlane({
       ...(options.enableLiveRouteMutation !== undefined ? { enableLiveRouteMutation: options.enableLiveRouteMutation } : {}),
       ...(options.netns ? { netns: options.netns } : {}),
       ...(options.connectivityProviders ? { connectivityProviders: options.connectivityProviders } : {}),
       ...(options.registerStarlink !== undefined ? { registerStarlink: options.registerStarlink } : {}),
+      ...(options.registerHostConnectivity !== undefined ? { registerHostConnectivity: options.registerHostConnectivity } : {}),
       ...(options.starlinkOptions ? { starlinkOptions: options.starlinkOptions } : {}),
+      ...(options.stateDirectory ? { stateDirectory: options.stateDirectory } : {}),
+      ...(options.destinationProbe ? { destinationProbe: options.destinationProbe } : {}),
+      ...(options.canonicalExtensions ? { canonicalExtensions: options.canonicalExtensions } : {}),
+      enableGatewaySelection: options.enableGatewaySelection ?? process.env.IRP_GATEWAY_SELECTION_ENABLED === '1',
     });
-    this.composition =
-      options.composition ??
-      createCanonicalRuntime({
-        executionMode: options.executionMode ?? 'real',
-        observationProviders: [new LinuxSnapshotObservationProvider(system)],
-        runtimeId: 'linux-production-runtime',
-        networkControlPlane: this.controlPlane.controlPlane,
-      });
+    this.observer = new LinuxObservationProvider(this.controlPlane.connectivity);
+    this.composition = options.composition ?? createCanonicalRuntime({
+      executionMode: this.schedulerMode,
+      observationProviders: [
+        new LinuxSnapshotObservationProvider(system),
+        this.observer,
+        ...(options.observationProviders ?? []),
+      ],
+      runtimeId: 'linux-production-runtime',
+      networkControlPlane: this.controlPlane.controlPlane,
+    });
     this.runtime = this.composition.runtime;
   }
 
   async start(): Promise<void> {
     if (this.started) return;
+    // Reconcile interrupted route transactions before collecting new evidence or planning changes.
+    this.routeRecovery = await this.controlPlane.routeExecutor.recoverInterrupted();
+    if (this.routeRecovery.failed.length > 0 || this.routeRecovery.corrupt.length > 0) {
+      throw new Error(`Linux route recovery incomplete (failed=${this.routeRecovery.failed.length}, corrupt=${this.routeRecovery.corrupt.length})`);
+    }
     await this.composition.runCycle({
       correlationId: 'linux-production-startup',
       idempotencyKey: 'linux-production-startup',
@@ -278,8 +330,32 @@ export class LinuxProductionRuntime {
         correlationId: 'linux-production-autonomy',
         idempotencyKey: `linux-production-autonomy-${Date.now()}`,
       });
+      this.scheduler = new RuntimeScheduler(this.runtime, {
+        enabled: true,
+        mode: this.schedulerMode === 'real' ? 'live' : 'simulation',
+        cycleIntervalMs: this.schedulerSettings.cycleIntervalMs,
+        maxConcurrentCycles: 1,
+        cooldownMs: this.schedulerSettings.cooldownMs,
+        executionBudgetMs: this.schedulerSettings.executionBudgetMs,
+      });
+      this.scheduler.start();
+    } else if (!enabled && this.autonomousMode) {
+      this.scheduler?.stop();
+      if (this.scheduler && !(await this.scheduler.whenIdle(20_000))) {
+        throw new Error('Linux runtime scheduler did not become idle before autonomy was disabled');
+      }
+      this.scheduler = undefined;
     }
     this.autonomousMode = enabled;
+  }
+
+  async stop(): Promise<void> {
+    this.scheduler?.stop();
+    if (this.scheduler && !(await this.scheduler.whenIdle(20_000))) {
+      throw new Error('Linux runtime scheduler did not become idle before shutdown');
+    }
+    this.scheduler = undefined;
+    this.autonomousMode = false;
   }
 
   async status(): Promise<LinuxRuntimeStatus> {
@@ -288,6 +364,8 @@ export class LinuxProductionRuntime {
       runtime: await this.runtime.getRuntimeSnapshot(),
       autonomousMode: this.autonomousMode,
       ...(this.lastAutonomyCycle ? { lastAutonomyCycle: this.lastAutonomyCycle } : {}),
+      ...(this.routeRecovery ? { routeRecovery: this.routeRecovery } : {}),
+      ...(this.scheduler ? { scheduler: this.scheduler.status() } : {}),
       capabilities,
       capabilityStatus: capabilities.map((descriptor) => ({
         adapterId: descriptor.adapterId,
@@ -301,10 +379,6 @@ export class LinuxProductionRuntime {
     };
   }
 
-  /**
-   * Exposes whether the production routing contract is registered and the
-   * canonical network adapter supports live execution.
-   */
   getRouteMutationCapability(): {
     readonly kernelId: string;
     readonly routingContractRegistered: boolean;
@@ -356,6 +430,7 @@ export interface LinuxRuntime {
   start(): Promise<void>;
   status(): Promise<LinuxRuntimeStatus>;
   setAutonomousMode(enabled: boolean): Promise<void>;
+  stop?(): Promise<void>;
 }
 
 export class LinuxClientServer {
@@ -389,9 +464,17 @@ export class LinuxClientServer {
   }
 
   async stop(): Promise<void> {
+    let runtimeStopError: unknown;
+    try {
+      await this.runtime.stop?.();
+      await this.system.setAutonomousMode(false);
+    } catch (error) {
+      runtimeStopError = error;
+    }
     await new Promise<void>((resolve, reject) =>
       this.server.close((error) => (error ? reject(error) : resolve())),
     );
+    if (runtimeStopError) throw runtimeStopError;
   }
 
   private refuse(response: ServerResponse, verdict: GuardVerdict): void {
@@ -437,22 +520,44 @@ export class LinuxClientServer {
   }
 }
 
-export async function runLinuxClient(): Promise<LinuxClientServer> {
-  // Live autonomous mutation requires two explicit opt-ins. The default and
-  // the UI toggle remain observe/simulate-only to prevent accidental host route
-  // changes. Operators must set both variables deliberately to enable live mode.
+function destinationConfigurationFromEnvironment(
+  env: Readonly<Record<string, string | undefined>>,
+): { destination: ReturnType<typeof parseDestination>; probe: { port: number; timeoutMs: number } } | undefined {
+  const host = env.IRP_DESTINATION_IP?.trim();
+  if (!host) return undefined;
+  if (isIP(host) === 0) throw new Error('IRP_DESTINATION_IP must be an IPv4 or IPv6 literal; hostname resolution is not performed by the Linux TCP verifier');
+  const port = env.IRP_DESTINATION_PORT === undefined ? 443 : Number(env.IRP_DESTINATION_PORT);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new RangeError('IRP_DESTINATION_PORT must be an integer between 1 and 65535');
+  }
+  return { destination: parseDestination(host), probe: { port, timeoutMs: 5_000 } };
+}
+
+export async function runLinuxClient(
+  options: Omit<LinuxProductionRuntimeOptions, 'executionMode' | 'enableLiveRouteMutation'> = {},
+): Promise<LinuxClientServer> {
+  // Live autonomous mutation remains behind two independent explicit opt-ins.
   const liveMutationExplicitlyEnabled =
     process.env.IRP_EXECUTION_MODE === 'real' &&
     process.env.IRP_ENABLE_AUTONOMOUS_LIVE_MUTATION === 'true';
   const executionMode = liveMutationExplicitlyEnabled ? ('real' as const) : ('simulation' as const);
   const system = new LinuxSystem();
+  const stateDirectory = options.stateDirectory ?? resolveStateDirectory(process.env);
+  const destination = destinationConfigurationFromEnvironment(process.env);
+  const canonicalExtensions: LinuxCanonicalNetworkExtensions = {
+    ...(options.canonicalExtensions ?? {}),
+    ...(options.canonicalExtensions?.destination === undefined && destination
+      ? { destination: destination.destination }
+      : {}),
+  };
   const runtime = new LinuxProductionRuntime(system, {
+    ...options,
     enableLiveRouteMutation: executionMode === 'real',
     executionMode,
+    ...(stateDirectory ? { stateDirectory } : {}),
+    ...(options.destinationProbe || !destination ? {} : { destinationProbe: destination.probe }),
+    ...(Object.keys(canonicalExtensions).length > 0 ? { canonicalExtensions } : {}),
   });
-  // State changes over HTTP need a token only the service user can read. If no state directory is
-  // resolvable the endpoint stays disabled rather than falling back to an open one.
-  const stateDirectory = resolveStateDirectory(process.env);
   const controlToken = stateDirectory
     ? issueControlToken(join(stateDirectory, 'linux-client.token'))
     : undefined;
@@ -465,3 +570,5 @@ export * from './route-journal.js';
 export * from './linux-network-control-plane.js';
 export * from './linux-route-executor.js';
 export * from './linux-destination-probe.js';
+
+export * from './linux-observation-provider.js';

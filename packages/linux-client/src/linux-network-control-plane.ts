@@ -37,7 +37,11 @@ import { FileRouteJournal } from './route-journal.js';
 import { LinuxRouteDiscoveryProvider } from './linux-route-discovery.js';
 import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provider.js';
 import { createLinuxDestinationVerifier } from './linux-destination-probe.js';
-import type { CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
+import { GatewayRegistrySelectionPlane, type CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
+
+export type LinuxCanonicalNetworkExtensions = Partial<
+  Omit<CanonicalNetworkControlPlane, 'connectivity' | 'routing'>
+>;
 
 export interface LinuxNetworkControlPlaneOptions {
   /**
@@ -63,6 +67,10 @@ export interface LinuxNetworkControlPlaneOptions {
     readonly target?: string;
     readonly grpcurlCommand?: string;
   };
+  /** Existing canonical DNS, tunnel, gateway and destination ports. */
+  readonly canonicalExtensions?: LinuxCanonicalNetworkExtensions;
+  /** Enable the existing gateway selector. Disabled unless explicitly enabled. */
+  readonly enableGatewaySelection?: boolean;
   /** Custom route discovery provider (for testing). */
   readonly routeDiscoveryProvider?: RouteDiscoveryProvider;
   /**
@@ -170,22 +178,29 @@ export function createLinuxNetworkControlPlane(
     void connectivity.registerProvider(provider);
   }
 
-  // 4. Assemble the CanonicalNetworkControlPlane.
+  // 4. Compose extensions into the single canonical control plane.
+  const verifyDestination =
+    options.canonicalExtensions?.verifyDestination ??
+    (options.destinationProbe
+      ? createLinuxDestinationVerifier({
+          port: options.destinationProbe.port,
+          ...(options.destinationProbe.timeoutMs !== undefined
+            ? { timeoutMs: options.destinationProbe.timeoutMs }
+            : {}),
+          ...(netns ? { netns } : {}),
+        })
+      : undefined);
+  const gatewaySelection =
+    options.canonicalExtensions?.gatewaySelection ??
+    (options.enableGatewaySelection
+      ? new GatewayRegistrySelectionPlane(connectivity, { enabled: true })
+      : undefined);
   const controlPlane: CanonicalNetworkControlPlane = {
+    ...options.canonicalExtensions,
     connectivity,
     routing,
-    // destination is optional; the runtime supplies it per-cycle.
-    ...(options.destinationProbe
-      ? {
-          verifyDestination: createLinuxDestinationVerifier({
-            port: options.destinationProbe.port,
-            ...(options.destinationProbe.timeoutMs !== undefined
-              ? { timeoutMs: options.destinationProbe.timeoutMs }
-              : {}),
-            ...(netns ? { netns } : {}),
-          }),
-        }
-      : {}),
+    ...(gatewaySelection ? { gatewaySelection } : {}),
+    ...(verifyDestination ? { verifyDestination } : {}),
   };
 
   return {
