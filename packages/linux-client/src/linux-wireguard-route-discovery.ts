@@ -10,6 +10,7 @@
 import { isIP } from 'node:net';
 import type { DiscoveredRoute, RouteDiscoveryProvider, RoutingDecisionContext } from '@irp/routing';
 import type { CanonicalTunnelControlPlane } from '@irp/resilience-runtime';
+import type { LinuxRouteInterfaceMonitor } from './linux-route-discovery.js';
 
 export interface LinuxWireGuardRouteDiscoveryOptions {
   readonly controlPlane: Pick<CanonicalTunnelControlPlane, 'activeTunnel' | 'verify'>;
@@ -36,6 +37,7 @@ function parseAllowedIp(value: string): { address: string; prefix: number; famil
 
 export class LinuxWireGuardRouteDiscoveryProvider implements RouteDiscoveryProvider {
   readonly id = 'linux-wireguard-route-discovery';
+  readonly interfaceMonitor: LinuxRouteInterfaceMonitor;
   private readonly allowedIPs: readonly {
     readonly value: string;
     readonly address: string;
@@ -57,25 +59,38 @@ export class LinuxWireGuardRouteDiscoveryProvider implements RouteDiscoveryProvi
       value,
       ...parseAllowedIp(value),
     }));
+    this.interfaceMonitor = {
+      interfaceName: options.interfaceName,
+      providerId: 'wireguard',
+      health: () => this.interfaceHealth(),
+    };
     if (this.allowedIPs.some(({ prefix, family }) =>
       prefix === 0 && (family === 'ipv4' || family === 'ipv6'))) {
       throw new Error('WireGuard default routes require the separate full-tunnel egress integration');
     }
   }
 
+  private async interfaceHealth(): Promise<{ score: number; status: 'healthy' | 'unhealthy'; checkedAt: string }> {
+    const checkedAt = new Date().toISOString();
+    const tunnelId = this.options.controlPlane.activeTunnel;
+    if (!tunnelId) return { score: 0, status: 'unhealthy', checkedAt };
+    try {
+      const healthy = await this.options.controlPlane.verify(tunnelId);
+      return healthy
+        ? { score: 95, status: 'healthy', checkedAt }
+        : { score: 0, status: 'unhealthy', checkedAt };
+    } catch {
+      return { score: 0, status: 'unhealthy', checkedAt };
+    }
+  }
+
   async discoverRoutes(_context: RoutingDecisionContext): Promise<DiscoveredRoute[]> {
+    const health = await this.interfaceHealth();
+    if (health.status !== 'healthy') return [];
+
     const tunnelId = this.options.controlPlane.activeTunnel;
     if (!tunnelId) return [];
-
-    let healthy = false;
-    try {
-      healthy = await this.options.controlPlane.verify(tunnelId);
-    } catch {
-      healthy = false;
-    }
-    if (!healthy) return [];
-
-    const checkedAt = new Date().toISOString();
+    const checkedAt = health.checkedAt;
     const failureDomain = this.options.failureDomain ?? `wireguard:${this.options.interfaceName}`;
     return this.allowedIPs.map(({ value, address, prefix, family }, index) => ({
       id: `wireguard:${this.options.interfaceName}:${index}`,
@@ -90,11 +105,7 @@ export class LinuxWireGuardRouteDiscoveryProvider implements RouteDiscoveryProvi
       state: 'active',
       priority: 100,
       capabilities: [family],
-      health: {
-        score: 95,
-        status: 'healthy',
-        checkedAt,
-      },
+      health,
       metadata: {
         pathType: 'vpn',
         provider: 'wireguard',
