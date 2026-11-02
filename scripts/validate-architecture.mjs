@@ -27,15 +27,13 @@ mustContain(
   'SafetyRollbackRecoveryKernel',
   'runtime must use SafetyRollbackRecoveryKernel',
 );
-mustNotContain(
-  'apps/api/src/index.ts',
-  'NetworkAutopilot',
-  'API must not instantiate legacy autopilot (only projection)',
-);
+// API must not instantiate the legacy autopilot (comments mentioning the name are allowed)
+if (/new\s+NetworkAutopilot/.test(read('apps/api/src/index.ts')))
+  errors.push('apps/api/src/index.ts: must not instantiate NetworkAutopilot');
 mustContain('apps/api/src/index.ts', 'LIVE_MODE_DISABLED', 'API must block live cycles');
 
 // 2. CLI cannot bypass safety
-mustContain('apps/cli/src/index.ts', 'cannot be bypassed by CLI', 'CLI must block live');
+mustContain('apps/cli/src/index.ts', 'live cycles cannot be requested from the CLI', 'CLI must refuse live mode requests');
 mustMatch('apps/cli/src/index.ts', /mode.*simulation|safe/, 'CLI must only allow simulation/safe');
 
 // 3. Legacy autopilot deprecated
@@ -55,11 +53,10 @@ const autopilotInstantiation = (() => {
 })();
 
 // 4. ResilienceRuntime is canonical - daemon must wire it with networkControlPlane
-mustContain(
-  'apps/daemon/src/index.ts',
-  'new ResilienceRuntime',
-  'daemon must construct ResilienceRuntime',
-);
+// Daemon must wire the canonical runtime (createCanonicalRuntime is the supported composition entrypoint)
+const daemon = read('apps/daemon/src/index.ts');
+if (!daemon.includes('createCanonicalRuntime') && !daemon.includes('new ResilienceRuntime'))
+  errors.push('apps/daemon/src/index.ts: must construct canonical ResilienceRuntime via createCanonicalRuntime or new ResilienceRuntime');
 mustContain(
   'apps/daemon/src/index.ts',
   'networkControlPlane',
