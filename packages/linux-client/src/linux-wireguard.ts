@@ -59,7 +59,7 @@ const parsePort = (value: string, name: string): number => {
 };
 
 const validateEndpointHost = (host: string): string => {
-  if (host.length > 253 || /[\s/\\\[\]]/.test(host)) {
+  if (host.length > 253 || /[\s/\\]/.test(host) || host.includes('[') || host.includes(']')) {
     throw new Error('IRP_WIREGUARD_ENDPOINT_HOST must be an IP literal or DNS hostname');
   }
   if (isIP(host) !== 0) return host;
@@ -211,7 +211,7 @@ export class SystemdWireGuardCredentialStore implements WireGuardCredentialStore
       return privateKey;
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('WireGuard credential')) throw error;
-      throw new Error(`WireGuard credential "${credentialRef}" is unavailable or unsafe`);
+      throw new Error(\`WireGuard credential "\${credentialRef}" is unavailable or unsafe\`, { cause: error });
     } finally {
       await handle?.close().catch(() => undefined);
     }
