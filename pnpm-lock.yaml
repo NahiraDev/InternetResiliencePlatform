@@ -239,7 +239,7 @@ importers:
         version: link:../../packages/security
       '@irp/tunnel':
         specifier: workspace:*
-        version: link:../../packages/tunnel
+        version: link:../tunnel
     devDependencies:
       '@irp/plugin-samples':
         specifier: workspace:*
