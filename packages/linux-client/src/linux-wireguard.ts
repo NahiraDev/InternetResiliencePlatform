@@ -1,4 +1,3 @@
-import type { RouteDiscoveryProvider } from '@irp/routing';
 import { constants as fsConstants } from 'node:fs';
 import { open, realpath } from 'node:fs/promises';
 import { isIP } from 'node:net';
@@ -33,7 +32,7 @@ export interface LinuxWireGuardIntegration {
   readonly provider: WireGuardProvider;
   readonly registry: TunnelProviderRegistry;
   readonly controlPlane: TunnelRegistryControlPlane;
-  readonly routeDiscoveryProvider: RouteDiscoveryProvider;
+  readonly routeDiscoveryProvider: LinuxWireGuardRouteDiscoveryProvider;
   readonly configuration: LinuxWireGuardConfiguration;
 }
 
