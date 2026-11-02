@@ -244,6 +244,7 @@ export interface LinuxProductionRuntimeOptions {
   readonly executionMode?: CanonicalExecutionMode;
   readonly netns?: string;
   readonly connectivityProviders?: readonly import('@irp/connectivity').ConnectivityProvider[];
+  readonly routeDiscoveryProviders?: readonly import('@irp/routing').RouteDiscoveryProvider[];
   readonly registerStarlink?: boolean;
   readonly registerHostConnectivity?: boolean;
   readonly starlinkOptions?: { readonly target?: string; readonly grpcurlCommand?: string };
@@ -291,6 +292,7 @@ export class LinuxProductionRuntime {
       ...(options.enableLiveRouteMutation !== undefined ? { enableLiveRouteMutation: options.enableLiveRouteMutation } : {}),
       ...(options.netns ? { netns: options.netns } : {}),
       ...(options.connectivityProviders ? { connectivityProviders: options.connectivityProviders } : {}),
+      ...(options.routeDiscoveryProviders ? { routeDiscoveryProviders: options.routeDiscoveryProviders } : {}),
       ...(options.registerStarlink !== undefined ? { registerStarlink: options.registerStarlink } : {}),
       ...(options.registerHostConnectivity !== undefined ? { registerHostConnectivity: options.registerHostConnectivity } : {}),
       ...(options.starlinkOptions ? { starlinkOptions: options.starlinkOptions } : {}),
@@ -570,6 +572,10 @@ export async function runLinuxClient(
   const wireGuardIntegration = options.canonicalExtensions?.tunnel
     ? undefined
     : createLinuxWireGuardIntegrationFromEnvironment(process.env);
+  const routeDiscoveryProviders = [
+    ...(options.routeDiscoveryProviders ?? []),
+    ...(wireGuardIntegration ? [wireGuardIntegration.routeDiscoveryProvider] : []),
+  ];
   const canonicalExtensions: LinuxCanonicalNetworkExtensions = {
     ...(options.canonicalExtensions ?? {}),
     ...(options.canonicalExtensions?.tunnel === undefined && wireGuardIntegration
@@ -585,6 +591,7 @@ export async function runLinuxClient(
     executionMode,
     ...(stateDirectory ? { stateDirectory } : {}),
     ...(options.destinationProbe || !destination ? {} : { destinationProbe: destination.probe }),
+    ...(routeDiscoveryProviders.length > 0 ? { routeDiscoveryProviders } : {}),
     ...(Object.keys(canonicalExtensions).length > 0 ? { canonicalExtensions } : {}),
   });
   const controlToken = stateDirectory
