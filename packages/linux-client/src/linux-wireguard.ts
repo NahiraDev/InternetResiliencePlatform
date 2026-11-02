@@ -111,6 +111,9 @@ export function parseLinuxWireGuardConfiguration(
   if (allowedIPs.length === 0 || allowedIPs.length > 64 || new Set(allowedIPs).size !== allowedIPs.length) {
     throw new Error('IRP_WIREGUARD_ALLOWED_IPS must contain between 1 and 64 unique CIDR entries');
   }
+  if (allowedIPs.includes('0.0.0.0/0') || allowedIPs.includes('::/0')) {
+    throw new Error('Default-route AllowedIPs require the separate full-tunnel route/egress integration');
+  }
 
   // This integration increment deliberately exposes split-tunnel peer configuration only.
   // Full-tunnel host routing waits for the separate route/egress integration.
