@@ -222,7 +222,11 @@ export function createLinuxWireGuardIntegrationFromEnvironment(
   env: Readonly<Record<string, string | undefined>> = process.env,
   dependencies: LinuxWireGuardIntegrationDependencies = {},
 ): LinuxWireGuardIntegration | undefined {
-  if (env.IRP_TUNNEL_ENABLED !== '1') return undefined;
+  const enabled = env.IRP_TUNNEL_ENABLED;
+  if (enabled === undefined || enabled === '0') return undefined;
+  if (enabled !== '1') {
+    throw new Error('IRP_TUNNEL_ENABLED must be exactly 0 or 1');
+  }
 
   const configuration = parseLinuxWireGuardConfiguration(env);
   const credentialStore =
