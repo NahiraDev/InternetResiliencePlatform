@@ -137,6 +137,25 @@ describe('LinuxProductionRuntime wiring', () => {
     expect(runtime.runtime.capabilities().some(d => d.adapterId === 'canonical-tunnel-control-plane')).toBe(true);
   });
 
+  it('reports an injected tunnel plane through the canonical Linux runtime status', async () => {
+    const tunnelPlane = {
+      configured: true,
+      connect: async () => ({ tunnelId: 'wg-test', providerId: 'wireguard', connectionId: 'wg-conn-test' }),
+      verify: async () => true,
+      rollback: async () => true,
+    };
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      canonicalExtensions: { tunnel: tunnelPlane },
+    });
+    await runtime.start();
+    expect((await runtime.status()).tunnelConfigured).toBe(true);
+    expect(runtime.controlPlane.controlPlane.tunnel).toBe(tunnelPlane);
+    await runtime.stop();
+  });
+
   it('recovers the route journal before the first runtime cycle', async () => {
     const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
       enableLiveRouteMutation: false,
