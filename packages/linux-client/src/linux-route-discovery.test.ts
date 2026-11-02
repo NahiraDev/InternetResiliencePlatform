@@ -14,6 +14,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { parseDestination, RoutingEngine } from '@irp/routing';
 import { LinuxRouteDiscoveryProvider, ipRouteToDiscovered } from './linux-route-discovery.js';
 
 describe('LinuxRouteDiscoveryProvider real network state', () => {
@@ -165,6 +166,54 @@ describe('LinuxRouteDiscoveryProvider real network state', () => {
  * `verify()` always returned false and every live route change rolled itself back. The assertion
  * above (`typeof verified === 'boolean'`) could not catch that, so this checks the exact arguments.
  */
+describe('LinuxRouteDiscoveryProvider managed tunnel interface health', () => {
+  it('keeps rediscovered WireGuard routes as VPN paths and rejects them when the handshake is stale', async () => {
+    let healthy = true;
+    const provider = new LinuxRouteDiscoveryProvider({
+      interfaceMonitors: [{
+        interfaceName: 'irpwg0',
+        providerId: 'wireguard',
+        health: async () => ({
+          score: healthy ? 95 : 0,
+          status: healthy ? 'healthy' : 'unhealthy',
+          checkedAt: new Date().toISOString(),
+        }),
+      }],
+      commandRunner: {
+        async run() {
+          return {
+            stdout: '[{"dst":"10.20.0.0/16","dev":"irpwg0","protocol":"static","metric":5}]',
+            stderr: '',
+            exitCode: 0,
+          };
+        },
+      },
+    });
+    const routing = new RoutingEngine();
+    routing.registerProvider(provider);
+    const destination = parseDestination('10.20.0.42');
+
+    const healthyDecision = await routing.decide({ destination });
+    expect(healthyDecision.selected?.path.type).toBe('vpn');
+    expect(healthyDecision.selected?.route.interfaceName).toBe('irpwg0');
+
+    // The kernel route remains visible, but its managed-interface health must
+    // prevent the routing engine from selecting it after the peer handshake expires.
+    healthy = false;
+    const staleDecision = await routing.decide({ destination });
+    expect(staleDecision.selected).toBeUndefined();
+    expect(staleDecision.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eligibility: 'rejected',
+          rejectionReason: 'route-unhealthy',
+          interfaceName: 'irpwg0',
+        }),
+      ]),
+    );
+  });
+});
+
 describe('LinuxRouteDiscoveryProvider.verify command line', () => {
   const planFor = (
     destination: Record<string, unknown>,
