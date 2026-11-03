@@ -11,7 +11,7 @@ export const PRODUCT_API_ACCEPT_VERSION_HEADER = 'accept-version';
 
 export type ProductApiClient = 'web' | 'desktop' | 'ios' | 'android';
 export type ProductCapabilityStatus = 'implemented' | 'pending-verification' | 'planned';
-export type ProductCapabilityKind = 'read' | 'mutate' | 'stream';
+export type ProductCapabilityKind = 'read' | 'mutate' | 'stream' | 'read-write';
 export type ProductCapabilityAuthentication = 'none' | 'bearer' | 'device-credential';
 
 export interface ProductCapability {
@@ -203,6 +203,36 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
       authentication: 'device-credential',
       requiredPermissions: [],
       description: 'Credential exchange and rotating remote-client sessions.',
+    },
+    {
+      id: 'devices.snapshot',
+      status: 'implemented',
+      kind: 'read',
+      methods: ['GET'],
+      paths: [`${PRODUCT_API_PATH}/remote/devices/:deviceId/snapshot`],
+      authentication: 'bearer',
+      requiredPermissions: ['runtime.inspect'],
+      description: 'Per-device network snapshot (connection, interfaces, DNS, default route).',
+    },
+    {
+      id: 'devices.analytics',
+      status: 'implemented',
+      kind: 'read',
+      methods: ['GET'],
+      paths: [`${PRODUCT_API_PATH}/remote/devices/:deviceId/analytics`],
+      authentication: 'bearer',
+      requiredPermissions: ['runtime.inspect'],
+      description: 'Per-device network analytics (availability, latency, packet loss).',
+    },
+    {
+      id: 'devices.policy',
+      status: 'implemented',
+      kind: 'read-write',
+      methods: ['GET', 'POST'],
+      paths: [`${PRODUCT_API_PATH}/remote/devices/:deviceId/policy`],
+      authentication: 'bearer',
+      requiredPermissions: ['runtime.inspect'],
+      description: 'Per-device autonomous mode policy (read and update).',
     },
     {
       id: 'gateway.inventory',
