@@ -1151,7 +1151,6 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     return ok(w);
   });
 
-<<<<<<< HEAD
   // ── Device data plane routes (mobile/desktop clients) ──────────────────────
   // Authenticated with the remote client access token issued by
   // POST /api/v1/auth/remote/token. Scopes are device-scoped: a client can only
@@ -1285,31 +1284,24 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       });
     },
   );
-=======
+
   // Extended product API routes. Registered inside buildServer so the main server
   // (not just the Vercel handler) serves the full surface. The shared rate-limit
   // store (PostgreSQL-backed in production) keeps limits consistent across instances.
   registerUnifiedProductRoutes(app, { rateLimitStore: repos.rateLimits });
-  registerHistoryRoutes(app, process.env.DATABASE_URL
-    ? new PostgresHistoricalMeasurementStore(db)
-    : undefined);
+  if (process.env.DATABASE_URL) {
+    registerHistoryRoutes(app, new PostgresHistoricalMeasurementStore(db));
+  } else {
+    registerHistoryRoutes(app);
+  }
   registerRemoteClientRoutes(app);
   registerProbeFederationRoutes(app);
   registerNotificationIncidentRoutes(app);
->>>>>>> e0752c72 (fix(api): register extended routes on main server; use durable store for history)
 
   app.addHook('onClose', async () => {
     await db.$disconnect();
     await repos.close();
   });
-
-  // Register extended product API routes on the main server (not just Vercel).
-  // These are device-facing and admin-facing routes used by mobile/desktop clients.
-  registerUnifiedProductRoutes(app, { rateLimitStore: repos.rateLimits });
-  registerRemoteClientRoutes(app);
-  registerProbeFederationRoutes(app);
-  registerNotificationIncidentRoutes(app);
-  registerHistoryRoutes(app);
 
   return app;
 };

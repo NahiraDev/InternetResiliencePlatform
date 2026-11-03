@@ -190,4 +190,185 @@ describe('Phase 42 remote client API', () => {
     expect(refresh.statusCode).toBe(401);
     await app.close();
   });
+
+  describe('device enrollment request flow', () => {
+    const createUserApp = async () => {
+      const app = Fastify({ logger: false });
+      const jwt = new JwtService(jwtSecret, 'irp');
+      const rbac = new RbacAuthorization();
+      app.setErrorHandler((error, _request, reply) => {
+        const errorRecord =
+          typeof error === 'object' && error !== null
+            ? (error as { message?: unknown; statusCode?: unknown })
+            : undefined;
+        const message =
+          typeof errorRecord?.message === 'string' ? errorRecord.message : String(error);
+        const statusCode = typeof errorRecord?.statusCode === 'number' ? errorRecord.statusCode : 500;
+        reply.code(statusCode).send({ error: message });
+      });
+      registerRemoteClientRoutes(app, { jwtSecret, credentialKey, refreshKey });
+      app.post('/api/v1/auth/test/token', async (request) => {
+        const { email } = request.body as { email: string };
+        const token = jwt.sign({
+          sub: email,
+          roles: ['member'],
+          scopes: ['runtime.read', 'runtime.inspect'],
+          type: 'access',
+          ttlSeconds: 900,
+        });
+        return { success: true, data: { accessToken: token } };
+      });
+      return app;
+    };
+
+    it('user requests enrollment, admin approves, device exchanges credentials', async () => {
+      const app = await createUserApp();
+
+      // User registers enrollment request
+      const userToken = new JwtService(jwtSecret, 'irp').sign({
+        sub: 'user-1',
+        roles: ['member'],
+        scopes: ['runtime.read', 'runtime.inspect'],
+        type: 'access',
+        ttlSeconds: 900,
+      });
+
+      const requestRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/remote/devices/request',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { platform: 'macos', label: 'My MacBook' },
+      });
+      expect(requestRes.statusCode).toBe(201);
+      const requestData = requestRes.json().data;
+      expect(requestData.requestId).toBeTypeOf('string');
+      expect(requestData.status).toBe('pending');
+
+      // Admin lists pending requests
+      const adminToken = new JwtService(jwtSecret, 'irp').sign({
+        sub: 'admin-1',
+        roles: ['platform_admin'],
+        scopes: ['runtime.admin'],
+        type: 'access',
+        ttlSeconds: 900,
+      });
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/remote/devices/requests',
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(listRes.statusCode).toBe(200);
+      const requests = listRes.json().data;
+      expect(requests.length).toBeGreaterThanOrEqual(1);
+
+      // Admin approves the request
+      const requestId = requestData.requestId;
+      const approveRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/auth/remote/devices/requests/${requestId}/approve`,
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(approveRes.statusCode).toBe(200);
+      const approveData = approveRes.json().data;
+      expect(approveData.status).toBe('approved');
+      expect(approveData.credentialId).toBeTypeOf('string');
+      expect(approveData.deviceId).toBeTypeOf('string');
+      expect(approveData.secret).toBeTypeOf('string');
+      expect(approveData.secret).toMatch(/^irp_dc_/);
+
+      // Device exchanges credentials for tokens
+      const tokenRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/remote/token',
+        payload: { credentialId: approveData.credentialId, secret: approveData.secret },
+      });
+      expect(tokenRes.statusCode).toBe(200);
+      const tokenData = tokenRes.json().data;
+      expect(tokenData.accessToken).toBeTypeOf('string');
+      expect(tokenData.refreshToken).toBeTypeOf('string');
+      expect(tokenData.device.deviceId).toBe(approveData.deviceId);
+
+      await app.close();
+    });
+
+    it('non-admin cannot approve enrollment request', async () => {
+      const app = await createUserApp();
+
+      const userToken = new JwtService(jwtSecret, 'irp').sign({
+        sub: 'user-1',
+        roles: ['member'],
+        scopes: ['runtime.read'],
+        type: 'access',
+        ttlSeconds: 900,
+      });
+
+      const requestRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/remote/devices/request',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { platform: 'windows', label: 'My PC' },
+      });
+      expect(requestRes.statusCode).toBe(201);
+      const requestId = requestRes.json().data.requestId;
+
+      // Non-admin tries to approve
+      const approveRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/auth/remote/devices/requests/${requestId}/approve`,
+        headers: { authorization: `Bearer ${userToken}` },
+      });
+      expect(approveRes.statusCode).toBe(403);
+
+      await app.close();
+    });
+
+    it('rejecting a request prevents approval', async () => {
+      const app = await createUserApp();
+
+      const userToken = new JwtService(jwtSecret, 'irp').sign({
+        sub: 'user-1',
+        roles: ['member'],
+        scopes: ['runtime.read'],
+        type: 'access',
+        ttlSeconds: 900,
+      });
+
+      const adminToken = new JwtService(jwtSecret, 'irp').sign({
+        sub: 'admin-1',
+        roles: ['platform_admin'],
+        scopes: ['runtime.admin'],
+        type: 'access',
+        ttlSeconds: 900,
+      });
+
+      const requestRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/remote/devices/request',
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: { platform: 'ios', label: 'My iPhone' },
+      });
+      expect(requestRes.statusCode).toBe(201);
+      const requestId = requestRes.json().data.requestId;
+
+      // Admin rejects
+      const rejectRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/auth/remote/devices/requests/${requestId}/reject`,
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(rejectRes.statusCode).toBe(200);
+      expect(rejectRes.json().data.status).toBe('rejected');
+
+      // Admin tries to approve again - should fail
+      const approveRes = await app.inject({
+        method: 'POST',
+        url: `/api/v1/auth/remote/devices/requests/${requestId}/approve`,
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(approveRes.statusCode).toBe(404);
+
+      await app.close();
+    });
+  });
 });
