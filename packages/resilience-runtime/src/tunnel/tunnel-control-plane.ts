@@ -19,6 +19,7 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
   private readonly configuration: TunnelConfiguration | undefined;
   private readonly provider: TunnelProvider | undefined;
   private readonly enabled: boolean;
+  private managedTunnelId: string | undefined;
   private activeTunnelId: string | undefined;
   readonly killSwitch: KillSwitch;
 
@@ -56,6 +57,10 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
     return this.activeTunnelId;
   }
 
+  get managedTunnel(): string | undefined {
+    return this.managedTunnelId;
+  }
+
   async connect(request?: { providerId?: string }): Promise<{
     tunnelId: string;
     providerId: string;
@@ -63,15 +68,43 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
   }> {
     if (!this.configured) throw new Error('Tunnel control plane is not configured');
     const providerId = request?.providerId ?? this.providerId!;
-    const configuration = this.configuration!;
-    const tunnel = await this.manager.configure(providerId, configuration);
-    const connection = await this.manager.connect(tunnel.id);
-    this.activeTunnelId = tunnel.id;
-    return { tunnelId: tunnel.id, providerId, connectionId: connection.id };
+    if (providerId !== this.providerId) throw new Error('Requested tunnel provider is not authorized by this control plane');
+    if (this.managedTunnelId !== undefined) {
+      throw new Error('A tunnel is already managed by this control plane; use reconnect instead');
+    }
+    const tunnel = await this.manager.configure(providerId, this.configuration!);
+    this.managedTunnelId = tunnel.id;
+    try {
+      const connection = await this.manager.connect(tunnel.id);
+      this.activeTunnelId = tunnel.id;
+      return { tunnelId: tunnel.id, providerId, connectionId: connection.id };
+    } catch (error) {
+      this.activeTunnelId = undefined;
+      throw error;
+    }
+  }
+
+  async reconnect(request?: { providerId?: string; tunnelId?: string }): Promise<{
+    tunnelId: string;
+    providerId: string;
+    connectionId: string;
+  }> {
+    if (!this.configured) throw new Error('Tunnel control plane is not configured');
+    const providerId = request?.providerId ?? this.providerId!;
+    if (providerId !== this.providerId) throw new Error('Requested tunnel provider is not authorized by this control plane');
+    const tunnelId = this.managedTunnelId;
+    if (tunnelId === undefined) throw new Error('No managed tunnel is available for reconnect');
+    if (request?.tunnelId !== undefined && request.tunnelId !== tunnelId) {
+      throw new Error('Reconnect request does not match the managed tunnel');
+    }
+    this.activeTunnelId = undefined;
+    const connection = await this.manager.reconnectTunnel(tunnelId);
+    this.activeTunnelId = tunnelId;
+    return { tunnelId, providerId, connectionId: connection.id };
   }
 
   async verify(tunnelId: string): Promise<boolean> {
-    if (!this.configured || this.provider === undefined) return false;
+    if (!this.configured || this.provider === undefined || tunnelId !== this.managedTunnelId) return false;
     const tunnel = this.manager.getTunnel(tunnelId);
     if (!tunnel) return false;
     try {
@@ -83,10 +116,12 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
   }
 
   async rollback(): Promise<boolean> {
-    if (this.activeTunnelId === undefined) return true;
+    const tunnelId = this.managedTunnelId;
+    if (tunnelId === undefined) return true;
     try {
-      await this.manager.disconnectTunnel(this.activeTunnelId);
+      await this.manager.disconnectTunnel(tunnelId);
       this.activeTunnelId = undefined;
+      this.managedTunnelId = undefined;
       return true;
     } catch {
       return false;

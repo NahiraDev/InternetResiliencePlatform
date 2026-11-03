@@ -545,12 +545,24 @@ export class TunnelManager implements RecoveryTunnelActions {
     this.locks.add(tunnelId);
     const started = performance.now();
     this.metrics?.record('tunnel_connect_attempts_total', 1);
+    let tunnel: Tunnel | undefined;
     try {
-      let tunnel = this.mustTunnel(tunnelId);
+      tunnel = this.mustTunnel(tunnelId);
       const provider = this.mustProvider(tunnel.providerId);
-      tunnel = transitionTunnel(tunnel, 'preparing');
+      if (tunnel.state === 'failed') {
+        tunnel = transitionTunnel(tunnel, 'recovering');
+      } else if (tunnel.state === 'configured' || tunnel.state === 'disconnected') {
+        tunnel = transitionTunnel(tunnel, 'preparing');
+      } else if (tunnel.state !== 'recovering') {
+        throw tunnelErrors.state('Tunnel cannot connect from its current state', {
+          tunnelId,
+          state: tunnel.state,
+        });
+      }
       this.tunnels.set(tunnelId, tunnel);
-      await this.publish('tunnel.connect.started', tunnelId, {});
+      await this.publish('tunnel.connect.started', tunnelId, {
+        recovery: tunnel.state === 'recovering',
+      });
       tunnel = transitionTunnel(tunnel, 'connecting');
       this.tunnels.set(tunnelId, tunnel);
       const conn = await provider.connect(tunnel);
@@ -566,6 +578,14 @@ export class TunnelManager implements RecoveryTunnelActions {
       await this.publish('tunnel.connected', tunnelId, { connectionId: conn.id });
       return conn;
     } catch (error) {
+      const current = this.tunnels.get(tunnelId) ?? tunnel;
+      if (current && current.state !== 'failed' && current.state !== 'destroyed') {
+        try {
+          this.tunnels.set(tunnelId, transitionTunnel(current, 'failed'));
+        } catch {
+          // Preserve the original connection error; never manufacture a successful state.
+        }
+      }
       this.metrics?.record('tunnel_connect_failure_total', 1);
       await this.publish('tunnel.connect.failed', tunnelId, {
         error: error instanceof TunnelError ? error.code : 'unknown',
@@ -590,6 +610,19 @@ export class TunnelManager implements RecoveryTunnelActions {
       this.tunnels.set(tunnelId, { ...this.mustTunnel(tunnelId), state: 'disconnected' });
       this.metrics?.record('tunnel_disconnect_total', 1);
       await this.publish('tunnel.disconnected', tunnelId, {});
+    } catch (error) {
+      const current = this.tunnels.get(tunnelId);
+      if (current?.state === 'disconnecting') {
+        try {
+          this.tunnels.set(tunnelId, transitionTunnel(current, 'failed'));
+        } catch {
+          // Preserve the original teardown failure; never pretend the tunnel is disconnected.
+        }
+      }
+      await this.publish('tunnel.disconnect.failed', tunnelId, {
+        error: error instanceof TunnelError ? error.code : 'unknown',
+      });
+      throw error;
     } finally {
       this.locks.delete(tunnelId);
     }
@@ -598,7 +631,9 @@ export class TunnelManager implements RecoveryTunnelActions {
     this.metrics?.record('tunnel_reconnect_total', 1);
     await this.publish('tunnel.reconnect.requested', tunnelId, {});
     const t = this.mustTunnel(tunnelId);
-    if (t.state === 'connected' || t.state === 'degraded') await this.disconnectTunnel(tunnelId);
+    const hasConnection = [...this.connections.values()].some((connection) => connection.tunnelId === tunnelId);
+    if (t.state === 'connected' || t.state === 'degraded' || hasConnection)
+      await this.disconnectTunnel(tunnelId);
     return this.connect(tunnelId);
   }
   async switchEndpoint(tunnelId: string, endpoint: Endpoint): Promise<TunnelConnection> {

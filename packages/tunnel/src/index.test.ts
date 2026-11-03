@@ -70,7 +70,7 @@ class Provider implements TunnelProvider {
   readonly endpoints = [endpoint];
   readonly supportedScopes = ['system' as const];
   readonly supportedRoutingModes = ['fullTunnel' as const];
-  fail?: 'auth' | 'handshake' | 'timeout';
+  fail?: 'auth' | 'handshake' | 'timeout' | 'none';
   async healthCheck() {
     return health;
   }
@@ -188,6 +188,24 @@ describe('phase 17 tunnel layer', () => {
       metricRows.some((x: { name: string }) => x.name === 'tunnel_connect_success_total'),
     ).toBe(true);
   });
+  it('persists a failed connection and reconnects the same managed tunnel', async () => {
+    const provider = new Provider();
+    provider.fail = 'handshake';
+    const registry = new TunnelProviderRegistry();
+    registry.register(provider);
+    const manager = new TunnelManager(registry);
+    await manager.configure('provider-a', config);
+
+    await expect(manager.connect('tun-a')).rejects.toThrow(/handshake failed/);
+    expect(manager.getTunnel('tun-a')?.state).toBe('failed');
+
+    provider.fail = 'none';
+    const connection = await manager.reconnectTunnel('tun-a');
+    expect(connection.tunnelId).toBe('tun-a');
+    expect(connection.state).toBe('connected');
+    expect(manager.getTunnel('tun-a')?.state).toBe('connected');
+  });
+
   it('supports recovery failure injection, simulation, credential redaction, and protocol status honesty', async () => {
     const p = new Provider();
     p.fail = 'auth';

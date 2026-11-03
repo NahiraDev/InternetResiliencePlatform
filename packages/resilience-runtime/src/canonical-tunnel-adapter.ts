@@ -41,7 +41,17 @@ export class CanonicalTunnelRuntimeAdapter implements RuntimeAdapter {
       return createAdapterExecution(plan, context, false, 'failed');
     try {
       const providerId = providerIdFromPlan(plan);
-      const result = await this.controlPlane.connect(providerId ? { providerId } : undefined);
+      const metadata = plan.selectedAction.metadata as Record<string, unknown>;
+      const reconnect = metadata.reconnect === true;
+      const tunnelId = typeof metadata.tunnelId === 'string' ? metadata.tunnelId : undefined;
+      const result = reconnect
+        ? this.controlPlane.reconnect
+          ? await this.controlPlane.reconnect({
+              ...(providerId ? { providerId } : {}),
+              ...(tunnelId ? { tunnelId } : {}),
+            })
+          : (() => { throw new Error('Canonical tunnel reconnect is not supported by this control plane'); })()
+        : await this.controlPlane.connect(providerId ? { providerId } : undefined);
       return {
         ...createAdapterExecution(plan, context, false, 'success'),
         metadata: {

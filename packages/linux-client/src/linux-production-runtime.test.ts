@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parseDestination } from '@irp/routing';
+import { authorizeLinuxHost, CAP_NET_ADMIN } from './linux-host-authorization.js';
 import {
   LinuxProductionRuntime,
   LinuxClientServer,
@@ -201,6 +202,72 @@ describe('LinuxProductionRuntime wiring', () => {
     expect((await runtime.status()).routeRecovery).toMatchObject({
       rolledBack: [], failed: [], pruned: [], corrupt: [],
     });
+    await runtime.stop();
+  });
+
+  it('injects only verified host authorization into live canonical tunnel policy', async () => {
+    const authorization = authorizeLinuxHost(
+      { requestedLive: true, wireGuardConfigured: true },
+      {
+        platform: 'linux',
+        euid: 1000,
+        effectiveCapabilities: 1n << CAP_NET_ADMIN,
+        hasIp: true,
+        hasWireGuard: true,
+        credentialsDirectoryAvailable: true,
+      },
+    );
+    const tunnelPlane = {
+      configured: true,
+      activeTunnel: undefined,
+      managedTunnel: undefined,
+      connect: async () => ({
+        tunnelId: 'wg-authorized',
+        providerId: 'wireguard',
+        connectionId: 'wg-authorized-connection',
+      }),
+      reconnect: async () => ({
+        tunnelId: 'wg-authorized',
+        providerId: 'wireguard',
+        connectionId: 'wg-authorized-reconnect',
+      }),
+      verify: async () => true,
+      rollback: async () => true,
+    };
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      executionMode: 'real',
+      enableLiveRouteMutation: true,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+      hostAuthorization: authorization,
+      canonicalExtensions: { tunnel: tunnelPlane },
+    });
+
+    await runtime.start();
+    const status = await runtime.status();
+    expect(status.authorization).toMatchObject({
+      effectiveMode: 'real',
+      liveActive: true,
+      tunnelActive: true,
+      blockers: [],
+    });
+    expect(status.runtime.policySnapshot.policy.allowedActions).toContain('tunnel_switch');
+    expect(status.runtime.policySnapshot.policy.allowedActions).toContain('route_change');
+    expect(status.capabilities.some((item) => item.adapterId === 'canonical-tunnel-control-plane')).toBe(true);
+    await runtime.stop();
+  });
+
+  it('does not expose tunnel mutation in the default fail-closed runtime policy', async () => {
+    const runtime = new LinuxProductionRuntime(new StubLinuxSystem(), {
+      executionMode: 'simulation',
+      enableLiveRouteMutation: false,
+      registerHostConnectivity: false,
+      registerStarlink: false,
+    });
+    await runtime.start();
+    const status = await runtime.status();
+    expect(status.runtime.policySnapshot.policy.allowedActions).not.toContain('tunnel_switch');
+    expect(status.runtime.mode).toBe('simulation');
     await runtime.stop();
   });
 
