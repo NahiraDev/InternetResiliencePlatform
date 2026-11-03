@@ -1,6 +1,10 @@
 {
   "schemaVersion": 1,
+<<<<<<< HEAD
   "generatedAt": "2026-11-03T21:26:27.474Z",
+=======
+  "generatedAt": "2026-11-03T21:09:02.183Z",
+>>>>>>> 2090079e (r)
   "commit": "unknown",
   "nodes": [
     {

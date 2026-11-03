@@ -1,6 +1,10 @@
 {
   "schemaVersion": 3,
+<<<<<<< HEAD
   "generatedAt": "2026-11-03T21:26:27.907Z",
+=======
+  "generatedAt": "2026-11-03T21:09:02.197Z",
+>>>>>>> 2090079e (r)
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -14,7 +18,11 @@
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
   "componentCount": 223,
+<<<<<<< HEAD
   "sourceFileCount": 539,
+=======
+  "sourceFileCount": 530,
+>>>>>>> 2090079e (r)
   "components": [
     {
       "componentId": "packages::auth",
@@ -342,7 +350,11 @@
       "entrypoint": "pnpm --dir packages/linux-client start",
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
+<<<<<<< HEAD
       "sourceFiles": 31,
+=======
+      "sourceFiles": 27,
+>>>>>>> 2090079e (r)
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/kernel",
@@ -776,7 +788,11 @@
       "entrypoint": null,
       "buildCommand": "tsc -p tsconfig.json",
       "testCommand": "vitest run",
+<<<<<<< HEAD
       "sourceFiles": 243,
+=======
+      "sourceFiles": 240,
+>>>>>>> 2090079e (r)
       "upstreamDependencies": [
         "@irp/connectivity",
         "@irp/core",
@@ -5205,5 +5221,9 @@
       "fail"
     ]
   },
+<<<<<<< HEAD
   "reportSha256": "1d12ba0294e9a0058c82a9894b3bd05b6f427fa49208988ba9f196d491198e0a"
+=======
+  "reportSha256": "ecbc47cdc2c0976b9406e1ce5d5ce3000ec5a2d61265934bd691b7b17dfa9184"
+>>>>>>> 2090079e (r)
 }
