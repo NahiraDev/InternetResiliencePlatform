@@ -50,6 +50,7 @@ import {
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
+import { PostgresHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { AuthService } from './identity/auth-service.js';
 import { resolveEmailSender, type EmailSender } from './identity/mailer.js';
 import { resolveIdentityRepositories } from './identity/resolve.js';
@@ -1150,6 +1151,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     return ok(w);
   });
 
+<<<<<<< HEAD
   // ── Device data plane routes (mobile/desktop clients) ──────────────────────
   // Authenticated with the remote client access token issued by
   // POST /api/v1/auth/remote/token. Scopes are device-scoped: a client can only
@@ -1283,6 +1285,18 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       });
     },
   );
+=======
+  // Extended product API routes. Registered inside buildServer so the main server
+  // (not just the Vercel handler) serves the full surface. The shared rate-limit
+  // store (PostgreSQL-backed in production) keeps limits consistent across instances.
+  registerUnifiedProductRoutes(app, { rateLimitStore: repos.rateLimits });
+  registerHistoryRoutes(app, process.env.DATABASE_URL
+    ? new PostgresHistoricalMeasurementStore(db)
+    : undefined);
+  registerRemoteClientRoutes(app);
+  registerProbeFederationRoutes(app);
+  registerNotificationIncidentRoutes(app);
+>>>>>>> e0752c72 (fix(api): register extended routes on main server; use durable store for history)
 
   app.addHook('onClose', async () => {
     await db.$disconnect();
