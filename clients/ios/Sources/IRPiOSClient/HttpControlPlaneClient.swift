@@ -15,22 +15,25 @@ import Foundation
  *   1. Device is provisioned with credentialId + secret (out of band, e.g. admin enrollment).
  *   2. Client calls `authenticateWithCredentials` to obtain access + refresh tokens.
  *   3. Access token is used for data plane requests (snapshot, analytics, policy).
- *   4. When access token expires, client uses `refresh` to rotate.
+ *   4. On a 401 response, `refresh` is called once and the request is retried.
  *
- * All network calls run on a background URLSession queue. Completion handlers
- * are invoked on the caller's queue (default: main).
+ * Token state is guarded by a serial dispatch queue. Network requests are
+ * performed outside the queue so async/await (including token refresh) works
+ * correctly without deadlocks.
  */
-public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sendable {
+public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
     private let baseURL: URL
     private let session: URLSession
     private let tokenStore: any IRPSecureTokenStore
-    private let queue = DispatchQueue(label: "com.nahiradev.irp.http-control-plane", qos: .userInitiated)
+    // Serial queue guards mutable token state only.
+    private let tokenQueue = DispatchQueue(label: "com.nahiradev.irp.http-control-plane.tokens", qos: .userInitiated)
 
     private var accessToken: String?
     private var refreshToken: String?
 
     private let connectTimeout: TimeInterval = 8.0
     private let readTimeout: TimeInterval = 15.0
+    private let maxRefreshRetries = 1
 
     public init(
         baseURL: String = "http://127.0.0.1:3000",
@@ -51,25 +54,31 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
         self.refreshToken = try? tokenStore.read()
     }
 
-    /// Current access token, or nil if not authenticated.
-    public var currentAccessToken: String? { accessToken }
+    /// Current access token, or nil if not authenticated. Thread-safe via tokenQueue.
+    public var currentAccessToken: String? {
+        tokenQueue.sync { accessToken }
+    }
 
-    /// Whether the client currently holds a valid access token.
-    public var isAuthenticated: Bool { accessToken != nil }
+    /// Whether the client currently holds a valid access token. Thread-safe via tokenQueue.
+    public var isAuthenticated: Bool {
+        tokenQueue.sync { accessToken != nil }
+    }
 
-    /// Clear all cached tokens.
+    /// Clear all cached tokens. Thread-safe via tokenQueue.
     public func signOut() {
-        accessToken = nil
-        refreshToken = nil
+        tokenQueue.sync {
+            accessToken = nil
+            refreshToken = nil
+        }
         try? tokenStore.remove()
     }
 
     // MARK: - IRPControlPlaneClient
 
     public func enroll(deviceName: String) async throws -> IRPDeviceEnrollment {
-        // Enrollment requires admin authorization on the API side.
-        // The client provisions credentials out of band; this path is kept
-        // for completeness but will fail unless the caller has admin rights.
+        // Enrollment requires admin authorization on the API side (runtime.admin permission).
+        // The client provisions credentials out of band (e.g. admin pre-creates the device credential).
+        // This method will fail with 401/403 unless the caller has previously obtained an admin access token.
         let body: [String: Any] = [
             "platform": "ios",
             "label": deviceName,
@@ -185,8 +194,10 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
         guard let refresh = data["refreshToken"] as? String, !refresh.isEmpty else {
             throw IRPControlPlaneClientError.invalidResponse
         }
-        self.accessToken = access
-        self.refreshToken = refresh
+        tokenQueue.sync {
+            self.accessToken = access
+            self.refreshToken = refresh
+        }
         try tokenStore.write(refresh)
     }
 
@@ -195,10 +206,11 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
      * Returns true if rotation succeeded, false otherwise.
      */
     public func refresh() async -> Bool {
-        guard let current = refreshToken ?? try? tokenStore.read(), !current.isEmpty else {
+        let current: String? = tokenQueue.sync { refreshToken ?? (try? tokenStore.read()) }
+        guard let current = current, !current.isEmpty else {
             return false
         }
-        refreshToken = current
+        tokenQueue.sync { self.refreshToken = current }
         let body: [String: Any] = ["refreshToken": current]
         let json: String
         do {
@@ -209,12 +221,14 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
         do {
             let response: [String: Any] = try await request(method: "POST", path: "/api/v1/auth/remote/refresh", body: json)
             guard let data = response["data"] as? [String: Any] else { return false }
-            self.accessToken = data["accessToken"] as? String
-            self.refreshToken = data["refreshToken"] as? String
-            if let refresh = self.refreshToken {
+            tokenQueue.sync {
+                self.accessToken = data["accessToken"] as? String
+                self.refreshToken = data["refreshToken"] as? String
+            }
+            if let refresh = tokenQueue.sync({ self.refreshToken }) {
                 try? tokenStore.write(refresh)
             }
-            return self.accessToken != nil
+            return tokenQueue.sync { self.accessToken != nil }
         } catch {
             return false
         }
@@ -227,54 +241,60 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
         path: String,
         body: String? = nil,
         addAuth: Bool = false,
+        refreshRetries: Int = 0,
     ) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
-            queue.async {
-                guard let url = URL(string: self.baseURL.absoluteString + path) else {
-                    continuation.resume(throwing: IRPControlPlaneClientError.invalidURL)
-                    return
-                }
-                var request = URLRequest(url: url)
-                request.httpMethod = method
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                request.setValue("application/json", forHTTPHeaderField: "Accept")
-                if addAuth, let token = self.accessToken {
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                }
-                if let body = body {
-                    request.httpBody = body.data(using: .utf8)
-                }
+        // Read the current auth token under lock (sync, quick).
+        let token: String? = tokenQueue.sync { addAuth ? self.accessToken : nil }
 
-                let task = self.session.dataTask(with: request) { data, urlResponse, error in
-                    if let error = error {
-                        continuation.resume(throwing: error)
-                        return
-                    }
-                    guard let httpResponse = urlResponse as? HTTPURLResponse else {
-                        continuation.resume(throwing: IRPControlPlaneClientError.invalidResponse)
-                        return
-                    }
-                    guard let data = data else {
-                        continuation.resume(throwing: IRPControlPlaneClientError.invalidResponse)
-                        return
-                    }
-                    guard (200...299).contains(httpResponse.statusCode) else {
-                        let bodyStr = String(data: data, encoding: .utf8) ?? ""
-                        continuation.resume(throwing: IRPControlPlaneClientError.httpError(
-                            statusCode: httpResponse.statusCode,
-                            body: bodyStr,
-                        ))
-                        return
-                    }
-                    do {
-                        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-                        continuation.resume(returning: json ?? [:])
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
-                task.resume()
+        do {
+            return try await performNetworkRequest(method: method, path: path, body: body, token: token)
+        } catch let error as IRPControlPlaneClientError where error.isUnauthorized && addAuth && refreshRetries < maxRefreshRetries {
+            // Token expired: rotate and retry once.
+            let refreshed = await self.refresh()
+            if refreshed {
+                return try await request(method: method, path: path, body: body, addAuth: true, refreshRetries: refreshRetries + 1)
             }
+            throw error
+        }
+    }
+
+    private func performNetworkRequest(
+        method: String,
+        path: String,
+        body: String?,
+        token: String?,
+    ) async throws -> [String: Any] {
+        guard let url = URL(string: baseURL.absoluteString + path) else {
+            throw IRPControlPlaneClientError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        if let body = body {
+            request.httpBody = body.data(using: .utf8)
+        }
+
+        let (data, urlResponse) = try await session.data(for: request)
+
+        guard let httpResponse = urlResponse as? HTTPURLResponse else {
+            throw IRPControlPlaneClientError.invalidResponse
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let bodyStr = String(data: data, encoding: .utf8) ?? ""
+            throw IRPControlPlaneClientError.httpError(
+                statusCode: httpResponse.statusCode,
+                body: bodyStr,
+            )
+        }
+        do {
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            return json ?? [:]
+        } catch {
+            throw error
         }
     }
 
@@ -290,6 +310,18 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
         case "offline": return .offline
         default: return .unknown
         }
+    }
+}
+
+// MARK: - Error extensions
+
+extension IRPControlPlaneClientError {
+    /// True when this error represents an HTTP 401 Unauthorized response.
+    var isUnauthorized: Bool {
+        if case .httpError(let statusCode, _) = self {
+            return statusCode == 401
+        }
+        return false
     }
 }
 

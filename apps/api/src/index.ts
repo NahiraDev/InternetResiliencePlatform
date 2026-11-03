@@ -56,7 +56,6 @@ import { resolveIdentityRepositories } from './identity/resolve.js';
 import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
-  defaultPolicy,
   explainDecision,
   negotiatePlatformCapabilities,
   runtimeEnvelope,
@@ -1176,9 +1175,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       },
       resource: request.url,
       action: request.method,
-      requiredPermissions: ['runtime.inspect'],
+      // Device ownership is enforced below; no additional permission required
+      // beyond being an authenticated remote_client with a valid device token.
+      requiredPermissions: [],
     });
     if (!allowed) throw new ForbiddenAppError();
+    // Device ownership: a remote client may only touch its own device.
+    const params = (request as { params?: { deviceId?: string } }).params ?? {};
+    if (params.deviceId !== undefined && params.deviceId !== claims.sub)
+      throw new ForbiddenAppError('device mismatch: token is not authorized for this device');
     (request as RemoteClientRequest).remoteClient = {
       deviceId: claims.sub,
       credentialId: claims.sessionId ?? '',
@@ -1264,10 +1269,17 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     async (request, reply) => {
       const req = request as RemoteClientRequest;
       const { autonomousMode } = z.object({ autonomousMode: z.boolean() }).parse(request.body);
-      const policy = defaultPolicy(autonomousMode ? 'live' : 'safe');
+      const mode = autonomousMode ? 'live' as const : 'safe' as const;
+      await resilienceRuntime.runCycle({
+        mode,
+        correlationId: `device-policy-${req.remoteClient!.deviceId}`,
+        idempotencyKey: `device-policy-${req.remoteClient!.deviceId}-${mode}`,
+      });
+      const snapshot = await resilienceRuntime.getRuntimeSnapshot();
       return ok({
-        autonomousMode,
-        allowedActions: policy.allowedActions,
+        autonomousMode: snapshot.mode === 'live',
+        allowedActions: snapshot.policySnapshot.policy.allowedActions,
+        mode: snapshot.mode,
       });
     },
   );
@@ -1276,6 +1288,15 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     await db.$disconnect();
     await repos.close();
   });
+
+  // Register extended product API routes on the main server (not just Vercel).
+  // These are device-facing and admin-facing routes used by mobile/desktop clients.
+  registerUnifiedProductRoutes(app);
+  registerRemoteClientRoutes(app);
+  registerProbeFederationRoutes(app);
+  registerNotificationIncidentRoutes(app);
+  registerHistoryRoutes(app);
+
   return app;
 };
 
@@ -1310,11 +1331,6 @@ const getVercelApp = (): Promise<FastifyInstance> => {
     }
 
     vercelAppPromise = buildServer().then((app) => {
-      registerUnifiedProductRoutes(app);
-      registerRemoteClientRoutes(app);
-      registerProbeFederationRoutes(app);
-      registerNotificationIncidentRoutes(app);
-      registerHistoryRoutes(app);
       return app;
     }).catch((error: unknown) => {
       vercelAppPromise = undefined;

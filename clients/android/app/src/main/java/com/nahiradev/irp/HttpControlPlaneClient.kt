@@ -1,11 +1,15 @@
 package com.nahiradev.irp
 
 import android.content.Context
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import kotlin.concurrent.thread
+import java.time.Instant
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Production HTTP transport for the IRP Control Plane.
@@ -22,19 +26,19 @@ import kotlin.concurrent.thread
  *   1. Device is provisioned with credentialId + secret (out of band, e.g. admin enrollment).
  *   2. Client calls [authenticateWithCredentials] to obtain access + refresh tokens.
  *   3. Access token is used for data plane requests (snapshot, analytics, policy).
- *   4. When access token expires, client uses [refresh] to rotate.
+ *   4. On a 401 response, [refresh] is called once and the request is retried.
  *
  * All network calls run off the caller's coroutine thread (suspend functions).
  * Timeouts are bounded so a hung network never blocks the UI thread indefinitely.
  */
 class HttpControlPlaneClient private constructor(
     private val baseUrl: String,
-    private val context: Context,
     private val tokenStore: SecureTokenStore,
 ) : ControlPlaneClient {
 
     private const val CONNECT_TIMEOUT_MS = 8_000
     private const val READ_TIMEOUT_MS = 15_000
+    private const val MAX_REFRESH_RETRIES = 1
 
     private var accessToken: String? = null
     private var refreshToken: String? = null
@@ -50,17 +54,24 @@ class HttpControlPlaneClient private constructor(
         return h
     }
 
+    /**
+     * Executes an HTTP request with bounded timeouts.
+     * On a 401 response, attempts one token refresh and retries once.
+     * Reads the error stream for non-2xx responses so error bodies are captured.
+     */
     private fun request(
         method: String,
         path: String,
         body: Any? = null,
         addAuth: Boolean = false,
+        refreshRetries: Int = 0,
     ): String {
         val url = URL("$baseUrl$path")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = method
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
+        connection.instanceFollowRedirects = false
         headers(addAuth).forEach { (k, v) -> connection.setRequestProperty(k, v) }
 
         if (body != null) {
@@ -72,11 +83,18 @@ class HttpControlPlaneClient private constructor(
         }
 
         val responseCode = connection.responseCode
-        val responseBody = connection.inputStream.use { it.readBytes() }
-            .let { bytes -> String(bytes, StandardCharsets.UTF_8) }
+        val responseBody = readStream(if (responseCode in 200..299) connection.inputStream else connection.errorStream)
 
         if (responseCode in 200..299) {
             return responseBody
+        }
+
+        // On 401, try to refresh the access token and retry exactly once.
+        if (responseCode == 401 && addAuth && refreshRetries < MAX_REFRESH_RETRIES) {
+            connection.disconnect()
+            if (refresh()) {
+                return request(method, path, body, addAuth = true, refreshRetries = refreshRetries + 1)
+            }
         }
 
         throw ControlPlaneTransportException(
@@ -85,10 +103,38 @@ class HttpControlPlaneClient private constructor(
         )
     }
 
+    private fun readStream(stream: InputStream?): String {
+        if (stream == null) return ""
+        return BufferedReader(InputStreamReader(stream, StandardCharsets.UTF_8)).use { reader ->
+            reader.readText()
+        }
+    }
+
     private fun <T> fromJson(json: String, clazz: Class<T>): T {
         // Minimal JSON parsing without external dependencies.
-        // For production, consider adding kotlinx.serialization or Gson.
-        return parseJson(json, clazz)
+        // Kept for future structured decoding; currently unused.
+        val map = parseJsonObject(json)
+        return clazz.getDeclaredConstructor().newInstance().also { instance ->
+            clazz.declaredFields.forEach { field ->
+                field.isAccessible = true
+                map[field.name]?.let { value ->
+                    field.set(instance, convertValue(value, field.type))
+                }
+            }
+        }
+    }
+
+    private fun convertValue(value: Any?, targetType: java.lang.reflect.Type): Any? {
+        return when {
+            value == null -> null
+            targetType == String::class.java -> value.toString()
+            targetType == Int::class.java || targetType == Int::class.java.typeName -> value.toString().toIntOrNull()
+            targetType == Double::class.java || targetType == Double::class.java.typeName -> value.toString().toDoubleOrNull()
+            targetType == Boolean::class.java || targetType == Boolean::class.java.typeName ->
+                when (value.toString().lowercase()) { "true" -> true; "false" -> false; else -> null }
+            targetType == Instant::class.java -> Instant.parse(value.toString())
+            else -> value
+        }
     }
 
     private fun toJson(any: Any?): String {
@@ -97,13 +143,18 @@ class HttpControlPlaneClient private constructor(
             is String -> "\"${any.replace("\\", "\\\\").replace("\"", "\\\"")}\""
             is Number -> any.toString()
             is Boolean -> any.toString()
+            is Map<*, *> -> mapToJson(any)
             else -> objectToJson(any)
         }
     }
 
+    private fun mapToJson(map: Map<*, *>): String {
+        return "{" + map.entries.joinToString(",") { "\"${escapeJsonString(it.key.toString())}\":${toJson(it.value)}" } + "}"
+    }
+
     private fun objectToJson(any: Any): String {
         val fields = mutableListOf<String>()
-        any.javaClass.declaredMethods.filter { it.isPublic && it.name.startsWith("get") }
+        any.javaClass.declaredMethods.filter { it.isPublic && it.name.startsWith("get") && it.parameterCount == 0 }
             .forEach { method ->
                 val key = method.name.removePrefix("get").lowercaseFirst()
                 try {
@@ -114,12 +165,16 @@ class HttpControlPlaneClient private constructor(
         return "{" + fields.joinToString(",") + "}"
     }
 
+    private fun escapeJsonString(s: String): String {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+    }
+
     // ── ControlPlaneClient ─────────────────────────────────────────────────
 
     override suspend fun enroll(deviceName: String): DeviceEnrollment {
-        // Enrollment requires admin authorization on the API side.
-        // The client provisions credentials out of band; this path is kept
-        // for completeness but will fail unless the caller has admin rights.
+        // Enrollment requires admin authorization on the API side (runtime.admin permission).
+        // The client provisions credentials out of band (e.g. admin pre-creates the device credential).
+        // This method will fail with 401/403 unless the caller has previously obtained an admin access token.
         val body = mapOf(
             "platform" to "android",
             "label" to deviceName,
@@ -145,7 +200,7 @@ class HttpControlPlaneClient private constructor(
             interfaceCount = parseInt(data["interfaceCount"]) ?: 0,
             defaultRouteAvailable = parseBoolean(data["defaultRouteAvailable"]) ?: false,
             dnsReachable = parseBoolean(data["dnsReachable"]) ?: false,
-            capturedAt = parseInstant(data["capturedAt"]?.toString()) ?: java.time.Instant.now(),
+            capturedAt = parseInstant(data["capturedAt"]?.toString()) ?: Instant.now(),
         )
     }
 
@@ -194,13 +249,14 @@ class HttpControlPlaneClient private constructor(
 
     /**
      * Rotate the refresh token to obtain a new access token.
+     * Returns true if rotation succeeded, false otherwise.
      */
     suspend fun refresh(): Boolean {
         val current = refreshToken ?: tokenStore.read()
         if (current.isNullOrBlank()) return false
         refreshToken = current
         val body = mapOf("refreshToken" to current)
-        try {
+        return try {
             val json = request("POST", "/api/v1/auth/remote/refresh", body)
             val obj = parseJsonObject(json)
             val data = obj["data"] as? Map<*, *>
@@ -208,9 +264,9 @@ class HttpControlPlaneClient private constructor(
             accessToken = data["accessToken"]?.toString()
             refreshToken = data["refreshToken"]?.toString()
             refreshToken?.let { tokenStore.write(it) }
-            return true
+            true
         } catch (_: ControlPlaneTransportException) {
-            return false
+            false
         }
     }
 
@@ -239,9 +295,9 @@ class HttpControlPlaneClient private constructor(
             tokenStore: SecureTokenStore,
             baseUrl: String? = null,
         ): HttpControlPlaneClient {
+            // context is reserved for future use (e.g., reading app configuration).
             return HttpControlPlaneClient(
                 baseUrl ?: DEFAULT_BASE_URL,
-                context,
                 tokenStore,
             )
         }
@@ -260,21 +316,16 @@ private fun parseJsonObject(json: String): Map<String, Any?> {
     val result = mutableMapOf<String, Any?>()
     var i = 1
     while (i < json.length - 1) {
-        // Skip whitespace
         while (i < json.length && json[i].isWhitespace()) i++
         if (i >= json.length - 1) break
-        // Read key
         if (json[i] != '"') throw IllegalArgumentException("Expected string key")
         val keyStart = ++i
         while (i < json.length && json[i] != '"') i++
         val key = json.substring(keyStart, i++)
-        // Skip colon and whitespace
         while (i < json.length && (json[i] == ':' || json[i].isWhitespace())) i++
-        // Read value
         val (value, nextI) = parseJsonValue(json, i)
         result[key] = value
         i = nextI
-        // Skip comma/whitespace
         while (i < json.length && (json[i] == ',' || json[i].isWhitespace())) i++
     }
     return result
@@ -292,11 +343,9 @@ private fun parseJsonValue(json: String, i: Int): Pair<Any?, Int> {
                 else if (json[j] == '"') break
                 j++
             }
-            val s = json.substring(start, j)
-            Pair(s, j + 1)
+            Pair(json.substring(start, j), j + 1)
         }
         '{', '[' -> {
-            // Skip complex values (objects/arrays) - find matching close
             val open = json[i]
             val close = if (open == '{') '}' else ']'
             var depth = 0
@@ -306,13 +355,12 @@ private fun parseJsonValue(json: String, i: Int): Pair<Any?, Int> {
                 else if (json[j] == close) { depth--; if (depth == 0) break }
                 j++
             }
-            Pair(json.substring(i, j + 1), j + 1) // Raw JSON string
+            Pair(json.substring(i, j + 1), j + 1)
         }
-        't' -> Pair(true, i + 4) // true
-        'f' -> Pair(false, i + 5) // false
-        'n' -> Pair(null, i + 4) // null
+        't' -> Pair(true, i + 4)
+        'f' -> Pair(false, i + 5)
+        'n' -> Pair(null, i + 4)
         else -> {
-            // Number
             var j = i
             while (j < json.length && (json[j].isDigit() || json[j] == '.' || json[j] == '-' || json[j] == 'e' || json[j] == 'E' || json[j] == '+')) j++
             val numStr = json.substring(i, j)
@@ -368,7 +416,7 @@ private fun parseDouble(value: Any?): Double? {
     }
 }
 
-private fun parseInstant(value: String?): java.time.Instant? {
+private fun parseInstant(value: String?): Instant? {
     if (value == null || value.isBlank()) return null
-    return java.time.Instant.parse(value).takeIf { it != null }
+    return Instant.parse(value).takeIf { it != null }
 }
