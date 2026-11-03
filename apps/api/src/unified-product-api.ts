@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UnauthorizedAppError } from '@irp/core';
 import type { Principal } from '@irp/auth';
-import { InMemoryRateLimiter, rateLimitPreHandler } from './security/rate-limit.js';
+import { SharedRateLimitStore, InMemoryRateLimiter, rateLimitPreHandler, sharedRateLimitPreHandler } from './security/rate-limit.js';
 
 export const PRODUCT_API_VERSION = '1' as const;
 export const PRODUCT_API_PATH = `/api/v${PRODUCT_API_VERSION}` as const;
@@ -337,7 +337,13 @@ export interface UnifiedProductApiHandle {
   manifest: ProductApiManifest;
 }
 
-export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProductApiHandle => {
+export interface UnifiedProductRouteOptions {
+  /** Shared rate-limit store (PostgreSQL-backed in production). When omitted the endpoint
+   *  degrades to a process-local limiter, which is not shared across API instances. */
+  rateLimitStore?: SharedRateLimitStore;
+}
+
+export const registerUnifiedProductRoutes = (app: FastifyInstance, options: UnifiedProductRouteOptions = {}): UnifiedProductApiHandle => {
   app.addHook('onRequest', async (request, reply) => {
     if (!isSupportedVersion(request)) {
       return reply.code(406).send({
@@ -358,7 +364,9 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance): UnifiedProdu
     data: PRODUCT_API_MANIFEST,
   }));
 
-  const contextRateLimit = rateLimitPreHandler(new InMemoryRateLimiter({ max: 60, windowMs: 60_000 }));
+  const contextRateLimit = options.rateLimitStore
+    ? sharedRateLimitPreHandler(options.rateLimitStore, { name: 'product-context', max: 60, windowMs: 60_000 })
+    : rateLimitPreHandler(new InMemoryRateLimiter({ max: 60, windowMs: 60_000 }));
   app.get(`${PRODUCT_API_PATH}/product/context`, { preHandler: contextRateLimit }, async (request) => {
     const principal = await authenticate(request);
     const visibleCapabilities: string[] = [];

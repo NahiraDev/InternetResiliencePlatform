@@ -1291,7 +1291,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 
   // Register extended product API routes on the main server (not just Vercel).
   // These are device-facing and admin-facing routes used by mobile/desktop clients.
-  registerUnifiedProductRoutes(app);
+  registerUnifiedProductRoutes(app, { rateLimitStore: repos.rateLimits });
   registerRemoteClientRoutes(app);
   registerProbeFederationRoutes(app);
   registerNotificationIncidentRoutes(app);
