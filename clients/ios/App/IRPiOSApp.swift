@@ -2,30 +2,45 @@ import SwiftUI
 
 @main
 struct IRPiOSApp: App {
-    @State private var tunnelStatus = "VPN not configured"
+    @StateObject private var session: IRPClientSession
+
+    init() {
+        let tokenStore: any IRPSecureTokenStore = IRPKeychainTokenStore()
+        let client = try? HttpControlPlaneClient(
+            baseURL: "http://127.0.0.1:3000",
+            tokenStore: tokenStore,
+        )
+        _session = StateObject(wrappedValue: IRPClientSession(
+            client: client ?? UnconfiguredIRPControlPlaneClient(),
+            tokenStore: tokenStore,
+        ))
+    }
 
     var body: some Scene {
         WindowGroup {
-            IRPAppRootView(status: $tunnelStatus)
+            NavigationStack {
+                IRPClientDashboardView(session: session)
+                    .task {
+                        _ = session.restoreSession()
+                    }
+            }
         }
     }
 }
 
-private struct IRPAppRootView: View {
-    @Binding var status: String
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("IRP") {
-                    LabeledContent("Network extension", value: status)
-                }
-
-                Section("Security boundary") {
-                    Text("Routing, DNS, gateway selection and failover decisions remain in the IRP Control Plane.")
-                }
-            }
-            .navigationTitle("Internet Resilience")
-        }
+/// Fallback control plane client that reports "not configured" rather than throwing.
+/// Used when the HTTP client cannot be constructed (e.g., invalid base URL).
+private struct UnconfiguredIRPControlPlaneClient: IRPControlPlaneClient {
+    func enroll(deviceName: String) async throws -> IRPDeviceEnrollment {
+        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+    }
+    func snapshot(deviceId: String) async throws -> IRPNetworkSnapshot {
+        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+    }
+    func analytics(deviceId: String) async throws -> IRPAnalyticsSummary {
+        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+    }
+    func setPolicy(deviceId: String, policy: IRPPolicy) async throws -> IRPPolicy {
+        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
     }
 }

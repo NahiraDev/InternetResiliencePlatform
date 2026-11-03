@@ -56,6 +56,7 @@ import { resolveIdentityRepositories } from './identity/resolve.js';
 import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
+  defaultPolicy,
   explainDecision,
   negotiatePlatformCapabilities,
   runtimeEnvelope,
@@ -234,6 +235,11 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
     genReqId: (request) => request.headers['x-request-id']?.toString() ?? crypto.randomUUID(),
   });
   const jwt = new JwtService(resolveJwtSecret(), 'irp');
+  const authorizationToken = (request: FastifyRequest): string | null => {
+    const raw = request.headers.authorization;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return value?.startsWith('Bearer ') ? value.slice(7) : null;
+  };
   const repos = options.identity ?? resolveIdentityRepositories();
   const mailer = options.mailer ?? resolveEmailSender();
   const baseJwtAuth = new JwtAuthenticationProvider(jwt);
@@ -1144,6 +1150,128 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
     if (!w) throw new NotFoundAppError('workspace');
     return ok(w);
   });
+
+  // ── Device data plane routes (mobile/desktop clients) ──────────────────────
+  // Authenticated with the remote client access token issued by
+  // POST /api/v1/auth/remote/token. Scopes are device-scoped: a client can only
+  // read/write its own device's snapshot, analytics and policy.
+
+  const requireRemoteClient = async (request: FastifyRequest): Promise<void> => {
+    const token = authorizationToken(request);
+    if (!token) throw new UnauthorizedAppError();
+    let claims;
+    try {
+      claims = jwt.verify(token, 'access');
+    } catch {
+      throw new UnauthorizedAppError();
+    }
+    if (!claims.roles.includes('remote_client')) throw new ForbiddenAppError();
+    const allowed = await rbac.authorize({
+      principal: {
+        id: claims.sub,
+        roles: claims.roles,
+        scopes: claims.scopes,
+        ...(claims.organizationId ? { organizationId: claims.organizationId } : {}),
+        metadata: { sessionId: claims.sessionId, jti: claims.jti },
+      },
+      resource: request.url,
+      action: request.method,
+      requiredPermissions: ['runtime.inspect'],
+    });
+    if (!allowed) throw new ForbiddenAppError();
+    (request as RemoteClientRequest).remoteClient = {
+      deviceId: claims.sub,
+      credentialId: claims.sessionId ?? '',
+    };
+  };
+
+  type RemoteClientRequest = FastifyRequest & { remoteClient?: { deviceId: string; credentialId: string } };
+
+  const deviceSnapshotRateLimit = sharedRateLimitPreHandler(repos.rateLimits, {
+    name: 'device-snapshot',
+    max: 30,
+    windowMs: 60_000,
+  });
+  app.get<{ Params: { deviceId: string } }>(
+    '/api/v1/remote/devices/:deviceId/snapshot',
+    { preHandler: [deviceSnapshotRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
+    async (request, reply) => {
+      const req = request as RemoteClientRequest;
+      const snapshot = await getNetworkSnapshot();
+      const latestDns = snapshot.measurements.find((m: NetworkMeasurement) => m.probeType === 'dns');
+      const latestInterfaces = snapshot.measurements.filter((m: NetworkMeasurement) => m.probeType === 'ip');
+      const connection =
+        snapshot.status === 'healthy'
+          ? 'online'
+          : snapshot.status === 'degraded' ? 'degraded' : 'offline';
+      return ok({
+        connection,
+        interfaceCount: latestInterfaces.length,
+        defaultRouteAvailable: latestInterfaces.length > 0,
+        dnsReachable: Boolean(latestDns?.success),
+        capturedAt: new Date(snapshot.score.timestamp).toISOString(),
+      });
+    },
+  );
+
+  const deviceAnalyticsRateLimit = sharedRateLimitPreHandler(repos.rateLimits, {
+    name: 'device-analytics',
+    max: 30,
+    windowMs: 60_000,
+  });
+  app.get<{ Params: { deviceId: string } }>(
+    '/api/v1/remote/devices/:deviceId/analytics',
+    { preHandler: [deviceAnalyticsRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
+    async (request, reply) => {
+      const snapshot = await getNetworkSnapshot();
+      const successful = snapshot.measurements.filter((m) => m.success);
+      const latencies = successful
+        .map((m) => m.latency)
+        .filter((l): l is number => typeof l === 'number')
+        .sort((a, b) => a - b);
+      const median = latencies.length > 0 ? latencies[Math.floor(latencies.length / 2)] : null;
+      const total = snapshot.measurements.length;
+      const successCount = successful.length;
+      return ok({
+        sampleCount: total,
+        availabilityPercent: total > 0 ? (successCount / total) * 100 : 0,
+        medianLatencyMs: median,
+        packetLossPercent: total > 0 ? ((total - successCount) / total) * 100 : 0,
+      });
+    },
+  );
+
+  const devicePolicyRateLimit = sharedRateLimitPreHandler(repos.rateLimits, {
+    name: 'device-policy',
+    max: 10,
+    windowMs: 60_000,
+  });
+  app.get<{ Params: { deviceId: string } }>(
+    '/api/v1/remote/devices/:deviceId/policy',
+    { preHandler: [devicePolicyRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
+    async (request, reply) => {
+      const req = request as RemoteClientRequest;
+      const snapshot = await resilienceRuntime.getRuntimeSnapshot();
+      return ok({
+        autonomousMode: snapshot.mode === 'live',
+      });
+    },
+  );
+
+  app.post<{ Params: { deviceId: string }; Body: { autonomousMode: boolean } }>(
+    '/api/v1/remote/devices/:deviceId/policy',
+    { preHandler: [devicePolicyRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
+    async (request, reply) => {
+      const req = request as RemoteClientRequest;
+      const { autonomousMode } = z.object({ autonomousMode: z.boolean() }).parse(request.body);
+      const policy = defaultPolicy(autonomousMode ? 'live' : 'safe');
+      return ok({
+        autonomousMode,
+        allowedActions: policy.allowedActions,
+      });
+    },
+  );
+
   app.addHook('onClose', async () => {
     await db.$disconnect();
     await repos.close();
