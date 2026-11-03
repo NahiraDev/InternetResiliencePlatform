@@ -19,7 +19,21 @@ export class IncidentCorrelator {
         createdAt: nowIso(),
         correlationId: context.correlationId,
         source: 'resilience-runtime',
-        metadata: {},
+        metadata: (() => {
+          const tunnelProviderId = obs.map((item) => item.metadata['tunnelProviderId'])
+            .find((value): value is string => typeof value === 'string');
+          const tunnelId = obs.map((item) => item.metadata['tunnelId'])
+            .find((value): value is string => typeof value === 'string');
+          const reconnect = obs.map((item) => item.metadata['reconnect'])
+            .find((value): value is boolean => typeof value === 'boolean');
+          const recoveryExhausted = obs.some((item) => item.metadata['recoveryExhausted'] === true);
+          return {
+            ...(tunnelProviderId ? { tunnelProviderId } : {}),
+            ...(tunnelId ? { tunnelId } : {}),
+            ...(reconnect !== undefined ? { reconnect } : {}),
+            ...(recoveryExhausted ? { recoveryExhausted: true } : {}),
+          };
+        })(),
         rootCause: key,
         affectedComponents: [...new Set(obs.map((o) => o.category))].sort(),
         confidence: Math.min(
