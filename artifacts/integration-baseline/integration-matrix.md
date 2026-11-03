@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-10-30T13:08:04.709Z
+Generated: 2026-11-03T21:26:27.474Z
 Commit: unknown
 
 ## Component status
@@ -72,6 +72,7 @@ Commit: unknown
 | @irp/linux-client | @irp/resilience-runtime | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/linux-client | @irp/routing | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/linux-client | @irp/telemetry | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/linux-client | @irp/tunnel | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-api | @irp/plugin-sdk | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-api | @irp/security | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/plugin-config | @irp/plugin-sdk | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
