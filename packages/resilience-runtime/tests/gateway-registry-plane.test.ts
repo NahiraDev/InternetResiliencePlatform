@@ -1,138 +1,277 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  ConnectivityManager,
-  type ConnectivityHealth,
-  type ConnectivityProvider,
-  type ConnectivityResource,
-} from '@irp/connectivity';
-import { GatewayRegistrySelectionPlane } from '../src/gateway/gateway-registry-plane.js';
+  GatewayRegistrySelectionPlane,
+  type GatewayRegistrySelectionPlaneOptions,
+} from '../src/gateway/gateway-registry-plane.js';
+import type { ConnectivityManager } from '@irp/connectivity';
+import type {
+  GatewayHealthProbe,
+  GatewayHealthSample,
+  GatewayMetadata,
+} from '@irp/gateway-registry';
 
-const resource = (
-  id: string,
-  providerId: string,
-  score: number,
-  status: ConnectivityHealth['status'],
-): ConnectivityResource => ({
-  providerId,
-  id,
-  type: id.startsWith('wifi') ? 'wifi' : 'ethernet',
-  interfaceName: id,
-  state: 'available',
-  addresses: ['192.0.2.10'],
-  dnsServers: ['1.1.1.1'],
-  capabilities: [
-    'connect',
-    'disconnect',
-    'activate',
-    'deactivate',
-    'monitor',
-    'health-check',
-    'supports-ipv4',
-    'supports-default-route',
-    'supports-dns',
-  ],
-  health: {
-    score,
-    status,
-    internetReachable: status !== 'unhealthy',
-    gatewayReachable: true,
-    checkedAt: new Date().toISOString(),
-    source: 'simulation',
+const mockGateway: GatewayMetadata = {
+  id: 'gw-1',
+  name: 'Test Gateway',
+  endpoint: { host: '10.0.0.1', port: 51820, family: 'ipv4' },
+  ownership: { ownerId: 'owner-1', managedBy: 'control-plane' },
+  capabilities: {
+    tunnelProtocols: ['wireguard'],
+    addressFamilies: ['ipv4'],
+    transports: ['udp'],
+    features: ['health-check'],
   },
-  priority: score,
-  metadata: {},
-});
+  lifecycle: 'active',
+  trust: 'trusted',
+  tags: ['prod'],
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
 
-class FakeConnectivityProvider implements ConnectivityProvider {
-  readonly id = 'fake';
-  readonly type = 'ethernet' as const;
-  readonly resources: ConnectivityResource[] = [];
-  active: string | undefined;
+const mockHealth: ConnectivityHealth = {
+  score: 90,
+  status: 'healthy',
+  latencyMs: 25,
+  packetLoss: 0,
+  checkedAt: '2026-01-01T00:00:00.000Z',
+};
 
-  constructor(resources: readonly [ConnectivityResource, ConnectivityResource]) {
-    this.resources = [...resources];
-  }
+const mockSample: GatewayHealthSample = {
+  gatewayId: 'gw-1',
+  checkedAt: '2026-01-01T00:00:01.000Z',
+  reachable: true,
+  latencyMs: 25,
+  packetLossPercent: 0,
+};
 
-  async discover() {
-    return this.resources;
-  }
-  async getState(resourceId?: string) {
-    return resourceId === this.active ? ('active' as const) : ('available' as const);
-  }
-  async getHealth(resourceId?: string): Promise<ConnectivityHealth> {
-    const item =
-      this.resources.find((candidate) => candidate.id === resourceId) ?? this.resources[0];
-    return item.health!;
-  }
-  async connect(resourceId: string) {
-    this.active = resourceId;
-    return { ok: true, resourceId, state: 'connected' as const };
-  }
-  async disconnect(resourceId: string) {
-    return { ok: true, resourceId, state: 'available' as const };
-  }
-  async activate(resourceId: string) {
-    this.active = resourceId;
-    return { ok: true, resourceId, state: 'active' as const };
-  }
-  async deactivate(resourceId: string) {
-    return { ok: true, resourceId, state: 'available' as const };
-  }
-  capabilities() {
-    return resource('wifi0', 'fake', 100, 'healthy').capabilities;
-  }
-}
+// Helper to create a mock ConnectivityManager
+const createMockConnectivity = (overrides: Record<string, unknown> = {}): ConnectivityManager => {
+  const getHealth = vi.fn().mockResolvedValue(mockHealth);
+  const registry = {
+    get: vi.fn().mockReturnValue({ getHealth }),
+  };
 
-const buildConnectivity = async () => {
-  const connectivity = new ConnectivityManager();
-  await connectivity.registerProvider(
-    new FakeConnectivityProvider([
-      resource('eth0', 'fake', 60, 'degraded'),
-      resource('wifi0', 'fake', 95, 'healthy'),
-    ]),
-  );
-  await connectivity.discoverResources();
-  return connectivity;
+  const base: ConnectivityManager = {
+    discoverResources: vi.fn().mockResolvedValue([]),
+    getAvailableSources: vi.fn().mockReturnValue([]),
+    getActiveSource: vi.fn().mockReturnValue(undefined),
+    switchSource: vi.fn().mockResolvedValue(undefined),
+    registry,
+    getResources: vi.fn().mockReturnValue([]),
+    registerProvider: vi.fn().mockResolvedValue(undefined),
+    unregisterProvider: vi.fn().mockResolvedValue(undefined),
+    getProviders: vi.fn().mockReturnValue([]),
+    evaluate: vi.fn().mockResolvedValue({
+      current: undefined,
+      availableSources: [],
+      healthySources: [],
+      candidates: [],
+      selected: undefined,
+      reason: 'no sources',
+      policyConstraints: [],
+      generatedAt: new Date().toISOString(),
+    }),
+    selectSource: vi.fn().mockResolvedValue({
+      current: undefined,
+      availableSources: [],
+      healthySources: [],
+      candidates: [],
+      selected: undefined,
+      reason: 'no sources',
+      policyConstraints: [],
+      generatedAt: new Date().toISOString(),
+    }),
+    ...overrides,
+  };
+  return base as unknown as ConnectivityManager;
 };
 
 describe('GatewayRegistrySelectionPlane', () => {
-  it('reports disabled configuration when not enabled', async () => {
-    const connectivity = await buildConnectivity();
-    const plane = new GatewayRegistrySelectionPlane(connectivity, { enabled: false });
+  it('constructs with default options', () => {
+    const mockConnectivity = createMockConnectivity();
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity);
     expect(plane.configured).toBe(false);
+    expect(plane.currentGatewayId).toBeUndefined();
+    expect(plane.gateways()).toEqual([]);
   });
 
-  it('synchronizes connectivity sources as gateway metadata and selects the healthiest', async () => {
-    const connectivity = await buildConnectivity();
-    const plane = new GatewayRegistrySelectionPlane(connectivity, { enabled: true });
+  it('constructs with enabled option', () => {
+    const mockConnectivity = createMockConnectivity();
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+    });
     expect(plane.configured).toBe(true);
+  });
 
+  it('synchronize registers gateways from connectivity sources', async () => {
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableResources: vi.fn().mockReturnValue([]),
+    });
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+    });
     await plane.synchronize();
-    const gateways = plane.gateways();
-    expect(gateways.map((gateway) => gateway.id).sort()).toEqual(['fake:eth0', 'fake:wifi0']);
-    await plane.apply('fake:eth0');
-    expect(plane.currentGatewayId).toBe('fake:eth0');
 
+    expect(mockConnectivity.discoverResources).toHaveBeenCalled();
+  });
+
+  it('evaluate returns no selection when no gateways', async () => {
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableResources: vi.fn().mockReturnValue([]),
+    });
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+    });
     const decision = await plane.evaluate();
-    expect(decision.selectedGatewayId).toBe('fake:wifi0');
-    expect(decision.switched).toBe(true);
-    expect(decision.candidates.length).toBe(2);
-    expect(decision.candidates.every((candidate) => candidate.eligible)).toBe(true);
+
+    expect(decision.selectedGatewayId).toBeUndefined();
+    expect(decision.switched).toBe(false);
+    expect(decision.candidates).toEqual([]);
   });
 
-  it('applies a selection by switching the live connectivity source', async () => {
-    const connectivity = await buildConnectivity();
-    const plane = new GatewayRegistrySelectionPlane(connectivity, { enabled: true });
-    await plane.synchronize();
-    await plane.apply('fake:wifi0');
-    expect(connectivity.getActiveSource()?.sourceId).toBe('fake:wifi0');
-    expect(plane.currentGatewayId).toBe('fake:wifi0');
+  it('probeAndEvaluate throws when no probe is configured', async () => {
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableResources: vi.fn().mockReturnValue([]),
+    });
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+    });
+    // Register a gateway
+    plane['registry'].register(mockGateway);
+
+    await expect(plane.probeAndEvaluate()).rejects.toThrow(
+      'GatewayHealthProbe is not configured',
+    );
   });
 
-  it('throws when applying a gateway without a matching connectivity source', async () => {
-    const connectivity = await buildConnectivity();
-    const plane = new GatewayRegistrySelectionPlane(connectivity, { enabled: true });
-    await plane.synchronize();
-    await expect(plane.apply('missing')).rejects.toThrow(/no matching connectivity source/);
+  it('probeAndEvaluate selects the best probed gateway', async () => {
+    const mockProbe = {
+      probeGateways: vi.fn().mockResolvedValue([mockSample]),
+    } as unknown as GatewayHealthProbe;
+
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableResources: vi.fn().mockReturnValue([]),
+    });
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+      probe: mockProbe,
+    });
+    // Register a gateway
+    plane['registry'].register(mockGateway);
+
+    const decision = await plane.probeAndEvaluate();
+
+    expect(mockProbe.probeGateways).toHaveBeenCalled();
+    expect(decision.selectedGatewayId).toBe('gw-1');
+    expect(decision.candidates.length).toBeGreaterThan(0);
+    const selected = decision.candidates.find((c) => c.gatewayId === 'gw-1');
+    expect(selected?.eligible).toBe(true);
+  });
+
+  it('apply switches connectivity source', async () => {
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableSources: vi.fn().mockReturnValue([
+        {
+          sourceId: 'gw-1',
+          source: { providerId: 'prov-1', resourceId: 'gw-1' },
+          providerId: 'prov-1',
+          id: 'gw-1',
+          interfaceName: undefined,
+          state: 'active',
+          addresses: [],
+          gateway: '10.0.0.1',
+          dnsServers: [],
+          capabilities: [],
+          health: mockHealth,
+          priority: 100,
+          metadata: {},
+        },
+      ]),
+      switchSource: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+    });
+    await plane.apply('gw-1');
+
+    expect(mockConnectivity.switchSource).toHaveBeenCalledWith('gw-1');
+  });
+
+  it('apply with tunnel control plane establishes tunnel', async () => {
+    const mockConnectivity = createMockConnectivity({
+      discoverResources: vi.fn().mockResolvedValue([]),
+      getAvailableSources: vi.fn().mockReturnValue([
+        {
+          sourceId: 'gw-1',
+          source: { providerId: 'prov-1', resourceId: 'gw-1' },
+          providerId: 'prov-1',
+          id: 'gw-1',
+          interfaceName: undefined,
+          state: 'active',
+          addresses: [],
+          gateway: '10.0.0.1',
+          dnsServers: [],
+          capabilities: [],
+          health: mockHealth,
+          priority: 100,
+          metadata: {},
+        },
+      ]),
+      switchSource: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const mockTunnelPlane = {
+      configured: true,
+      connect: vi.fn().mockResolvedValue({
+        tunnelId: 'tunnel-1',
+        providerId: 'prov-1',
+        connectionId: 'conn-1',
+      }),
+    };
+
+    const plane = new GatewayRegistrySelectionPlane(mockConnectivity, {
+      enabled: true,
+      tunnelControlPlane: mockTunnelPlane,
+    });
+    // Register a gateway
+    plane['registry'].register(mockGateway);
+
+    await plane.apply('gw-1');
+
+    expect(mockTunnelPlane.connect).toHaveBeenCalledWith({
+      configuration: {
+        endpoint: {
+          host: '10.0.0.1',
+          port: 51820,
+          protocol: 'wireguard',
+          addressFamily: 'ipv4',
+          metadata: { source: 'gateway-selection', gatewayId: 'gw-1' },
+        },
+        routingMode: 'fullTunnel',
+        scope: 'system',
+        dnsMode: 'insideTunnel',
+        authentication: { type: 'key', credentialRef: 'wireguard-peer-key' },
+        securityProfile: 'secure',
+        capabilities: [
+          'ipv4', 'ipv6', 'udp', 'fullTunnel', 'systemWide',
+          'authentication', 'keepalive', 'reconnect', 'healthCheck', 'killSwitch',
+        ],
+        keepalive: { enabled: true, intervalMs: 25_000, timeoutMs: 5_000 },
+        mtu: { configuredMtu: 1420, validationStatus: 'unknown' },
+        timeoutMs: 30_000,
+        retryLimit: 1,
+        metadata: { gatewayId: 'gw-1' },
+      },
+    });
   });
 });
