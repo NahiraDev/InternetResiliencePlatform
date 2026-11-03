@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
   DEFAULT_REMOTE_CLIENT_SCOPES,
@@ -11,7 +12,7 @@ import {
   JwtService,
   RbacAuthorization,
 } from '@irp/auth';
-import { ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
+import { ForbiddenAppError, NotFoundAppError, UnauthorizedAppError } from '@irp/core';
 
 const devicePlatform = z.enum(['android', 'ios', 'linux', 'macos', 'windows', 'unknown']);
 const scopesSchema = z.array(z.string()).max(DEFAULT_REMOTE_CLIENT_SCOPES.length);
@@ -28,6 +29,27 @@ const enrollmentSchema = z.object({
     .optional(),
   scopes: scopesSchema.optional(),
 });
+
+const enrollmentRequestSchema = z.object({
+  platform: devicePlatform,
+  label: z.string().min(1).max(256).optional(),
+});
+
+const requestIdParams = z.object({ requestId: z.string().uuid() });
+
+interface EnrollmentRequestRecord {
+  id: string;
+  userId: string;
+  platform: RemoteClientPlatform;
+  label?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  credentialId?: string;
+  deviceId?: string;
+  secret?: string; // Only present at approval time, never stored durably
+}
 
 const tokenSchema = z.object({
   credentialId: z.string().uuid(),
@@ -99,6 +121,7 @@ export const registerRemoteClientRoutes = (
   const refreshTokens = new RotatingRefreshTokenStore(refreshKey);
   const audit = new SecurityAuditLog();
   const devices = new Map<string, RemoteClientMetadata>();
+  const enrollmentRequests = new Map<string, EnrollmentRequestRecord>();
 
   const requireAdmin = async (request: FastifyRequest): Promise<void> => {
     const token = authorizationToken(request);
@@ -122,6 +145,32 @@ export const registerRemoteClientRoutes = (
       requiredPermissions: ['runtime.admin'],
     });
     if (!allowed) throw new ForbiddenAppError();
+  };
+
+  const requireUser = async (request: FastifyRequest): Promise<{ id: string; roles: string[]; scopes: string[] }> => {
+    const token = authorizationToken(request);
+    if (!token) throw new UnauthorizedAppError();
+    let claims;
+    try {
+      claims = jwt.verify(token, 'access');
+    } catch {
+      throw new UnauthorizedAppError();
+    }
+    if (claims.roles.includes('remote_client')) throw new ForbiddenAppError('remote clients cannot request enrollment');
+    const allowed = await rbac.authorize({
+      principal: {
+        id: claims.sub,
+        roles: claims.roles,
+        scopes: claims.scopes,
+        ...(claims.organizationId ? { organizationId: claims.organizationId } : {}),
+        metadata: { sessionId: claims.sessionId, jti: claims.jti },
+      },
+      resource: request.url,
+      action: request.method,
+      requiredPermissions: [],
+    });
+    if (!allowed) throw new ForbiddenAppError();
+    return { id: claims.sub, roles: claims.roles, scopes: claims.scopes };
   };
 
   const issueAccessToken = (subject: string, scopes: readonly string[], credentialId: string) =>
@@ -173,6 +222,115 @@ export const registerRemoteClientRoutes = (
       },
     });
   });
+
+  // ── User-initiated device enrollment request flow ────────────────────────
+  // An authenticated user requests to enroll a device. An admin must approve
+  // the request before device credentials are issued. This replaces the
+  // admin-only pre-provisioning flow with a user-initiated, approval-gated
+  // enrollment that does not require an admin to manually create credentials.
+
+  app.post('/api/v1/auth/remote/devices/request', async (request, reply) => {
+    const user = await requireUser(request);
+    const input = enrollmentRequestSchema.parse(request.body ?? {});
+    const id = randomUUID();
+    const record: EnrollmentRequestRecord = {
+      id,
+      userId: user.id,
+      platform: input.platform,
+      ...(input.label ? { label: input.label } : {}),
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    enrollmentRequests.set(id, record);
+    audit.record({
+      action: 'client.enrolled',
+      success: true,
+      subjectId: user.id,
+      metadata: { platform: input.platform, label: input.label, requestId: id },
+    });
+    return reply.code(201).send({ success: true, data: { requestId: id, status: 'pending' } });
+  });
+
+  app.get('/api/v1/auth/remote/devices/requests', async (request) => {
+    await requireAdmin(request);
+    const pending = [...enrollmentRequests.values()]
+      .filter((r) => r.status === 'pending')
+      .map(({ id, userId, platform, label, createdAt }) => ({ id, userId, platform, label, createdAt }));
+    return { success: true, data: pending };
+  });
+
+  app.post<{ Params: { requestId: string } }>(
+    '/api/v1/auth/remote/devices/requests/:requestId/approve',
+    async (request, reply) => {
+      await requireAdmin(request);
+      const { requestId } = requestIdParams.parse(request.params);
+      const record = enrollmentRequests.get(requestId);
+      if (!record || record.status !== 'pending')
+        throw new NotFoundAppError('enrollment request not found or already decided');
+      // Issue device credentials for the approved request.
+      const issued = credentials.issue({
+        platform: record.platform,
+        ...(record.label ? { label: record.label } : {}),
+      });
+      const metadata: RemoteClientMetadata = {
+        credentialId: issued.credentialId,
+        deviceId: issued.deviceId,
+        platform: record.platform,
+        ...(record.label ? { label: record.label } : {}),
+        scopes: [...DEFAULT_REMOTE_CLIENT_SCOPES],
+        createdAt: new Date().toISOString(),
+        expiresAt: issued.expiresAt,
+      };
+      devices.set(issued.credentialId, metadata);
+      record.status = 'approved';
+      record.decidedAt = new Date().toISOString();
+      record.decidedBy = 'admin'; // Could be enriched with the admin's userId from requireAdmin
+      record.credentialId = issued.credentialId;
+      record.deviceId = issued.deviceId;
+      enrollmentRequests.set(requestId, record);
+      audit.record({
+        action: 'client.enrolled',
+        success: true,
+        subjectId: record.userId,
+        deviceId: issued.deviceId,
+        credentialId: issued.credentialId,
+        metadata: { platform: record.platform, requestId, approved: true },
+      });
+      return reply.code(200).send({
+        success: true,
+        data: {
+          requestId,
+          status: 'approved',
+          credentialId: issued.credentialId,
+          deviceId: issued.deviceId,
+          secret: issued.secret,
+          expiresAt: issued.expiresAt,
+          scopes: metadata.scopes,
+        },
+      });
+    },
+  );
+
+  app.post<{ Params: { requestId: string } }>(
+    '/api/v1/auth/remote/devices/requests/:requestId/reject',
+    async (request, reply) => {
+      await requireAdmin(request);
+      const { requestId } = requestIdParams.parse(request.params);
+      const record = enrollmentRequests.get(requestId);
+      if (!record || record.status !== 'pending')
+        throw new NotFoundAppError('enrollment request not found or already decided');
+      record.status = 'rejected';
+      record.decidedAt = new Date().toISOString();
+      enrollmentRequests.set(requestId, record);
+      audit.record({
+        action: 'client.enrolled',
+        success: false,
+        subjectId: record.userId,
+        metadata: { platform: record.platform, requestId, approved: false },
+      });
+      return reply.code(200).send({ success: true, data: { requestId, status: 'rejected' } });
+    },
+  );
 
   app.get('/api/v1/auth/remote/devices', async (request) => {
     await requireAdmin(request);
