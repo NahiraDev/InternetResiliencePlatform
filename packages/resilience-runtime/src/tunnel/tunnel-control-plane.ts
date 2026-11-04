@@ -61,7 +61,10 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
     return this.managedTunnelId;
   }
 
-  async connect(request?: { providerId?: string }): Promise<{
+  async connect(request?: {
+    providerId?: string;
+    configuration?: TunnelConfiguration;
+  }): Promise<{
     tunnelId: string;
     providerId: string;
     connectionId: string;
@@ -72,7 +75,8 @@ export class TunnelRegistryControlPlane implements CanonicalTunnelControlPlane {
     if (this.managedTunnelId !== undefined) {
       throw new Error('A tunnel is already managed by this control plane; use reconnect instead');
     }
-    const tunnel = await this.manager.configure(providerId, this.configuration!);
+    const configuration = request?.configuration ?? this.configuration!;
+    const tunnel = await this.manager.configure(providerId, configuration);
     this.managedTunnelId = tunnel.id;
     try {
       const connection = await this.manager.connect(tunnel.id);

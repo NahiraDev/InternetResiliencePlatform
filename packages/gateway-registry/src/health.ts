@@ -30,12 +30,16 @@ export interface GatewayHealth {
 
 export interface GatewayHealthProbe {
   probe(endpoint: GatewayEndpoint, timeoutMs: number): Promise<GatewayProbeResult>;
+  probeGateways?(
+    gateways: { id: string; endpoint: GatewayEndpoint }[],
+  ): Promise<GatewayHealthSample[]>;
 }
 
 export interface GatewayProbeResult {
   reachable: boolean;
   latencyMs?: number;
   packetLossPercent?: number;
+  error?: string;
 }
 
 export const DEFAULT_GATEWAY_HEALTH_POLICY: GatewayHealthPolicy = {

@@ -1,4 +1,5 @@
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
+import type { TunnelConfiguration } from '@irp/tunnel';
 import {
   RoutingEngine,
   parseDestination,
@@ -51,7 +52,10 @@ export interface CanonicalTunnelControlPlane {
   readonly activeTunnel?: string | undefined;
   /** Managed tunnel ID remains available for recovery when its last connect failed. */
   readonly managedTunnel?: string | undefined;
-  readonly connect: (request?: { providerId?: string }) => Promise<{
+  readonly connect: (request?: {
+    providerId?: string;
+    configuration?: TunnelConfiguration;
+  }) => Promise<{
     tunnelId: string;
     providerId: string;
     connectionId: string;
@@ -88,6 +92,12 @@ export interface CanonicalGatewaySelectionPlane {
   readonly gateways: () => readonly unknown[];
   synchronize(): Promise<void>;
   evaluate(): Promise<CanonicalGatewaySelectionDecision>;
+  /**
+   * Probe each gateway endpoint with real network measurements, then run
+   * gateway selection using observed health evidence. Required when the
+   * runtime needs true destination reachability before selecting a gateway.
+   */
+  probeAndEvaluate?(): Promise<CanonicalGatewaySelectionDecision>;
   apply(gatewayId: string): Promise<void>;
 }
 
@@ -219,7 +229,13 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           if (this.controlPlane.gatewaySelection?.configured) {
             const gatewaySelection = this.controlPlane.gatewaySelection;
             await gatewaySelection.synchronize();
-            const decision = await gatewaySelection.evaluate();
+            // Use probe-based evaluation when a health probe is configured,
+            // so gateway selection reflects real endpoint reachability rather
+            // than only connectivity-source telemetry.
+            const decision =
+              typeof gatewaySelection.probeAndEvaluate === 'function'
+                ? await gatewaySelection.probeAndEvaluate()
+                : await gatewaySelection.evaluate();
             if (!decision.selectedGatewayId)
               return createAdapterExecution(plan, context, false, 'failed');
             const current = this.controlPlane.connectivity.getActiveSource()?.sourceId;
