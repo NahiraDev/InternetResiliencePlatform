@@ -33,6 +33,7 @@ import {
 } from './http-guard.js';
 import { createLinuxNetworkControlPlane, type LinuxNetworkControlPlane, type LinuxCanonicalNetworkExtensions } from './linux-network-control-plane.js';
 import { LinuxObservationProvider } from './linux-observation-provider.js';
+import { renderLinuxDashboard } from './local-dashboard.js';
 import type { RouteRecoveryReport } from './linux-route-executor.js';
 import { parseDestination } from '@irp/routing';
 import { createLinuxWireGuardIntegrationFromEnvironment } from './linux-wireguard.js';
@@ -447,26 +448,6 @@ export class LinuxProductionRuntime {
   }
 }
 
-const html = (
-  snapshot: NetworkSnapshot,
-  policy: ClientPolicy,
-  runtimeStatus: LinuxRuntimeStatus,
-): string => `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IRP Linux Client</title><style>body{font:15px system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}</style></head>
-<body><h1>Internet Resilience Platform</h1><p>Linux Full Client</p><p>Autonomous mode: <strong>${policy.autonomousMode ? 'enabled' : 'disabled'}</strong></p>
-<p>This page is read-only. Autonomous mode is changed with an authenticated <code>POST /policy</code> (JSON body, bearer token from the control token file); the daemon's Unix control socket is the canonical control interface.</p>
-<h2>Canonical runtime status</h2><pre>${escapeHtml(JSON.stringify(runtimeStatus, null, 2))}</pre>
-<h2>Network diagnostics</h2><pre>${escapeHtml(JSON.stringify(snapshot, null, 2))}</pre></body></html>`;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll(String.fromCharCode(38), String.fromCharCode(38) + 'amp;')
-    .replaceAll(String.fromCharCode(60), String.fromCharCode(38) + 'lt;')
-    .replaceAll(String.fromCharCode(62), String.fromCharCode(38) + 'gt;')
-    .replaceAll(String.fromCharCode(34), String.fromCharCode(38) + 'quot;');
-}
-
 /** Shared interface for runtime implementations usable by the server. */
 export interface LinuxRuntime {
   start(): Promise<void>;
@@ -542,7 +523,7 @@ export class LinuxClientServer {
     if (!verdict.ok) return this.refuse(response, verdict);
     if (request.method === 'GET' && request.url === '/') {
       response.end(
-        html(await this.system.snapshot(), this.system.getPolicy(), await this.runtime.status()),
+        renderLinuxDashboard(await this.system.snapshot(), this.system.getPolicy(), await this.runtime.status()),
       );
       return;
     }
