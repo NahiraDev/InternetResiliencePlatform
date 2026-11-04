@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { promisify } from 'node:util';
+import { renderMacOSDashboard } from './local-dashboard.js';
 import {
   guardRequest,
   guardStateChange,
@@ -87,21 +88,6 @@ export class MacOSSystem implements MacOSSystemAdapter {
   }
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
-
-const html = (snapshot: MacOSNetworkSnapshot, policy: MacOSClientPolicy): string => `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IRP macOS Client</title><style>body{font:15px system-ui,sans-serif;max-width:1100px;margin:32px auto;padding:0 16px}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}button{padding:8px 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style></head>
-<body><h1>Internet Resilience Platform</h1><p>macOS Full Client</p><p>Autonomous mode: <strong>${policy.autonomousMode ? 'enabled' : 'disabled'}</strong></p>
-<p>Read-only page. Changing autonomous mode requires an authenticated JSON <code>POST /policy</code>.</p>
-<div class="grid"><section><h2>Network interfaces</h2><pre>${escapeHtml(snapshot.interfaces)}</pre></section><section><h2>Default route</h2><pre>${escapeHtml(snapshot.routes)}</pre></section><section><h2>DNS</h2><pre>${escapeHtml(snapshot.dns)}</pre></section><section><h2>Network services</h2><pre>${escapeHtml(snapshot.networkServices)}</pre></section><section><h2>VPN services</h2><pre>${escapeHtml(snapshot.vpnServices)}</pre></section></div></body></html>`;
-
 export class MacOSClientServer {
   private readonly server = createServer(
     (request, response) => void this.handle(request, response),
@@ -152,10 +138,11 @@ export class MacOSClientServer {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'");
     const verdict = guardRequest(request, this.port);
     if (!verdict.ok) return this.refuse(response, verdict);
     if (request.method === 'GET' && request.url === '/') {
-      response.end(html(await this.system.snapshot(), this.system.getPolicy()));
+      response.end(renderMacOSDashboard(await this.system.snapshot(), this.system.getPolicy()));
       return;
     }
     if (request.method === 'GET' && request.url === '/health') {

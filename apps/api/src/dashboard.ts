@@ -1,284 +1,412 @@
+/**
+ * IRP Control Center (web).
+ *
+ * Presentation only. The page reads the existing `GET /api/v1/platform/status` payload and the
+ * existing readiness/metrics/docs links; it adds no endpoint, no mutation and no host control.
+ * Visual tokens mirror docs/design/irp-design-tokens.json (enforced by design-tokens.test.ts).
+ *
+ * Everything shown is a field the API returned. A field that is absent is shown as "Not reported",
+ * never defaulted to a healthy-looking value.
+ */
 export const dashboardHtml = String.raw`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#080d18">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0A0F1C">
   <meta name="description" content="Live network health and resilience control center">
   <title>IRP Control Center</title>
   <link rel="stylesheet" href="/assets/dashboard.css">
   <script defer src="/assets/dashboard.js"></script>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app is-loading" id="app">
+    <aside class="sidebar">
       <a class="brand" href="/" aria-label="Internet Resilience Platform home">
         <span class="brand-mark" aria-hidden="true">IR</span>
-        <span class="brand-copy"><strong>INTERNET RESILIENCE</strong><small>PLATFORM / CONTROL CENTER</small></span>
+        <span class="brand-copy"><strong>Internet Resilience</strong><small>Control Center</small></span>
       </a>
-      <div class="topbar-actions">
-        <span id="global-status" class="status-pill status-waiting"><span class="status-dot"></span>Connecting</span>
-        <button id="refresh-button" class="button button-quiet" type="button"><span aria-hidden="true">↻</span> Refresh</button>
-        <button id="auto-button" class="button button-active" type="button" aria-pressed="true">Auto refresh: on</button>
+      <nav class="nav" aria-label="Views">
+        <a href="#overview" data-view="overview"><span class="nav-glyph" aria-hidden="true">◈</span>Overview</a>
+        <a href="#connectivity" data-view="connectivity"><span class="nav-glyph" aria-hidden="true">⌁</span>Connectivity</a>
+        <a href="#performance" data-view="performance"><span class="nav-glyph" aria-hidden="true">∿</span>Performance</a>
+        <a href="#tunnel" data-view="tunnel"><span class="nav-glyph" aria-hidden="true">⇄</span>Tunnel</a>
+        <a href="#security" data-view="security"><span class="nav-glyph" aria-hidden="true">⬡</span>Security</a>
+        <a href="#automation" data-view="automation"><span class="nav-glyph" aria-hidden="true">◎</span>Automation</a>
+        <a href="#diagnostics" data-view="diagnostics"><span class="nav-glyph" aria-hidden="true">▦</span>Diagnostics</a>
+      </nav>
+      <p class="sidebar-note">Read-only view of live API data. It never changes host networking.</p>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <div class="topbar-title">
+          <p class="eyebrow" id="view-eyebrow">Live operations</p>
+          <h1 id="view-title">Overview</h1>
+        </div>
+        <div class="topbar-actions">
+          <span id="global-status" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Connecting</span></span>
+          <button id="refresh-button" class="button" type="button">Refresh</button>
+          <button id="auto-button" class="button" type="button" aria-pressed="true">Auto refresh: on</button>
+          <button id="theme-button" class="button" type="button" aria-label="Colour theme: automatic. Activate to change.">Theme: auto</button>
+        </div>
+      </header>
+
+      <div id="error-banner" class="banner banner-danger" role="alert" hidden>
+        <p id="error-message"></p>
+        <button id="retry-button" class="button" type="button">Retry</button>
       </div>
-    </header>
+      <p id="stale-note" class="banner banner-warn" hidden></p>
+      <div id="live-region" class="sr-only" role="status" aria-live="polite"></div>
 
-    <main>
-      <section class="page-heading">
-        <div>
-          <p class="eyebrow">LIVE OPERATIONS</p>
-          <h1>Network overview</h1>
-          <p class="muted">A live view of connectivity, routing, recovery and platform readiness.</p>
-        </div>
-        <div class="updated-block">
-          <span class="muted-label">LAST UPDATED</span>
-          <strong id="last-updated">Waiting for API…</strong>
-          <span id="source-label" class="source-label">Source: pending</span>
-        </div>
-      </section>
-
-      <section class="metric-grid" aria-label="Key network metrics">
-        <article class="metric-card metric-primary">
-          <div class="metric-head"><span>Network health score</span><span class="metric-icon">◈</span></div>
-          <div class="metric-value"><strong id="health-score">—</strong><span>/ 100</span></div>
-          <div class="metric-foot"><span id="health-caption">Awaiting measurements</span><span id="health-trend" class="trend">LIVE</span></div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head"><span>Connection state</span><span class="metric-icon">⌁</span></div>
-          <div class="metric-word" id="connection-state">—</div>
-          <div class="metric-foot"><span id="route-caption">Route not available</span><span class="tiny-indicator"></span></div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head"><span>DNS latency</span><span class="metric-icon">⌘</span></div>
-          <div class="metric-value"><strong id="dns-latency">—</strong><span>ms</span></div>
-          <div class="metric-foot"><span id="dns-caption">Resolver status pending</span></div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head"><span>Active incidents</span><span class="metric-icon">!</span></div>
-          <div class="metric-value"><strong id="incident-count">—</strong></div>
-          <div class="metric-foot"><span id="approval-caption">Approvals pending: —</span></div>
-        </article>
-      </section>
-
-      <section class="content-grid">
-        <article class="panel network-panel">
-          <div class="panel-heading">
-            <div><p class="eyebrow">CONNECTIVITY</p><h2>Network performance</h2></div>
-            <span id="network-health-chip" class="status-chip status-waiting">Waiting</span>
+      <main id="main" tabindex="-1">
+        <section class="view" id="view-overview" data-view="overview" aria-labelledby="view-title">
+          <div class="kpi-grid">
+            <article class="card kpi kpi-primary">
+              <p class="kpi-label">Network health score</p>
+              <p class="kpi-value"><span id="health-score">—</span><small>/ 100</small></p>
+              <p class="kpi-foot" id="health-caption">Awaiting measurements</p>
+            </article>
+            <article class="card kpi">
+              <p class="kpi-label">Connection</p>
+              <p class="kpi-value kpi-word" id="connection-state">—</p>
+              <p class="kpi-foot" id="route-caption">Route not reported</p>
+            </article>
+            <article class="card kpi">
+              <p class="kpi-label">DNS latency</p>
+              <p class="kpi-value"><span id="dns-latency">—</span><small>ms</small></p>
+              <p class="kpi-foot" id="dns-caption">Resolver status pending</p>
+            </article>
+            <article class="card kpi">
+              <p class="kpi-label">Active incidents</p>
+              <p class="kpi-value"><span id="incident-count">—</span></p>
+              <p class="kpi-foot" id="approval-caption">Approvals pending: —</p>
+            </article>
           </div>
-          <div class="chart-summary">
-            <div><span class="muted-label">CURRENT ROUTE</span><strong id="current-route">—</strong></div>
-            <div><span class="muted-label">SCORE HISTORY</span><strong id="history-count">0 samples</strong></div>
+
+          <div class="grid two">
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Decision engine</p><h2>Current recommendation</h2></div><span id="decision-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+              <p id="decision-title" class="lead">Waiting for the first status snapshot…</p>
+              <p id="decision-explanation" class="muted">The API recommendation appears here once data arrives.</p>
+              <dl class="kv kv-inline">
+                <div><dt>Confidence</dt><dd id="decision-confidence">—</dd></div>
+                <div><dt>Mode</dt><dd id="decision-mode">—</dd></div>
+                <div><dt>Policy</dt><dd id="policy-state">—</dd></div>
+              </dl>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Platform</p><h2>Component health</h2></div></header>
+              <div id="module-grid" class="module-grid" aria-live="off"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            </article>
           </div>
-          <div class="chart-wrap">
-            <svg id="score-chart" viewBox="0 0 640 150" role="img" aria-label="Recent network health score trend">
-              <path d="M0 75 H640" class="chart-grid"></path>
-              <text x="8" y="18" class="chart-label">100</text>
-              <text x="8" y="142" class="chart-label">0</text>
-              <path d="M28 75 H630" class="chart-empty"></path>
-            </svg>
+
+          <p class="meta-line"><span>Last updated: <strong id="last-updated">waiting for API…</strong></span><span id="source-label">Source: pending</span></p>
+        </section>
+
+        <section class="view" id="view-connectivity" data-view="connectivity" aria-label="Connectivity" hidden>
+          <div class="grid two">
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Route</p><h2>Active path</h2></div><span id="network-health-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+              <dl class="kv">
+                <div><dt>Current route</dt><dd id="current-route">—</dd></div>
+                <div><dt>Connection</dt><dd id="connection-detail">—</dd></div>
+                <div><dt>Routing status</dt><dd id="routing-status">—</dd></div>
+                <div><dt>Routing mode</dt><dd id="routing-mode">—</dd></div>
+              </dl>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Name resolution</p><h2>DNS</h2></div><span id="dns-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+              <dl class="kv">
+                <div><dt>Resolver</dt><dd id="dns-resolver">—</dd></div>
+                <div><dt>Latency</dt><dd id="dns-latency-detail">—</dd></div>
+                <div><dt>Secure transport</dt><dd id="dns-secure">—</dd></div>
+                <div><dt>Policy</dt><dd id="dns-policy">—</dd></div>
+              </dl>
+            </article>
           </div>
-          <div class="chart-legend"><span><i class="legend-dot"></i> Health score</span><span>Updates every 30 seconds</span></div>
-        </article>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Probes</p><h2>Interfaces</h2></div><span class="muted small" id="interface-count">—</span></header>
+            <div id="interface-list" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+          </article>
+        </section>
 
-        <article class="panel decision-panel">
-          <div class="panel-heading"><div><p class="eyebrow">DECISION ENGINE</p><h2>Current recommendation</h2></div><span class="decision-symbol">◎</span></div>
-          <p id="decision-title" class="decision-title">Waiting for live decision…</p>
-          <p id="decision-explanation" class="muted decision-explanation">The API recommendation will appear here when the first status snapshot arrives.</p>
-          <div class="decision-meta">
-            <div><span class="muted-label">CONFIDENCE</span><strong id="decision-confidence">—</strong></div>
-            <div><span class="muted-label">MODE</span><strong id="decision-mode">—</strong></div>
-            <div><span class="muted-label">POLICY</span><strong id="policy-state">—</strong></div>
+        <section class="view" id="view-performance" data-view="performance" aria-label="Performance" hidden>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Health score</p><h2>Trend this session</h2></div><span class="muted small" id="history-count">0 samples</span></header>
+            <div class="chart-wrap">
+              <svg id="score-chart" viewBox="0 0 640 180" role="img" aria-label="Network health score over this browser session"></svg>
+              <p id="chart-empty" class="empty-note">Collecting samples. A trend appears after the second refresh. History is kept in this page only and is not stored.</p>
+            </div>
+          </article>
+          <div class="grid two">
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Latency</p><h2>Reported probes</h2></div></header>
+              <div id="latency-bars" class="bars"><div class="skeleton"></div></div>
+              <p class="muted small">Bars are relative to the slowest probe the API reported.</p>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Decision</p><h2>Probe candidates</h2></div></header>
+              <div id="candidate-list" class="chips"><span class="muted">No probe data yet.</span></div>
+              <dl class="kv">
+                <div><dt>Decision age</dt><dd id="decision-age">—</dd></div>
+                <div><dt>Database latency</dt><dd id="database-latency-metric">—</dd></div>
+              </dl>
+            </article>
           </div>
-          <div class="candidate-block"><span class="muted-label">PROBE CANDIDATES</span><div id="candidate-list" class="candidate-list"><span class="muted">No probe data yet.</span></div></div>
-        </article>
+        </section>
 
-        <article class="panel">
-          <div class="panel-heading"><div><p class="eyebrow">PLATFORM</p><h2>Component health</h2></div><span class="panel-icon">▦</span></div>
-          <div id="module-grid" class="module-grid"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
-        </article>
+        <section class="view" id="view-tunnel" data-view="tunnel" aria-label="Tunnel" hidden>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Encrypted path</p><h2>Tunnel status</h2></div><span id="tunnel-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+            <dl class="kv">
+              <div><dt>Active tunnel</dt><dd id="tunnel-active">—</dd></div>
+              <div><dt>Known tunnels</dt><dd id="tunnel-count">—</dd></div>
+            </dl>
+            <div id="tunnel-list" class="tile-grid"></div>
+            <p id="tunnel-empty" class="empty-note" hidden>No tunnel is reported by this API instance. Tunnel lifecycle runs in the IRP clients; this page only displays what the platform status endpoint returns.</p>
+          </article>
+        </section>
 
-        <article class="panel">
-          <div class="panel-heading"><div><p class="eyebrow">RECOVERY</p><h2>Diagnostics & issues</h2></div><span id="recovery-chip" class="status-chip status-waiting">Waiting</span></div>
-          <div class="issue-summary"><strong id="issue-count">—</strong><span>reported recovery issues</span></div>
-          <ul id="issue-list" class="issue-list"><li class="muted">Waiting for diagnostics…</li></ul>
-        </article>
+        <section class="view" id="view-security" data-view="security" aria-label="Security" hidden>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Protection posture</p><h2>Security</h2></div><span id="security-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+            <dl class="kv">
+              <div><dt>Security state</dt><dd id="security-state">—</dd></div>
+              <div><dt>Protection mode</dt><dd id="protection-mode">—</dd></div>
+              <div><dt>Kill switch</dt><dd id="kill-switch">—</dd></div>
+              <div><dt>DNS leak check</dt><dd id="dns-leak">—</dd></div>
+              <div><dt>Route leak check</dt><dd id="route-leak">—</dd></div>
+              <div><dt>IPv6</dt><dd id="ipv6-state">—</dd></div>
+              <div><dt>Security validation</dt><dd id="security-validation">—</dd></div>
+            </dl>
+            <p class="note" id="security-explanation">Reflects the backend's reported posture. Observe-only means enforcement is not active.</p>
+            <ul id="violation-list" class="list" hidden></ul>
+          </article>
+        </section>
 
-        <article class="panel">
-          <div class="panel-heading"><div><p class="eyebrow">SECURITY</p><h2>Protection posture</h2></div><span class="panel-icon">⬡</span></div>
-          <div class="posture-row"><span>Security state</span><strong id="security-state">—</strong></div>
-          <div class="posture-row"><span>Protection mode</span><strong id="protection-mode">—</strong></div>
-          <div class="posture-row"><span>Kill switch</span><strong id="kill-switch">—</strong></div>
-          <div class="posture-row"><span>DNS leak check</span><strong id="dns-leak">—</strong></div>
-          <div class="posture-row"><span>Route leak check</span><strong id="route-leak">—</strong></div>
-          <p class="panel-note">This panel reflects the backend's reported posture. Observe-only means enforcement is not active.</p>
-        </article>
+        <section class="view" id="view-automation" data-view="automation" aria-label="Automation" hidden>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Autopilot</p><h2>Automation state</h2></div><span id="autopilot-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+            <p class="lead" id="autopilot-mode">—</p>
+            <p class="muted" id="autopilot-enabled">State unavailable</p>
+            <dl class="kv">
+              <div><dt>Active actions</dt><dd id="active-actions">—</dd></div>
+              <div><dt>Circuit breaker</dt><dd id="circuit-breaker">—</dd></div>
+              <div><dt>Verification</dt><dd id="verification-state">—</dd></div>
+              <div><dt>Rollback</dt><dd id="rollback-state">—</dd></div>
+            </dl>
+            <p class="eyebrow spaced">Recent outcomes</p>
+            <div id="outcome-list" class="chips"><span class="muted">None reported.</span></div>
+          </article>
+        </section>
 
-        <article class="panel">
-          <div class="panel-heading"><div><p class="eyebrow">AUTOPILOT</p><h2>Automation state</h2></div><span id="autopilot-chip" class="status-chip status-waiting">Waiting</span></div>
-          <div class="autopilot-state"><span class="autopilot-orb"></span><div><strong id="autopilot-mode">—</strong><small id="autopilot-enabled">State unavailable</small></div></div>
-          <div class="posture-row"><span>Active actions</span><strong id="active-actions">—</strong></div>
-          <div class="posture-row"><span>Circuit breaker</span><strong id="circuit-breaker">—</strong></div>
-          <div class="posture-row"><span>Verification</span><strong id="verification-state">—</strong></div>
-          <div class="posture-row"><span>Rollback</span><strong id="rollback-state">—</strong></div>
-        </article>
-      </section>
-
-      <section class="bottom-grid">
-        <div class="panel compact-panel">
-          <div class="panel-heading"><div><p class="eyebrow">DEPENDENCIES</p><h2>Service readiness</h2></div></div>
-          <div class="dependency-grid">
-            <div><span class="muted-label">DATABASE</span><strong id="database-state">—</strong><small id="database-latency">Latency: —</small></div>
-            <div><span class="muted-label">QUEUE</span><strong id="queue-state">—</strong><small>In-process queue</small></div>
-            <div><span class="muted-label">TELEMETRY</span><strong id="telemetry-state">—</strong><small id="telemetry-exporter">Exporter: —</small></div>
+        <section class="view" id="view-diagnostics" data-view="diagnostics" aria-label="Diagnostics" hidden>
+          <div class="grid two">
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Recovery</p><h2>Issues</h2></div><span id="recovery-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+              <p class="kpi-value"><span id="issue-count">—</span><small>reported issues</small></p>
+              <ul id="issue-list" class="list"><li class="muted">Waiting for diagnostics…</li></ul>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Dependencies</p><h2>Service readiness</h2></div></header>
+              <dl class="kv">
+                <div><dt>Database</dt><dd id="database-state">—</dd></div>
+                <div><dt>Database latency</dt><dd id="database-latency">—</dd></div>
+                <div><dt>Queue</dt><dd id="queue-state">—</dd></div>
+                <div><dt>Event bus</dt><dd id="eventbus-state">—</dd></div>
+                <div><dt>Telemetry</dt><dd id="telemetry-state">—</dd></div>
+                <div><dt>Telemetry exporter</dt><dd id="telemetry-exporter">—</dd></div>
+              </dl>
+            </article>
           </div>
-        </div>
-        <div class="panel compact-panel api-panel">
-          <div class="panel-heading"><div><p class="eyebrow">DEVELOPER TOOLS</p><h2>API access</h2></div></div>
-          <div class="api-links">
-            <a href="/docs" target="_blank" rel="noreferrer">Swagger API docs <span>↗</span></a>
-            <a href="/api/v1/platform/status" target="_blank" rel="noreferrer">Live platform status <span>↗</span></a>
-            <a href="/api/v1/ready" target="_blank" rel="noreferrer">Readiness probe <span>↗</span></a>
-            <a href="/api/v1/metrics" target="_blank" rel="noreferrer">Prometheus metrics <span>↗</span></a>
-          </div>
-        </div>
-      </section>
+          <article class="card">
+            <header class="card-head"><div><p class="eyebrow">Developer tools</p><h2>API access</h2></div></header>
+            <div class="link-grid">
+              <a href="/docs" target="_blank" rel="noreferrer">Swagger API docs <span aria-hidden="true">↗</span></a>
+              <a href="/api/v1/platform/status" target="_blank" rel="noreferrer">Live platform status <span aria-hidden="true">↗</span></a>
+              <a href="/api/v1/ready" target="_blank" rel="noreferrer">Readiness probe <span aria-hidden="true">↗</span></a>
+              <a href="/api/v1/metrics" target="_blank" rel="noreferrer">Prometheus metrics <span aria-hidden="true">↗</span></a>
+            </div>
+          </article>
+          <details class="card raw-details">
+            <summary>Raw platform status payload</summary>
+            <pre id="raw-payload">No data loaded.</pre>
+          </details>
+        </section>
+      </main>
 
-      <details class="raw-details">
-        <summary>Raw platform status payload</summary>
-        <pre id="raw-payload">No data loaded.</pre>
-      </details>
-      <div id="error-banner" class="error-banner" role="status" hidden></div>
-    </main>
-
-    <footer class="footer"><span>IRP Control Center</span><span>Live API data · Read-only dashboard · No host-network changes</span></footer>
+      <footer class="footer"><span>IRP Control Center</span><span>Live API data · Read-only dashboard · No host-network changes</span></footer>
+    </div>
   </div>
 </body>
 </html>`;
 
 export const dashboardCss = String.raw`
-:root{color-scheme:dark;--bg:#080d18;--surface:#101827;--surface-2:#131e30;--border:#243248;--text:#e8eef9;--muted:#91a0b6;--blue:#68a7ff;--cyan:#55d5cf;--green:#4bd49a;--yellow:#f4c66a;--red:#ff777e;--radius:17px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:root{color-scheme:dark;--bg:#0A0F1C;--surface:#111827;--surface-raised:#172033;--border:#2A3A55;--text:#E8EEF9;--muted:#9AA9C0;--primary:#6AA9FF;--accent:#4FD1C5;--ok:#4ADE9A;--warn:#F5C26B;--danger:#FF7A85;--radius:16px;--control:10px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;--bg:#F4F7FB;--surface:#FFFFFF;--surface-raised:#EEF3F9;--border:#C9D6E6;--text:#0F1B2D;--muted:#4A5B73;--primary:#1D5FD0;--accent:#0B7A75;--ok:#0A7F4F;--warn:#8A5A00;--danger:#B42335}}
+:root[data-theme="light"]{color-scheme:light;--bg:#F4F7FB;--surface:#FFFFFF;--surface-raised:#EEF3F9;--border:#C9D6E6;--text:#0F1B2D;--muted:#4A5B73;--primary:#1D5FD0;--accent:#0B7A75;--ok:#0A7F4F;--warn:#8A5A00;--danger:#B42335}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at 50% -30%,#172b49 0,transparent 48%),var(--bg);color:var(--text);min-width:320px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);min-width:320px;font-size:15px;line-height:1.5}
 button,a{font:inherit}
-.shell{max-width:1440px;margin:0 auto;padding:0 34px}
-.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(145,160,182,.15);gap:20px}
-.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none}
-.brand-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#3b83dc,#1d4f94);font-size:13px;font-weight:800;letter-spacing:-1px;box-shadow:0 7px 24px #286bc344}
-.brand-copy{display:grid;gap:3px;letter-spacing:1.4px;font-size:10px}
-.brand-copy strong{font-size:11px}
-.brand-copy small{color:var(--muted);font-size:9px;letter-spacing:1.8px}
-.topbar-actions{display:flex;align-items:center;gap:10px}
-.status-pill,.status-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:7px 11px;font-size:11px;color:var(--muted);white-space:nowrap}
-.status-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
-.status-healthy{color:var(--green);border-color:#256c5480;background:#133c304d}
-.status-degraded{color:var(--yellow);border-color:#8a682b80;background:#4a351b55}
-.status-unhealthy{color:var(--red);border-color:#8d3e4480;background:#4a202755}
-.status-waiting{color:var(--muted)}
-.button{border:1px solid var(--border);background:#142137;color:var(--text);border-radius:10px;padding:8px 12px;font-size:11px;cursor:pointer;transition:.18s ease}
-.button:hover{border-color:#4779b8;background:#1a2b46}
-.button-quiet{background:transparent}
-.button-active{color:var(--cyan);border-color:#367c79;background:#10363266}
-main{padding:34px 0 24px}
-.page-heading{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:25px;gap:20px}
-.eyebrow{font-size:9px;letter-spacing:2px;color:var(--blue);font-weight:800;margin:0 0 8px}
-h1{font-size:27px;line-height:1.15;letter-spacing:-.7px;margin:0 0 8px}
-h2{font-size:15px;letter-spacing:-.2px;margin:0;font-weight:650}
-.muted{color:var(--muted);font-size:12px;line-height:1.65;margin:0}
-.muted-label{display:block;color:#778aa4;font-size:9px;letter-spacing:1.3px;font-weight:700}
-.updated-block{text-align:right;display:grid;gap:5px}
-.updated-block strong{font-size:12px;font-weight:600}
-.source-label{font-size:10px;color:var(--muted)}
-.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:15px}
-.metric-card,.panel{border:1px solid var(--border);background:linear-gradient(160deg,rgba(19,30,48,.97),rgba(13,21,35,.97));border-radius:var(--radius);box-shadow:0 12px 34px #00000014}
-.metric-card{min-height:132px;padding:17px 18px;position:relative;overflow:hidden}
-.metric-primary{background:linear-gradient(135deg,#153660,#102443 78%);border-color:#35649b}
-.metric-primary:after{content:"";position:absolute;width:125px;height:125px;border:1px solid #8bbcff20;border-radius:50%;right:-36px;top:28px;box-shadow:0 0 0 16px #8bbcff09,0 0 0 34px #8bbcff06}
-.metric-head,.metric-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.metric-head{color:#b7c7dd;font-size:11px}
-.metric-icon{font-size:17px;color:#8ebaff}
-.metric-value{display:flex;align-items:baseline;gap:7px;margin:12px 0 8px}
-.metric-value strong{font-size:31px;line-height:1;letter-spacing:-1px}
-.metric-value>span{font-size:11px;color:var(--muted)}
-.metric-word{font-size:22px;font-weight:700;letter-spacing:-.5px;margin:16px 0 12px}
-.metric-foot{color:var(--muted);font-size:10px}
-.metric-primary .metric-foot{color:#a9c4e8}
-.trend{color:var(--cyan);font-size:9px;letter-spacing:1px;font-weight:800}
-.tiny-indicator{width:7px;height:7px;border-radius:50%;background:var(--green)}
-.content-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.panel{padding:20px;min-width:0}
-.network-panel{min-height:270px}
-.panel-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px}
-.panel-icon,.decision-symbol{font-size:20px;color:#8bb8f1}
-.chart-summary{display:flex;gap:45px;margin-bottom:7px}
-.chart-summary>div{display:grid;gap:5px}
-.chart-summary strong{font-size:11px}
-.chart-wrap{height:145px;margin-top:5px}
-.chart-wrap svg{width:100%;height:100%;overflow:visible}
-.chart-grid{stroke:#263951;stroke-width:1;stroke-dasharray:3 7}
-.chart-empty{stroke:#38516f;stroke-width:1.3;stroke-dasharray:4 5}
-.chart-line{fill:none;stroke:var(--cyan);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.chart-area{fill:url(#chartFill)}
-.chart-point{fill:var(--cyan);stroke:#0e2534;stroke-width:3}
-.chart-label{fill:#657b97;font-size:9px}
-.chart-legend{display:flex;justify-content:space-between;color:#70839c;font-size:9px}
-.legend-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--cyan);margin-right:5px}
-.decision-panel{background:linear-gradient(150deg,#14233a,#101b2d)}
-.decision-title{font-size:19px;font-weight:700;letter-spacing:-.4px;margin:5px 0 7px;color:#e8f3ff}
-.decision-explanation{min-height:40px}
-.decision-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:13px 0;margin:15px 0}
-.decision-meta>div{display:grid;gap:5px;min-width:0}
-.decision-meta strong{font-size:11px;overflow-wrap:anywhere}
-.candidate-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
-.candidate{font-size:10px;padding:5px 8px;border-radius:7px;background:#1b2a40;color:#b6c6db;border:1px solid #2e405a}
-.candidate.failed{color:var(--yellow);border-color:#755e32;background:#44341b66}
-.module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.module-card{background:#0d1726;border:1px solid #203047;border-radius:11px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.module-card strong{font-size:11px;font-weight:600}
-.module-card small{display:block;color:var(--muted);font-size:9px;margin-top:4px}
-.module-state{font-size:9px;text-transform:uppercase;letter-spacing:.4px}
-.issue-summary{display:flex;align-items:baseline;gap:9px;margin:2px 0 12px}
-.issue-summary strong{font-size:27px}
-.issue-summary span{font-size:10px;color:var(--muted)}
-.issue-list{margin:0;padding:0;list-style:none;display:grid;gap:7px;max-height:134px;overflow:auto}
-.issue-list li{font-size:11px;color:#c8d3e2;background:#2c251b66;border:1px solid #57452a;border-radius:8px;padding:8px 10px;line-height:1.5}
-.posture-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(145,160,182,.12);font-size:11px}
-.posture-row:last-of-type{border-bottom:0}
-.posture-row>span{color:var(--muted)}
-.posture-row strong{font-size:10px;text-align:right;overflow-wrap:anywhere}
-.panel-note{font-size:9px;color:#8798ae;line-height:1.55;margin:13px 0 0;padding-top:10px;border-top:1px solid rgba(145,160,182,.12)}
-.autopilot-state{display:flex;align-items:center;gap:12px;margin:6px 0 14px;padding:12px;background:#0d1726;border:1px solid #213149;border-radius:11px}
-.autopilot-orb{width:12px;height:12px;border-radius:50%;background:var(--yellow);box-shadow:0 0 15px #e7ae4d75}
-.autopilot-state strong{display:block;font-size:13px}
-.autopilot-state small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
-.bottom-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-top:14px}
-.compact-panel{padding:17px 20px}
-.dependency-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.dependency-grid>div{display:grid;gap:5px}
-.dependency-grid strong{font-size:12px}
-.dependency-grid small{font-size:9px;color:var(--muted)}
-.api-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.api-links a{border:1px solid #263951;background:#0d1726;border-radius:8px;padding:9px 10px;color:#bdd5f3;text-decoration:none;font-size:10px;display:flex;justify-content:space-between;gap:8px}
-.api-links a:hover{border-color:#4779b8;color:#fff}
-.raw-details{margin-top:14px;border:1px solid var(--border);background:#0c1421;border-radius:12px;padding:13px 16px;color:#b5c5d9;font-size:11px}
-.raw-details summary{cursor:pointer}
-.raw-details pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;color:#9eb4ce;font-size:10px;line-height:1.55}
-.error-banner{margin-top:14px;padding:12px 14px;border:1px solid #814047;background:#3b1c25;border-radius:10px;color:#ffc1c5;font-size:11px}
-.skeleton-line{height:42px;border-radius:9px;background:linear-gradient(90deg,#152339,#1c2b42,#152339);background-size:200% 100%;animation:shimmer 1.5s infinite}
-@keyframes shimmer{to{background-position:-200% 0}}
-.footer{display:flex;justify-content:space-between;gap:15px;padding:20px 0 25px;color:#63748d;font-size:9px;border-top:1px solid rgba(145,160,182,.13)}
-@media(max-width:900px){.shell{padding:0 22px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{gap:12px}.bottom-grid{grid-template-columns:1fr}}
-@media(max-width:640px){.shell{padding:0 14px}.topbar{height:auto;min-height:70px;align-items:flex-start;padding:15px 0;flex-direction:column}.topbar-actions{width:100%;flex-wrap:wrap}.page-heading{align-items:flex-start;flex-direction:column}.updated-block{text-align:left}.content-grid{grid-template-columns:1fr}.metric-card{padding:14px;min-height:123px}.metric-value strong{font-size:27px}.panel{padding:16px}.dependency-grid{grid-template-columns:1fr 1fr}.dependency-grid>div:last-child{grid-column:span 2}.footer{flex-direction:column}.api-links{grid-template-columns:1fr}.brand-copy{font-size:9px}}
+h1,h2,p,dl,dd,ul{margin:0}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:20;background:var(--primary);color:var(--bg);padding:10px 14px;border-radius:var(--control);font-weight:600;text-decoration:none}
+.skip-link:focus{top:12px}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:6px}
+#main:focus{outline:none}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;gap:24px;padding:24px 16px;border-right:1px solid var(--border);background:var(--surface)}
+.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;padding:0 8px}
+.brand-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--primary);color:var(--bg);font-weight:800;letter-spacing:-1px}
+.brand-copy{display:grid;line-height:1.25}
+.brand-copy strong{font-size:14px}
+.brand-copy small{color:var(--muted);font-size:12px}
+.nav{display:grid;gap:4px}
+.nav a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:var(--control);color:var(--muted);text-decoration:none;font-weight:500}
+.nav a:hover{background:var(--surface-raised);color:var(--text)}
+.nav a[aria-current="page"]{background:var(--surface-raised);color:var(--text);box-shadow:inset 3px 0 0 var(--primary)}
+.nav-glyph{width:20px;text-align:center;color:var(--primary)}
+.sidebar-note{margin-top:auto;color:var(--muted);font-size:12px;line-height:1.5;padding:0 8px}
+.content{padding:0 32px;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 0 16px;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-weight:700;margin-bottom:4px}
+.eyebrow.spaced{margin-top:24px}
+h1{font-size:28px;line-height:1.15;letter-spacing:-.02em}
+h2{font-size:17px;letter-spacing:-.01em;font-weight:650}
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px;border:1px solid var(--border);border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--surface)}
+.pill[data-tone="ok"]{color:var(--ok)}
+.pill[data-tone="warn"]{color:var(--warn)}
+.pill[data-tone="danger"]{color:var(--danger)}
+.pill[data-tone="observing"]{color:var(--primary)}
+.pill[data-tone="unknown"]{color:var(--muted)}
+.button{min-height:40px;padding:0 16px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--control);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.button:hover:not(:disabled){background:var(--surface-raised);border-color:var(--primary)}
+.button:disabled{opacity:.6;cursor:progress}
+.button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border-radius:var(--control);border:1px solid var(--border);margin-bottom:16px;font-size:14px}
+.banner[hidden]{display:none}
+.banner-danger{border-color:var(--danger);color:var(--danger);background:var(--surface)}
+.banner-warn{border-color:var(--warn);color:var(--warn);background:var(--surface)}
+main{flex:1;padding-bottom:24px}
+.view[hidden]{display:none}
+.view{display:grid;gap:16px;animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.grid.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi{padding:20px}
+.kpi-primary{background:var(--surface-raised);border-color:var(--primary)}
+.kpi-label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-value{display:flex;align-items:baseline;gap:8px;margin:12px 0 8px;font-size:34px;line-height:1;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi-value small{font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.kpi-word{font-size:24px;letter-spacing:-.02em}
+.kpi-foot{color:var(--muted);font-size:13px}
+.lead{font-size:20px;font-weight:650;letter-spacing:-.01em;margin-bottom:8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.note{color:var(--muted);font-size:13px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.kv{display:grid;margin-top:8px}
+.kv>div{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+.kv>div:last-child{border-bottom:0}
+.kv dt{color:var(--muted);font-size:14px}
+.kv dd{font-weight:600;text-align:right;overflow-wrap:anywhere;font-size:14px}
+.kv-inline{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.kv-inline>div{display:grid;gap:4px;border:0;padding:0}
+.kv-inline dd{text-align:left}
+.module-grid,.tile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tile{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;min-width:0}
+.tile>div{min-width:0}
+.tile strong{font-size:14px;display:block;overflow-wrap:break-word}
+.tile small{display:block;color:var(--muted);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.tone{font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.tone[data-tone="ok"]{color:var(--ok)}
+.tone[data-tone="warn"]{color:var(--warn)}
+.tone[data-tone="danger"]{color:var(--danger)}
+.tone[data-tone="observing"]{color:var(--primary)}
+.tone[data-tone="unknown"]{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.chip{font-size:13px;padding:6px 10px;border-radius:8px;background:var(--surface-raised);border:1px solid var(--border);color:var(--text)}
+.chip[data-tone="warn"]{border-color:var(--warn);color:var(--warn)}
+.chip[data-tone="ok"]{border-color:var(--ok);color:var(--ok)}
+.list{list-style:none;padding:0;display:grid;gap:8px;margin-top:12px}
+.list li{padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--surface-raised);font-size:14px}
+.list li[data-tone="ok"]{border-color:var(--ok);color:var(--ok)}
+.list li[data-tone="warn"]{border-color:var(--warn)}
+.empty-note{color:var(--muted);font-size:14px;padding:16px;border:1px dashed var(--border);border-radius:var(--control);margin-top:12px}
+.empty-note[hidden]{display:none}
+.chart-wrap{position:relative}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.chart-wrap svg:empty{display:none}
+.chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:3 6}
+.chart-line{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.chart-area{fill:var(--accent);opacity:.14}
+.chart-point{fill:var(--accent);stroke:var(--surface);stroke-width:3}
+.chart-label{fill:var(--muted);font-size:11px}
+.bars{display:grid;gap:12px;margin-bottom:16px}
+.bar-row{display:grid;gap:6px}
+.bar-meta{display:flex;justify-content:space-between;font-size:14px}
+.bar-meta span:last-child{font-weight:600;font-variant-numeric:tabular-nums}
+.bar-track{display:block;height:8px;width:100%}
+.bar-bg{fill:var(--surface-raised)}
+.bar-fg{fill:var(--primary)}
+.link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.link-grid a{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 14px;border:1px solid var(--border);background:var(--surface-raised);border-radius:var(--control);color:var(--text);text-decoration:none;font-weight:500}
+.link-grid a:hover{border-color:var(--primary)}
+.raw-details summary{cursor:pointer;font-weight:600;min-height:24px}
+.raw-details pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;color:var(--muted);font-size:12px;line-height:1.6;margin:12px 0 0}
+.meta-line{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.skeleton{height:48px;border-radius:12px;background:var(--surface-raised);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+.is-loading .kpi-value span,.is-loading .kpi-word{color:var(--muted)}
+.footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 0 24px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+@media (max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;z-index:10;height:auto;flex-direction:row;align-items:center;gap:12px;padding:8px 16px;border-right:0;border-bottom:1px solid var(--border);overflow-x:auto}
+  .brand-copy,.sidebar-note{display:none}
+  .nav{display:flex;gap:4px}
+  .nav a{white-space:nowrap;min-height:44px}
+  .content{padding:0 16px}
+  .grid.two{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  h1{font-size:24px}
+  .kpi-grid,.link-grid{grid-template-columns:1fr}
+  .kv-inline{grid-template-columns:1fr}
+  .topbar-actions .button{flex:1 1 auto}
+  .card{padding:16px}
+}
 `;
 
 export const dashboardScript = String.raw`
 (function () {
   'use strict';
-  const $ = (selector) => document.querySelector(selector);
-  const history = [];
-  let autoRefresh = true;
-  let refreshTimer = null;
-  let lastSnapshot = null;
+  var VIEWS = {
+    overview: ['Live operations', 'Overview'],
+    connectivity: ['Reachability', 'Connectivity'],
+    performance: ['Measurements', 'Performance'],
+    tunnel: ['Encrypted path', 'Tunnel'],
+    security: ['Protection', 'Security'],
+    automation: ['Resilience engine', 'Automation'],
+    diagnostics: ['Health and support', 'Diagnostics']
+  };
+  var THEMES = ['auto', 'light', 'dark'];
+  var THEME_KEY = 'irp.dashboard.theme';
+  var NOT_REPORTED = 'Not reported';
+  var history = [];
+  var autoRefresh = true;
+  var refreshTimer = null;
+  var lastGoodAt = null;
+  var inFlight = false;
+
+  function $(selector) { return document.querySelector(selector); }
 
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
@@ -286,197 +414,358 @@ export const dashboardScript = String.raw`
     });
   }
 
+  function isNum(value) { return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)); }
+
   function text(selector, value, fallback) {
-    const node = $(selector);
-    if (node) node.textContent = value == null || value === '' ? (fallback || '—') : String(value);
+    var node = $(selector);
+    if (node) node.textContent = value == null || value === '' ? (fallback == null ? NOT_REPORTED : fallback) : String(value);
   }
 
   function label(value) {
-    if (value == null || value === '') return 'Unknown';
-    return String(value).replace(/[-_]/g, ' ').replace(/\b[a-z]/g, function (letter) { return letter.toUpperCase(); });
+    if (value == null || value === '') return NOT_REPORTED;
+    var words = String(value).replace(/[-_]+/g, ' ').toLowerCase();
+    return words.charAt(0).toUpperCase() + words.slice(1);
   }
 
-  function stateClass(value) {
-    const status = String(value == null ? '' : value).toLowerCase();
-    if (/unhealthy|unavailable|failed|error|down|critical/.test(status)) return 'status-unhealthy';
-    if (/degraded|partial|observe|review|not-configured|unknown/.test(status)) return 'status-degraded';
-    if (/healthy|available|passed|success|up|closed/.test(status)) return 'status-healthy';
-    return 'status-waiting';
+  /** Maps a backend state word to a tone. Neutral words never read as healthy. */
+  function tone(value) {
+    var status = String(value == null ? '' : value).toLowerCase();
+    if (/unhealthy|unavailable|failed|error|down|critical|disconnected|open$/.test(status)) return 'danger';
+    if (/degraded|partial|review|violation|warn/.test(status)) return 'warn';
+    if (/observe|advisory/.test(status)) return 'observing';
+    if (/healthy|available|passed|success|connected|^up$|closed|enabled|^ok$|noop|not.required/.test(status)) return 'ok';
+    return 'unknown';
   }
 
-  function setChip(selector, value) {
-    const node = $(selector);
+  var GLYPH = { ok: '●', warn: '▲', danger: '■', observing: '◆', unknown: '○' };
+
+  function setPill(selector, value, wording) {
+    var node = $(selector);
     if (!node) return;
-    node.className = 'status-chip ' + stateClass(value);
-    node.textContent = label(value);
+    var t = tone(value);
+    node.setAttribute('data-tone', t);
+    node.innerHTML = '<span class="pill-glyph" aria-hidden="true">' + GLYPH[t] + '</span><span class="pill-text">' + escapeHtml(wording || label(value)) + '</span>';
   }
 
-  function renderCandidates(candidates) {
-    if (!Array.isArray(candidates) || candidates.length === 0) {
-      return '<span class="muted">No probe candidates reported.</span>';
+  function toneSpan(value) {
+    var t = tone(value);
+    return '<span class="tone" data-tone="' + t + '"><span aria-hidden="true">' + GLYPH[t] + '</span> ' + escapeHtml(label(value)) + '</span>';
+  }
+
+  function tile(title, detail, stateValue) {
+    return '<div class="tile"><div><strong>' + escapeHtml(title) + '</strong><small>' + escapeHtml(detail) + '</small></div>' + toneSpan(stateValue) + '</div>';
+  }
+
+  function ms(value) { return isNum(value) ? Math.round(Number(value)) + ' ms' : NOT_REPORTED; }
+
+  function renderModules(data) {
+    var net = data.network || {}, dns = data.dns || {}, routing = data.routing || {}, recovery = data.recovery || {}, tunnel = data.tunnel || {}, obs = data.observability || {};
+    var modules = [
+      ['Network', net.health || net.connection, net.currentRoute || 'No route reported'],
+      ['DNS', dns.health, dns.resolver || 'No resolver reported'],
+      ['Routing', routing.status, routing.mode ? label(routing.mode) : 'No mode reported'],
+      ['Recovery', recovery.status, (Array.isArray(recovery.issues) ? recovery.issues.length : 0) + ' issue(s)'],
+      ['Tunnel', tunnel.activeTunnel ? 'healthy' : 'unknown', tunnel.activeTunnel ? String(tunnel.activeTunnel) : 'No active tunnel'],
+      ['Observability', obs.health, obs.metrics ? 'Metrics ' + label(obs.metrics).toLowerCase() : 'No metrics reported']
+    ];
+    $('#module-grid').innerHTML = modules.map(function (m) { return tile(m[0], m[2], m[1]); }).join('');
+  }
+
+  function renderInterfaces(list) {
+    var node = $('#interface-list');
+    if (!Array.isArray(list) || list.length === 0) {
+      node.innerHTML = '<p class="empty-note">No interface probes were reported in the latest snapshot.</p>';
+      text('#interface-count', '0 probes');
+      return;
     }
-    return candidates.map(function (candidate) {
-      const accepted = Boolean(candidate && candidate.accepted);
-      const name = escapeHtml(candidate && candidate.name ? candidate.name : 'probe');
-      const score = Number.isFinite(Number(candidate && candidate.score)) ? ' · ' + Number(candidate.score) + '/100' : '';
-      const reason = candidate && candidate.reason ? ' title="' + escapeHtml(candidate.reason) + '"' : '';
-      return '<span class="candidate ' + (accepted ? '' : 'failed') + '"' + reason + '>' + name + score + '</span>';
+    text('#interface-count', list.length + (list.length === 1 ? ' probe' : ' probes'));
+    node.innerHTML = list.map(function (item) {
+      var detail = isNum(item && item.latencyMs) ? 'Latency ' + ms(item.latencyMs) : 'Latency not reported';
+      return tile(item && item.name ? item.name : 'Probe', detail, item && item.state);
     }).join('');
   }
 
-  function renderModules(data) {
-    const modules = [
-      ['Network', data.network && (data.network.health || data.network.connection), data.network && data.network.currentRoute],
-      ['DNS', data.dns && data.dns.health, data.dns && (data.dns.resolver || 'Resolver')],
-      ['Routing', data.routing && data.routing.status, data.routing && data.routing.mode],
-      ['Recovery', data.recovery && data.recovery.status, (data.recovery && Array.isArray(data.recovery.issues) ? data.recovery.issues.length : 0) + ' issue(s)'],
-      ['Tunnel', data.tunnel && (data.tunnel.activeTunnel ? 'active' : 'not-configured'), data.tunnel && data.tunnel.activeTunnel ? data.tunnel.activeTunnel : 'No active tunnel'],
-      ['Observability', data.observability && data.observability.health, data.observability && data.observability.metrics]
-    ];
-    $('#module-grid').innerHTML = modules.map(function (entry) {
-      return '<div class="module-card"><div><strong>' + escapeHtml(entry[0]) + '</strong><small>' + escapeHtml(entry[2] || '—') + '</small></div><span class="module-state ' + stateClass(entry[1]) + '">' + escapeHtml(label(entry[1])) + '</span></div>';
+  function renderLatencyBars(data) {
+    var rows = [];
+    (Array.isArray(data.network && data.network.interfaces) ? data.network.interfaces : []).forEach(function (item) {
+      if (item && isNum(item.latencyMs)) rows.push([item.name || 'Probe', Number(item.latencyMs)]);
+    });
+    if (data.dns && isNum(data.dns.latencyMs)) rows.push(['DNS resolver', Number(data.dns.latencyMs)]);
+    var node = $('#latency-bars');
+    if (rows.length === 0) {
+      node.innerHTML = '<p class="empty-note">No latency measurements were reported.</p>';
+      return;
+    }
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; })) || 1;
+    node.innerHTML = rows.map(function (r) {
+      var width = Math.max(2, Math.round((r[1] / max) * 100));
+      return '<div class="bar-row"><div class="bar-meta"><span>' + escapeHtml(r[0]) + '</span><span>' + Math.round(r[1]) + ' ms</span></div><svg class="bar-track" viewBox="0 0 100 8" preserveAspectRatio="none" role="presentation" width="100%" height="8"><rect class="bar-bg" x="0" y="0" width="100" height="8" rx="4"></rect><rect class="bar-fg" x="0" y="0" width="' + width + '" height="8" rx="4"></rect></svg></div>';
+    }).join('');
+  }
+
+  function renderCandidates(candidates) {
+    var node = $('#candidate-list');
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      node.innerHTML = '<span class="muted">No probe candidates reported.</span>';
+      return;
+    }
+    node.innerHTML = candidates.map(function (c) {
+      var accepted = Boolean(c && c.accepted);
+      var name = escapeHtml(c && c.name ? c.name : 'probe');
+      var score = isNum(c && c.score) ? ' · ' + Number(c.score) + '/100' : '';
+      var reason = c && c.reason ? ' title="' + escapeHtml(c.reason) + '"' : '';
+      return '<span class="chip" data-tone="' + (accepted ? 'ok' : 'warn') + '"' + reason + '>' + (accepted ? '● ' : '▲ ') + name + score + '</span>';
     }).join('');
   }
 
   function renderIssues(issues) {
+    var node = $('#issue-list');
     if (!Array.isArray(issues) || issues.length === 0) {
-      return '<li style="color:#7cdcb5;background:#12372d;border-color:#285744">No active recovery issues reported.</li>';
+      node.innerHTML = '<li data-tone="ok">● No active recovery issues reported.</li>';
+      return;
     }
-    return issues.map(function (issue) {
-      const value = typeof issue === 'string' ? issue : (issue && (issue.message || issue.reason || issue.code)) || JSON.stringify(issue);
-      return '<li>' + escapeHtml(value) + '</li>';
+    node.innerHTML = issues.map(function (issue) {
+      var value = typeof issue === 'string' ? issue : (issue && (issue.message || issue.reason || issue.code)) || JSON.stringify(issue);
+      return '<li data-tone="warn">▲ ' + escapeHtml(value) + '</li>';
     }).join('');
   }
 
+  function renderTunnel(tunnel) {
+    var info = tunnel || {};
+    var list = Array.isArray(info.tunnels) ? info.tunnels : [];
+    var active = info.activeTunnel;
+    text('#tunnel-active', active ? String(active) : 'None active', 'None active');
+    text('#tunnel-count', list.length);
+    setPill('#tunnel-chip', active ? 'healthy' : 'unknown', active ? 'Active' : 'No active tunnel');
+    $('#tunnel-list').innerHTML = list.map(function (item) {
+      var name = typeof item === 'string' ? item : (item && (item.name || item.id)) || 'Tunnel';
+      var state = typeof item === 'object' && item ? item.state || item.status : (name === active ? 'healthy' : 'unknown');
+      return tile(name, name === active ? 'Active' : 'Configured', state);
+    }).join('');
+    $('#tunnel-empty').hidden = Boolean(active) || list.length > 0;
+  }
+
+  function renderViolations(violations) {
+    var node = $('#violation-list');
+    if (!Array.isArray(violations) || violations.length === 0) { node.hidden = true; node.innerHTML = ''; return; }
+    node.hidden = false;
+    node.innerHTML = violations.map(function (v) {
+      var value = typeof v === 'string' ? v : (v && (v.message || v.reason || v.code)) || JSON.stringify(v);
+      return '<li data-tone="warn">▲ ' + escapeHtml(value) + '</li>';
+    }).join('');
+  }
+
+  function renderOutcomes(outcomes) {
+    var node = $('#outcome-list');
+    if (!Array.isArray(outcomes) || outcomes.length === 0) { node.innerHTML = '<span class="muted">None reported.</span>'; return; }
+    node.innerHTML = outcomes.map(function (o) { return '<span class="chip">' + escapeHtml(label(o)) + '</span>'; }).join('');
+  }
+
   function updateChart(score) {
-    if (Number.isFinite(score)) {
-      history.push({ time: Date.now(), score: Math.max(0, Math.min(100, score)) });
+    if (isNum(score)) {
+      history.push({ score: Math.max(0, Math.min(100, Number(score))) });
       if (history.length > 24) history.shift();
     }
-    text('#history-count', history.length + ' samples');
-    if (history.length < 2) return;
-    const width = 640;
-    const height = 150;
-    const left = 28;
-    const right = 10;
-    const top = 18;
-    const bottom = 10;
-    const usableWidth = width - left - right;
-    const usableHeight = height - top - bottom;
-    const points = history.map(function (point, index) {
-      const x = left + (history.length === 1 ? 0 : index / (history.length - 1)) * usableWidth;
-      const y = top + (1 - point.score / 100) * usableHeight;
-      return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) };
+    text('#history-count', history.length + (history.length === 1 ? ' sample' : ' samples'));
+    var svg = $('#score-chart');
+    var empty = $('#chart-empty');
+    if (history.length < 2) { svg.innerHTML = ''; empty.hidden = false; return; }
+    empty.hidden = true;
+    var width = 640, height = 180, left = 32, right = 12, top = 14, bottom = 14;
+    var usableWidth = width - left - right, usableHeight = height - top - bottom;
+    var points = history.map(function (p, i) {
+      return { x: +(left + (i / (history.length - 1)) * usableWidth).toFixed(1), y: +(top + (1 - p.score / 100) * usableHeight).toFixed(1) };
     });
-    const line = points.map(function (point, index) { return (index ? 'L' : 'M') + point.x + ' ' + point.y; }).join(' ');
-    const area = line + ' L' + points[points.length - 1].x + ' ' + (height - bottom) + ' L' + points[0].x + ' ' + (height - bottom) + ' Z';
-    const last = points[points.length - 1];
-    $('#score-chart').innerHTML = '<defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#55d5cf" stop-opacity=".28"/><stop offset="100%" stop-color="#55d5cf" stop-opacity="0"/></linearGradient></defs><path d="M0 18 H640 M0 78 H640 M0 138 H640" class="chart-grid"/><text x="8" y="15" class="chart-label">100</text><text x="8" y="75" class="chart-label">50</text><text x="8" y="142" class="chart-label">0</text><path d="' + area + '" class="chart-area"/><path d="' + line + '" class="chart-line"/><circle cx="' + last.x + '" cy="' + last.y + '" r="5" class="chart-point"/>';
+    var line = points.map(function (p, i) { return (i ? 'L' : 'M') + p.x + ' ' + p.y; }).join(' ');
+    var area = line + ' L' + points[points.length - 1].x + ' ' + (height - bottom) + ' L' + points[0].x + ' ' + (height - bottom) + ' Z';
+    var last = points[points.length - 1];
+    svg.innerHTML = '<path d="M' + left + ' ' + top + ' H' + (width - right) + ' M' + left + ' ' + (top + usableHeight / 2) + ' H' + (width - right) + ' M' + left + ' ' + (height - bottom) + ' H' + (width - right) + '" class="chart-grid"/>' +
+      '<text x="0" y="' + (top + 4) + '" class="chart-label">100</text><text x="4" y="' + (top + usableHeight / 2 + 4) + '" class="chart-label">50</text><text x="10" y="' + (height - bottom + 4) + '" class="chart-label">0</text>' +
+      '<path d="' + area + '" class="chart-area"/><path d="' + line + '" class="chart-line"/><circle cx="' + last.x + '" cy="' + last.y + '" r="5" class="chart-point"/>';
   }
 
   function render(data) {
-    lastSnapshot = data;
-    const network = data.network || {};
-    const dns = data.dns || {};
-    const recovery = data.recovery || {};
-    const decision = data.decision || {};
-    const security = data.security || {};
-    const autopilot = data.autopilot || {};
-    const dependencies = data.dependencies || {};
-    const observability = data.observability || {};
-    const issues = Array.isArray(recovery.issues) ? recovery.issues : [];
-    const score = Number(decision.score);
+    var network = data.network || {}, dns = data.dns || {}, routing = data.routing || {}, recovery = data.recovery || {};
+    var decision = data.decision || {}, security = data.security || {}, autopilot = data.autopilot || {};
+    var dependencies = data.dependencies || {}, observability = data.observability || {}, eventBus = data.eventBus || {};
+    var issues = Array.isArray(recovery.issues) ? recovery.issues : [];
+    var score = isNum(decision.score) ? Number(decision.score) : NaN;
+    var overall = network.health || network.connection;
 
-    const global = $('#global-status');
-    global.className = 'status-pill ' + stateClass(network.health || network.connection);
-    global.innerHTML = '<span class="status-dot"></span>' + escapeHtml(label(network.health || network.connection || 'Unknown'));
-
+    setPill('#global-status', overall, overall ? label(overall) : 'Unknown');
     text('#health-score', Number.isFinite(score) ? Math.round(score) : '—');
-    text('#health-caption', label(network.health || 'Status unavailable'));
-    text('#connection-state', label(network.connection || network.health));
+    text('#health-caption', network.health ? label(network.health) : 'Status not reported');
+    text('#connection-state', network.connection || network.health ? label(network.connection || network.health) : '—');
     text('#route-caption', 'Route: ' + (network.currentRoute || 'not reported'));
-    text('#current-route', network.currentRoute || 'Not reported');
-    text('#dns-latency', Number.isFinite(Number(dns.latencyMs)) ? Math.round(Number(dns.latencyMs)) : '—');
-    text('#dns-caption', label(dns.health || 'Resolver status unavailable'));
-    text('#incident-count', Number.isFinite(Number(autopilot.activeIncidents)) ? autopilot.activeIncidents : 0);
-    text('#approval-caption', 'Approvals pending: ' + (autopilot.pendingApprovals == null ? '0' : autopilot.pendingApprovals));
-    text('#decision-title', label(decision.recommendation || 'No recommendation'));
-    text('#decision-explanation', decision.explanation || 'No decision explanation was returned.');
-    text('#decision-confidence', Number.isFinite(Number(decision.confidence)) ? Math.round(Number(decision.confidence) * 100) + '%' : '—');
+    text('#dns-latency', isNum(dns.latencyMs) ? Math.round(Number(dns.latencyMs)) : '—');
+    text('#dns-caption', dns.health ? label(dns.health) : 'Resolver status not reported');
+    text('#incident-count', isNum(autopilot.activeIncidents) ? autopilot.activeIncidents : '—');
+    text('#approval-caption', 'Approvals pending: ' + (isNum(autopilot.pendingApprovals) ? autopilot.pendingApprovals : 'not reported'));
+
+    text('#decision-title', decision.recommendation ? label(decision.recommendation) : 'No recommendation reported');
+    text('#decision-explanation', decision.explanation, 'No decision explanation was returned.');
+    text('#decision-confidence', isNum(decision.confidence) ? Math.round(Number(decision.confidence) * 100) + '%' : NOT_REPORTED);
     text('#decision-mode', label(decision.mode));
     text('#policy-state', label(decision.policyValidation));
-    $('#candidate-list').innerHTML = renderCandidates(decision.candidates);
+    setPill('#decision-chip', decision.securityValidation || decision.policyValidation, decision.securityValidation ? 'Security ' + label(decision.securityValidation).toLowerCase() : 'Policy ' + label(decision.policyValidation).toLowerCase());
     renderModules(data);
-    text('#issue-count', issues.length);
-    $('#issue-list').innerHTML = renderIssues(issues);
-    setChip('#network-health-chip', network.health || network.connection);
-    setChip('#recovery-chip', recovery.status);
+
+    text('#current-route', network.currentRoute);
+    text('#connection-detail', label(network.connection));
+    text('#routing-status', label(routing.status));
+    text('#routing-mode', label(routing.mode));
+    setPill('#network-health-chip', overall);
+    text('#dns-resolver', dns.resolver);
+    text('#dns-latency-detail', ms(dns.latencyMs));
+    text('#dns-secure', label(dns.secureTransport));
+    text('#dns-policy', label(dns.policyStatus));
+    setPill('#dns-chip', dns.health);
+    renderInterfaces(network.interfaces);
+
+    renderLatencyBars(data);
+    renderCandidates(decision.candidates);
+    text('#decision-age', isNum(decision.decisionAgeSeconds) ? decision.decisionAgeSeconds + ' s' : NOT_REPORTED);
+    var dbLatency = data.diagnostics && data.diagnostics.databaseLatencyMs;
+    text('#database-latency-metric', ms(dbLatency));
+    updateChart(score);
+
+    renderTunnel(data.tunnel);
+
     text('#security-state', label(security.state));
     text('#protection-mode', label(security.protectionState));
     text('#kill-switch', label(security.killSwitch));
     text('#dns-leak', label(security.dnsLeak));
     text('#route-leak', label(security.routeLeak));
-    setChip('#autopilot-chip', autopilot.enabled ? autopilot.mode : 'observe-only');
-    text('#autopilot-mode', label(autopilot.mode || 'Unknown'));
+    text('#ipv6-state', label(security.ipv6));
+    text('#security-validation', label(decision.securityValidation));
+    text('#security-explanation', security.explanation, 'Reflects the backend\'s reported posture. Observe-only means enforcement is not active.');
+    setPill('#security-chip', security.state);
+    renderViolations(security.violations);
+
+    setPill('#autopilot-chip', autopilot.enabled ? autopilot.mode : 'observe-only', autopilot.enabled ? label(autopilot.mode) : 'Observe only');
+    text('#autopilot-mode', label(autopilot.mode));
     text('#autopilot-enabled', autopilot.enabled ? 'Automation enabled' : 'Automation disabled · observe-only');
-    text('#active-actions', autopilot.activeActions == null ? 0 : autopilot.activeActions);
+    text('#active-actions', isNum(autopilot.activeActions) ? autopilot.activeActions : NOT_REPORTED);
     text('#circuit-breaker', label(autopilot.circuitBreaker));
     text('#verification-state', label(autopilot.verificationState));
     text('#rollback-state', label(autopilot.rollbackState));
+    renderOutcomes(autopilot.recentOutcomes);
+
+    text('#issue-count', issues.length);
+    renderIssues(issues);
+    setPill('#recovery-chip', recovery.status);
     text('#database-state', label(dependencies.database));
-    text('#database-latency', 'Latency: ' + (data.diagnostics && Number.isFinite(Number(data.diagnostics.databaseLatencyMs)) ? Math.round(Number(data.diagnostics.databaseLatencyMs)) + ' ms' : '—'));
+    text('#database-latency', ms(dbLatency));
     text('#queue-state', label(dependencies.queue));
-    const telemetry = observability.telemetry || {};
+    text('#eventbus-state', eventBus.status ? label(eventBus.status) + (eventBus.scope ? ' (' + eventBus.scope + ')' : '') : NOT_REPORTED);
+    var telemetry = observability.telemetry || {};
     text('#telemetry-state', telemetry.enabled === false ? 'Disabled' : (telemetry.enabled ? 'Enabled' : label(observability.metrics)));
-    text('#telemetry-exporter', 'Exporter: ' + (telemetry.exporterConfigured ? 'configured' : 'not configured'));
+    text('#telemetry-exporter', telemetry.exporterConfigured ? 'Configured' : 'Not configured');
+
     text('#last-updated', data.updatedAt ? new Date(data.updatedAt).toLocaleString() : new Date().toLocaleTimeString());
     text('#source-label', 'Source: ' + (data.source || 'API'));
     $('#raw-payload').textContent = JSON.stringify(data, null, 2);
-    updateChart(score);
+    lastGoodAt = new Date();
+    $('#app').classList.remove('is-loading');
     $('#error-banner').hidden = true;
+    $('#stale-note').hidden = true;
+    $('#live-region').textContent = 'Platform status updated: ' + (overall ? label(overall) : 'unknown');
+  }
+
+  function showError(message) {
+    $('#error-message').textContent = message;
+    $('#error-banner').hidden = false;
+    setPill('#global-status', 'unavailable', 'API unavailable');
+    var stale = $('#stale-note');
+    if (lastGoodAt) {
+      stale.textContent = 'Showing the last successful snapshot from ' + lastGoodAt.toLocaleTimeString() + '. Values below may be out of date.';
+      stale.hidden = false;
+    } else {
+      stale.hidden = true;
+    }
+    $('#app').classList.remove('is-loading');
   }
 
   async function refresh() {
-    const button = $('#refresh-button');
+    if (inFlight) return;
+    inFlight = true;
+    var button = $('#refresh-button');
     button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
     button.textContent = 'Refreshing…';
     try {
-      const response = await fetch('/api/v1/platform/status', { cache: 'no-store', headers: { accept: 'application/json' } });
+      var response = await fetch('/api/v1/platform/status', { cache: 'no-store', headers: { accept: 'application/json' } });
       if (!response.ok) throw new Error('Platform status API returned HTTP ' + response.status);
-      const payload = await response.json();
+      var payload = await response.json();
       if (!payload || payload.success !== true || !payload.data) throw new Error('Unexpected platform status response shape');
       render(payload.data);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const banner = $('#error-banner');
-      banner.textContent = 'Unable to load live platform status: ' + message + '. Check that the API and database are running, then refresh.';
-      banner.hidden = false;
-      const global = $('#global-status');
-      global.className = 'status-pill status-unhealthy';
-      global.innerHTML = '<span class="status-dot"></span>API unavailable';
+      var message = error instanceof Error ? error.message : String(error);
+      showError('Unable to load live platform status: ' + message + '. Check that the API and database are running, then retry.');
     } finally {
+      inFlight = false;
       button.disabled = false;
-      button.innerHTML = '<span aria-hidden="true">↻</span> Refresh';
+      button.removeAttribute('aria-busy');
+      button.textContent = 'Refresh';
     }
   }
 
   function scheduleRefresh() {
     if (refreshTimer) window.clearInterval(refreshTimer);
-    if (autoRefresh) refreshTimer = window.setInterval(function () {
-      if (!document.hidden) refresh();
-    }, 30000);
+    refreshTimer = null;
+    if (autoRefresh) refreshTimer = window.setInterval(function () { if (!document.hidden) refresh(); }, 30000);
+  }
+
+  function showView(name, moveFocus) {
+    if (!VIEWS[name]) name = 'overview';
+    var sections = document.querySelectorAll('.view');
+    for (var i = 0; i < sections.length; i++) sections[i].hidden = sections[i].getAttribute('data-view') !== name;
+    var links = document.querySelectorAll('.nav a');
+    for (var j = 0; j < links.length; j++) {
+      if (links[j].getAttribute('data-view') === name) links[j].setAttribute('aria-current', 'page');
+      else links[j].removeAttribute('aria-current');
+    }
+    text('#view-eyebrow', VIEWS[name][0]);
+    text('#view-title', VIEWS[name][1]);
+    document.title = VIEWS[name][1] + ' · IRP Control Center';
+    if (moveFocus) $('#main').focus();
+  }
+
+  function currentViewFromHash() { return (window.location.hash || '').replace('#', '') || 'overview'; }
+
+  function applyTheme(theme) {
+    var root = document.documentElement;
+    if (theme === 'light' || theme === 'dark') root.setAttribute('data-theme', theme); else root.removeAttribute('data-theme');
+    var button = $('#theme-button');
+    button.textContent = 'Theme: ' + theme;
+    button.setAttribute('aria-label', 'Colour theme: ' + theme + '. Activate to change.');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F7FB' : '#0A0F1C');
+  }
+
+  function loadTheme() {
+    try { var saved = window.localStorage.getItem(THEME_KEY); if (THEMES.indexOf(saved) >= 0) return saved; } catch (error) { /* storage unavailable */ }
+    return 'auto';
   }
 
   $('#refresh-button').addEventListener('click', refresh);
+  $('#retry-button').addEventListener('click', refresh);
   $('#auto-button').addEventListener('click', function () {
     autoRefresh = !autoRefresh;
-    const button = $('#auto-button');
+    var button = $('#auto-button');
     button.textContent = 'Auto refresh: ' + (autoRefresh ? 'on' : 'off');
     button.setAttribute('aria-pressed', String(autoRefresh));
-    button.classList.toggle('button-active', autoRefresh);
     scheduleRefresh();
   });
+  $('#theme-button').addEventListener('click', function () {
+    var next = THEMES[(THEMES.indexOf(loadTheme()) + 1) % THEMES.length];
+    try { window.localStorage.setItem(THEME_KEY, next); } catch (error) { /* storage unavailable: theme still applies for this page */ }
+    applyTheme(next);
+  });
+  window.addEventListener('hashchange', function () { showView(currentViewFromHash(), true); });
 
+  applyTheme(loadTheme());
+  showView(currentViewFromHash(), false);
   refresh();
   scheduleRefresh();
 })();
