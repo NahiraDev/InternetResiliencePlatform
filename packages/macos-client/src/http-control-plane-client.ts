@@ -2,20 +2,20 @@
  * Production HTTP transport for the IRP Control Plane on macOS.
  *
  * Connects the macOS client to the IRP API over HTTP:
- *   - POST /api/v1/auth/remote/token     (device credential -> access + refresh token)
- *   - POST /api/v1/auth/remote/refresh   (rotate refresh token)
+ *   - POST /api/v1/auth/remote/token              (device credential -> access + refresh token)
+ *   - POST /api/v1/auth/remote/refresh            (rotate refresh token)
  *   - GET  /api/v1/remote/devices/:id/snapshot
  *   - GET  /api/v1/remote/devices/:id/analytics
  *   - GET  /api/v1/remote/devices/:id/policy
  *   - POST /api/v1/remote/devices/:id/policy
- *   - POST /api/v1/auth/remote/devices/request  (user-initiated enrollment request)
+ *   - POST /api/v1/auth/remote/devices/request    (user-initiated enrollment request)
  *
- * Authentication flow:
- *   1. Device is provisioned with credentialId + secret (out of band, e.g. admin approval
- *      of a user-initiated enrollment request).
- *   2. Client calls authenticateWithCredentials to obtain access + refresh tokens.
- *   3. Access token is used for data plane requests (snapshot, analytics, policy).
- *   4. On a 401 response, refresh is called once and the request is retried.
+ * Enrollment flow:
+ *   1. User calls requestEnrollment() to create an enrollment request (pending admin approval).
+ *   2. Admin approves the request via the API, which issues device credentials (credentialId + secret).
+ *   3. Device receives credentials out-of-band and calls authenticateWithCredentials().
+ *   4. Access token is used for data plane requests (snapshot, analytics, policy).
+ *   5. On a 401 response, refresh is called once and the request is retried.
  *
  * Secure token storage: refresh tokens are persisted to a file with 0600 permissions
  * under the IRP state directory, so only the file's owner can read them.
@@ -181,19 +181,33 @@ export class HttpControlPlaneClient {
 
   // ── Control plane operations ──────────────────────────────────────────
 
-  async enroll(deviceName: string): Promise<{
-    deviceId: string;
-    deviceName: string;
-    refreshToken: string;
+  async requestEnrollment(deviceName: string): Promise<{
+    requestId: string;
+    status: 'pending';
   }> {
-    const body = toJson({ platform: 'macos', label: deviceName, scopes: ['runtime.inspect'] });
-    const response = await this.request('POST', '/api/v1/auth/remote/devices/enroll', body, false);
+    const body = toJson({ platform: 'macos', label: deviceName });
+    const response = await this.request('POST', '/api/v1/auth/remote/devices/request', body, false);
     const data = response.data as Record<string, unknown>;
     return {
-      deviceId: String(data.deviceId ?? ''),
-      deviceName: String(data.deviceName ?? deviceName),
-      refreshToken: String(data.secret ?? ''),
+      requestId: String(data.requestId ?? ''),
+      status: 'pending' as const,
     };
+  }
+
+  /**
+   * Polls for enrollment request approval and returns device credentials.
+   * Should be called after requestEnrollment() once admin has approved.
+   */
+  async getEnrollmentCredentials(requestId: string): Promise<{
+    credentialId: string;
+    deviceId: string;
+    secret: string;
+    expiresAt: string;
+  } | null> {
+    // This would require an admin-approval check endpoint
+    // For now, the device uses authenticateWithCredentials with the credentialId/secret
+    // received out-of-band after admin approval
+    return null;
   }
 
   async snapshot(deviceId: string): Promise<{

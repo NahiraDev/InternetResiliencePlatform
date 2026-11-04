@@ -236,24 +236,23 @@ export const PRODUCT_API_MANIFEST = Object.freeze({
     },
     {
       id: 'gateway.inventory',
-      status: 'pending-verification',
+      status: 'planned',
       kind: 'read',
       methods: ['GET'],
       paths: [`${PRODUCT_API_PATH}/gateways`, `${PRODUCT_API_PATH}/gateways/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.inspect'],
-      description: 'Managed gateway inventory reserved for fleet API verification.',
+      description: 'Managed gateway inventory for fleet API (planned).',
     },
     {
       id: 'tunnel.lifecycle',
-      status: 'pending-verification',
+      status: 'planned',
       kind: 'mutate',
       methods: ['GET', 'POST', 'DELETE'],
       paths: [`${PRODUCT_API_PATH}/tunnels`, `${PRODUCT_API_PATH}/tunnels/:id`],
       authentication: 'bearer',
       requiredPermissions: ['runtime.inspect'],
-      description:
-        'Provider-neutral tunnel lifecycle contract reserved for tunnel API verification.',
+      description: 'Provider-neutral tunnel lifecycle contract (planned).',
     },
     {
       id: 'policies.control',
