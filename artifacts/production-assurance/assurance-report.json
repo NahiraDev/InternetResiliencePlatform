@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "verdict": "PASS",
-  "generatedAt": "2026-10-08T14:56:53.401Z",
-  "startedAt": "2026-10-08T14:55:54.078Z",
+  "verdict": "FAIL",
+  "generatedAt": "2026-11-04T23:18:32.469Z",
+  "startedAt": "2026-11-04T23:18:03.650Z",
   "commitSha": "unknown",
   "contractSha256": "ec26a137445be3faa4b70da389012946f008bedc2bf29b697ad0888c944d3787",
   "checks": [
@@ -13,9 +13,10 @@
     },
     {
       "id": "runtime-build",
-      "status": "pass",
-      "detail": "full workspace build completed successfully",
-      "exitCode": 0
+      "status": "fail",
+      "detail": "full workspace build failed with exit 1",
+      "exitCode": 1,
+      "diagnostic": "• turbo 2.11.10\n   • Packages in scope: @irp/api, @irp/auth, @irp/auto-optimization, @irp/cli, @irp/config, @irp/connectivity, @irp/core, @irp/daemon, @irp/database, @irp/dns, @irp/events, @irp/failover, @irp/gateway-registry, @irp/historical-analysis, @irp/internet-intelligence-agent, @irp/kernel, @irp/linux-client, @irp/logger, @irp/macos-client, @irp/metrics, @irp/network, @irp/network-intelligence, @irp/plugin-api, @irp/plugin-config, @irp/plugin-events, @irp/plugin-loader, @irp/plugin-manager, @irp/plugin-registry, @irp/plugin-runtime, @irp/plugin-samples, @irp/plugin-sandbox, @irp/plugin-sdk, @irp/queue, @irp/resilience-runtime, @irp/routing, @irp/sdk, @irp/security, @irp/shared, @irp/telemetry, @irp/tunnel, @irp/types, @irp/utils, @irp/windows-client\n   • Running build in 43 packages\n   • Remote caching disabled\n\n@irp/config:build: cache hit, replaying logs bc631e53b192ff76\n@irp/config:build: $ tsc -p tsconfig.json\n@irp/shared:build: cache hit, replaying logs af31e2438249da70\n@irp/shared:build: $ tsc -p tsconfig.json\n@irp/database:build: cache hit, replaying logs 8dc8aae70a97e1c5\n@irp/database:build: $ tsc -p tsconfig.json\n@irp/dns:build: cache hit, replaying logs 5b12deaf552ce654\n@irp/dns:build: $ tsc -p tsconfig.json\n@irp/utils:build: cache hit, replaying logs 65fe865d06cbf3e2\n@irp/utils:build: $ tsc -p tsconfig.json\n@irp/windows-client:build: cache miss, executing 9d11191127e53100\n@irp/failover:build: cache hit, replaying logs 07362ddf9cb46788\n@irp/failover:build: $ tsc -p tsconfig.json\n@irp/logger:build: cache hit, replaying logs c127354e82ca9c1e\n@irp/internet-intelligence-agent:build: cache hit, replaying logs 05adbc1556f97287\n@irp/logger:build: $ tsc -p tsconfig.json\n@irp/internet-intelligence-agent:build: $ tsc -p tsconfig.json\n@irp/metrics:build: cache hit, replaying logs 52a61d39d4149d48\n@irp/metrics:build: $ tsc -p tsconfig.json\n@irp/gateway-registry:build: cache hit, replaying logs cc42c7ad54dd9b15\n@irp/types:build: cache hit, replaying logs c4b56a83a10401ae\n@irp/gateway-registry:build: $ pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json\n@irp/types:build: $ tsc -p tsconfig.json\n@irp/queue:build: cache hit, replaying logs 2dd4e14e918c5248\n@irp/queue:build: $ tsc -p tsconfig.json\n@irp/events:build: cache hit, replaying logs 0fce7dcb31f35fc0\n@irp/auth:build: cache hit, replaying logs accc6bf277da5ee9\n@irp/events:build: $ tsc -p tsconfig.json\n@irp/auth:build: $ tsc -p tsconfig.json\n@irp/historical-analysis:build: cache hit, replaying logs b804f44cf45e9ae1\n@irp/historical-analysis:build: $ tsc -p tsconfig.json\n@irp/core:build: cache hit, replaying logs c79e6b9dcc8183df\n@irp/core:build: $ tsc -p tsconfig.json\n@irp/kernel:build: cache hit, replaying logs 9c7ad296e362fd7a\n@irp/kernel:build: $ tsc -p tsconfig.json\n@irp/network-intelligence:build: cache hit, replaying logs 4fe1e5c3c12b7260\n@irp/network-intelligence:build: $ tsc -p tsconfig.json\n@irp/plugin-sdk:build: cache hit, replaying logs ab472253f6e07398\n@irp/macos-client:build: cache miss, executing 5878e72464f03fa0\n@irp/plugin-sdk:build: $ tsc -p tsconfig.json\n@irp/network:build: cache hit, replaying logs 17bb8bb8e29dcd8b\n@irp/network:build: $ tsc -p tsconfig.json\n[ELIFECYCLE] Command failed with exit code 1.\n\n$ turbo run build\n WARNING  error creating log file: Os { code: 13, kind: PermissionDenied, message: \"Permission denied\" }\n  x Internal errors encountered: error with cache: Failed to replay logs:\n  | Cannot write logs: Permission denied (os error 13)"
     },
     {
       "id": "package-integration",
@@ -31,228 +32,16 @@
     },
     {
       "id": "canonical-runtime-validation",
-      "status": "pass",
-      "detail": "canonical runtime closed-loop scenarios passed",
-      "validation": {
-        "schemaVersion": 1,
-        "status": "passed",
-        "deterministic": true,
-        "scenarios": [
-          {
-            "name": "healthy",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000011"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_health"
-            ]
-          },
-          {
-            "name": "dns-degradation",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000022"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_failure"
-            ]
-          },
-          {
-            "name": "provider-recovery",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy",
-              "apply",
-              "verify",
-              "recover"
-            ],
-            "decisionIds": [
-              "decision-000035"
-            ],
-            "outcomes": [
-              "success"
-            ],
-            "incidents": [
-              "persistent_degradation"
-            ],
-            "verificationStatus": "failed",
-            "recoveryStatus": "success"
-          },
-          {
-            "name": "destination-specific",
-            "stages": [
-              "observe",
-              "measure",
-              "detect",
-              "diagnose",
-              "decide",
-              "policy"
-            ],
-            "decisionIds": [
-              "decision-000055"
-            ],
-            "outcomes": [
-              "blocked"
-            ],
-            "incidents": [
-              "dns_health",
-              "provider_health"
-            ]
-          }
-        ],
-        "acceptance": {
-          "completeStageOrderCovered": true,
-          "healthyPathRecorded": true,
-          "degradedPathDetected": true,
-          "persistentDegradationDetected": true,
-          "applyFailureInjectionAvailable": true,
-          "verificationFailureTriggersRecovery": true,
-          "destinationIsolationRepresented": true,
-          "decisionsAreUnique": true
-        },
-        "failedCriteria": []
-      }
+      "status": "fail",
+      "detail": "canonical runtime validation module is unavailable after the full workspace build"
     },
     {
       "id": "runtime-artifact-integrity",
-      "status": "pass",
-      "detail": "hashed 360 runtime artifact files",
-      "sha256": "38d24626cbf5f8ce945deaf00d7bd3d5692ec062db687993f45945f744e0cee1",
-      "files": 360
+      "status": "fail",
+      "detail": "runtime artifact directory is missing after a successful build"
     }
   ],
-  "artifact": {
-    "sha256": "38d24626cbf5f8ce945deaf00d7bd3d5692ec062db687993f45945f744e0cee1",
-    "files": 360
-  },
-  "validation": {
-    "schemaVersion": 1,
-    "status": "passed",
-    "deterministic": true,
-    "scenarios": [
-      {
-        "name": "healthy",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000011"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_health"
-        ]
-      },
-      {
-        "name": "dns-degradation",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000022"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_failure"
-        ]
-      },
-      {
-        "name": "provider-recovery",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy",
-          "apply",
-          "verify",
-          "recover"
-        ],
-        "decisionIds": [
-          "decision-000035"
-        ],
-        "outcomes": [
-          "success"
-        ],
-        "incidents": [
-          "persistent_degradation"
-        ],
-        "verificationStatus": "failed",
-        "recoveryStatus": "success"
-      },
-      {
-        "name": "destination-specific",
-        "stages": [
-          "observe",
-          "measure",
-          "detect",
-          "diagnose",
-          "decide",
-          "policy"
-        ],
-        "decisionIds": [
-          "decision-000055"
-        ],
-        "outcomes": [
-          "blocked"
-        ],
-        "incidents": [
-          "dns_health",
-          "provider_health"
-        ]
-      }
-    ],
-    "acceptance": {
-      "completeStageOrderCovered": true,
-      "healthyPathRecorded": true,
-      "degradedPathDetected": true,
-      "persistentDegradationDetected": true,
-      "applyFailureInjectionAvailable": true,
-      "verificationFailureTriggersRecovery": true,
-      "destinationIsolationRepresented": true,
-      "decisionsAreUnique": true
-    },
-    "failedCriteria": []
-  },
+  "artifact": null,
+  "validation": null,
   "productionCertificationBoundary": "This assurance report proves executable repository/runtime integration only. It does not claim real regional, device, backup/restore, upgrade/rollback, chaos/soak, or production infrastructure evidence."
 }
