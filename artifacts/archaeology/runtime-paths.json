@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "3a609666832309e9e70be1ed4473f070a0b57c5ec06e3c1128b988f306691785",
+  "generatedAt": null,
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
@@ -47,6 +47,10 @@
     {
       "marker": "destination-verification",
       "path": "packages/resilience-runtime/src/canonical-network-adapter.ts"
+    },
+    {
+      "marker": "destination-verification",
+      "path": "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
     },
     {
       "marker": "destination-verification",
@@ -116,7 +120,7 @@
   "summary": {
     "entrypoints": 2,
     "mutationSites": 5,
-    "verificationSites": 18,
+    "verificationSites": 19,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }

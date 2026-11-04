@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "3a609666832309e9e70be1ed4473f070a0b57c5ec06e3c1128b988f306691785",
+  "generatedAt": null,
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
@@ -405,6 +405,286 @@
       ]
     },
     {
+      "name": "GatewayAddressFamily",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayArtifactAttestation",
+      "declaredIn": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayCapabilities",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayCapacity",
+      "declaredIn": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayCapacityState",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayEndpoint",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayEndpointResolution",
+      "declaredIn": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ]
+    },
+    {
+      "name": "GatewayFilter",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetDesiredState",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetEvent",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetEventType",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetManager",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetRecord",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayFleetTelemetry",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayHealth",
+      "declaredIn": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayHealthProbe",
+      "declaredIn": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayHealthSample",
+      "declaredIn": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayId",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayIdentityAttestation",
+      "declaredIn": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayIdentityAttestationPayload",
+      "declaredIn": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayLifecycle",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayMaintenanceWindow",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayMetadata",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayOwnership",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayPatch",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayProbeEvidence",
+      "declaredIn": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayProbeResult",
+      "declaredIn": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayProvisioningMetadata",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayRegistry",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayRegistrySelectionPlaneOptions",
+      "declaredIn": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ]
+    },
+    {
+      "name": "GatewaySecurityVerifier",
+      "declaredIn": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewaySelectionCandidate",
+      "declaredIn": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewaySelectionPolicy",
+      "declaredIn": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewaySelectionRequest",
+      "declaredIn": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewaySelectionResult",
+      "declaredIn": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayTrust",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayTrustAttestation",
+      "declaredIn": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ]
+    },
+    {
+      "name": "GatewayTunnelDeclaration",
+      "declaredIn": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayUpgradeState",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
+      "name": "GatewayUpgradeStatus",
+      "declaredIn": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ]
+    },
+    {
       "name": "GLOBAL_PROVIDER_METADATA",
       "declaredIn": [
         "packages/dns/src/provider-catalog.ts",
@@ -664,6 +944,13 @@
         "packages/linux-client/src/local-dashboard.ts",
         "packages/macos-client/src/local-dashboard.ts"
       ]
+    },
+    {
+      "name": "VerificationResult",
+      "declaredIn": [
+        "packages/gateway-registry/src/capacity-contracts.ts",
+        "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
+      ]
     }
   ],
   "persistenceModels": [],
@@ -671,7 +958,7 @@
     "orphanTests": 3,
     "orphanModules": 6,
     "orphanExports": 54,
-    "duplicateContracts": 53,
+    "duplicateContracts": 94,
     "unreferencedPersistenceModels": 0
   }
 }

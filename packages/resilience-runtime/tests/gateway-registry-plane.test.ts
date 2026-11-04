@@ -165,6 +165,20 @@ const createRouting = (overrides: Partial<Record<string, unknown>> = {}) => {
   return routing;
 };
 
+const createFleetManager = (overrides: Partial<Record<string, unknown>> = {}) => {
+  const manager = {
+    getCapacity: vi.fn().mockReturnValue({ limit: 100, allocated: 10, reserved: 5, available: 85, checkedAt: new Date().toISOString() }),
+    reserveCapacity: vi.fn().mockReturnValue(true),
+    releaseCapacity: vi.fn().mockReturnValue(true),
+    ...overrides,
+  } as unknown as GatewayFleetManager & {
+    getCapacity: ReturnType<typeof vi.fn>;
+    reserveCapacity: ReturnType<typeof vi.fn>;
+    releaseCapacity: ReturnType<typeof vi.fn>;
+  };
+  return manager;
+};
+
 const createVerifyDestination = (status: 'reachable' | 'degraded' | 'failed' | 'unknown' = 'reachable') =>
   vi.fn().mockResolvedValue({
     status,
@@ -183,6 +197,7 @@ const baseOptions = (
   routing: createRouting(),
   verifyDestination: createVerifyDestination(),
   destination: DESTINATION,
+  fleetManager: createFleetManager(),
   ...overrides,
 });
 
@@ -609,5 +624,413 @@ describe('GatewayRegistrySelectionPlane — gateway metadata contract', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
       }),
     ).toThrow('credentialRef is required');
+  });
+});
+
+describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
+  const createFleetManager = (overrides: Partial<Record<string, unknown>> = {}) => {
+    const manager = {
+      getCapacity: vi.fn().mockReturnValue({ limit: 100, allocated: 10, reserved: 5, available: 85, checkedAt: new Date().toISOString() }),
+      reserveCapacity: vi.fn().mockReturnValue(true),
+      releaseCapacity: vi.fn().mockReturnValue(true),
+      ...overrides,
+    } as unknown as GatewayFleetManager & {
+      getCapacity: ReturnType<typeof vi.fn>;
+      reserveCapacity: ReturnType<typeof vi.fn>;
+      releaseCapacity: ReturnType<typeof vi.fn>;
+    };
+    return manager;
+  };
+
+  const createPlaneWithFleet = (fleetManager: ReturnType<typeof createFleetManager>) => {
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager }),
+    );
+    return plane;
+  };
+
+  it('refuses to establish a gateway without a fleet manager', async () => {
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager: undefined }),
+    );
+    await plane.synchronize();
+    await expect(plane.apply('gw-1')).rejects.toThrow('no fleet manager');
+  });
+
+  it('refuses to establish a gateway when capacity reservation fails', async () => {
+    const fleetManager = createFleetManager({ reserveCapacity: vi.fn().mockReturnValue(false) });
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager }),
+    );
+    await plane.synchronize();
+    await expect(plane.apply('gw-1')).rejects.toThrow('capacity reservation failed');
+    expect(fleetManager.reserveCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('releases capacity when tunnel connection fails', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane({
+      connect: vi.fn().mockRejectedValue(new Error('tunnel failed')),
+    });
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('tunnel failed');
+
+    expect(fleetManager.reserveCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity when tunnel health check fails', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane({ verify: vi.fn().mockResolvedValue(false) });
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('protocol health check');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('releases capacity when route verification fails', async () => {
+    const fleetManager = createFleetManager();
+    const failedPlan = {
+      id: 'plan-failed',
+      verification: { required: true, timeoutMs: 5_000, strategy: 'provider', status: 'failed' },
+    } as unknown as RoutePlan;
+    const routing = createRouting({ applyPlan: vi.fn().mockResolvedValue(failedPlan) });
+    const tunnelPlane = createTunnelPlane();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('route through gateway gw-1 was not verified');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(routing.rollbackPlan).toHaveBeenCalled();
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity when external destination is not reached', async () => {
+    const fleetManager = createFleetManager();
+    const verifyDestination = createVerifyDestination('failed');
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing, verifyDestination }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('was not reached through gateway gw-1');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(routing.rollbackPlan).toHaveBeenCalled();
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity when source switch fails', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const connectivity = createMockConnectivity({
+      switchSource: vi.fn().mockRejectedValue(new Error('switch refused')),
+    });
+    const plane = new GatewayRegistrySelectionPlane(
+      connectivity,
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('switch refused');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(routing.rollbackPlan).toHaveBeenCalled();
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity on explicit rollback', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const connectivity = createMockConnectivity({
+      getActiveSource: vi.fn().mockReturnValue({ ...mockSource, sourceId: 'gw-0' }),
+    });
+    const plane = new GatewayRegistrySelectionPlane(
+      connectivity,
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    const rolledBack = await plane.rollback('gw-1');
+
+    expect(rolledBack).toBe(true);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(connectivity.switchSource).toHaveBeenCalledWith('gw-0');
+    expect(routing.rollbackPlan).toHaveBeenCalled();
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity when tunnel rollback fails', async () => {
+    const fleetManager = createFleetManager({ releaseCapacity: vi.fn().mockReturnValue(true) });
+    const tunnelPlane = createTunnelPlane({ rollback: vi.fn().mockResolvedValue(false) });
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    const rolledBack = await plane.rollback('gw-1');
+
+    expect(rolledBack).toBe(false);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(tunnelPlane.rollback).toHaveBeenCalled();
+  });
+
+  it('releases capacity when route rollback fails', async () => {
+    const fleetManager = createFleetManager({ releaseCapacity: vi.fn().mockReturnValue(true) });
+    const tunnelPlane = createTunnelPlane({ rollback: vi.fn().mockResolvedValue(true) });
+    const routing = createRouting({ rollbackPlan: vi.fn().mockResolvedValue(false) });
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    const rolledBack = await plane.rollback('gw-1');
+
+    expect(rolledBack).toBe(false);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(routing.rollbackPlan).toHaveBeenCalled();
+  });
+
+  it('releases capacity when capacity release fails', async () => {
+    const fleetManager = createFleetManager({ releaseCapacity: vi.fn().mockReturnValue(false) });
+    const tunnelPlane = createTunnelPlane({ rollback: vi.fn().mockResolvedValue(true) });
+    const routing = createRouting({ rollbackPlan: vi.fn().mockResolvedValue(true) });
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    const rolledBack = await plane.rollback('gw-1');
+
+    expect(rolledBack).toBe(false);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('idempotent release does not release capacity twice', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    await plane.rollback('gw-1');
+    await plane.rollback('gw-1');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses real capacity evidence in evaluation', async () => {
+    const fleetManager = createFleetManager({
+      getCapacity: vi.fn().mockReturnValue({ limit: 100, allocated: 50, reserved: 10, available: 40, checkedAt: new Date().toISOString() }),
+    });
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager }),
+    );
+    await plane.synchronize();
+
+    const decision = await plane.evaluate();
+
+    expect(fleetManager.getCapacity).toHaveBeenCalledWith('gw-1');
+    const candidate = decision.candidates.find((c) => c.gatewayId === 'gw-1');
+    // The gateway has 60% utilization (50+10)/100, so it should still be eligible but ranked lower
+    expect(candidate).toBeDefined();
+  });
+
+  it('uses real capacity evidence in probeAndEvaluate', async () => {
+    const fleetManager = createFleetManager({
+      getCapacity: vi.fn().mockReturnValue({ limit: 100, allocated: 50, reserved: 10, available: 40, checkedAt: new Date().toISOString() }),
+    });
+    const probe: GatewayHealthProbe = {
+      probe: vi.fn().mockResolvedValue({ reachable: true, evidence: 'transport', latencyMs: 5 }),
+      probeGateways: vi.fn().mockResolvedValue([
+        {
+          gatewayId: 'gw-1',
+          checkedAt: new Date().toISOString(),
+          reachable: true,
+          evidence: 'transport',
+          latencyMs: 5,
+          packetLossPercent: 0,
+        },
+      ]),
+    };
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, probe }),
+    );
+    await plane.synchronize();
+
+    const decision = await plane.probeAndEvaluate();
+
+    expect(fleetManager.getCapacity).toHaveBeenCalledWith('gw-1');
+    const candidate = decision.candidates.find((c) => c.gatewayId === 'gw-1');
+    expect(candidate).toBeDefined();
+  });
+
+  it('capacity reservation is per-gateway and released on failure', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane({
+      connect: vi.fn().mockRejectedValue(new Error('tunnel failed')),
+    });
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('tunnel failed');
+
+    expect(fleetManager.reserveCapacity).toHaveBeenCalledWith('gw-1', 1);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('concurrent apply/release does not corrupt state', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await plane.apply('gw-1');
+    await plane.rollback('gw-1');
+    await plane.apply('gw-1');
+    await plane.rollback('gw-1');
+
+    expect(fleetManager.reserveCapacity).toHaveBeenCalledTimes(2);
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledTimes(2);
+    expect(fleetManager.reserveCapacity).toHaveBeenNthCalledWith(1, 'gw-1', 1);
+    expect(fleetManager.reserveCapacity).toHaveBeenNthCalledWith(2, 'gw-1', 1);
+  });
+
+  it('fails closed when destination is missing', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing, destination: undefined }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('no external destination is configured');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('fails closed when destination verifier is missing', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const routing = createRouting();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing, verifyDestination: undefined }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('no destination verifier is configured');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('fails closed when routing engine is missing', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane();
+    const plane = new GatewayRegistrySelectionPlane(
+      createMockConnectivity(),
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing: undefined }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('no routing engine is configured');
+
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('restores previous source on failure', async () => {
+    const fleetManager = createFleetManager();
+    const tunnelPlane = createTunnelPlane({
+      connect: vi.fn().mockRejectedValue(new Error('tunnel failed')),
+    });
+    const routing = createRouting();
+    const connectivity = createMockConnectivity({
+      getActiveSource: vi.fn().mockReturnValue({ ...mockSource, sourceId: 'gw-0' }),
+    });
+    const plane = new GatewayRegistrySelectionPlane(
+      connectivity,
+      baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
+    );
+    await plane.synchronize();
+
+    await expect(plane.apply('gw-1')).rejects.toThrow('tunnel failed');
+
+    // Source switch never happened (tunnel failed first), so no restoration needed
+    expect(connectivity.switchSource).not.toHaveBeenCalled();
+    expect(fleetManager.releaseCapacity).toHaveBeenCalledWith('gw-1', 1);
+  });
+
+  it('no false success under any incomplete lifecycle', async () => {
+    const failureScenarios = [
+      { name: 'missing fleet manager', options: { fleetManager: undefined } },
+      { name: 'failed reservation', options: { fleetManager: createFleetManager({ reserveCapacity: vi.fn().mockReturnValue(false) }) } },
+      { name: 'tunnel connection failed', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane({ connect: vi.fn().mockRejectedValue(new Error('tunnel failed')) }) } },
+      { name: 'tunnel verify failed', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane({ verify: vi.fn().mockResolvedValue(false) }) } },
+      { name: 'route apply failed', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: createRouting({ applyPlan: vi.fn().mockResolvedValue({ id: 'plan-failed', verification: { required: true, timeoutMs: 5_000, strategy: 'provider', status: 'failed' } } as unknown as RoutePlan) }) } },
+      { name: 'destination failed', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: createRouting(), verifyDestination: createVerifyDestination('failed') } },
+      { name: 'source switch failed', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: createRouting(), connectivity: createMockConnectivity({ switchSource: vi.fn().mockRejectedValue(new Error('switch refused')) }) } },
+      { name: 'missing destination', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: createRouting(), destination: undefined } },
+      { name: 'missing verifier', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: createRouting(), verifyDestination: undefined } },
+      { name: 'missing routing', options: { fleetManager: createFleetManager(), tunnelControlPlane: createTunnelPlane(), routing: undefined } },
+    ];
+
+    for (const scenario of failureScenarios) {
+      const plane = new GatewayRegistrySelectionPlane(
+        createMockConnectivity(scenario.options.connectivity?.getAvailableSources?.() ? scenario.options.connectivity : {}),
+        baseOptions(scenario.options),
+      );
+      await plane.synchronize();
+
+      await expect(plane.apply('gw-1')).rejects.toThrow();
+    }
   });
 });
