@@ -254,6 +254,9 @@ jobs:
       - name: Validate repository integrity
         run: pnpm validate
 
+      - name: Test repository validation guards
+        run: pnpm validate:test
+
       - name: Enforce IRP architecture contract
         run: pnpm architecture:check
 

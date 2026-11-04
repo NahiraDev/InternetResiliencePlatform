@@ -2,6 +2,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { findConflictMarkers, scanCommittedConflictMarkers } from './conflict-markers.mjs';
 
 const root = process.cwd();
 const errors = [];
@@ -75,11 +76,14 @@ const validateMarkdownLinks = () => {
 
 walk(root);
 
+const conflictMarkerFiles = new Set();
+
 for (const file of files) {
   const rel = relative(root, file);
   const text = readFileSync(file, 'utf8');
 
-  if (/(^|\r?\n)(?:<{7}|={7}|>{7})(?:\r?\n|$)/.test(text)) {
+  if (findConflictMarkers(text).length > 0) {
+    conflictMarkerFiles.add(rel);
     errors.push(`${rel} contains merge-conflict markers`);
   }
 
@@ -98,6 +102,22 @@ for (const file of files) {
 }
 
 validateMarkdownLinks();
+
+// Committed-tree scan: the working-tree walk above only sees what is on disk.
+// A conflict marker that was committed and then locally cleaned up must still
+// fail validation, so the committed content of HEAD is inspected as well.
+const committedConflictMarkers = scanCommittedConflictMarkers(root);
+
+if (!committedConflictMarkers.scanned) {
+  console.warn(
+    `warning: committed merge-conflict scan skipped (${committedConflictMarkers.reason ?? 'unknown reason'})`,
+  );
+} else {
+  for (const rel of committedConflictMarkers.files) {
+    if (conflictMarkerFiles.has(rel)) continue;
+    errors.push(`${rel} contains committed merge-conflict markers`);
+  }
+}
 
 const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
 for (const expected of ['apps/*', 'packages/*']) {

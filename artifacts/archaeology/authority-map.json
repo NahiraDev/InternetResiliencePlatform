@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
+  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
   "contractAuthorities": {
     "runtime": "@irp/resilience-runtime",
     "decision": "@irp/resilience-runtime",
@@ -37,6 +37,13 @@
     },
     {
       "path": "packages/linux-client/src/index.ts",
+      "owner": "@irp/linux-client",
+      "composesCanonicalRuntime": true,
+      "constructsRuntimeDirectly": false,
+      "role": "host-composition"
+    },
+    {
+      "path": "packages/linux-client/src/linux-chain.e2e.test.ts",
       "owner": "@irp/linux-client",
       "composesCanonicalRuntime": true,
       "constructsRuntimeDirectly": false,
@@ -107,11 +114,11 @@
   ],
   "violations": [],
   "summary": {
-    "hosts": 14,
+    "hosts": 15,
     "violations": 0,
     "singleProductionAuthority": true,
     "authoritiesByRole": {
-      "host-composition": 6,
+      "host-composition": 7,
       "privileged-mutation-boundary": 5,
       "safety-kernel-host": 3
     },

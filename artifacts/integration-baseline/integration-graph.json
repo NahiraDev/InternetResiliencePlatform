@@ -1,14 +1,6 @@
 {
   "schemaVersion": 1,
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "generatedAt": "2026-11-03T21:26:27.474Z",
-=======
-  "generatedAt": "2026-11-03T21:09:02.183Z",
->>>>>>> 2090079e (r)
-=======
-  "generatedAt": "2026-11-03T22:49:53.391Z",
->>>>>>> 1c63a9c4 (open code)
+  "generatedAt": "2026-11-04T09:42:08.271Z",
   "commit": "unknown",
   "nodes": [
     {
