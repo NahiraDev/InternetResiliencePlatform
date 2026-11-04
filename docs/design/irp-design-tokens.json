@@ -1,0 +1,47 @@
+{
+  "$schema": "IRP design tokens v1",
+  "name": "IRP Signal",
+  "description": "Single source of truth for the IRP visual language. Each platform mirrors these values natively; apps/api/src/design-tokens.test.ts fails if a surface drifts or a pair drops below WCAG AA (4.5:1).",
+  "color": {
+    "dark": {
+      "bg": "#0A0F1C",
+      "surface": "#111827",
+      "surfaceRaised": "#172033",
+      "border": "#2A3A55",
+      "text": "#E8EEF9",
+      "muted": "#9AA9C0",
+      "primary": "#6AA9FF",
+      "accent": "#4FD1C5",
+      "ok": "#4ADE9A",
+      "warn": "#F5C26B",
+      "danger": "#FF7A85"
+    },
+    "light": {
+      "bg": "#F4F7FB",
+      "surface": "#FFFFFF",
+      "surfaceRaised": "#EEF3F9",
+      "border": "#C9D6E6",
+      "text": "#0F1B2D",
+      "muted": "#4A5B73",
+      "primary": "#1D5FD0",
+      "accent": "#0B7A75",
+      "ok": "#0A7F4F",
+      "warn": "#8A5A00",
+      "danger": "#B42335"
+    }
+  },
+  "contrastPairs": {
+    "foreground": ["text", "muted", "primary", "accent", "ok", "warn", "danger"],
+    "background": ["bg", "surface", "surfaceRaised"],
+    "minimumRatio": 4.5
+  },
+  "radius": { "card": 16, "control": 10, "pill": 999 },
+  "spacing": [4, 8, 12, 16, 24, 32],
+  "status": {
+    "healthy": { "token": "ok", "glyph": "●", "label": "Healthy" },
+    "degraded": { "token": "warn", "glyph": "▲", "label": "Degraded" },
+    "unavailable": { "token": "danger", "glyph": "■", "label": "Unavailable" },
+    "observing": { "token": "primary", "glyph": "◆", "label": "Observe only" },
+    "unknown": { "token": "muted", "glyph": "○", "label": "Unknown" }
+  }
+}
