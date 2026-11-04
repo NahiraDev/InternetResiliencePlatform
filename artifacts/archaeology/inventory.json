@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
+  "generatedAt": "701dfbbc0f45864ed8994fd26c351463e59b3f8feebbacfee8a5e5470babd7ba",
   "packages": [
     {
       "group": "apps",
@@ -282,8 +282,8 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 16,
-      "testFiles": 8,
+      "sourceFiles": 18,
+      "testFiles": 9,
       "hasTests": true
     },
     {
@@ -359,8 +359,8 @@
         "@irp/telemetry",
         "@irp/tunnel"
       ],
-      "sourceFiles": 33,
-      "testFiles": 16,
+      "sourceFiles": 37,
+      "testFiles": 18,
       "hasTests": true
     },
     {
@@ -889,7 +889,7 @@
     "nativeClients": 2,
     "packagesWithoutTests": 0,
     "workflows": 16,
-    "docs": 236,
+    "docs": 237,
     "phaseDocs": 115
   },
   "infrastructure": {
@@ -1002,6 +1002,7 @@
       "docs/api/platform-status-api.md",
       "docs/architecture/IRP-SUPERPLATFORM-REFERENCE-ARCHITECTURE.md",
       "docs/architecture/README.md",
+      "docs/architecture/autonomous-capacity-provisioning.md",
       "docs/architecture/connectivity.md",
       "docs/architecture/control-plane-ownership.md",
       "docs/architecture/control-plane-phase72-dependencies.md",

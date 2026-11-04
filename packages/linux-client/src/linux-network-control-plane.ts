@@ -28,6 +28,7 @@ import { StarlinkProvider } from '@irp/connectivity/starlink';
 import {
   RoutingEngine,
   type RouteDiscoveryProvider,
+  type RoutingDestination,
 } from '@irp/routing';
 import { MetricsRegistry } from '@irp/telemetry';
 import { join } from 'node:path';
@@ -37,6 +38,8 @@ import { FileRouteJournal } from './route-journal.js';
 import { LinuxRouteDiscoveryProvider, type LinuxRouteInterfaceMonitor } from './linux-route-discovery.js';
 import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provider.js';
 import { createLinuxDestinationVerifier } from './linux-destination-probe.js';
+import { createLinuxGatewaySelectionPlane } from './linux-gateway-selection.js';
+import type { LinuxWireGuardIntegration } from './linux-wireguard.js';
 import { GatewayRegistrySelectionPlane, type CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
 
 export type LinuxCanonicalNetworkExtensions = Partial<
@@ -94,6 +97,22 @@ export interface LinuxNetworkControlPlaneOptions {
   readonly destinationProbe?: {
     readonly port: number;
     readonly timeoutMs?: number;
+  };
+  /**
+   * Gateway selection composition.
+   *
+   * The gateway plane is only created when the operator has configured a real tunnel, named the
+   * trusted connectivity sources and named the external destination that has to be reached
+   * through the tunnel. Without those, the plane is not created and gateway selection stays
+   * inert instead of inventing endpoints, credentials or trust.
+   */
+  readonly gatewaySelection?: {
+    /** The tunnel integration that carries gateway traffic. */
+    readonly tunnel?: LinuxWireGuardIntegration;
+    /** Connectivity source ids an operator explicitly trusts to act as a gateway. */
+    readonly trustedSourceIds?: readonly string[];
+    /** The external destination that must be reached through the gateway. */
+    readonly destination?: RoutingDestination;
   };
 }
 
@@ -203,10 +222,27 @@ export function createLinuxNetworkControlPlane(
           ...(netns ? { netns } : {}),
         })
       : undefined);
+  if (options.enableGatewaySelection === true && !options.gatewaySelection) {
+    throw new Error(
+      'enableGatewaySelection requires a gatewaySelection configuration with a real tunnel, ' +
+        'the explicitly trusted connectivity source ids and the external destination to verify. ' +
+        'Gateway selection is never created from source discovery alone.',
+    );
+  }
   const gatewaySelection =
     options.canonicalExtensions?.gatewaySelection ??
-    (options.enableGatewaySelection
-      ? new GatewayRegistrySelectionPlane(connectivity, { enabled: true })
+    (options.gatewaySelection
+      ? createLinuxGatewaySelectionPlane(connectivity, {
+          ...(options.gatewaySelection.tunnel ? { tunnel: options.gatewaySelection.tunnel } : {}),
+          ...(options.gatewaySelection.trustedSourceIds
+            ? { trustedSourceIds: options.gatewaySelection.trustedSourceIds }
+            : {}),
+          ...(options.gatewaySelection.destination
+            ? { destination: options.gatewaySelection.destination }
+            : {}),
+          routing,
+          ...(netns ? { netns } : {}),
+        })
       : undefined);
   const controlPlane: CanonicalNetworkControlPlane = {
     ...options.canonicalExtensions,
