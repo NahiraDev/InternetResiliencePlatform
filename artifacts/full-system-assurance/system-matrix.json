@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-11-04T09:42:07.806Z",
+  "generatedAt": "2026-11-04T10:08:18.367Z",
   "commitSha": "unknown",
   "repositoryScope": [
     "packages",
@@ -14,7 +14,7 @@
     "docs/roadmap/MASTER_ROADMAP_V2.md"
   ],
   "componentCount": 223,
-  "sourceFileCount": 558,
+  "sourceFileCount": 560,
   "components": [
     {
       "componentId": "packages::auth",
@@ -252,7 +252,7 @@
       "entrypoint": null,
       "buildCommand": "pnpm -w exec tsc -p packages/gateway-registry/tsconfig.json",
       "testCommand": "vitest run",
-      "sourceFiles": 16,
+      "sourceFiles": 18,
       "upstreamDependencies": [],
       "downstreamDependencies": [
         "packages/resilience-runtime"
@@ -5205,5 +5205,5 @@
       "fail"
     ]
   },
-  "reportSha256": "943a3db6660b575dbcbcf86a77c5801a4e384f808c5cacb773e4a6f1b186accd"
+  "reportSha256": "d83028789e0daa6ea010410a4cc624f4e2b61ba325f085a60492803fc244be2c"
 }
