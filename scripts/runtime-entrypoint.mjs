@@ -136,10 +136,9 @@ if (config.telemetry.prometheus) {
 }
 
 const { buildServer } = await import('../apps/api/dist/index.js');
-const { registerRemoteClientRoutes } = await import('../apps/api/dist/remote-client-api.js');
 
 const server = await buildServer();
-registerRemoteClientRoutes(server);
+// Remote client routes are registered in apps/api/src/index.ts via buildServer()
 let shuttingDown = false;
 const shutdown = async (signal) => {
   if (shuttingDown) return;
