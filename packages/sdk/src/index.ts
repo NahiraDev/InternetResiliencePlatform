@@ -22,7 +22,7 @@ export const PRODUCT_API_PATH = '/api/v1' as const;
 
 export type ProductApiClient = 'web' | 'desktop' | 'ios' | 'android';
 export type ProductCapabilityStatus = 'implemented' | 'pending-verification' | 'planned';
-export type ProductCapabilityKind = 'read' | 'mutate' | 'stream';
+export type ProductCapabilityKind = 'read' | 'mutate' | 'stream' | 'read-write';
 export type ProductCapabilityAuthentication = 'none' | 'bearer' | 'device-credential';
 
 export interface ProductCapability {
@@ -146,5 +146,147 @@ export class InternetResilienceClient {
       throw new TypeError(`Product API paths must use ${PRODUCT_API_PATH}/.`);
     }
     return this.request<T>(path, init);
+  }
+
+  // ── Device control plane ────────────────────────────────────────────────
+
+  async deviceSnapshot(deviceId: string): Promise<{
+    connection: string;
+    interfaceCount: number;
+    defaultRouteAvailable: boolean;
+    dnsReachable: boolean;
+    capturedAt: string;
+  }> {
+    return this.request<{
+      success: true;
+      data: {
+        connection: string;
+        interfaceCount: number;
+        defaultRouteAvailable: boolean;
+        dnsReachable: boolean;
+        capturedAt: string;
+      };
+    }>(`${PRODUCT_API_PATH}/remote/devices/${encodeURIComponent(deviceId)}/snapshot`)
+      .then((r) => r.data);
+  }
+
+  async deviceAnalytics(deviceId: string): Promise<{
+    sampleCount: number;
+    availabilityPercent: number;
+    medianLatencyMs: number | null;
+    packetLossPercent: number | null;
+  }> {
+    return this.request<{
+      success: true;
+      data: {
+        sampleCount: number;
+        availabilityPercent: number;
+        medianLatencyMs: number | null;
+        packetLossPercent: number | null;
+      };
+    }>(`${PRODUCT_API_PATH}/remote/devices/${encodeURIComponent(deviceId)}/analytics`)
+      .then((r) => r.data);
+  }
+
+  async devicePolicy(deviceId: string): Promise<{
+    autonomousMode: boolean;
+  }> {
+    return this.request<{
+      success: true;
+      data: { autonomousMode: boolean };
+    }>(`${PRODUCT_API_PATH}/remote/devices/${encodeURIComponent(deviceId)}/policy`)
+      .then((r) => r.data);
+  }
+
+  async setDevicePolicy(
+    deviceId: string,
+    autonomousMode: boolean,
+  ): Promise<{ autonomousMode: boolean }> {
+    return this.request<{
+      success: true;
+      data: { autonomousMode: boolean };
+    }>(
+      `${PRODUCT_API_PATH}/remote/devices/${encodeURIComponent(deviceId)}/policy`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ autonomousMode }),
+      },
+    ).then((r) => r.data);
+  }
+
+  // ── Remote client authentication ────────────────────────────────────────
+
+  async remoteClientToken(
+    credentialId: string,
+    secret: string,
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    expiresIn: number;
+    refreshExpiresAt: string;
+    scopes: readonly string[];
+    device: {
+      credentialId: string;
+      deviceId: string;
+      platform: string;
+      label?: string;
+    };
+  }> {
+    return this.request<{
+      success: true;
+      data: {
+        accessToken: string;
+        refreshToken: string;
+        tokenType: string;
+        expiresIn: number;
+        refreshExpiresAt: string;
+        scopes: readonly string[];
+        device: {
+          credentialId: string;
+          deviceId: string;
+          platform: string;
+          label?: string;
+        };
+      };
+    }>(
+      `${PRODUCT_API_PATH}/auth/remote/token`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credentialId, secret }),
+      },
+    ).then((r) => r.data);
+  }
+
+  async remoteClientRefresh(
+    refreshToken: string,
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    expiresIn: number;
+    refreshExpiresAt: string;
+    scopes: readonly string[];
+  }> {
+    return this.request<{
+      success: true;
+      data: {
+        accessToken: string;
+        refreshToken: string;
+        tokenType: string;
+        expiresIn: number;
+        refreshExpiresAt: string;
+        scopes: readonly string[];
+      };
+    }>(
+      `${PRODUCT_API_PATH}/auth/remote/refresh`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      },
+    ).then((r) => r.data);
   }
 }

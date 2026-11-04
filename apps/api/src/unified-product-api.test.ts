@@ -1,11 +1,13 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { registerUnifiedProductRoutes, PRODUCT_API_MANIFEST } from './unified-product-api.js';
+import type { SharedRateLimitStore } from './security/rate-limit.js';
 
 const createTestApp = (
   options: {
     principal?: { id: string; roles: string[]; scopes: string[]; organizationId?: string } | null;
     authorize?: (permission: string) => Promise<boolean>;
+    rateLimitStore?: SharedRateLimitStore | undefined;
   } = {},
 ): FastifyInstance => {
   const app = Fastify({ logger: false });
@@ -22,7 +24,9 @@ const createTestApp = (
       ),
     } as never;
   });
-  registerUnifiedProductRoutes(app);
+  const routeOptions: { rateLimitStore?: SharedRateLimitStore } = {};
+  if (options.rateLimitStore !== undefined) routeOptions.rateLimitStore = options.rateLimitStore;
+  registerUnifiedProductRoutes(app, routeOptions);
   return app;
 };
 

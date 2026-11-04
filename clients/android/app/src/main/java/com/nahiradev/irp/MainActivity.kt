@@ -1,5 +1,6 @@
 package com.nahiradev.irp
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,9 +18,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val diagnostics = AndroidNetworkDiagnosticsAdapter(this)
+        val tokenStore = AndroidKeyStoreTokenStore(this)
+        val client = HttpControlPlaneClient.create(this, tokenStore)
         val session = ClientSession(
-            UnconfiguredControlPlaneClient(),
-            AndroidKeyStoreTokenStore(this),
+            client,
+            tokenStore,
             AndroidIdentityStore(this),
         )
         session.restoreSession()
@@ -44,20 +47,39 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) { captureSnapshot() }
 
-            IrpTheme {
-                IrpDashboard(
-                    state = state,
-                    snapshot = snapshot,
-                    loading = loading,
-                    error = error,
-                    onRefresh = { captureSnapshot() },
-                    onSync = {
-                        scope.launch {
-                            loading = true
-                            runCatching { session.refresh() }
-                                .onSuccess { error = null }
-                                .onFailure { error = it.message ?: "Sync with the Control Plane failed." }
-                            loading = false
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Client", style = MaterialTheme.typography.titleMedium)
+                            Text(if (state.enrolled) "Enrolled: ${state.deviceName}" else "Not enrolled")
+
+                            // Auth status row
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Authenticated")
+                                Switch(
+                                    checked = client.isAuthenticated(),
+                                    enabled = false,
+                                    onCheckedChange = {},
+                                )
+                            }
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Autonomous mode")
+                                Switch(
+                                    checked = state.policy.autonomousMode,
+                                    enabled = state.enrolled && client.isAuthenticated(),
+                                    onCheckedChange = { enabled ->
+                                        scope.launch { runCatching { session.setAutonomousMode(enabled) } }
+                                    },
+                                )
+                            }
+
+                            Button(
+                                onClick = { scope.launch { runCatching { client.refresh() } } },
+                                enabled = !state.enrolled,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Refresh token")
+                            }
                         }
                     },
                     onAutonomousModeChange = { enabled ->

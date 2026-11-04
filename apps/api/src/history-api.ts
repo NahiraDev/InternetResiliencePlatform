@@ -34,7 +34,7 @@ export interface HistoryApiHandle {
 
 export const registerHistoryRoutes = (
   app: FastifyInstance,
-  store = new InMemoryHistoricalMeasurementStore(),
+  store: HistoricalMeasurementStore = new InMemoryHistoricalMeasurementStore(),
 ): HistoryApiHandle => {
   app.get('/api/v1/history/report', async (request, reply) => {
     await authz(request, 'runtime.inspect');

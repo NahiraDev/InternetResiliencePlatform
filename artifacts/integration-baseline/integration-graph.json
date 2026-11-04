@@ -1,6 +1,14 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-30T13:08:04.709Z",
+<<<<<<< HEAD
+<<<<<<< HEAD
+  "generatedAt": "2026-11-03T21:26:27.474Z",
+=======
+  "generatedAt": "2026-11-03T21:09:02.183Z",
+>>>>>>> 2090079e (r)
+=======
+  "generatedAt": "2026-11-03T22:49:53.391Z",
+>>>>>>> 1c63a9c4 (open code)
   "commit": "unknown",
   "nodes": [
     {
@@ -766,6 +774,15 @@
     {
       "source": "@irp/linux-client",
       "target": "@irp/telemetry",
+      "contract": "workspace dependency",
+      "transport": "node module import/link",
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "failureBehavior": "dependency/build/runtime failure must fail the invoking surface",
+      "verification": "deterministic build plus runtime integration; real runtime evidence required for VERIFIED"
+    },
+    {
+      "source": "@irp/linux-client",
+      "target": "@irp/tunnel",
       "contract": "workspace dependency",
       "transport": "node module import/link",
       "status": "CONNECTED_BUT_UNVERIFIED",
