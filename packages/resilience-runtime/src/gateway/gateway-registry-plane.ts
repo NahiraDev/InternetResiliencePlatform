@@ -98,8 +98,8 @@ interface GatewayApplication {
   readonly previousSourceId: string | undefined;
   readonly destination: RoutingDestination | undefined;
   readonly verifiedAt: string;
-  /** Allocation ID for capacity tracking */
-  readonly allocationId?: string;
+  /** Allocation ID for capacity tracking - unique per reservation */
+  readonly allocationId: string;
 }
 
 interface CompensationResult {
@@ -110,6 +110,19 @@ interface CompensationResult {
   readonly tunnelTornDown: boolean;
   readonly errors: Error[];
   readonly applicationStatePreserved: boolean;
+}
+
+/** Error thrown when gateway establishment fails, including compensation details. */
+export class GatewayEstablishmentError extends Error {
+  readonly originalError: Error;
+  readonly compensationResult: CompensationResult;
+
+  constructor(originalError: Error, compensationResult: CompensationResult) {
+    super(`${originalError.message}; compensation: ${compensationResult.errors.length} error(s) during cleanup`);
+    this.name = 'GatewayEstablishmentError';
+    this.originalError = originalError;
+    this.compensationResult = compensationResult;
+  }
 }
 
 const DEFAULT_PROBE_TIMEOUT_MS = 5_000;
@@ -689,7 +702,8 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       } catch (error) {
         throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
       }
-      const allocationId = capacityRecord.gateway.id; // Use gateway ID as allocation reference
+      // Generate a unique allocation ID for this reservation
+      const allocationId = `${gatewayId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       const previousSourceId = this.connectivity.getActiveSource()?.sourceId;
       const configuration = this.buildTunnelConfiguration(gateway, declaration);
@@ -755,7 +769,7 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
         await routing.confirmPlan?.(routePlan);
         return this.receipt(gatewayId, application, outcome);
       } catch (error) {
-        await this.compensate({
+        const compensationResult = await this.compensate({
           gatewayId,
           previousSourceId,
           sourceSwitched,
@@ -763,7 +777,8 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
           routePlan,
           allocationId,
         });
-        throw error instanceof Error ? error : new Error('gateway establishment failed');
+        const originalError = error instanceof Error ? error : new Error('gateway establishment failed');
+        throw new GatewayEstablishmentError(originalError, compensationResult);
       }
     });
   }
@@ -1065,57 +1080,96 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   }
 
   /**
-   * Rolls a gateway's established state back: the source switch is reverted, the route is rolled
-   * back and the tunnel is torn down. Returns `true` only when every step succeeded.
-   * Preserves state for retry if rollback is incomplete.
+   * Internal rollback without lock acquisition - for use when the lock is already held.
+   * Returns the compensation result for error handling.
+   */
+  private async _rollback(gatewayId: string): Promise<CompensationResult> {
+    const application = this.applications.get(gatewayId);
+    if (!application) {
+      return {
+        gatewayId,
+        capacityReleased: true,
+        sourceRestored: true,
+        routeRolledBack: true,
+        tunnelTornDown: true,
+        errors: [],
+        applicationStatePreserved: false,
+      };
+    }
+
+    let ok = true;
+    const errors: Error[] = [];
+
+    // Release capacity via fleet manager
+    const fleetManager = this.options.fleetManager;
+    if (fleetManager && application.allocationId) {
+      try {
+        const releaseRecord = fleetManager.releaseCapacity(gatewayId, 1);
+        if (!releaseRecord) ok = false;
+      } catch (error) {
+        ok = false;
+        errors.push(error instanceof Error ? error : new Error('capacity release failed'));
+      }
+    }
+
+    // Restore previous source
+    if (application.previousSourceId !== undefined && application.previousSourceId !== gatewayId) {
+      try {
+        await this.connectivity.switchSource(application.previousSourceId);
+      } catch (error) {
+        ok = false;
+        errors.push(error instanceof Error ? error : new Error('source restoration failed'));
+      }
+    }
+
+    // Rollback route plan
+    if (application.routePlan) {
+      try {
+        const rolledBack = await this.options.routing?.rollbackPlan(application.routePlan);
+        if (rolledBack !== true) ok = false;
+      } catch (error) {
+        ok = false;
+        errors.push(error instanceof Error ? error : new Error('route rollback failed'));
+      }
+    }
+
+    // Teardown tunnel
+    try {
+      const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
+      if (tunnelRolledBack !== true) ok = false;
+    } catch (error) {
+      ok = false;
+      errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
+    }
+
+    // Only delete application state if rollback was complete
+    const applicationStatePreserved = !ok;
+    if (!applicationStatePreserved) {
+      this.applications.delete(gatewayId);
+    }
+
+    return {
+      gatewayId,
+      capacityReleased: true, // We attempted release
+      sourceRestored: application.previousSourceId !== undefined,
+      routeRolledBack: application.routePlan !== undefined,
+      tunnelTornDown: true,
+      errors,
+      applicationStatePreserved,
+    };
+  }
+
+  /**
+   * Public rollback with lock acquisition.
    */
   async rollback(gatewayId: string): Promise<boolean> {
     return this.withLock(gatewayId, async () => {
-      const application = this.applications.get(gatewayId);
-      if (!application) return true;
-
-      let ok = true;
-
-      // Release capacity via fleet manager
-      const fleetManager = this.options.fleetManager;
-      if (fleetManager && application.allocationId) {
-        try {
-          const releaseRecord = fleetManager.releaseCapacity(gatewayId, 1);
-          if (!releaseRecord) ok = false;
-        } catch {
-          ok = false;
-        }
-      }
-
-      // Restore previous source
-      if (application.previousSourceId !== undefined && application.previousSourceId !== gatewayId) {
-        try {
-          await this.connectivity.switchSource(application.previousSourceId);
-        } catch {
-          ok = false;
-        }
-      }
-
-      // Rollback route plan
-      if (application.routePlan) {
-        const rolledBack = await this.options.routing?.rollbackPlan(application.routePlan);
-        if (rolledBack !== true) ok = false;
-      }
-
-      // Teardown tunnel
-      const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
-      if (tunnelRolledBack !== true) ok = false;
-
-      // Only delete application state if rollback was complete
-      if (ok) {
-        this.applications.delete(gatewayId);
-      }
-
-      return ok;
+      const result = await this._rollback(gatewayId);
+      return result.errors.length === 0;
     });
   }
 
   private async rollbackGateway(gatewayId: string): Promise<void> {
-    await this.rollback(gatewayId).catch(() => undefined);
+    await this._rollback(gatewayId).catch(() => undefined);
   }
 }

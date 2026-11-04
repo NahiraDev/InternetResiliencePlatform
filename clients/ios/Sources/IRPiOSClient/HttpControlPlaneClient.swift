@@ -20,8 +20,13 @@ import Foundation
  * Token state is guarded by a serial dispatch queue. Network requests are
  * performed outside the queue so async/await (including token refresh) works
  * correctly without deadlocks.
+ *
+ * The class is marked @unchecked Sendable because token state is protected
+ * by a serial dispatch queue (tokenQueue). This is a deliberate design choice
+ * to maintain thread safety while conforming to the IRPControlPlaneClient protocol.
  */
-public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
+@unchecked Sendable
+public final class HttpControlPlaneClient: IRPControlPlaneClient {
     private let baseURL: URL
     private let session: URLSession
     private let tokenStore: any IRPSecureTokenStore
@@ -88,13 +93,13 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
         do {
             json = try HttpControlPlaneClient.jsonEncode(body)
         } catch {
-            throw IRPControlPlaneClientError.serializationError(error)
+            throw IRPControlPlaneClientError.serializationError(String(describing: error))
         }
         let response: [String: Any]
         do {
             response = try await request(method: "POST", path: "/api/v1/auth/remote/devices/enroll", body: json)
         } catch {
-            throw IRPControlPlaneClientError.transportError(error)
+            throw IRPControlPlaneClientError.transportError(String(describing: error))
         }
         guard let data = response["data"] as? [String: Any] else {
             throw IRPControlPlaneClientError.invalidResponse
@@ -111,7 +116,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
         do {
             json = try await request(method: "GET", path: "/api/v1/remote/devices/\(deviceId)/snapshot", addAuth: true)
         } catch {
-            throw IRPControlPlaneClientError.transportError(error)
+            throw IRPControlPlaneClientError.transportError(String(describing: error))
         }
         guard let data = json["data"] as? [String: Any] else {
             throw IRPControlPlaneClientError.invalidResponse
@@ -130,7 +135,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
         do {
             json = try await request(method: "GET", path: "/api/v1/remote/devices/\(deviceId)/analytics", addAuth: true)
         } catch {
-            throw IRPControlPlaneClientError.transportError(error)
+            throw IRPControlPlaneClientError.transportError(String(describing: error))
         }
         guard let data = json["data"] as? [String: Any] else {
             throw IRPControlPlaneClientError.invalidResponse
@@ -149,13 +154,13 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
         do {
             json = try HttpControlPlaneClient.jsonEncode(body)
         } catch {
-            throw IRPControlPlaneClientError.serializationError(error)
+            throw IRPControlPlaneClientError.serializationError(String(describing: error))
         }
         let response: [String: Any]
         do {
             response = try await request(method: "POST", path: "/api/v1/remote/devices/\(deviceId)/policy", body: json, addAuth: true)
         } catch {
-            throw IRPControlPlaneClientError.transportError(error)
+            throw IRPControlPlaneClientError.transportError(String(describing: error))
         }
         guard let data = response["data"] as? [String: Any] else {
             throw IRPControlPlaneClientError.invalidResponse
@@ -177,13 +182,13 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
         do {
             json = try HttpControlPlaneClient.jsonEncode(body)
         } catch {
-            throw IRPControlPlaneClientError.serializationError(error)
+            throw IRPControlPlaneClientError.serializationError(String(describing: error))
         }
         let response: [String: Any]
         do {
             response = try await request(method: "POST", path: "/api/v1/auth/remote/token", body: json)
         } catch {
-            throw IRPControlPlaneClientError.transportError(error)
+            throw IRPControlPlaneClientError.transportError(String(describing: error))
         }
         guard let data = response["data"] as? [String: Any] else {
             throw IRPControlPlaneClientError.invalidResponse
@@ -225,7 +230,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, Sendable {
                 self.accessToken = data["accessToken"] as? String
                 self.refreshToken = data["refreshToken"] as? String
             }
-            if let refresh = tokenQueue.sync({ self.refreshToken }) {
+            if let refresh = tokenQueue.sync(execute: { self.refreshToken }) {
                 try? tokenStore.write(refresh)
             }
             return tokenQueue.sync { self.accessToken != nil }
@@ -325,11 +330,28 @@ extension IRPControlPlaneClientError {
     }
 }
 
-public enum IRPControlPlaneClientError: Error, Equatable, Sendable {
+/// Error type for the iOS control plane client.
+/// Custom Equatable implementation because associated Error values don't conform to Equatable.
+public enum IRPControlPlaneClientError: Error, Sendable {
     case invalidBaseURL(String)
     case invalidURL
     case invalidResponse
-    case transportError(Error)
-    case serializationError(Error)
+    case transportError(String)  // Store error description instead of Error
+    case serializationError(String)  // Store error description instead of Error
     case httpError(statusCode: Int, body: String)
+}
+
+extension IRPControlPlaneClientError: Equatable {
+    public static func == (lhs: IRPControlPlaneClientError, rhs: IRPControlPlaneClientError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidBaseURL(let a), .invalidBaseURL(let b)): return a == b
+        case (.invalidURL, .invalidURL): return true
+        case (.invalidResponse, .invalidResponse): return true
+        case (.transportError(let a), .transportError(let b)): return a == b
+        case (.serializationError(let a), .serializationError(let b)): return a == b
+        case (.httpError(let aStatus, let aBody), .httpError(let bStatus, let bBody)):
+            return aStatus == bStatus && aBody == bBody
+        default: return false
+        }
+    }
 }

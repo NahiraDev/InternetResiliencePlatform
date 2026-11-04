@@ -20,42 +20,30 @@
  * Secure token storage: refresh tokens are persisted to a file with 0600 permissions
  * under the IRP state directory, so only the file's owner can read them.
  */
-import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync } from 'node:fs';
+import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-const DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
-const CONNECT_TIMEOUT_MS = 8_000;
 const READ_TIMEOUT_MS = 15_000;
 const MAX_REFRESH_RETRIES = 1;
 
-const jsonEncode = (value: unknown): string => JSON.stringify(value);
 const jsonDecode = <T>(text: string): T => JSON.parse(text) as T;
 
 const escapeJsonString = (s: string): string =>
   s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 
-const toJson = (any: unknown): string => {
-  if (any === null) return 'null';
-  if (typeof any === 'string') return `"${escapeJsonString(any)}"`;
-  if (typeof any === 'number' || typeof any === 'boolean') return String(any);
-  if (Array.isArray(any)) return `[${any.map(toJson).join(',')}]`;
-  if (typeof any === 'object') {
+const toJson = (value: unknown): string => {
+  if (value === null) return 'null';
+  if (typeof value === 'string') return `"${escapeJsonString(value)}"`;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return `[${value.map(toJson).join(',')}]`;
+  if (typeof value === 'object') {
     const fields: string[] = [];
-    for (const [key, value] of Object.entries(any)) {
-      fields.push(`"${escapeJsonString(key)}":${toJson(value)}`);
+    for (const [key, val] of Object.entries(value)) {
+      fields.push(`"${escapeJsonString(key)}":${toJson(val)}`);
     }
     return `{${fields.join(',')}}`;
   }
-  return String(any);
-};
-
-const parseConnection = (value: string): string => {
-  switch (value.toLowerCase()) {
-    case 'online': return 'online';
-    case 'degraded': return 'degraded';
-    case 'offline': return 'offline';
-    default: return 'unknown';
-  }
+  return String(value);
 };
 
 const parseInt = (value: unknown): number | null => {
@@ -88,12 +76,6 @@ const parseDouble = (value: unknown): number | null => {
   return null;
 };
 
-const parseInstant = (value: string | undefined): Date | undefined => {
-  if (!value) return undefined;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-};
-
 /**
  * Secure token storage for macOS. Refresh tokens are persisted to a file with
  * 0600 permissions under the IRP state directory.
@@ -108,7 +90,7 @@ class FileTokenStore {
   read(): string | undefined {
     if (!existsSync(this.path)) return undefined;
     try {
-      return require('node:fs').readFileSync(this.path, 'utf8').trim() || undefined;
+      return readFileSync(this.path, 'utf8').trim() || undefined;
     } catch {
       return undefined;
     }
@@ -128,7 +110,7 @@ class FileTokenStore {
 
   remove(): void {
     try {
-      require('node:fs').unlinkSync(this.path);
+      unlinkSync(this.path);
     } catch {
       // ignore if not present
     }
@@ -198,7 +180,7 @@ export class HttpControlPlaneClient {
    * Polls for enrollment request approval and returns device credentials.
    * Should be called after requestEnrollment() once admin has approved.
    */
-  async getEnrollmentCredentials(requestId: string): Promise<{
+  async getEnrollmentCredentials(_requestId: string): Promise<{
     credentialId: string;
     deviceId: string;
     secret: string;

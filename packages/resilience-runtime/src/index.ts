@@ -39,7 +39,7 @@ export * from './resilience/observation-dedup.js';
 export * from './resilience/performance-budgets.js';
 export * from './resilience/degradation.js';
 export * from './tunnel/tunnel-control-plane.js';
-export * from './gateway/gateway-registry-plane.js';
+export { GatewayEstablishmentError } from './gateway/gateway-registry-plane.js';
 export * from './fabric-lifecycle.js';
 export * from './fabric.js';
 export * from './fabric-authority.js';

@@ -1,4 +1,3 @@
-import type { RouteDiscoveryProvider } from '@irp/routing';
 import { constants as fsConstants } from 'node:fs';
 import { open, realpath } from 'node:fs/promises';
 import { isIP } from 'node:net';
