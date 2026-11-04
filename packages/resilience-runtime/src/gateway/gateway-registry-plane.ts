@@ -702,6 +702,9 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       } catch (error) {
         throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
       }
+      if (!capacityRecord || !capacityRecord.gateway) {
+        throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
+      }
       // Generate a unique allocation ID for this reservation
       const allocationId = `${gatewayId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -1017,6 +1020,7 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     allocationId?: string;
   }): Promise<CompensationResult> {
     const errors: Error[] = [];
+    let ok = true;
 
     // Release capacity first - we reserved it at the start
     let capacityReleased = false;
@@ -1047,7 +1051,12 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       try {
         const rolledBack = await this.options.routing?.rollbackPlan(state.routePlan);
         routeRolledBack = rolledBack === true;
+        if (!routeRolledBack) {
+          ok = false;
+          errors.push(new Error('route rollback returned false'));
+        }
       } catch (error) {
+        ok = false;
         errors.push(error instanceof Error ? error : new Error('route rollback failed'));
       }
     }
@@ -1058,7 +1067,12 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     try {
       const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
       tunnelTornDown = tunnelRolledBack === true;
+      if (!tunnelTornDown) {
+        ok = false;
+        errors.push(new Error('tunnel teardown returned false'));
+      }
     } catch (error) {
+      ok = false;
       errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
     }
 
@@ -1105,7 +1119,10 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     if (fleetManager && application.allocationId) {
       try {
         const releaseRecord = fleetManager.releaseCapacity(gatewayId, 1);
-        if (!releaseRecord) ok = false;
+        if (!releaseRecord) {
+          ok = false;
+          errors.push(new Error('capacity release returned false'));
+        }
       } catch (error) {
         ok = false;
         errors.push(error instanceof Error ? error : new Error('capacity release failed'));
@@ -1126,7 +1143,10 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     if (application.routePlan) {
       try {
         const rolledBack = await this.options.routing?.rollbackPlan(application.routePlan);
-        if (rolledBack !== true) ok = false;
+        if (rolledBack !== true) {
+          ok = false;
+          errors.push(new Error('route rollback returned false'));
+        }
       } catch (error) {
         ok = false;
         errors.push(error instanceof Error ? error : new Error('route rollback failed'));
@@ -1136,7 +1156,10 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     // Teardown tunnel
     try {
       const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
-      if (tunnelRolledBack !== true) ok = false;
+      if (tunnelRolledBack !== true) {
+        ok = false;
+        errors.push(new Error('tunnel teardown returned false'));
+      }
     } catch (error) {
       ok = false;
       errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
