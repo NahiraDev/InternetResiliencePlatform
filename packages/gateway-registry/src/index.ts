@@ -202,3 +202,5 @@ export * from './failover.js';
 export * from './fleet.js';
 export * from './security.js';
 export * from './starlink-resources.js';
+export * from './probe.js';
+export type { GatewayProbeResult } from './health.js';
