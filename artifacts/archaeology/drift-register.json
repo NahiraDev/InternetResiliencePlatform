@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6",
+  "generatedAt": null,
   "findings": [
     {
       "id": "orphaned-test:packages/resilience-runtime/src/adapters/adapters.test.ts",
@@ -14,7 +14,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "orphaned-test:packages/resilience-runtime/src/canonical-tunnel-adapter.test.ts",
@@ -28,7 +28,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "orphaned-test:packages/resilience-runtime/src/incidents/incidents.test.ts",
@@ -42,7 +42,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:AddressFamily",
@@ -57,7 +57,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:AgentRecommendation",
@@ -71,7 +71,7 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:AssuranceStatus",
@@ -85,7 +85,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:CircuitBreaker",
@@ -99,7 +99,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:CircuitBreakerState",
@@ -113,7 +113,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:compareVersions",
@@ -127,7 +127,7 @@
       "owner": "packages/plugin-loader",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:createHttpControlPlaneClient",
@@ -141,7 +141,7 @@
       "owner": "packages/macos-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:DecisionEvaluator",
@@ -155,7 +155,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:DEFAULT_TIMEOUT_MS",
@@ -170,7 +170,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:DependencyGraph",
@@ -184,7 +184,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:DeviceIdentity",
@@ -198,7 +198,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:DomainEvent",
@@ -212,7 +212,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:EndpointRegistry",
@@ -226,7 +226,7 @@
       "owner": "packages/security",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:escapeHtml",
@@ -240,7 +240,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:EventHandler",
@@ -254,7 +254,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:FailureEvidence",
@@ -268,7 +268,567 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayAddressFamily",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayAddressFamily is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayArtifactAttestation",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayArtifactAttestation is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayCapabilities",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayCapabilities is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayCapacity",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayCapacity is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayCapacityState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayCapacityState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayEndpoint",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayEndpoint is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayEndpointResolution",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ],
+      "impact": "Symbol GatewayEndpointResolution is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/resilience-runtime",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFilter",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFilter is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetDesiredState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetDesiredState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetEvent",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetEvent is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetEventType",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetEventType is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetManager",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetManager is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetRecord",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetRecord is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayFleetTelemetry",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayFleetTelemetry is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayHealth",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayHealth is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayHealthProbe",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayHealthProbe is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayHealthSample",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayHealthSample is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayId",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayId is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayIdentityAttestation",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayIdentityAttestation is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayIdentityAttestationPayload",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayIdentityAttestationPayload is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayLifecycle",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayLifecycle is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayMaintenanceWindow",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayMaintenanceWindow is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayMetadata",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayMetadata is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayOwnership",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayOwnership is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayPatch",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayPatch is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayProbeEvidence",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayProbeEvidence is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayProbeResult",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/health.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayProbeResult is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayProvisioningMetadata",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayProvisioningMetadata is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayRegistry",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayRegistry is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayRegistrySelectionPlaneOptions",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ],
+      "impact": "Symbol GatewayRegistrySelectionPlaneOptions is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/resilience-runtime",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewaySecurityVerifier",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/security.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewaySecurityVerifier is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewaySelectionCandidate",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewaySelectionCandidate is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewaySelectionPolicy",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewaySelectionPolicy is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewaySelectionRequest",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewaySelectionRequest is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewaySelectionResult",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/selection.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewaySelectionResult is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayTrust",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayTrust is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayTrustAttestation",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts",
+        "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+      ],
+      "impact": "Symbol GatewayTrustAttestation is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/resilience-runtime",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayTunnelDeclaration",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/index.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayTunnelDeclaration is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayUpgradeState",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayUpgradeState is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:GatewayUpgradeStatus",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/fleet.ts",
+        "packages/resilience-runtime/src/gateway-registry-augmentation.d.ts"
+      ],
+      "impact": "Symbol GatewayUpgradeStatus is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:GLOBAL_PROVIDER_METADATA",
@@ -282,7 +842,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:guardRequest",
@@ -296,7 +856,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:guardStateChange",
@@ -310,7 +870,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:GuardVerdict",
@@ -324,7 +884,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:HealthState",
@@ -338,7 +898,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:HttpControlPlaneClient",
@@ -352,7 +912,7 @@
       "owner": "packages/macos-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:InternetEvidence",
@@ -366,7 +926,7 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:IP_BINARY",
@@ -381,7 +941,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:IRANIAN_PROVIDER_METADATA",
@@ -395,7 +955,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:isAllowedHost",
@@ -409,7 +969,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:isLoopbackPeer",
@@ -423,7 +983,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:issueControlToken",
@@ -437,7 +997,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:isUnavailable",
@@ -451,7 +1011,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:LifecycleState",
@@ -465,7 +1025,7 @@
       "owner": "packages/kernel",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:LOCAL_DASHBOARD_CSS",
@@ -479,7 +1039,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:ManualOverrideMode",
@@ -493,7 +1053,7 @@
       "owner": "packages/connectivity",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:MAX_CONTROL_BODY_BYTES",
@@ -507,7 +1067,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:NetworkSnapshot",
@@ -521,7 +1081,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:nowIso",
@@ -535,7 +1095,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:parseAutonomyRequest",
@@ -549,7 +1109,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:PluginManifest",
@@ -563,7 +1123,7 @@
       "owner": "packages/plugin-sdk",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:PolicyConflict",
@@ -577,7 +1137,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:PolicySnapshot",
@@ -591,7 +1151,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:Principal",
@@ -606,7 +1166,7 @@
       "owner": "packages/auth",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:ProviderHealth",
@@ -620,7 +1180,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:readBoundedBody",
@@ -634,7 +1194,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RecoveryPlan",
@@ -648,7 +1208,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RegistryRecord",
@@ -662,7 +1222,7 @@
       "owner": "packages/kernel",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RoutingPolicyContext",
@@ -676,7 +1236,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RoutingPolicyDecision",
@@ -690,7 +1250,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RuntimeContext",
@@ -704,7 +1264,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:RuntimeState",
@@ -718,7 +1278,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:satisfies",
@@ -732,7 +1292,7 @@
       "owner": "packages/plugin-loader",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:Scheduler",
@@ -746,7 +1306,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:SecurityEvent",
@@ -760,7 +1320,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:tokenMatches",
@@ -774,7 +1334,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "duplicate-contract:Tone",
@@ -788,7 +1348,21 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
+    },
+    {
+      "id": "duplicate-contract:VerificationResult",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/gateway-registry/src/capacity-contracts.ts",
+        "packages/resilience-runtime/src/transactions/privileged-boundary.ts"
+      ],
+      "impact": "Symbol VerificationResult is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/gateway-registry",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-46.md",
@@ -801,7 +1375,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-54.md",
@@ -814,7 +1388,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-66.md",
@@ -827,7 +1401,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-75.md",
@@ -840,7 +1414,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-76.md",
@@ -853,7 +1427,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-80.md",
@@ -866,13 +1440,13 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6"
+      "registeredAt": null
     }
   ],
   "summary": {
-    "total": 62,
+    "total": 103,
     "critical": 0,
     "major": 3,
-    "minor": 59
+    "minor": 100
   }
 }

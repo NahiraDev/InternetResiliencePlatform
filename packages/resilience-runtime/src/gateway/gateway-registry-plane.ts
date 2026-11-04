@@ -16,6 +16,7 @@ import {
   type GatewayIdentityAttestation,
   type GatewayArtifactAttestation,
   type GatewayTunnelDeclaration,
+  type GatewayFleetManager,
 } from '@irp/gateway-registry';
 import type { RoutingDestination, RoutingEngine, RoutePlan } from '@irp/routing';
 import type { TunnelCapability, TunnelConfiguration, TunnelProtocol } from '@irp/tunnel';
@@ -85,6 +86,8 @@ export interface GatewayRegistrySelectionPlaneOptions {
   securityVerifier?: GatewaySecurityVerifier;
   /** Resolves the attestation material for a gateway. */
   attestations?: (gatewayId: string) => GatewayTrustAttestation | undefined;
+  /** Fleet manager for real capacity evidence and reservation. */
+  fleetManager?: GatewayFleetManager;
 }
 
 interface GatewayApplication {
@@ -384,7 +387,7 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       });
     }
 
-    const capacity = new Map<string, GatewayCapacity>();
+    const capacity = this.buildCapacityEvidence(gateways);
     const result = selectGateway({
       gateways: [...gateways],
       health: Object.fromEntries(health),
@@ -438,6 +441,30 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   }
 
   /**
+   * Builds real capacity evidence from the fleet manager for a set of gateways.
+   */
+  private buildCapacityEvidence(gateways: readonly GatewayMetadata[]): Map<string, GatewayCapacity> {
+    const capacity = new Map<string, GatewayCapacity>();
+    if (!this.options.fleetManager) return capacity;
+
+    for (const gateway of gateways) {
+      const fleetCapacity = this.options.fleetManager.getCapacity(gateway.id);
+      if (fleetCapacity) {
+        capacity.set(gateway.id, {
+          utilizationPercent: fleetCapacity.limit > 0
+            ? Math.round(((fleetCapacity.allocated + fleetCapacity.reserved) / fleetCapacity.limit) * 100)
+            : 0,
+          availableCapacityPercent: fleetCapacity.limit > 0
+            ? Math.round((fleetCapacity.available / fleetCapacity.limit) * 100)
+            : 100,
+          checkedAt: fleetCapacity.checkedAt,
+        });
+      }
+    }
+    return capacity;
+  }
+
+  /**
    * Explains why no gateway could be selected, including the evidence that was missing.
    *
    * The explanation must name the reason, because "nothing was selected" and "something was
@@ -486,7 +513,6 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   async evaluate(): Promise<CanonicalGatewaySelectionDecision> {
     const sources = this.connectivity.getAvailableSources();
     const health = new Map<string, GatewayHealth>();
-    const capacity = new Map<string, GatewayCapacity>();
     await Promise.all(
       sources.map(async (source) => {
         const sourceHealth = await this.connectivity.registry
@@ -496,10 +522,14 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       }),
     );
 
+    // Build real capacity evidence from fleet manager
+    const gateways = this.registry
+      .list({ lifecycle: 'active', trust: 'trusted' })
+      .filter((gateway) => isDefined(health.get(gateway.id)));
+    const capacity = this.buildCapacityEvidence(gateways);
+
     const result = selectGateway({
-      gateways: this.registry
-        .list({ lifecycle: 'active', trust: 'trusted' })
-        .filter((gateway) => isDefined(health.get(gateway.id))),
+      gateways,
       health: Object.fromEntries(health),
       capacity: Object.fromEntries(capacity),
       ...(this.currentGatewayId === undefined ? {} : { currentGatewayId: this.currentGatewayId }),
@@ -543,40 +573,65 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     if (gateway.trust !== 'trusted')
       throw new Error(`Gateway ${gatewayId} is not trusted (trust: ${gateway.trust})`);
 
+    // Fail closed: capacity reservation is mandatory when provisioning is enabled
+    const fleetManager = this.options.fleetManager;
+    if (!fleetManager) {
+      throw new Error(`Gateway ${gatewayId} cannot be established: no fleet manager for capacity reservation`);
+    }
+    const capacityReserved = fleetManager.reserveCapacity(gatewayId, 1);
+    if (!capacityReserved) {
+      throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
+    }
+
     const source = this.connectivity
       .getAvailableSources()
       .find((candidate) => candidate.sourceId === gatewayId);
-    if (!source) throw new Error(`Gateway ${gatewayId} has no matching connectivity source`);
+    if (!source) {
+      fleetManager.releaseCapacity(gatewayId, 1);
+      throw new Error(`Gateway ${gatewayId} has no matching connectivity source`);
+    }
 
     const tunnelPlane = this.options.tunnelControlPlane;
-    if (!tunnelPlane?.configured)
+    if (!tunnelPlane?.configured) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(
         `Gateway ${gatewayId} cannot be established: no tunnel control plane is configured`,
       );
+    }
     const declaration = gateway.tunnel;
-    if (!declaration)
+    if (!declaration) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(
         `Gateway ${gatewayId} cannot be established: the gateway declares no tunnel`,
       );
-    if (!gateway.capabilities.tunnelProtocols.includes(declaration.protocol))
+    }
+    if (!gateway.capabilities.tunnelProtocols.includes(declaration.protocol)) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(
         `Gateway ${gatewayId} declares protocol '${declaration.protocol}' that is not among its ` +
           `supported protocols (${gateway.capabilities.tunnelProtocols.join(', ') || 'none'})`,
       );
+    }
 
     const destination = this.options.destination;
     const verifyDestination = this.options.verifyDestination;
     const routing = this.options.routing;
-    if (!destination)
+    if (!destination) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(
         `Gateway ${gatewayId} cannot be established: no external destination is configured to verify`,
       );
-    if (!verifyDestination)
+    }
+    if (!verifyDestination) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(
         `Gateway ${gatewayId} cannot be established: no destination verifier is configured`,
       );
-    if (!routing)
+    }
+    if (!routing) {
+      fleetManager.releaseCapacity(gatewayId, 1);
       throw new Error(`Gateway ${gatewayId} cannot be established: no routing engine is configured`);
+    }
 
     // Reuse a proven application for the same gateway; otherwise tear the previous one down.
     const existing = this.applications.get(gatewayId);
@@ -817,6 +872,12 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     tunnelId: string | undefined;
     routePlan: RoutePlan | undefined;
   }): Promise<void> {
+    // Release capacity first - we reserved it at the start
+    const fleetManager = this.options.fleetManager;
+    if (fleetManager) {
+      fleetManager.releaseCapacity(state.gatewayId, 1);
+    }
+
     if (state.sourceSwitched && state.previousSourceId !== undefined) {
       await this.connectivity.switchSource(state.previousSourceId).catch(() => undefined);
     }
@@ -837,6 +898,14 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     const application = this.applications.get(gatewayId);
     if (!application) return true;
     let ok = true;
+
+    // Release capacity
+    const fleetManager = this.options.fleetManager;
+    if (fleetManager) {
+      const capacityReleased = fleetManager.releaseCapacity(gatewayId, 1);
+      if (!capacityReleased) ok = false;
+    }
+
     if (application.previousSourceId !== undefined && application.previousSourceId !== gatewayId) {
       try {
         await this.connectivity.switchSource(application.previousSourceId);

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "27df47ec07fa7ec4c916f8dc9ca0d29153a3b87117aa2004926d4798d347a3b6",
+  "generatedAt": null,
   "packages": [
     {
       "group": "apps",
@@ -282,8 +282,8 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 18,
-      "testFiles": 9,
+      "sourceFiles": 22,
+      "testFiles": 11,
       "hasTests": true
     },
     {
@@ -359,8 +359,8 @@
         "@irp/telemetry",
         "@irp/tunnel"
       ],
-      "sourceFiles": 33,
-      "testFiles": 16,
+      "sourceFiles": 37,
+      "testFiles": 18,
       "hasTests": true
     },
     {
@@ -683,7 +683,7 @@
         "@irp/tunnel",
         "@irp/utils"
       ],
-      "sourceFiles": 165,
+      "sourceFiles": 166,
       "testFiles": 80,
       "hasTests": true
     },
