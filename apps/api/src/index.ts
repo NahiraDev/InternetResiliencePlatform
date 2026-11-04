@@ -742,12 +742,25 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
 
   registerIntentRoutes(app, {
     ...(process.env.DATABASE_URL ? { database: db } : {}),
-    onActivated: (intent) =>
-      resilienceRuntime.runIntent(intent, {
+    onActivated: async (intent) => {
+      const result = await resilienceRuntime.runIntent(intent, {
         mode: 'simulation',
         correlationId: `intent-${intent.id}-v${intent.version}`,
         idempotencyKey: `intent-${intent.id}-v${intent.version}`,
-      }),
+      });
+      // Log the intent execution result for audit trail
+      console.log(
+        JSON.stringify({
+          level: 'info',
+          msg: 'Intent executed via onActivated callback',
+          intentId: intent.id,
+          intentVersion: intent.version,
+          decisionId: result.decisionId,
+          status: result.status,
+          correlationId: result.correlationId,
+        }),
+      );
+    },
   });
 
   // The legacy /autopilot API remains a compatibility surface, but it must not
