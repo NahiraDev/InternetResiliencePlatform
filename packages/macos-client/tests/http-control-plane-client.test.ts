@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { HttpControlPlaneClient, createHttpControlPlaneClient } from '../src/http-control-plane-client.js';
+import { createHttpControlPlaneClient } from '../src/http-control-plane-client.js';
 
 const mockFetch = vi.fn();
 

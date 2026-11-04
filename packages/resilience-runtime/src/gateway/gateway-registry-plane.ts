@@ -17,8 +17,9 @@ import {
   type GatewayArtifactAttestation,
   type GatewayTunnelDeclaration,
   type GatewayFleetManager,
+  type GatewayFleetRecord,
 } from '@irp/gateway-registry';
-import type { RoutingDestination, RoutingEngine, RoutePlan } from '@irp/routing';
+import type { RoutingDestination, RoutingEngine, RoutePlan, Route } from '@irp/routing';
 import type { TunnelCapability, TunnelConfiguration, TunnelProtocol } from '@irp/tunnel';
 import { isDefined, nowIso } from '@irp/utils';
 import type {
@@ -97,6 +98,31 @@ interface GatewayApplication {
   readonly previousSourceId: string | undefined;
   readonly destination: RoutingDestination | undefined;
   readonly verifiedAt: string;
+  /** Allocation ID for capacity tracking - unique per reservation */
+  readonly allocationId: string;
+}
+
+interface CompensationResult {
+  readonly gatewayId: string;
+  readonly capacityReleased: boolean;
+  readonly sourceRestored: boolean;
+  readonly routeRolledBack: boolean;
+  readonly tunnelTornDown: boolean;
+  readonly errors: Error[];
+  readonly applicationStatePreserved: boolean;
+}
+
+/** Error thrown when gateway establishment fails, including compensation details. */
+export class GatewayEstablishmentError extends Error {
+  readonly originalError: Error;
+  readonly compensationResult: CompensationResult;
+
+  constructor(originalError: Error, compensationResult: CompensationResult) {
+    super(`${originalError.message}; compensation: ${compensationResult.errors.length} error(s) during cleanup`);
+    this.name = 'GatewayEstablishmentError';
+    this.originalError = originalError;
+    this.compensationResult = compensationResult;
+  }
 }
 
 const DEFAULT_PROBE_TIMEOUT_MS = 5_000;
@@ -205,6 +231,8 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   private readonly policy: Partial<GatewaySelectionPolicy>;
   private readonly applications = new Map<string, GatewayApplication>();
   private readonly unaddressable = new Map<string, string>();
+  /** Mutex for concurrency protection per gateway */
+  private readonly operationLocks = new Map<string, Promise<void>>();
 
   constructor(
     private readonly connectivity: ConnectivityManager,
@@ -556,6 +584,36 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   }
 
   /**
+   * Runs an operation with concurrency protection for a gateway.
+   * Uses a queue-based mutex: each operation waits for the previous one to complete.
+   */
+  private async withLock<T>(gatewayId: string, operation: () => Promise<T>): Promise<T> {
+    // Get the previous operation's completion promise (or a resolved promise if none)
+    const prev = this.operationLocks.get(gatewayId) || Promise.resolve();
+    
+    // Create a new promise for this operation's completion
+    let resolveCurrent: () => void;
+    const current = new Promise<void>((resolve) => {
+      resolveCurrent = resolve;
+    });
+    this.operationLocks.set(gatewayId, current);
+    
+    try {
+      // Wait for the previous operation to complete
+      await prev;
+      // Run the operation
+      return await operation();
+    } finally {
+      // Signal that this operation has completed
+      resolveCurrent!();
+      // Clean up if we're still the current operation
+      if (this.operationLocks.get(gatewayId) === current) {
+        this.operationLocks.delete(gatewayId);
+      }
+    }
+  }
+
+  /**
    * Establishes the selected gateway: tunnel, route, destination verification and source switch.
    *
    * The steps run in order and are compensated in reverse order when a later step fails, so a
@@ -566,144 +624,163 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     gatewayId: string,
     context?: RuntimeContext,
   ): Promise<CanonicalGatewayApplyResult> {
-    const gateway = this.registry.get(gatewayId);
-    if (!gateway) throw new Error(`Gateway ${gatewayId} not found in registry`);
-    if (gateway.lifecycle !== 'active')
-      throw new Error(`Gateway ${gatewayId} is not active (lifecycle: ${gateway.lifecycle})`);
-    if (gateway.trust !== 'trusted')
-      throw new Error(`Gateway ${gatewayId} is not trusted (trust: ${gateway.trust})`);
+    return this.withLock(gatewayId, async () => {
+      const gateway = this.registry.get(gatewayId);
+      if (!gateway) throw new Error(`Gateway ${gatewayId} not found in registry`);
+      if (gateway.lifecycle !== 'active')
+        throw new Error(`Gateway ${gatewayId} is not active (lifecycle: ${gateway.lifecycle})`);
+      if (gateway.trust !== 'trusted')
+        throw new Error(`Gateway ${gatewayId} is not trusted (trust: ${gateway.trust})`);
 
-    // Fail closed: capacity reservation is mandatory when provisioning is enabled
-    const fleetManager = this.options.fleetManager;
-    if (!fleetManager) {
-      throw new Error(`Gateway ${gatewayId} cannot be established: no fleet manager for capacity reservation`);
-    }
-    const capacityReserved = fleetManager.reserveCapacity(gatewayId, 1);
-    if (!capacityReserved) {
-      throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
-    }
+      // Fail closed: capacity reservation is mandatory when provisioning is enabled
+      const fleetManager = this.options.fleetManager;
+      if (!fleetManager) {
+        throw new Error(`Gateway ${gatewayId} cannot be established: no fleet manager for capacity reservation`);
+      }
 
-    const source = this.connectivity
-      .getAvailableSources()
-      .find((candidate) => candidate.sourceId === gatewayId);
-    if (!source) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(`Gateway ${gatewayId} has no matching connectivity source`);
-    }
+      const source = this.connectivity
+        .getAvailableSources()
+        .find((candidate) => candidate.sourceId === gatewayId);
+      if (!source) {
+        throw new Error(`Gateway ${gatewayId} has no matching connectivity source`);
+      }
 
-    const tunnelPlane = this.options.tunnelControlPlane;
-    if (!tunnelPlane?.configured) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(
-        `Gateway ${gatewayId} cannot be established: no tunnel control plane is configured`,
-      );
-    }
-    const declaration = gateway.tunnel;
-    if (!declaration) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(
-        `Gateway ${gatewayId} cannot be established: the gateway declares no tunnel`,
-      );
-    }
-    if (!gateway.capabilities.tunnelProtocols.includes(declaration.protocol)) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(
-        `Gateway ${gatewayId} declares protocol '${declaration.protocol}' that is not among its ` +
-          `supported protocols (${gateway.capabilities.tunnelProtocols.join(', ') || 'none'})`,
-      );
-    }
+      const tunnelPlane = this.options.tunnelControlPlane;
+      if (!tunnelPlane?.configured) {
+        throw new Error(
+          `Gateway ${gatewayId} cannot be established: no tunnel control plane is configured`,
+        );
+      }
+      const declaration = gateway.tunnel;
+      if (!declaration) {
+        throw new Error(
+          `Gateway ${gatewayId} cannot be established: the gateway declares no tunnel`,
+        );
+      }
+      if (!gateway.capabilities.tunnelProtocols.includes(declaration.protocol)) {
+        throw new Error(
+          `Gateway ${gatewayId} declares protocol '${declaration.protocol}' that is not among its ` +
+            `supported protocols (${gateway.capabilities.tunnelProtocols.join(', ') || 'none'})`,
+        );
+      }
 
-    const destination = this.options.destination;
-    const verifyDestination = this.options.verifyDestination;
-    const routing = this.options.routing;
-    if (!destination) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(
-        `Gateway ${gatewayId} cannot be established: no external destination is configured to verify`,
-      );
-    }
-    if (!verifyDestination) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(
-        `Gateway ${gatewayId} cannot be established: no destination verifier is configured`,
-      );
-    }
-    if (!routing) {
-      fleetManager.releaseCapacity(gatewayId, 1);
-      throw new Error(`Gateway ${gatewayId} cannot be established: no routing engine is configured`);
-    }
+      const destination = this.options.destination;
+      const verifyDestination = this.options.verifyDestination;
+      const routing = this.options.routing;
+      if (!destination) {
+        throw new Error(
+          `Gateway ${gatewayId} cannot be established: no external destination is configured to verify`,
+        );
+      }
+      if (!verifyDestination) {
+        throw new Error(
+          `Gateway ${gatewayId} cannot be established: no destination verifier is configured`,
+        );
+      }
+      if (!routing) {
+        throw new Error(`Gateway ${gatewayId} cannot be established: no routing engine is configured`);
+      }
 
-    // Reuse a proven application for the same gateway; otherwise tear the previous one down.
-    const existing = this.applications.get(gatewayId);
-    if (existing) {
-      const stillVerified = await tunnelPlane.verify(existing.tunnelId).catch(() => false);
-      if (stillVerified) {
-        const outcome = await verifyDestination(destination, this.runtimeContext(context));
-        if (outcome.status === 'reachable') {
-          return this.receipt(gatewayId, existing, outcome);
+      // Reuse a proven application for the same gateway without creating additional reservation
+      const existing = this.applications.get(gatewayId);
+      if (existing) {
+        const stillVerified = await tunnelPlane.verify(existing.tunnelId).catch(() => false);
+        if (stillVerified) {
+          const outcome = await verifyDestination(destination, this.runtimeContext(context));
+          if (outcome.status === 'reachable') {
+            return this.receipt(gatewayId, existing, outcome);
+          }
         }
-      }
-      await this.rollbackGateway(gatewayId);
-    }
-
-    const previousSourceId = this.connectivity.getActiveSource()?.sourceId;
-    const configuration = this.buildTunnelConfiguration(gateway, declaration);
-
-    let tunnelId: string | undefined;
-    let routePlan: RoutePlan | undefined;
-    let sourceSwitched = false;
-
-    try {
-      const connection = await tunnelPlane.connect({ configuration });
-      tunnelId = connection.tunnelId;
-
-      const tunnelHealthy = await tunnelPlane.verify(tunnelId);
-      if (!tunnelHealthy)
-        throw new Error(
-          `tunnel ${tunnelId} did not pass its protocol health check after connecting`,
-        );
-
-      const plan = this.buildTunnelRoutePlan(gateway, declaration, tunnelId, destination);
-      const applied = await routing.applyPlan(plan);
-      routePlan = applied;
-      if (applied.verification.status !== 'succeeded')
-        throw new Error(
-          `route through gateway ${gatewayId} was not verified (status: ${applied.verification.status})`,
-        );
-
-      const outcome = await verifyDestination(destination, this.runtimeContext(context));
-      if (outcome.status !== 'reachable')
-        throw new Error(
-          `external destination ${destination.value} was not reached through gateway ${gatewayId}: ` +
-            `${outcome.reason ?? outcome.status}`,
-        );
-
-      if (previousSourceId !== gatewayId) {
-        await this.connectivity.switchSource(gatewayId);
-        sourceSwitched = true;
+        // If reuse failed, rollback the existing application (releases capacity once)
+        await this.rollbackGateway(gatewayId);
       }
 
-      const application: GatewayApplication = {
-        gatewayId,
-        tunnelId,
-        routePlan,
-        previousSourceId,
-        destination,
-        verifiedAt: nowIso(),
-      };
-      this.applications.set(gatewayId, application);
-      await routing.confirmPlan?.(routePlan);
-      return this.receipt(gatewayId, application, outcome);
-    } catch (error) {
-      await this.compensate({
-        gatewayId,
-        previousSourceId,
-        sourceSwitched,
-        tunnelId,
-        routePlan,
-      });
-      throw error instanceof Error ? error : new Error('gateway establishment failed');
-    }
+      // Reserve capacity via fleet manager - returns a fleet record with allocation details
+      let capacityRecord: GatewayFleetRecord;
+      try {
+        capacityRecord = fleetManager.reserveCapacity(gatewayId, 1);
+      } catch (error) {
+        throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
+      }
+      // Generate a unique allocation ID for this reservation
+      const allocationId = `${gatewayId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      const previousSourceId = this.connectivity.getActiveSource()?.sourceId;
+      const configuration = this.buildTunnelConfiguration(gateway, declaration);
+
+      let tunnelId: string | undefined;
+      let routePlan: RoutePlan | undefined;
+      let sourceSwitched = false;
+
+      try {
+        if (!destination) {
+          throw new Error(
+            `Gateway ${gatewayId} cannot be established: no external destination is configured to verify`,
+          );
+        }
+        if (!verifyDestination) {
+          throw new Error(
+            `Gateway ${gatewayId} cannot be established: no destination verifier is configured`,
+          );
+        }
+        if (!routing) {
+          throw new Error(`Gateway ${gatewayId} cannot be established: no routing engine is configured`);
+        }
+
+        const connection = await tunnelPlane.connect({ configuration });
+        tunnelId = connection.tunnelId;
+
+        const tunnelHealthy = await tunnelPlane.verify(tunnelId);
+        if (!tunnelHealthy)
+          throw new Error(
+            `tunnel ${tunnelId} did not pass its protocol health check after connecting`,
+          );
+
+        const plan = this.buildTunnelRoutePlan(gateway, declaration, tunnelId, destination);
+        const applied = await routing.applyPlan(plan);
+        routePlan = applied;
+        if (applied.verification.status !== 'succeeded')
+          throw new Error(
+            `route through gateway ${gatewayId} was not verified (status: ${applied.verification.status})`,
+          );
+
+        const outcome = await verifyDestination(destination, this.runtimeContext(context));
+        if (outcome.status !== 'reachable')
+          throw new Error(
+            `external destination ${destination.value} was not reached through gateway ${gatewayId}: ` +
+              `${outcome.reason ?? outcome.status}`,
+          );
+
+        if (previousSourceId !== gatewayId) {
+          await this.connectivity.switchSource(gatewayId);
+          sourceSwitched = true;
+        }
+
+        const application: GatewayApplication = {
+          gatewayId,
+          tunnelId,
+          routePlan,
+          previousSourceId,
+          destination,
+          verifiedAt: nowIso(),
+          allocationId,
+        };
+        this.applications.set(gatewayId, application);
+        await routing.confirmPlan?.(routePlan);
+        return this.receipt(gatewayId, application, outcome);
+      } catch (error) {
+        const compensationResult = await this.compensate({
+          gatewayId,
+          previousSourceId,
+          sourceSwitched,
+          tunnelId,
+          routePlan,
+          allocationId,
+        });
+        const originalError = error instanceof Error ? error : new Error('gateway establishment failed');
+        throw new GatewayEstablishmentError(originalError, compensationResult);
+      }
+    });
   }
 
   private runtimeContext(context?: RuntimeContext): RuntimeContext {
@@ -793,16 +870,81 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     tunnelId: string,
     destination: RoutingDestination,
   ): RoutePlan {
-    const family = destination.family === 'ipv6' ? 'ipv6' : 'ipv4';
-    const prefix = family === 'ipv6' ? 128 : 32;
-    const target = destination.kind === 'default' ? 'default' : `${destination.value}/${prefix}`;
     const interfaceName = declaration.interfaceName;
     if (!interfaceName)
       throw new Error(
         `gateway ${gateway.id} does not declare a tunnel interface; the route cannot be installed`,
       );
+
+    // For fullTunnel, install default routes for all supported address families
+    // For splitTunnel, install specific destination routes
     const routeId = `gateway-route:${gateway.id}:${tunnelId}`;
     const pathId = `gateway-path:${gateway.id}:${tunnelId}`;
+    
+    // Determine target routes based on routing mode and address families
+    const addressFamilies = gateway.capabilities.addressFamilies;
+    const routes: Route[] = [];
+
+    if (declaration.routingMode === 'fullTunnel') {
+      // Install default routes for each supported address family
+      for (const family of addressFamilies) {
+        if (family === 'ipv4' || family === 'dual') {
+          routes.push({
+            id: `${routeId}-ipv4`,
+            destination: 'default',
+            prefix: 0,
+            interfaceName,
+            protocol: 'static',
+            metric: 10,
+            table: { id: 'main', kind: 'main', name: 'main' },
+            family: 'ipv4',
+            scope: 'global',
+            state: 'active',
+            priority: 10,
+            capabilities: ['encrypted'],
+            metadata: { gatewayId: gateway.id, tunnelId, interfaceName },
+          });
+        }
+        if (family === 'ipv6' || family === 'dual') {
+          routes.push({
+            id: `${routeId}-ipv6`,
+            destination: 'default',
+            prefix: 0,
+            interfaceName,
+            protocol: 'static',
+            metric: 10,
+            table: { id: 'main', kind: 'main', name: 'main' },
+            family: 'ipv6',
+            scope: 'global',
+            state: 'active',
+            priority: 10,
+            capabilities: ['encrypted'],
+            metadata: { gatewayId: gateway.id, tunnelId, interfaceName },
+          });
+        }
+      }
+    } else {
+      // Split tunnel: use the specific destination
+      const family = destination.family === 'ipv6' ? 'ipv6' : 'ipv4';
+      const prefix = family === 'ipv6' ? 128 : 32;
+      const target = destination.kind === 'default' ? 'default' : `${destination.value}/${prefix}`;
+      routes.push({
+        id: routeId,
+        destination: target,
+        prefix,
+        interfaceName,
+        protocol: 'static',
+        metric: 10,
+        table: { id: 'main', kind: 'main', name: 'main' },
+        family,
+        scope: 'global',
+        state: 'active',
+        priority: 10,
+        capabilities: ['encrypted'],
+        metadata: { gatewayId: gateway.id, tunnelId, interfaceName },
+      });
+    }
+
     return {
       id: `gateway-plan:${gateway.id}:${Date.now()}`,
       destination,
@@ -811,35 +953,35 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
         id: pathId,
         type: 'tunnel',
         hops: [gateway.endpoint.host],
-        route: {
-          id: routeId,
-          destination: target,
-          prefix,
+        route: routes[0] ?? {
+          id: `${routeId}-default`,
+          destination: 'default',
+          prefix: 0,
           interfaceName,
           protocol: 'static',
           metric: 10,
           table: { id: 'main', kind: 'main', name: 'main' },
-          family,
-          scope: 'global',
-          state: 'active',
+          family: 'ipv4' as const,
+          scope: 'global' as const,
+          state: 'active' as const,
           priority: 10,
           capabilities: ['encrypted'],
           metadata: { gatewayId: gateway.id, tunnelId, interfaceName },
         },
         capabilities: ['encrypted'],
         state: 'active',
-        metadata: { gatewayId: gateway.id, tunnelId, interfaceName },
+        metadata: { gatewayId: gateway.id, tunnelId, interfaceName, allRoutes: routes },
       },
-      reason: `route ${target} through the tunnel of gateway ${gateway.id}`,
+      reason: declaration.routingMode === 'fullTunnel'
+        ? `install default routes for ${addressFamilies.join(', ')} through the tunnel of gateway ${gateway.id}`
+        : `route ${destination.value} through the tunnel of gateway ${gateway.id}`,
       policy: [],
-      actions: [
-        {
-          type: 'apply-route',
-          capability: 'network.route',
-          input: { interfaceName, target, gatewayId: gateway.id, tunnelId },
-          description: `install the route to ${target} through ${interfaceName}`,
-        },
-      ],
+      actions: routes.map((route) => ({
+        type: 'apply-route',
+        capability: 'network.route',
+        input: { interfaceName, target: route.destination, gatewayId: gateway.id, tunnelId, family: route.family },
+        description: `install the route to ${route.destination} through ${interfaceName} (${route.family})`,
+      })),
       verification: {
         required: true,
         timeoutMs: 5_000,
@@ -847,7 +989,7 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
         status: 'pending',
       },
       explanation: {
-        matchedRouteIds: [routeId],
+        matchedRouteIds: routes.map((r) => r.id),
         eligibleCandidateIds: [pathId],
         rejected: [],
         policy: [],
@@ -864,6 +1006,7 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
   /**
    * Compensates a failed establishment: the source switch is reverted, the route is rolled back
    * and the tunnel is torn down. Compensation never hides the original failure.
+   * Attempts every cleanup operation even if another cleanup step fails.
    */
   private async compensate(state: {
     gatewayId: string;
@@ -871,59 +1014,162 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     sourceSwitched: boolean;
     tunnelId: string | undefined;
     routePlan: RoutePlan | undefined;
-  }): Promise<void> {
+    allocationId?: string;
+  }): Promise<CompensationResult> {
+    const errors: Error[] = [];
+
     // Release capacity first - we reserved it at the start
+    let capacityReleased = false;
     const fleetManager = this.options.fleetManager;
-    if (fleetManager) {
-      fleetManager.releaseCapacity(state.gatewayId, 1);
+    if (fleetManager && state.allocationId) {
+      try {
+        const releaseRecord = fleetManager.releaseCapacity(state.gatewayId, 1);
+        capacityReleased = releaseRecord !== undefined;
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error('capacity release failed'));
+      }
     }
 
+    // Restore previous source if we switched
+    let sourceRestored = false;
     if (state.sourceSwitched && state.previousSourceId !== undefined) {
-      await this.connectivity.switchSource(state.previousSourceId).catch(() => undefined);
+      try {
+        await this.connectivity.switchSource(state.previousSourceId);
+        sourceRestored = true;
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error('source restoration failed'));
+      }
     }
+
+    // Rollback route plan
+    let routeRolledBack = false;
     if (state.routePlan) {
-      await this.options.routing?.rollbackPlan(state.routePlan).catch(() => undefined);
+      try {
+        const rolledBack = await this.options.routing?.rollbackPlan(state.routePlan);
+        routeRolledBack = rolledBack === true;
+      } catch (error) {
+        errors.push(error instanceof Error ? error : new Error('route rollback failed'));
+      }
     }
-    // The tunnel control plane may have registered a tunnel before the connection failed, so
-    // the teardown is always requested.
-    await this.options.tunnelControlPlane?.rollback().catch(() => undefined);
-    this.applications.delete(state.gatewayId);
+
+    // Teardown the tunnel - always attempt rollback as the tunnel control plane may have
+    // registered a tunnel before the connection failed
+    let tunnelTornDown = false;
+    try {
+      const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
+      tunnelTornDown = tunnelRolledBack === true;
+    } catch (error) {
+      errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
+    }
+
+    // Preserve application state if compensation was incomplete
+    const applicationStatePreserved = !(capacityReleased && sourceRestored && routeRolledBack && tunnelTornDown);
+    if (!applicationStatePreserved) {
+      this.applications.delete(state.gatewayId);
+    }
+
+    return {
+      gatewayId: state.gatewayId,
+      capacityReleased,
+      sourceRestored,
+      routeRolledBack,
+      tunnelTornDown,
+      errors,
+      applicationStatePreserved,
+    };
   }
 
   /**
-   * Rolls a gateway's established state back: the source switch is reverted, the route is rolled
-   * back and the tunnel is torn down. Returns `true` only when every step succeeded.
+   * Internal rollback without lock acquisition - for use when the lock is already held.
+   * Returns the compensation result for error handling.
    */
-  async rollback(gatewayId: string): Promise<boolean> {
+  private async _rollback(gatewayId: string): Promise<CompensationResult> {
     const application = this.applications.get(gatewayId);
-    if (!application) return true;
-    let ok = true;
-
-    // Release capacity
-    const fleetManager = this.options.fleetManager;
-    if (fleetManager) {
-      const capacityReleased = fleetManager.releaseCapacity(gatewayId, 1);
-      if (!capacityReleased) ok = false;
+    if (!application) {
+      return {
+        gatewayId,
+        capacityReleased: true,
+        sourceRestored: true,
+        routeRolledBack: true,
+        tunnelTornDown: true,
+        errors: [],
+        applicationStatePreserved: false,
+      };
     }
 
+    let ok = true;
+    const errors: Error[] = [];
+
+    // Release capacity via fleet manager
+    const fleetManager = this.options.fleetManager;
+    if (fleetManager && application.allocationId) {
+      try {
+        const releaseRecord = fleetManager.releaseCapacity(gatewayId, 1);
+        if (!releaseRecord) ok = false;
+      } catch (error) {
+        ok = false;
+        errors.push(error instanceof Error ? error : new Error('capacity release failed'));
+      }
+    }
+
+    // Restore previous source
     if (application.previousSourceId !== undefined && application.previousSourceId !== gatewayId) {
       try {
         await this.connectivity.switchSource(application.previousSourceId);
-      } catch {
+      } catch (error) {
         ok = false;
+        errors.push(error instanceof Error ? error : new Error('source restoration failed'));
       }
     }
+
+    // Rollback route plan
     if (application.routePlan) {
-      const rolledBack = await this.options.routing?.rollbackPlan(application.routePlan);
-      if (rolledBack !== true) ok = false;
+      try {
+        const rolledBack = await this.options.routing?.rollbackPlan(application.routePlan);
+        if (rolledBack !== true) ok = false;
+      } catch (error) {
+        ok = false;
+        errors.push(error instanceof Error ? error : new Error('route rollback failed'));
+      }
     }
-    const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
-    if (tunnelRolledBack !== true) ok = false;
-    this.applications.delete(gatewayId);
-    return ok;
+
+    // Teardown tunnel
+    try {
+      const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
+      if (tunnelRolledBack !== true) ok = false;
+    } catch (error) {
+      ok = false;
+      errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
+    }
+
+    // Only delete application state if rollback was complete
+    const applicationStatePreserved = !ok;
+    if (!applicationStatePreserved) {
+      this.applications.delete(gatewayId);
+    }
+
+    return {
+      gatewayId,
+      capacityReleased: true, // We attempted release
+      sourceRestored: application.previousSourceId !== undefined,
+      routeRolledBack: application.routePlan !== undefined,
+      tunnelTornDown: true,
+      errors,
+      applicationStatePreserved,
+    };
+  }
+
+  /**
+   * Public rollback with lock acquisition.
+   */
+  async rollback(gatewayId: string): Promise<boolean> {
+    return this.withLock(gatewayId, async () => {
+      const result = await this._rollback(gatewayId);
+      return result.errors.length === 0;
+    });
   }
 
   private async rollbackGateway(gatewayId: string): Promise<void> {
-    await this.rollback(gatewayId).catch(() => undefined);
+    await this._rollback(gatewayId).catch(() => undefined);
   }
 }

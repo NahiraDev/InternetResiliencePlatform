@@ -94,8 +94,8 @@ declare module '@irp/gateway-registry' {
 
   export interface GatewayFleetManager {
     getCapacity(gatewayId: string): GatewayFleetCapacity | undefined;
-    reserveCapacity(gatewayId: string, amount: number): boolean;
-    releaseCapacity(gatewayId: string, amount: number): boolean;
+    reserveCapacity(gatewayId: string, amount: number): GatewayFleetRecord;
+    releaseCapacity(gatewayId: string, amount: number): GatewayFleetRecord;
   }
 
   export interface GatewayRegistrySelectionPlaneOptions {

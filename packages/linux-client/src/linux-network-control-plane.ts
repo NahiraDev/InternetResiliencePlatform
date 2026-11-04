@@ -40,7 +40,7 @@ import { LinuxHostConnectivityProvider } from './linux-host-connectivity-provide
 import { createLinuxDestinationVerifier } from './linux-destination-probe.js';
 import { createLinuxGatewaySelectionPlane } from './linux-gateway-selection.js';
 import type { LinuxWireGuardIntegration } from './linux-wireguard.js';
-import { GatewayRegistrySelectionPlane, type CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
+import type { CanonicalNetworkControlPlane } from '@irp/resilience-runtime';
 
 export type LinuxCanonicalNetworkExtensions = Partial<
   Omit<CanonicalNetworkControlPlane, 'connectivity' | 'routing'>

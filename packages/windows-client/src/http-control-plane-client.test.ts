@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { HttpControlPlaneClient, createHttpControlPlaneClient } from '../src/http-control-plane-client.js';
+import { createHttpControlPlaneClient } from '../src/http-control-plane-client.js';
 
-const mockFetch = vi.fn();
+const mockFetch = vi.fn<Promise<Response>, [string | URL | Request, RequestInit?]>();
 
 beforeEach(() => {
   mockFetch.mockClear();
@@ -58,7 +58,7 @@ describe('HttpControlPlaneClient (Windows)', () => {
     expect(client.isAuthenticated()).toBe(true);
     expect(client.getCurrentAccessToken()).toBe('access-token-1');
 
-    const [url, init] = (mockFetch as any).mock.calls[0];
+    const [url, init] = mockFetch.mock.calls[0];
     expect(url).toContain('/api/v1/auth/remote/token');
     expect(init?.method).toBe('POST');
     const body = JSON.parse(init?.body as string);
@@ -90,7 +90,7 @@ describe('HttpControlPlaneClient (Windows)', () => {
     expect(snapshot.defaultRouteAvailable).toBe(true);
     expect(snapshot.dnsReachable).toBe(true);
 
-    const [url, init] = (mockFetch as any).mock.calls[0];
+    const [url, init] = mockFetch.mock.calls[0];
     expect(url).toContain('/api/v1/remote/devices/device-1/snapshot');
     expect(init?.headers?.Authorization).toBe('Bearer test-access-token');
   }, 10000);
@@ -131,7 +131,7 @@ describe('HttpControlPlaneClient (Windows)', () => {
     const policy = await client.setPolicy('device-1', true);
     expect(policy.autonomousMode).toBe(true);
 
-    const [url, init] = (mockFetch as any).mock.calls[0];
+    const [url, init] = mockFetch.mock.calls[0];
     expect(url).toContain('/api/v1/remote/devices/device-1/policy');
     expect(init?.method).toBe('POST');
     const body = JSON.parse(init?.body as string);

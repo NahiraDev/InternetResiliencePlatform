@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import type { ConnectivityManager } from '@irp/connectivity';
 import type { RoutingEngine } from '@irp/routing';
 import type { TunnelCapability } from '@irp/tunnel';
-import type { LinuxWireGuardConfiguration, LinuxWireGuardIntegration } from './linux-wireguard.js';
+import type { LinuxWireGuardIntegration } from './linux-wireguard.js';
 import {
   createLinuxGatewayEndpointResolver,
   createLinuxGatewaySelectionPlane,
