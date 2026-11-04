@@ -23,6 +23,7 @@ This directory contains canonical architecture and engineering-governance docume
 - [Historical 0–70 product plan](product-roadmap-70-phases.md) — retained as the v1/historical baseline.
 - [Release gates](release-gates.md) — completion and release evidence.
 - [Engineering governance](engineering-governance.md) — architecture and repository growth rules.
+- [Autonomous capacity & egress provisioning](autonomous-capacity-provisioning.md) — **planned, not implemented** proposal for one-click bandwidth/egress provisioning without user-owned VPS ([#463](https://github.com/NahiraDev/InternetResiliencePlatform/issues/463)).
 
 ## Reading rule
 
