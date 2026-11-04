@@ -138,6 +138,21 @@ for (const artifact of ['package-lock.json', 'yarn.lock', 'bun.lockb']) {
   }
 }
 
+// Check for package-manager stores tracked in git (e.g., .pnpm-store/, node_modules/.pnpm-store, etc.)
+const packageManagerStores = [
+  '.pnpm-store/',
+  'node_modules/.pnpm-store/',
+  '.yarn/',
+  '.bun/',
+];
+for (const store of packageManagerStores) {
+  // Check if any tracked file matches this pattern
+  const check = spawnSync('git', ['ls-files', store], { cwd: root, encoding: 'utf8' });
+  if (check.status === 0 && check.stdout.trim()) {
+    errors.push(`package-manager store tracked in git: ${store}`);
+  }
+}
+
 const rootPackage = readJson(join(root, 'package.json'));
 if (!rootPackage?.engines?.node?.includes('>=24.0.0')) {
   errors.push('package.json must require Node >=24.0.0');
