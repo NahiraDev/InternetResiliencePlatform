@@ -359,8 +359,8 @@
         "@irp/telemetry",
         "@irp/tunnel"
       ],
-      "sourceFiles": 33,
-      "testFiles": 16,
+      "sourceFiles": 37,
+      "testFiles": 18,
       "hasTests": true
     },
     {

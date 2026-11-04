@@ -1,4 +1,4 @@
-import type { GatewayHealth, GatewayHealthStatus } from './health.js';
+import type { GatewayHealth, GatewayHealthStatus, GatewayProbeEvidence } from './health.js';
 import type { GatewayMetadata } from './index.js';
 
 export type GatewaySelectionRejectionReason =
@@ -6,6 +6,7 @@ export type GatewaySelectionRejectionReason =
   | 'not-trusted'
   | 'health-unacceptable'
   | 'stale-health'
+  | 'insufficient-evidence'
   | 'capacity-unavailable'
   | 'capacity-limit'
   | 'policy-denied'
@@ -27,6 +28,15 @@ export interface GatewaySelectionPolicy {
   requiredTags: string[];
   requiredTunnelProtocol?: string;
   requiredAddressFamily?: 'ipv4' | 'ipv6' | 'dual';
+  /**
+   * Minimum evidence a gateway's health must be based on to be selectable.
+   *
+   * When unset, evidence is not part of the decision (the historical behaviour). When set, a
+   * gateway whose health was only established at a weaker level is rejected with
+   * `insufficient-evidence` — for example `transport` evidence (a TCP connect) can never make a
+   * gateway selectable when `protocol` is required.
+   */
+  minimumHealthEvidence?: GatewayProbeEvidence;
   minimumHealthScore: number;
   maximumLatencyMs: number;
   maximumPacketLossPercent: number;
@@ -189,6 +199,20 @@ function reject(
   };
 }
 
+const EVIDENCE_STRENGTH: Record<GatewayProbeEvidence, number> = {
+  transport: 1,
+  protocol: 2,
+  egress: 3,
+};
+
+/** True when `actual` is at least as strong as `required`. */
+export function gatewayEvidenceMeets(
+  actual: GatewayProbeEvidence,
+  required: GatewayProbeEvidence,
+): boolean {
+  return EVIDENCE_STRENGTH[actual] >= EVIDENCE_STRENGTH[required];
+}
+
 function evaluateCandidate(
   gateway: GatewayMetadata,
   health: GatewayHealth | undefined,
@@ -219,6 +243,13 @@ function evaluateCandidate(
     return reject(gateway, health, capacity, 'not-trusted', [`Gateway trust is ${gateway.trust}.`]);
   if (health.status === 'stale')
     return reject(gateway, health, capacity, 'stale-health', ['Gateway health evidence is stale.']);
+  if (policy.minimumHealthEvidence !== undefined) {
+    const evidence = health.evidence ?? 'transport';
+    if (!gatewayEvidenceMeets(evidence, policy.minimumHealthEvidence))
+      return reject(gateway, health, capacity, 'insufficient-evidence', [
+        `Gateway health evidence is '${evidence}' but at least '${policy.minimumHealthEvidence}' is required.`,
+      ]);
+  }
   if (
     health.status === 'unreachable' ||
     health.status === 'unknown' ||
