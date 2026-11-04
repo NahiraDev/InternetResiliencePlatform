@@ -16,7 +16,7 @@
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `3a5ce2dd3c4f14356e374c6853a77fb0119951d1`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `b04673bec3802e4f13cb561f45560301d45451a1`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
 - **Phase 93 status:** advanced route ranking, bounded compiled-intent routing preferences, fail-closed validation, and selection audit evidence are implemented in `packages/resilience-runtime/src/fabric.ts`, with regression coverage in `phase-93-advanced-routing.test.ts`. Disposition PARTIAL pending exact-SHA CI and external runtime evidence. No new runtime authority was introduced.
 - **Phases 94–150:** phase documents and corresponding modules exist on main under `packages/resilience-runtime/src/{traffic,telemetry-plane,control-security,fleet,intelligence,dataplane,control-api,governance,scale}` with tests. All modules are additive, pure or injected-clock, advisory, and reach the network only through `PrivilegedMutationBoundary`; data-plane enforcement requires a governed transaction id. Disposition PARTIAL pending exact-SHA CI, review and external runtime evidence; no new runtime authority was introduced and `ResilienceRuntime` remains the sole production mutation authority.
@@ -148,3 +148,14 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Blockers: exact-SHA CI evidence; CodeQL config (#420); durable stores (#410); auth (#412); Linux soak (#254/#323).
 - Next prioritized tasks: resolve CodeQL default vs advanced conflict without weakening gate; verify phase test suites pass on current SHA; address durable persistence.
 
+
+## Autonomous engineer checkpoint (2026-11-04)
+
+- Starting base SHA: b04673bec3802e4f13cb561f45560301d45451a1 (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: reconciled PROJECT_STATE.md with live main SHA b04673be (post-#461 merge). Confirmed phases 94–150 modules present on main (PARTIAL pending exact-SHA CI and external evidence). Identity repositories are PostgreSQL-backed with fail-closed production behavior. No runtime authority changes.
+- Branches/PRs: chore/reconcile-project-state-b04673be (this PR)
+- Actual CI: pending
+- Verified merges: #461 (cross-platform control-plane integration)
+- Blockers: exact-SHA CI evidence on client platforms (iOS/Android/Windows/macOS failures on #462); durable stores fully verified across instances (#410/#411); auth lifecycle completion (#412); Linux runtime soak (#254/#323); CodeQL config (#420).
+- Next prioritized tasks: address client CI failures on #462 or follow-up; verify durable identity end-to-end with real Postgres; continue evidence for 94-150; address remaining P0s.
