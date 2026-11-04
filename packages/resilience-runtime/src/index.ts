@@ -40,6 +40,7 @@ export * from './resilience/performance-budgets.js';
 export * from './resilience/degradation.js';
 export * from './tunnel/tunnel-control-plane.js';
 export * from './gateway/gateway-registry-plane.js';
+export * from './capacity/capacity-provisioning.js';
 export * from './fabric-lifecycle.js';
 export * from './fabric.js';
 export * from './fabric-authority.js';

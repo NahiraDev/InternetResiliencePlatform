@@ -269,4 +269,6 @@ export * from './fleet.js';
 export * from './security.js';
 export * from './starlink-resources.js';
 export * from './probe.js';
+export * from './capacity-contracts.js';
+export * from './shared-infrastructure-adapter.js';
 export type { GatewayProbeResult } from './health.js';
