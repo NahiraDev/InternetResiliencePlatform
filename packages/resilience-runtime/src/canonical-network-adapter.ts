@@ -1,4 +1,5 @@
 import { ConnectivityManager, type ConnectivitySource } from '@irp/connectivity';
+import type { GatewayProbeEvidence } from '@irp/gateway-registry';
 import type { TunnelConfiguration } from '@irp/tunnel';
 import {
   RoutingEngine,
@@ -84,6 +85,27 @@ export interface CanonicalGatewaySelectionDecision {
   readonly switched: boolean;
   readonly reason: string;
   readonly candidates: readonly CanonicalGatewaySelectionCandidate[];
+  /**
+   * What the decision itself is based on.
+   *
+   * A selection decision is a plan, not an operational claim: `transport` evidence means the
+   * gateway still has to be established, routed and verified before it may be reported as
+   * operational.
+   */
+  readonly evidence?: GatewayProbeEvidence;
+}
+
+/** The proven result of establishing a gateway: tunnel, route and external egress. */
+export interface CanonicalGatewayApplyResult {
+  readonly gatewayId: string;
+  readonly previousSourceId: string | undefined;
+  readonly tunnelId?: string;
+  readonly routePlanId?: string;
+  readonly destination?: string;
+  /** True only when an external destination was actually reached through the gateway. */
+  readonly egressVerified: boolean;
+  readonly latencyMs?: number;
+  readonly service?: string;
 }
 
 export interface CanonicalGatewaySelectionPlane {
@@ -98,7 +120,14 @@ export interface CanonicalGatewaySelectionPlane {
    * runtime needs true destination reachability before selecting a gateway.
    */
   probeAndEvaluate?(): Promise<CanonicalGatewaySelectionDecision>;
-  apply(gatewayId: string): Promise<void>;
+  /**
+   * Establishes the selected gateway: tunnel, route through the tunnel, external destination
+   * verification and the connectivity source switch. Implementations must compensate every
+   * mutation when a later step fails, and must throw when the gateway could not be proven.
+   */
+  apply(gatewayId: string, context?: RuntimeContext): Promise<CanonicalGatewayApplyResult>;
+  /** Reverts an established gateway (source switch, route and tunnel). */
+  rollback?(gatewayId: string): Promise<boolean>;
 }
 
 export interface CanonicalDestinationOutcome {
@@ -168,6 +197,7 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
   private readonly previousDnsProviders = new Map<string, string | undefined>();
   private readonly appliedRoutePlans = new Map<string, RoutePlan>();
   private readonly rolledBackRoutePlans = new Map<string, RoutePlan>();
+  private readonly appliedGateways = new Map<string, CanonicalGatewayApplyResult>();
 
   readonly descriptor: RuntimeAdapterDescriptor = {
     adapterId: 'canonical-network-control-plane',
@@ -239,8 +269,10 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
             if (!decision.selectedGatewayId)
               return createAdapterExecution(plan, context, false, 'failed');
             const current = this.controlPlane.connectivity.getActiveSource()?.sourceId;
-            if (decision.switched && decision.selectedGatewayId !== current)
-              await gatewaySelection.apply(decision.selectedGatewayId);
+            // The gateway is always established, even when it is already the active source: a
+            // gateway must never be reported operational merely because a source was selected.
+            const applied = await gatewaySelection.apply(decision.selectedGatewayId, context);
+            this.appliedGateways.set(plan.selectedAction.id, applied);
             const execution = createAdapterExecution(plan, context, false, 'success');
             return {
               ...execution,
@@ -251,6 +283,10 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
                 previousSourceId: current,
                 selectedGatewayId: decision.selectedGatewayId,
                 selectionReason: decision.reason,
+                ...(applied.tunnelId ? { tunnelId: applied.tunnelId } : {}),
+                ...(applied.routePlanId ? { routePlanId: applied.routePlanId } : {}),
+                ...(applied.destination ? { verifiedDestination: applied.destination } : {}),
+                gatewayEgressVerified: applied.egressVerified,
                 candidates: decision.candidates.map((candidate) => ({
                   gatewayId: candidate.gatewayId,
                   eligible: candidate.eligible,
@@ -366,6 +402,20 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
           const selectedGatewayId = execution.metadata.selectedGatewayId;
           if (typeof selectedGatewayId !== 'string' || active.sourceId !== selectedGatewayId)
             return createAdapterVerification(plan, context, 'failed');
+          // The gateway must have been established and proven to carry traffic to an external
+          // destination. A selected source or a connected transport is not enough.
+          const applied = this.appliedGateways.get(plan.selectedAction.id);
+          if (!applied || applied.gatewayId !== selectedGatewayId)
+            return createAdapterVerification(plan, context, 'failed');
+          if (!applied.egressVerified)
+            return createAdapterVerification(plan, context, 'failed');
+          if (applied.tunnelId) {
+            const tunnelHealthy = await this.controlPlane.tunnel
+              ?.verify(applied.tunnelId)
+              .catch(() => false);
+            if (tunnelHealthy !== true)
+              return createAdapterVerification(plan, context, 'failed');
+          }
         }
         const health = await this.controlPlane.connectivity.registry
           .get(active.providerId)
@@ -476,6 +526,17 @@ export class CanonicalNetworkRuntimeAdapter implements RuntimeAdapter {
         const previousSourceId = plan.selectedAction.metadata.previousSourceId;
         if (typeof previousSourceId !== 'string')
           return createAdapterExecution(plan, context, false, 'failed');
+        // The gateway transition owns the tunnel and the route as well as the source switch, so
+        // the rollback has to revert all three.
+        const applied = this.appliedGateways.get(plan.selectedAction.id);
+        if (applied) {
+          const gatewayRolledBack = await this.controlPlane.gatewaySelection?.rollback?.(
+            applied.gatewayId,
+          );
+          if (gatewayRolledBack !== true)
+            return createAdapterExecution(plan, context, false, 'failed');
+          this.appliedGateways.delete(plan.selectedAction.id);
+        }
         await this.controlPlane.connectivity.switchSource(previousSourceId);
         return createAdapterExecution(plan, context, false, 'success');
       } catch {

@@ -2,10 +2,37 @@ import type { GatewayEndpoint, GatewayId } from './index.js';
 
 export type GatewayHealthStatus = 'healthy' | 'degraded' | 'unreachable' | 'stale' | 'unknown';
 
+/**
+ * What a health observation actually proved.
+ *
+ * The distinction is load-bearing: a gateway must never be reported operational merely
+ * because a TCP connection succeeded or because a connectivity source was selected.
+ *
+ * - `transport`: the endpoint's transport answered (for example a TCP connect succeeded, or a
+ *   UDP datagram could be emitted). This proves the address is reachable and nothing else.
+ * - `protocol`: the tunnel protocol itself completed a valid exchange (for example a fresh
+ *   WireGuard handshake). This proves the peer speaks the protocol and shares the session keys.
+ * - `egress`: traffic actually left the host through this gateway and reached an external
+ *   destination. This is the strongest evidence and the only one that may describe a gateway
+ *   as operational.
+ *
+ * Evidence that is absent proves nothing stronger than `transport`, so evaluation treats an
+ * absent value as `transport` and fails closed.
+ */
+export type GatewayProbeEvidence = 'transport' | 'protocol' | 'egress';
+
 export interface GatewayHealthSample {
   gatewayId: GatewayId;
   checkedAt: string;
   reachable: boolean;
+  /** What the observation proved. Absent means "no stronger than transport". */
+  evidence?: GatewayProbeEvidence;
+  /**
+   * `false` when the probe cannot speak the gateway's transport at all (for example a TCP probe
+   * aimed at a UDP-only tunnel peer). Such an observation carries no evidence and must not be
+   * reported as an unreachable gateway.
+   */
+  applicable?: boolean;
   latencyMs?: number;
   packetLossPercent?: number;
 }
@@ -23,12 +50,21 @@ export interface GatewayHealth {
   status: GatewayHealthStatus;
   score: number;
   checkedAt?: string;
+  /** What the underlying observation proved. */
+  evidence?: GatewayProbeEvidence;
   latencyMs?: number;
   packetLossPercent?: number;
   reason: string;
 }
 
 export interface GatewayHealthProbe {
+  /**
+   * The transport this probe speaks. `undefined` means the probe is transport agnostic.
+   *
+   * A selection plane uses this to refuse a probe that cannot speak a gateway's transport: a TCP
+   * probe aimed at a UDP-only tunnel peer would otherwise report a healthy peer as unreachable.
+   */
+  readonly transport?: 'tcp' | 'udp' | 'any';
   probe(endpoint: GatewayEndpoint, timeoutMs: number): Promise<GatewayProbeResult>;
   probeGateways?(
     gateways: { id: string; endpoint: GatewayEndpoint }[],
@@ -37,9 +73,14 @@ export interface GatewayHealthProbe {
 
 export interface GatewayProbeResult {
   reachable: boolean;
+  /** What the probe proved. Absent means "no stronger than transport". */
+  evidence?: GatewayProbeEvidence;
+  /** `false` when the probe cannot speak this gateway's transport. */
+  applicable?: boolean;
   latencyMs?: number;
   packetLossPercent?: number;
   error?: string;
+  detail?: string;
 }
 
 export const DEFAULT_GATEWAY_HEALTH_POLICY: GatewayHealthPolicy = {
@@ -75,6 +116,19 @@ function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+const EVIDENCE_VALUES: readonly GatewayProbeEvidence[] = ['transport', 'protocol', 'egress'];
+
+/**
+ * The strongest status a given evidence class may claim.
+ *
+ * `transport` may never be `healthy`: a reachable transport is not an operational gateway.
+ */
+const MAX_STATUS_BY_EVIDENCE: Record<GatewayProbeEvidence, GatewayHealthStatus> = {
+  transport: 'degraded',
+  protocol: 'healthy',
+  egress: 'healthy',
+};
+
 export function evaluateGatewayHealth(
   sample: GatewayHealthSample,
   nowMs = Date.now(),
@@ -97,10 +151,16 @@ export function evaluateGatewayHealth(
   ) {
     throw new Error('packetLossPercent must be between 0 and 100');
   }
+  if (sample.evidence !== undefined && !EVIDENCE_VALUES.includes(sample.evidence))
+    throw new Error(`evidence must be one of ${EVIDENCE_VALUES.join(', ')}`);
+
+  // An observation without evidence proves nothing stronger than transport reachability.
+  const evidence: GatewayProbeEvidence = sample.evidence ?? 'transport';
 
   const base = {
     gatewayId: sample.gatewayId,
     checkedAt: sample.checkedAt,
+    evidence,
     ...(sample.latencyMs === undefined ? {} : { latencyMs: sample.latencyMs }),
     ...(sample.packetLossPercent === undefined
       ? {}
@@ -109,6 +169,16 @@ export function evaluateGatewayHealth(
 
   if (nowMs - checkedAtMs > policy.maxStalenessMs) {
     return { ...base, status: 'stale', score: 0, reason: 'health sample is stale' };
+  }
+
+  // A probe that cannot speak the gateway's transport produced no observation at all.
+  if (sample.applicable === false) {
+    return {
+      ...base,
+      status: 'unknown',
+      score: 0,
+      reason: 'the probe is not applicable to this gateway transport; no evidence was gathered',
+    };
   }
 
   if (!sample.reachable) {
@@ -144,12 +214,28 @@ export function evaluateGatewayHealth(
             (policy.degradedPacketLossPercent - policy.healthyPacketLossPercent);
   const score = clampScore((latencyScore + lossScore) / 2);
 
+  if (evidence === 'transport') {
+    // Transport reachability is real evidence, but it is not operational proof. The status is
+    // capped so that a reachable transport can never be reported as a healthy gateway.
+    return {
+      ...base,
+      status: MAX_STATUS_BY_EVIDENCE.transport,
+      score: Math.min(score, 79),
+      reason:
+        'transport is reachable, but the tunnel protocol and external egress are not proven; ' +
+        'the gateway is not operational',
+    };
+  }
+
   if (score >= 80)
     return {
       ...base,
-      status: 'healthy',
+      status: MAX_STATUS_BY_EVIDENCE[evidence],
       score,
-      reason: 'gateway is reachable with healthy quality',
+      reason:
+        evidence === 'egress'
+          ? 'gateway is reachable with healthy quality and proven external egress'
+          : 'gateway is reachable with healthy quality and a proven protocol exchange',
     };
   return {
     ...base,
@@ -181,6 +267,9 @@ export async function probeGatewayHealth(
       gatewayId,
       checkedAt: new Date().toISOString(),
       reachable: result.reachable,
+      // A probe that does not state what it proved proves transport at most.
+      evidence: result.evidence ?? 'transport',
+      ...(result.applicable === undefined ? {} : { applicable: result.applicable }),
       ...(result.latencyMs === undefined ? {} : { latencyMs: result.latencyMs }),
       ...(result.packetLossPercent === undefined
         ? {}

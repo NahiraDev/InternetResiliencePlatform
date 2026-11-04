@@ -195,6 +195,7 @@ describe('selectGateway', () => {
         gatewayId: 'gw-a',
         checkedAt: '2026-08-25T12:00:00.000Z',
         reachable: true,
+        evidence: 'protocol',
         latencyMs: 80,
         packetLossPercent: 1,
       },
@@ -202,5 +203,58 @@ describe('selectGateway', () => {
     );
     expect(evaluated.status).toBe('healthy');
     expect(evaluated.score).toBeGreaterThanOrEqual(80);
+  });
+
+  it('does not make a transport-only gateway selectable when protocol evidence is required', () => {
+    const gateways = [gateway('gw-a', { tags: ['prod'] })];
+    const transportHealth = {
+      'gw-a': evaluateGatewayHealth(
+        {
+          gatewayId: 'gw-a',
+          checkedAt: '2026-08-25T12:00:00.000Z',
+          reachable: true,
+          evidence: 'transport',
+          latencyMs: 20,
+          packetLossPercent: 0,
+        },
+        Date.parse('2026-08-25T12:00:30.000Z'),
+      ),
+    };
+
+    const result = selectGateway({
+      gateways,
+      health: transportHealth,
+      policy: { minimumHealthEvidence: 'protocol' },
+      now: new Date('2026-08-25T12:00:30.000Z'),
+    });
+
+    expect(result.selected).toBeUndefined();
+    expect(result.candidates[0]?.rejectionReason).toBe('insufficient-evidence');
+  });
+
+  it('makes a protocol-proven gateway selectable when protocol evidence is required', () => {
+    const gateways = [gateway('gw-a', { tags: ['prod'] })];
+    const protocolHealth = {
+      'gw-a': evaluateGatewayHealth(
+        {
+          gatewayId: 'gw-a',
+          checkedAt: '2026-08-25T12:00:00.000Z',
+          reachable: true,
+          evidence: 'protocol',
+          latencyMs: 20,
+          packetLossPercent: 0,
+        },
+        Date.parse('2026-08-25T12:00:30.000Z'),
+      ),
+    };
+
+    const result = selectGateway({
+      gateways,
+      health: protocolHealth,
+      policy: { minimumHealthEvidence: 'protocol' },
+      now: new Date('2026-08-25T12:00:30.000Z'),
+    });
+
+    expect(result.selected?.gateway.id).toBe('gw-a');
   });
 });
