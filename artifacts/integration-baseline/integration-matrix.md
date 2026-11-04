@@ -1,14 +1,6 @@
 # Integration Baseline Matrix
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-Generated: 2026-11-03T21:26:27.474Z
-=======
-Generated: 2026-11-03T21:09:02.183Z
->>>>>>> 2090079e (r)
-=======
-Generated: 2026-11-03T22:49:53.391Z
->>>>>>> 1c63a9c4 (open code)
+Generated: 2026-11-04T09:42:08.271Z
 Commit: unknown
 
 ## Component status

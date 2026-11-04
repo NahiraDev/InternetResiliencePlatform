@@ -1,11 +1,18 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
+  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
   "vitestIncludeGlobs": [
     "packages/resilience-runtime/tests/**/*.test.ts"
   ],
-  "orphanTests": [],
+  "orphanTests": [
+    "packages/resilience-runtime/src/adapters/adapters.test.ts",
+    "packages/resilience-runtime/src/canonical-tunnel-adapter.test.ts",
+    "packages/resilience-runtime/src/incidents/incidents.test.ts"
+  ],
   "orphanModules": [
+    "packages/resilience-runtime/src/adapters/adapters.test.ts",
+    "packages/resilience-runtime/src/canonical-tunnel-adapter.test.ts",
+    "packages/resilience-runtime/src/incidents/incidents.test.ts",
     "packages/resilience-runtime/src/platform/index.ts",
     "packages/resilience-runtime/src/resilience/index.ts",
     "packages/resilience-runtime/src/scenario-lab/golden-scenarios.ts"
@@ -327,6 +334,13 @@
       ]
     },
     {
+      "name": "createHttpControlPlaneClient",
+      "declaredIn": [
+        "packages/macos-client/src/http-control-plane-client.ts",
+        "packages/windows-client/src/http-control-plane-client.ts"
+      ]
+    },
+    {
       "name": "DecisionEvaluator",
       "declaredIn": [
         "packages/network-intelligence/src/decision/DecisionEvaluator.ts",
@@ -367,6 +381,13 @@
       "declaredIn": [
         "packages/security/src/index.ts",
         "packages/telemetry/src/endpoint-registry.ts"
+      ]
+    },
+    {
+      "name": "escapeHtml",
+      "declaredIn": [
+        "packages/linux-client/src/local-dashboard.ts",
+        "packages/macos-client/src/local-dashboard.ts"
       ]
     },
     {
@@ -419,6 +440,13 @@
       ]
     },
     {
+      "name": "HttpControlPlaneClient",
+      "declaredIn": [
+        "packages/macos-client/src/http-control-plane-client.ts",
+        "packages/windows-client/src/http-control-plane-client.ts"
+      ]
+    },
+    {
       "name": "InternetEvidence",
       "declaredIn": [
         "packages/internet-intelligence-agent/src/types.ts",
@@ -462,10 +490,24 @@
       ]
     },
     {
+      "name": "isUnavailable",
+      "declaredIn": [
+        "packages/linux-client/src/local-dashboard.ts",
+        "packages/macos-client/src/local-dashboard.ts"
+      ]
+    },
+    {
       "name": "LifecycleState",
       "declaredIn": [
         "packages/kernel/src/index.ts",
         "packages/resilience-runtime/src/fleet/device-lifecycle.ts"
+      ]
+    },
+    {
+      "name": "LOCAL_DASHBOARD_CSS",
+      "declaredIn": [
+        "packages/linux-client/src/local-dashboard.ts",
+        "packages/macos-client/src/local-dashboard.ts"
       ]
     },
     {
@@ -615,14 +657,21 @@
         "packages/linux-client/src/http-guard.ts",
         "packages/macos-client/src/http-guard.ts"
       ]
+    },
+    {
+      "name": "Tone",
+      "declaredIn": [
+        "packages/linux-client/src/local-dashboard.ts",
+        "packages/macos-client/src/local-dashboard.ts"
+      ]
     }
   ],
   "persistenceModels": [],
   "summary": {
-    "orphanTests": 0,
-    "orphanModules": 3,
+    "orphanTests": 3,
+    "orphanModules": 6,
     "orphanExports": 54,
-    "duplicateContracts": 47,
+    "duplicateContracts": 53,
     "unreferencedPersistenceModels": 0
   }
 }

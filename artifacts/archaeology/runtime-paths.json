@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
+  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
@@ -58,6 +58,10 @@
     },
     {
       "marker": "postcondition-check",
+      "path": "packages/resilience-runtime/src/canonical-tunnel-adapter.test.ts"
+    },
+    {
+      "marker": "postcondition-check",
       "path": "packages/resilience-runtime/src/domain/types.ts"
     },
     {
@@ -108,7 +112,7 @@
   "summary": {
     "entrypoints": 2,
     "mutationSites": 5,
-    "verificationSites": 16,
+    "verificationSites": 17,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }

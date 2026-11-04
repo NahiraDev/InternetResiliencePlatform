@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
+  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
   "packages": [
     {
       "group": "apps",
@@ -41,8 +41,8 @@
         "prom-client",
         "zod"
       ],
-      "sourceFiles": 21,
-      "testFiles": 9,
+      "sourceFiles": 33,
+      "testFiles": 14,
       "hasTests": true
     },
     {
@@ -356,10 +356,11 @@
         "@irp/kernel",
         "@irp/resilience-runtime",
         "@irp/routing",
-        "@irp/telemetry"
+        "@irp/telemetry",
+        "@irp/tunnel"
       ],
-      "sourceFiles": 18,
-      "testFiles": 9,
+      "sourceFiles": 33,
+      "testFiles": 16,
       "hasTests": true
     },
     {
@@ -394,8 +395,8 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 2,
-      "testFiles": 1,
+      "sourceFiles": 4,
+      "testFiles": 3,
       "hasTests": true
     },
     {
@@ -682,8 +683,8 @@
         "@irp/tunnel",
         "@irp/utils"
       ],
-      "sourceFiles": 162,
-      "testFiles": 76,
+      "sourceFiles": 165,
+      "testFiles": 80,
       "hasTests": true
     },
     {
@@ -855,8 +856,8 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 2,
-      "testFiles": 1,
+      "sourceFiles": 4,
+      "testFiles": 2,
       "hasTests": true
     },
     {
@@ -887,8 +888,8 @@
     "workspacePackages": 43,
     "nativeClients": 2,
     "packagesWithoutTests": 0,
-    "workflows": 17,
-    "docs": 231,
+    "workflows": 16,
+    "docs": 236,
     "phaseDocs": 115
   },
   "infrastructure": {
@@ -902,7 +903,6 @@
       ".github/workflows/ios-network-integration.yml",
       ".github/workflows/linux-primary-device.yml",
       ".github/workflows/macos-client.yml",
-      ".github/workflows/opencode.yml",
       ".github/workflows/public-runtime-lab.yml",
       ".github/workflows/regional-validation.yml",
       ".github/workflows/release.yml",
@@ -919,6 +919,7 @@
       "scripts/architecture-guards.mjs",
       "scripts/assemble-linux-client-package.mjs",
       "scripts/clean.mjs",
+      "scripts/conflict-markers.mjs",
       "scripts/docker-publication-policy.mjs",
       "scripts/docker-publication-policy.test.mjs",
       "scripts/examples-smoke.mjs",
@@ -943,6 +944,7 @@
       "scripts/validate-architecture.mjs",
       "scripts/validate-documentation.mjs",
       "scripts/validate-repository.mjs",
+      "scripts/validate-repository.test.mjs",
       "scripts/wait-for-database.mjs"
     ],
     "tools": [
@@ -1024,6 +1026,10 @@
       "docs/architecture/runtime-adapter-model.md",
       "docs/architecture/security-boundaries.md",
       "docs/architecture/system-architecture.md",
+      "docs/audit/AUDIT_REPORT.md",
+      "docs/audit/IMPLEMENTATION_REPORT.md",
+      "docs/audit/PRODUCTION_READINESS_REPORT.md",
+      "docs/audit/REMAINING_WORK.md",
       "docs/audits/certification-evidence-register-2026-10-13.md",
       "docs/audits/control-plane-execution-baseline-2026-09-03.md",
       "docs/audits/documentation-audit-2026-08-23.md",
@@ -1050,6 +1056,7 @@
       "docs/concepts/telemetry-and-analytics.md",
       "docs/configuration.md",
       "docs/current-architecture.md",
+      "docs/design/IRP-DESIGN-LANGUAGE.md",
       "docs/development.md",
       "docs/documentation-standards.md",
       "docs/downloads.md",

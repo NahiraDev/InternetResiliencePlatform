@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "ed78675b7cef675bb4d0a5e77aa892b229dad53ab702e84834ed0f1c0a218b39",
+  "generatedAt": "4a1820b40daf90e52bd3682faff1a28671886817450974dd2535862ac2682864",
   "source": "canonical adapter registry (executed)",
   "registryAdapters": [
     {
@@ -173,12 +173,16 @@
       ],
       "owners": [
         "@irp/daemon",
+        "@irp/linux-client",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:connectivity"
       ],
       "consumers": [
         "apps/daemon/src/host-authorization.test.ts",
         "apps/daemon/src/host-authorization.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-network-adapter.ts",
@@ -189,6 +193,9 @@
       "runtimePaths": [
         "apps/daemon/src/host-authorization.test.ts",
         "apps/daemon/src/host-authorization.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#connectivity",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -348,6 +355,7 @@
       ],
       "owners": [
         "@irp/daemon",
+        "@irp/linux-client",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:network-intelligence"
       ],
@@ -356,6 +364,9 @@
         "apps/daemon/src/host-authorization.test.ts",
         "apps/daemon/src/host-authorization.ts",
         "apps/daemon/src/linux-acceptance.test.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-network-adapter.ts",
@@ -367,6 +378,9 @@
         "apps/daemon/src/host-authorization.test.ts",
         "apps/daemon/src/host-authorization.ts",
         "apps/daemon/src/linux-acceptance.test.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#network-intelligence",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -451,6 +465,9 @@
         "apps/daemon/src/host-authorization.ts",
         "apps/daemon/src/linux-acceptance.test.ts",
         "packages/linux-client/src/http-guard.test.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
@@ -464,6 +481,9 @@
         "apps/daemon/src/host-authorization.ts",
         "apps/daemon/src/linux-acceptance.test.ts",
         "packages/linux-client/src/http-guard.test.ts",
+        "packages/linux-client/src/linux-chain.e2e.test.ts",
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/linux-client/src/runtime-executor-integration.test.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#routing",
@@ -515,18 +535,27 @@
         "packages/resilience-runtime/src/adapter-registry.ts#tunnel"
       ],
       "owners": [
+        "@irp/linux-client",
         "@irp/resilience-runtime",
         "@irp/resilience-runtime:tunnel"
       ],
       "consumers": [
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
+        "packages/resilience-runtime/src/adapters/adapters.test.ts",
+        "packages/resilience-runtime/src/adapters/adapters.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-tunnel-adapter.ts",
         "packages/resilience-runtime/src/security/trust-boundaries.ts"
       ],
       "runtimePaths": [
+        "packages/linux-client/src/linux-host-authorization.test.ts",
+        "packages/linux-client/src/linux-host-authorization.ts",
         "packages/resilience-runtime/src/adapter-registry.ts",
         "packages/resilience-runtime/src/adapter-registry.ts#tunnel",
+        "packages/resilience-runtime/src/adapters/adapters.test.ts",
+        "packages/resilience-runtime/src/adapters/adapters.ts",
         "packages/resilience-runtime/src/canonical-decision-provider.ts",
         "packages/resilience-runtime/src/canonical-tunnel-adapter.ts",
         "packages/resilience-runtime/src/security/trust-boundaries.ts"
