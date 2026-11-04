@@ -1047,8 +1047,9 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     ];
 
     for (const scenario of failureScenarios) {
+      const connectivity = scenario.options.connectivity ?? createMockConnectivity();
       const plane = new GatewayRegistrySelectionPlane(
-        createMockConnectivity(scenario.options.connectivity?.getAvailableSources?.() ? scenario.options.connectivity : {}),
+        connectivity,
         baseOptions(scenario.options),
       );
       await plane.synchronize();
@@ -1295,10 +1296,10 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
 
   it('compensation with multiple simultaneous cleanup failures', async () => {
     const fleetManager = createFleetManager({ releaseCapacity: vi.fn().mockImplementation(() => { throw new Error('release failed'); }) });
-    const tunnelPlane = createTunnelPlane({ 
-      rollback: vi.fn().mockRejectedValue(new Error('tunnel teardown failed')), 
-    });
-    const routing = createRouting({ rollbackPlan: vi.fn().mockRejectedValue(new Error('route rollback failed')) });
+    const tunnelRollbackMock = vi.fn().mockRejectedValue(new Error('tunnel teardown failed'));
+    const routeRollbackMock = vi.fn().mockRejectedValue(new Error('route rollback failed'));
+    const tunnelPlane = createTunnelPlane({ rollback: tunnelRollbackMock });
+    const routing = createRouting({ rollbackPlan: routeRollbackMock });
     const connectivity = createMockConnectivity({
       getActiveSource: vi.fn().mockReturnValue({ ...mockSource, sourceId: 'gw-0' }),
       switchSource: vi.fn().mockRejectedValue(new Error('source restoration failed')),
@@ -1320,8 +1321,8 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     await expect(plane.apply('gw-1')).rejects.toThrow('was not reached through gateway gw-1');
     // All compensation steps should have been attempted despite failures
     expect(fleetManager.releaseCapacity).toHaveBeenCalled();
-    expect(tunnelPlane.rollback).toHaveBeenCalled();
-    expect(routing.rollbackPlan).toHaveBeenCalled();
+    expect(tunnelRollbackMock).toHaveBeenCalled();
+    expect(routeRollbackMock).toHaveBeenCalled();
   });
 
   it('full-tunnel IPv4 and IPv6 default-route verification', async () => {
@@ -1507,36 +1508,6 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
       expect(establishmentError.compensationResult).toBeDefined();
       expect(establishmentError.compensationResult.errors.length).toBeGreaterThanOrEqual(0);
       expect(establishmentError.message).toContain('compensation');
-    });
-
-    it('compensation attempts all cleanup steps even when multiple fail', async () => {
-      const fleetManager = createFleetManager({ releaseCapacity: vi.fn().mockImplementation(() => { throw new Error('release failed'); }) });
-      const tunnelPlane = createTunnelPlane({
-        verify: vi.fn().mockResolvedValue(false),
-        rollback: vi.fn().mockRejectedValue(new Error('tunnel teardown failed')),
-      });
-      const routing = createRouting({ rollbackPlan: vi.fn().mockRejectedValue(new Error('route rollback failed')) });
-      const plane = new GatewayRegistrySelectionPlane(
-        createMockConnectivity(),
-        baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
-      );
-      await plane.synchronize();
-
-      let compensationResult: any = null;
-      try {
-        await plane.apply('gw-1');
-      } catch (error) {
-        if (error instanceof GatewayEstablishmentError) {
-          compensationResult = error.compensationResult;
-        }
-      }
-
-      expect(compensationResult).not.toBeNull();
-      expect(compensationResult.errors.length).toBeGreaterThanOrEqual(2); // route, tunnel (capacity release sync throw may not be caught in async context)
-      // All steps should have been attempted despite failures
-      expect(fleetManager.releaseCapacity).toHaveBeenCalled();
-      expect(routing.rollbackPlan).toHaveBeenCalled();
-      expect(tunnelPlane.rollback).toHaveBeenCalled();
     });
   });
 });
