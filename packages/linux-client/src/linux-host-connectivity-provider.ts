@@ -179,6 +179,10 @@ export class LinuxHostConnectivityProvider implements ConnectivityProvider {
       if (addresses.length === 0) continue;
 
       const caps: ConnectivityCapability[] = ['monitor', 'health-check'];
+      // The provider implements `activate`: it asserts that the interface is up and usable.
+      // Without advertising the capability the connectivity manager rejects the source as
+      // `missing-capability` and a failover to a real host interface can never be committed.
+      caps.push('activate');
       if (hasIpv4) caps.push('supports-ipv4');
       if (hasIpv6) caps.push('supports-ipv6');
       caps.push('supports-default-route');
@@ -273,6 +277,13 @@ export class LinuxHostConnectivityProvider implements ConnectivityProvider {
   }
 
   capabilities(): ConnectivityCapability[] {
-    return ['monitor', 'health-check', 'supports-ipv4', 'supports-ipv6', 'supports-default-route'];
+    return [
+      'monitor',
+      'health-check',
+      'activate',
+      'supports-ipv4',
+      'supports-ipv6',
+      'supports-default-route',
+    ];
   }
 }

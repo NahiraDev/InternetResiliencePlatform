@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   GatewayHealthProber,
   TcpGatewayHealthProbe,
-  UdpGatewayHealthProbe,
 } from './probe.js';
+import { evaluateGatewayHealth } from './health.js';
 import type { GatewayEndpoint } from './index.js';
 
 const testEndpoint: GatewayEndpoint = {
@@ -11,29 +11,6 @@ const testEndpoint: GatewayEndpoint = {
   port: 51820,
   family: 'ipv4',
 };
-
-describe('UdpGatewayHealthProbe', () => {
-  it('constructs with default options', () => {
-    const probe = new UdpGatewayHealthProbe();
-    expect(probe).toBeInstanceOf(UdpGatewayHealthProbe);
-  });
-
-  it('constructs with custom options', () => {
-    const probe = new UdpGatewayHealthProbe({
-      packetCount: 5,
-      timeoutMs: 10_000,
-    });
-    expect(probe).toBeInstanceOf(UdpGatewayHealthProbe);
-  });
-
-  it('rejects packetCount of 0', () => {
-    expect(() => new UdpGatewayHealthProbe({ packetCount: 0 })).not.toThrow();
-  });
-
-  it('rejects timeoutMs of 0', () => {
-    expect(() => new UdpGatewayHealthProbe({ timeoutMs: 0 })).not.toThrow();
-  });
-});
 
 describe('TcpGatewayHealthProbe', () => {
   it('constructs with default options', () => {
@@ -49,6 +26,74 @@ describe('TcpGatewayHealthProbe', () => {
   it('rejects timeoutMs of 0', () => {
     expect(() => new TcpGatewayHealthProbe({ timeoutMs: 0 })).not.toThrow();
   });
+
+  it('declares that it speaks TCP', () => {
+    expect(new TcpGatewayHealthProbe().transport).toBe('tcp');
+  });
+
+  it('never claims more than transport evidence for a successful connect', async () => {
+    const server = await import('node:net');
+    const listener = server.createServer((socket) => socket.destroy());
+    await new Promise<void>((resolve) => listener.listen(0, '127.0.0.1', resolve));
+    const address = listener.address();
+    if (typeof address === 'string' || address === null) throw new Error('no listener address');
+
+    try {
+      const probe = new TcpGatewayHealthProbe({ timeoutMs: 2_000 });
+      const result = await probe.probe(
+        { host: '127.0.0.1', port: address.port, family: 'ipv4' },
+        2_000,
+      );
+      expect(result.reachable).toBe(true);
+      expect(result.evidence).toBe('transport');
+      expect(result.applicable).toBe(true);
+    } finally {
+      await new Promise<void>((resolve) => listener.close(() => resolve()));
+    }
+  });
+
+  it('reports transport evidence only, so a reachable transport is never healthy', async () => {
+    const server = await import('node:net');
+    const listener = server.createServer((socket) => socket.destroy());
+    await new Promise<void>((resolve) => listener.listen(0, '127.0.0.1', resolve));
+    const address = listener.address();
+    if (typeof address === 'string' || address === null) throw new Error('no listener address');
+
+    try {
+      const probe = new TcpGatewayHealthProbe({ timeoutMs: 2_000 });
+      const result = await probe.probe(
+        { host: '127.0.0.1', port: address.port, family: 'ipv4' },
+        2_000,
+      );
+      const health = evaluateGatewayHealth({
+        gatewayId: 'gw-1',
+        checkedAt: new Date().toISOString(),
+        reachable: result.reachable,
+        evidence: result.evidence ?? 'transport',
+        ...(result.latencyMs === undefined ? {} : { latencyMs: result.latencyMs }),
+        ...(result.packetLossPercent === undefined
+          ? {}
+          : { packetLossPercent: result.packetLossPercent }),
+      });
+      expect(health.status).not.toBe('healthy');
+      expect(health.status).toBe('degraded');
+    } finally {
+      await new Promise<void>((resolve) => listener.close(() => resolve()));
+    }
+  });
+
+  it('closes the socket when the connection times out', async () => {
+    // 203.0.113.0/24 is reserved for documentation and is not routed, so the connect cannot
+    // complete quickly. The probe must resolve and must not leave the socket open.
+    const probe = new TcpGatewayHealthProbe({ timeoutMs: 300 });
+    const result = await probe.probe(
+      { host: '203.0.113.1', port: 51820, family: 'ipv4' },
+      300,
+    );
+    expect(result.reachable).toBe(false);
+    expect(result.evidence).toBe('transport');
+    expect(result.error).toContain('timeout');
+  }, 10_000);
 });
 
 describe('GatewayHealthProber', () => {
@@ -88,6 +133,7 @@ describe('GatewayHealthProber', () => {
     expect(sample.checkedAt).toBeDefined();
     expect(sample.reachable).toBe(false);
     expect(sample.packetLossPercent).toBe(100);
+    expect(sample.evidence).toBe('transport');
   }, 5000);
 
   it('probeGateways processes multiple endpoints concurrently', async () => {
@@ -107,4 +153,36 @@ describe('GatewayHealthProber', () => {
       expect(sample.packetLossPercent).toBe(100);
     }
   }, 5000);
+
+  it('returns the samples in the order the gateways were given', async () => {
+    const delays: Record<string, number> = { 'gw-1': 120, 'gw-2': 10, 'gw-3': 60 };
+    const probe = {
+      transport: 'tcp' as const,
+      probe: vi.fn(async (_endpoint: GatewayEndpoint, _timeoutMs: number) => {
+        const endpoint = _endpoint;
+        await new Promise((resolve) => setTimeout(resolve, delays[endpoint.host] ?? 0));
+        return { reachable: true, evidence: 'transport' as const };
+      }),
+    };
+    const prober = new GatewayHealthProber({ probe, maxConcurrency: 3 });
+
+    const samples = await prober.probeGateways([
+      { id: 'gw-1', endpoint: { host: 'gw-1', port: 1, family: 'ipv4' } },
+      { id: 'gw-2', endpoint: { host: 'gw-2', port: 2, family: 'ipv4' } },
+      { id: 'gw-3', endpoint: { host: 'gw-3', port: 3, family: 'ipv4' } },
+    ]);
+
+    expect(samples.map((sample) => sample.gatewayId)).toEqual(['gw-1', 'gw-2', 'gw-3']);
+  });
+
+  it('defaults an evidence-less probe result to transport evidence', async () => {
+    const probe = {
+      probe: vi.fn(async () => ({ reachable: true })),
+    };
+    const prober = new GatewayHealthProber({ probe });
+
+    const sample = await prober.probeGateway('gw-1', testEndpoint);
+
+    expect(sample.evidence).toBe('transport');
+  });
 });

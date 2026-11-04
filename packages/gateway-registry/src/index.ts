@@ -16,6 +16,34 @@ export interface GatewayCapabilities {
   features: string[];
 }
 
+/**
+ * How traffic is tunnelled to a gateway.
+ *
+ * The declaration travels with the gateway record so that the trust decision covers the tunnel
+ * parameters as well: a gateway is not usable unless its endpoint, its protocol and its
+ * credential reference are all known and the record itself is trusted.
+ *
+ * `credentialRef` is a reference to a credential held by the host (for example a systemd
+ * `LoadCredential` name), never the credential material itself and never a placeholder.
+ */
+export interface GatewayTunnelDeclaration {
+  /** The tunnel protocol, for example `wireguard`. Must be supported by the host provider. */
+  readonly protocol: string;
+  /** Reference to the host-held credential that authenticates the tunnel. */
+  readonly credentialRef: string;
+  readonly routingMode: 'fullTunnel' | 'splitTunnel';
+  /** Address assigned to the tunnel interface, in CIDR form. */
+  readonly addressCidr?: string;
+  /** Destinations routed through the tunnel (split tunnel). */
+  readonly allowedDestinations?: readonly string[];
+  /** Destinations excluded from the tunnel (split tunnel). */
+  readonly excludedDestinations?: readonly string[];
+  /** Host interface name of the tunnel device, when the host controls it. */
+  readonly interfaceName?: string;
+  readonly mtu?: number;
+  readonly keepaliveSeconds?: number;
+}
+
 export interface GatewayOwnership {
   ownerId: string;
   organizationId?: string;
@@ -32,6 +60,8 @@ export interface GatewayMetadata {
   endpoint: GatewayEndpoint;
   ownership: GatewayOwnership;
   capabilities: GatewayCapabilities;
+  /** How traffic reaches this gateway through a tunnel, when the gateway is tunnel-addressable. */
+  tunnel?: GatewayTunnelDeclaration;
   lifecycle: GatewayLifecycle;
   trust: GatewayTrust;
   tags: string[];
@@ -50,6 +80,7 @@ export interface GatewayPatch {
   endpoint?: GatewayEndpoint;
   ownership?: GatewayOwnership;
   capabilities?: GatewayCapabilities;
+  tunnel?: GatewayTunnelDeclaration;
   tags?: string[];
 }
 
@@ -100,6 +131,38 @@ function assertGateway(gateway: GatewayMetadata): void {
     throw new Error('gateway tags must be unique');
   if (gateway.capabilities.addressFamilies.length === 0)
     throw new Error('gateway must declare address families');
+  if (gateway.tunnel !== undefined) assertTunnelDeclaration(gateway.tunnel);
+}
+
+/**
+ * Validates a tunnel declaration.
+ *
+ * A declaration without a protocol or without a credential reference is rejected: the gateway
+ * plane must fail closed rather than invent a protocol or fall back to a placeholder credential.
+ */
+export function assertTunnelDeclaration(declaration: GatewayTunnelDeclaration): void {
+  if (!declaration.protocol.trim()) throw new Error('gateway tunnel protocol is required');
+  if (!declaration.credentialRef.trim())
+    throw new Error('gateway tunnel credentialRef is required');
+  if (declaration.routingMode !== 'fullTunnel' && declaration.routingMode !== 'splitTunnel')
+    throw new Error('gateway tunnel routingMode must be fullTunnel or splitTunnel');
+  if (declaration.addressCidr !== undefined && !/^[0-9.]+\/[0-9]+$|^[0-9a-fA-F:]+\/[0-9]+$/.test(declaration.addressCidr))
+    throw new Error('gateway tunnel addressCidr must be a CIDR');
+  const destinations = [
+    ...(declaration.allowedDestinations ?? []),
+    ...(declaration.excludedDestinations ?? []),
+  ];
+  if (destinations.some((value) => !value.trim()))
+    throw new Error('gateway tunnel destinations must not be empty');
+  if (declaration.mtu !== undefined && (!Number.isInteger(declaration.mtu) || declaration.mtu < 576))
+    throw new Error('gateway tunnel mtu must be an integer of at least 576');
+  if (
+    declaration.keepaliveSeconds !== undefined &&
+    (!Number.isInteger(declaration.keepaliveSeconds) ||
+      declaration.keepaliveSeconds < 0 ||
+      declaration.keepaliveSeconds > 65535)
+  )
+    throw new Error('gateway tunnel keepaliveSeconds must be an integer between 0 and 65535');
 }
 
 export class InMemoryGatewayRegistry implements GatewayRegistry {
@@ -147,6 +210,9 @@ export class InMemoryGatewayRegistry implements GatewayRegistry {
       endpoint: patch.endpoint ? { ...patch.endpoint } : current.endpoint,
       ownership: patch.ownership ? { ...patch.ownership } : current.ownership,
       capabilities: patch.capabilities ? { ...patch.capabilities } : current.capabilities,
+      ...(patch.tunnel === undefined
+        ? {}
+        : { tunnel: { ...patch.tunnel } as GatewayTunnelDeclaration }),
       tags: patch.tags ? [...patch.tags] : [...current.tags],
       updatedAt: new Date().toISOString(),
     };

@@ -5,101 +5,23 @@ import type {
   GatewayProbeResult,
 } from './health.js';
 
-const DEFAULT_PACKET_COUNT = 3;
 const DEFAULT_TIMEOUT_MS = 5_000;
 
 /**
- * UDP-based gateway health probe. Sends UDP datagrams to the gateway endpoint
- * and measures round-trip timing where a response is received. Many gateways
- * do not respond to unsolicited UDP, so unreachable results are conservative
- * (assume failure) and latency measurements reflect observed round-trips only
- * when a response comes back.
- */
-export class UdpGatewayHealthProbe implements GatewayHealthProbe {
-  private readonly packetCount: number;
-  private readonly timeoutMs: number;
-
-  constructor(options: { packetCount?: number; timeoutMs?: number } = {}) {
-    this.packetCount = Math.max(1, options.packetCount ?? DEFAULT_PACKET_COUNT);
-    this.timeoutMs = Math.max(100, options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-  }
-
-  async probe(endpoint: GatewayEndpoint, timeoutMs: number): Promise<GatewayProbeResult> {
-    const dgramModule = await import('node:dgram');
-    const dgram = (dgramModule.default ?? dgramModule) as typeof import('node:dgram');
-
-    return new Promise<GatewayProbeResult>((resolve) => {
-      const socket = dgram.createSocket('udp4');
-      let sent = 0;
-      let received = 0;
-      const latencies: number[] = [];
-      let resolved = false;
-
-      const finish = () => {
-        if (resolved) return;
-        resolved = true;
-        clearTimeout(totalTimer);
-        socket.close();
-        resolve({
-          reachable: received > 0,
-          ...(latencies.length > 0
-            ? { latencyMs: Math.min(...latencies) }
-            : {}),
-          packetLossPercent:
-            sent === 0 ? 100 : Math.round(((sent - received) / sent) * 100),
-        });
-      };
-
-      const totalTimer = setTimeout(finish, timeoutMs);
-
-      socket.on('error', (error: Error) => {
-        finish();
-        resolve({
-          reachable: false,
-          error: error.message,
-          packetLossPercent: 100,
-        });
-      });
-
-      socket.on('message', (_msg: Buffer, rinfo: { address: string; port: number }) => {
-        if (resolved) return;
-        if (rinfo.address === endpoint.host && rinfo.port === endpoint.port) {
-          received += 1;
-          latencies.push(Date.now() - batchStart);
-        }
-      });
-
-      const payload = Buffer.from('IRP-PROBE');
-      let batchStart = Date.now();
-      let interval: NodeJS.Timeout | undefined;
-
-      const sendNext = () => {
-        if (resolved || sent >= this.packetCount) {
-          if (interval) clearInterval(interval);
-          finish();
-          return;
-        }
-        sent += 1;
-        batchStart = Date.now();
-        socket.send(payload, 0, payload.length, endpoint.port, endpoint.host, (err: Error | null) => {
-          if (err) {
-            // treat send failure as a lost packet
-          }
-        });
-      };
-
-      interval = setInterval(sendNext, 150);
-      sendNext();
-    });
-  }
-}
-
-/**
- * TCP-based gateway health probe. Measures TCP connect time to the gateway
- * endpoint. A successful connection within the timeout means the gateway is
- * reachable; connection timeout or refusal means unreachable.
+ * TCP transport probe.
+ *
+ * A successful TCP connect proves exactly one thing: something is listening on that address.
+ * It says nothing about the tunnel protocol, and nothing about whether traffic egresses through
+ * the gateway. The probe therefore reports `evidence: 'transport'`, which
+ * {@link evaluateGatewayHealth} refuses to score as `healthy`.
+ *
+ * The probe is also refused for endpoints that do not speak TCP: a UDP-only tunnel peer (for
+ * example WireGuard) must never be reported as unreachable just because a TCP connect was
+ * attempted. Such a probe reports `applicable: false` and carries no evidence.
  */
 export class TcpGatewayHealthProbe implements GatewayHealthProbe {
+  readonly transport = 'tcp' as const;
+
   private readonly timeoutMs: number;
 
   constructor(options: { timeoutMs?: number } = {}) {
@@ -112,30 +34,43 @@ export class TcpGatewayHealthProbe implements GatewayHealthProbe {
 
     return new Promise<GatewayProbeResult>((resolve) => {
       const start = Date.now();
+      let settled = false;
+
+      const finish = (result: GatewayProbeResult): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        socket.destroy();
+        resolve(result);
+      };
+
       const timer = setTimeout(() => {
-        resolve({
+        finish({
           reachable: false,
+          evidence: 'transport',
+          applicable: true,
           packetLossPercent: 100,
           error: `connection timeout after ${timeoutMs}ms`,
         });
       }, timeoutMs);
 
       const socket = connect({ host: endpoint.host, port: endpoint.port }, () => {
-        clearTimeout(timer);
-        const latencyMs = Date.now() - start;
-        socket.destroy();
-        resolve({
+        finish({
           reachable: true,
-          latencyMs,
+          evidence: 'transport',
+          applicable: true,
+          latencyMs: Date.now() - start,
           packetLossPercent: 0,
+          detail:
+            'the transport accepted a TCP connection; the tunnel protocol and external egress are not proven',
         });
       });
 
       socket.on('error', (error: Error) => {
-        clearTimeout(timer);
-        socket.destroy();
-        resolve({
+        finish({
           reachable: false,
+          evidence: 'transport',
+          applicable: true,
           packetLossPercent: 100,
           error: error.message,
         });
@@ -175,6 +110,9 @@ export class GatewayHealthProber {
       gatewayId,
       checkedAt: new Date().toISOString(),
       reachable: result.reachable,
+      // A probe that does not state what it proved proves transport at most.
+      evidence: result.evidence ?? 'transport',
+      ...(result.applicable === undefined ? {} : { applicable: result.applicable }),
       ...(result.latencyMs !== undefined ? { latencyMs: result.latencyMs } : {}),
       ...(result.packetLossPercent !== undefined
         ? { packetLossPercent: result.packetLossPercent }
@@ -184,12 +122,13 @@ export class GatewayHealthProber {
 
   /**
    * Probe multiple gateways concurrently (bounded by maxConcurrency) and return
-   * health samples for each.
+   * health samples for each. The samples are returned in the order the gateways
+   * were given, so a selection decision never depends on completion timing.
    */
   async probeGateways(
     gateways: { id: string; endpoint: GatewayEndpoint }[],
   ): Promise<GatewayHealthSample[]> {
-    const samples: GatewayHealthSample[] = [];
+    const samples: GatewayHealthSample[] = new Array(gateways.length);
     let index = 0;
 
     const worker = async (): Promise<void> => {
@@ -199,15 +138,15 @@ export class GatewayHealthProber {
         const gw = gateways[i];
         if (!gw) return;
         try {
-          const sample = await this.probeGateway(gw.id, gw.endpoint);
-          samples.push(sample);
+          samples[i] = await this.probeGateway(gw.id, gw.endpoint);
         } catch {
-          samples.push({
+          samples[i] = {
             gatewayId: gw.id,
             checkedAt: new Date().toISOString(),
             reachable: false,
+            evidence: 'transport',
             packetLossPercent: 100,
-          });
+          };
         }
       }
     };

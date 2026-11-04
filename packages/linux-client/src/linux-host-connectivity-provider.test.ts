@@ -189,6 +189,49 @@ describe('LinuxHostConnectivityProvider', () => {
     expect(result.error).toContain('managed by the network manager');
   });
 
+  it('advertises the activation capability it implements', async () => {
+    const provider = new LinuxHostConnectivityProvider();
+    const fakeRunner = {
+      run: async (
+        _binary: string,
+        args: readonly string[],
+        _options: { timeoutMs: number },
+      ): Promise<{ stdout: string; stderr: string; exitCode: number }> => {
+        if (args.includes('addr')) {
+          return {
+            stdout: JSON.stringify([
+              {
+                ifindex: 2,
+                ifname: 'eth0',
+                flags: ['UP'],
+                operstate: 'UP',
+                addr_info: [
+                  {
+                    family: 'inet',
+                    local: '192.168.1.10',
+                    prefixlen: 24,
+                    scope: 'global',
+                  },
+                ],
+              },
+            ]),
+            stderr: '',
+            exitCode: 0,
+          };
+        }
+        return { stdout: '[]', stderr: '', exitCode: 0 };
+      },
+    };
+    const withRunner = new LinuxHostConnectivityProvider({ commandRunner: fakeRunner });
+
+    // The provider implements `activate`; without advertising it the connectivity manager
+    // rejects the source as `missing-capability` and no failover to a host interface can be
+    // committed.
+    expect(provider.capabilities()).toContain('activate');
+    const resources = await withRunner.discover();
+    expect(resources[0]?.capabilities).toContain('activate');
+  });
+
   it('is registered in the production network control plane', async () => {
     const { createLinuxNetworkControlPlane } = await import('./linux-network-control-plane.js');
     const plane = createLinuxNetworkControlPlane({ enableLiveRouteMutation: true });

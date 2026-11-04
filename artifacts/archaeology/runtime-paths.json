@@ -49,6 +49,10 @@
       "path": "packages/resilience-runtime/src/canonical-network-adapter.ts"
     },
     {
+      "marker": "destination-verification",
+      "path": "packages/resilience-runtime/src/gateway/gateway-registry-plane.ts"
+    },
+    {
       "marker": "postcondition-check",
       "path": "apps/daemon/src/auto-optimization-host.test.ts"
     },
@@ -112,7 +116,7 @@
   "summary": {
     "entrypoints": 2,
     "mutationSites": 5,
-    "verificationSites": 17,
+    "verificationSites": 18,
     "everyEntrypointComposesCanonically": true,
     "noDirectRuntimeConstruction": true
   }
