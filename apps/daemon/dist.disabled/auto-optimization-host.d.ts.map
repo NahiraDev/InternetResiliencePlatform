@@ -1,0 +1,1 @@
+{"version":3,"file":"auto-optimization-host.d.ts","sourceRoot":"","sources":["../src/auto-optimization-host.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,sBAAsB,EAAiC,MAAM,wBAAwB,CAAC;AAE/F,MAAM,WAAW,yBAAyB;IACxC,OAAO,CAAC,EAAE,OAAO,CAAC;CACnB;AAED,qBAAa,oBAAoB;IAC/B,QAAQ,CAAC,MAAM,EAAE,sBAAsB,CAAC;IACxC,QAAQ,CAAC,OAAO,EAAE,OAAO,CAAC;gBAEd,EAAE,OAAe,EAAE,GAAE,yBAA8B;CAIhE"}

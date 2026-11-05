@@ -69,7 +69,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = NOW()
 `;
 
-const GET_SQL = `
+const _GET_SQL = `
 SELECT * FROM incidents WHERE id = $1
 `;
 

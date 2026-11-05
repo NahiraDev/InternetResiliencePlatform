@@ -27,6 +27,8 @@ import {
   RuntimeScheduler,
   FileDecisionStore,
   FileIncidentStore,
+  PostgresDecisionStore,
+  PostgresIncidentStore,
   TunnelRegistryControlPlane,
   type ClosedLoopOptions,
   type PathStrategyEvidence,
@@ -102,12 +104,48 @@ export class RuntimeDaemonHost {
     this.stateDirectory ? join(this.stateDirectory, 'dns-original.json') : undefined,
     async (file, args) => execFileAsync(file, [...args], { timeout: 5_000, maxBuffer: 64 * 1024 }),
   );
-  private readonly decisionStore = this.stateDirectory
-    ? new FileDecisionStore(join(this.stateDirectory, 'decisions.jsonl'))
-    : undefined;
-  private readonly incidentStore = this.stateDirectory
-    ? new FileIncidentStore(join(this.stateDirectory, 'incidents.jsonl'))
-    : undefined;
+  private readonly decisionStore = (() => {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (databaseUrl) {
+      try {
+        const url = new URL(databaseUrl);
+        return new PostgresDecisionStore({
+          host: url.hostname,
+          port: Number(url.port) || 5432,
+          database: url.pathname.replace(/^\//, ''),
+          user: url.username,
+          password: url.password,
+          ssl: url.protocol === 'postgresql:',
+        });
+      } catch {
+        // Fall through to file store below
+      }
+    }
+    return this.stateDirectory
+      ? new FileDecisionStore(join(this.stateDirectory, 'decisions.jsonl'))
+      : undefined;
+  })();
+  private readonly incidentStore = (() => {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (databaseUrl) {
+      try {
+        const url = new URL(databaseUrl);
+        return new PostgresIncidentStore({
+          host: url.hostname,
+          port: Number(url.port) || 5432,
+          database: url.pathname.replace(/^\//, ''),
+          user: url.username,
+          password: url.password,
+          ssl: url.protocol === 'postgresql:',
+        });
+      } catch {
+        // Fall through to file store below
+      }
+    }
+    return this.stateDirectory
+      ? new FileIncidentStore(join(this.stateDirectory, 'incidents.jsonl'))
+      : undefined;
+  })();
   routeRecovery: Awaited<ReturnType<NonNullable<typeof this.linuxPlane>['routeExecutor']['recoverInterrupted']>> | undefined;
   private controlServer: ControlServer | undefined;
   readonly dnsProviders = createAllBuiltinProviders();
