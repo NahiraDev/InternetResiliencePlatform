@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0A0F1C">
+  <meta name="description" content="IRP Control Center - Autonomous Internet Superplatform">
+  <title>IRP Control Center</title>
+  <link rel="stylesheet" href="/web/style.css">
+  <script type="module" src="/web/src/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <div class="app" id="app">
+    <!-- Authentication overlay (shown when not signed in) -->
+    <div id="auth-overlay" class="auth-overlay hidden">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="signin">Sign in</button>
+          <button class="auth-tab" data-tab="signup">Create account</button>
+        </div>
+
+        <form id="signin-form" class="auth-form active" novalidate>
+          <div class="form-field">
+            <label for="signin-email">Email address</label>
+            <input type="email" id="signin-email" name="email" required autocomplete="email">
+            <span class="field-error" id="signin-email-error" hidden></span>
+          </div>
+          <div class="form-field">
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" name="password" required minlength="12" autocomplete="current-password">
+            <span class="field-error" id="signin-password-error" hidden></span>
+          </div>
+          <button type="submit" class="button button-primary" id="signin-submit">Sign in</button>
+          <p class="auth-hint">Don't have an account? <button type="button" class="auth-link" data-tab="signup">Create one</button></p>
+          <div id="signin-message" class="message message-error hidden"></div>
+        </form>
+
+        <form id="signup-form" class="auth-form" novalidate>
+          <div class="form-field">
+            <label for="signup-email">Email address</label>
+            <input type="email" id="signup-email" name="email" required autocomplete="email">
+            <span class="field-error" id="signup-email-error" hidden></span>
+          </div>
+          <div class="form-field">
+            <label for="signup-name">Name</label>
+            <input type="text" id="signup-name" name="name" required minlength="1" maxlength="120">
+            <span class="field-error" id="signup-name-error" hidden></span>
+          </div>
+          <div class="form-field">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" name="password" required minlength="12" autocomplete="new-password">
+            <span class="field-error" id="signup-password-error" hidden></span>
+            <p class="password-hint">At least 12 characters, one uppercase, one lowercase, one digit.</p>
+          </div>
+          <button type="submit" class="button button-primary" id="signup-submit">Create account</button>
+          <p class="auth-hint">Already have an account? <button type="button" class="auth-link" data-tab="signin">Sign in</button></p>
+          <div id="signup-message" class="message message-error hidden"></div>
+        </form>
+
+        <div id="auth-loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>Working…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main application shell (shown when signed in) -->
+    <div id="app-shell" class="app-shell hidden">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true">IR</span>
+          <span class="brand-copy"><strong>Internet Resilience</strong><small>Control Center</small></span>
+        </div>
+        <nav class="nav" aria-label="Views">
+          <a href="#overview" data-view="overview" class="nav-item"><span class="nav-glyph" aria-hidden="true">◈</span><span>Overview</span></a>
+          <a href="#connectivity" data-view="connectivity" class="nav-item"><span class="nav-glyph" aria-hidden="true">⌁</span><span>Connectivity</span></a>
+          <a href="#providers" data-view="providers" class="nav-item"><span class="nav-glyph" aria-hidden="true">⎋</span><span>Providers</span></a>
+          <a href="#zero-cost" data-view="zero-cost" class="nav-item"><span class="nav-glyph" aria-hidden="true">₍free₎</span><span>Zero-cost mode</span></a>
+          <a href="#devices" data-view="devices" class="nav-item"><span class="nav-glyph" aria-hidden="true">⎙</span><span>Devices</span></a>
+          <a href="#policy" data-view="policy" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚖</span><span>Policy</span></a>
+          <a href="#incidents" data-view="incidents" class="nav-item"><span class="nav-glyph" aria-hidden="true">▦</span><span>Incidents</span></a>
+          <a href="#decisions" data-view="decisions" class="nav-item"><span class="nav-glyph" aria-hidden="true">⟡</span><span>Decisions</span></a>
+          <a href="#settings" data-view="settings" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚙</span><span>Settings</span></a>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="user-badge" id="user-badge">
+            <span id="user-email" class="user-email"></span>
+            <button id="signout-button" class="button button-text">Sign out</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="content" id="content">
+        <header class="topbar" id="topbar">
+          <button class="button button-text sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="hamburger" aria-hidden="true"></span>
+          </button>
+          <div class="topbar-title">
+            <p class="eyebrow" id="view-eyebrow">Live operations</p>
+            <h1 id="view-title">Overview</h1>
+          </div>
+          <div class="topbar-actions">
+            <span id="global-status" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Connecting</span></span>
+            <button class="button" id="refresh-button">Refresh</button>
+            <button class="button" id="auto-button" aria-pressed="true">Auto refresh: on</button>
+          </div>
+        </header>
+
+        <div id="error-banner" class="banner banner-danger" role="alert" hidden>
+          <p id="error-message"></p>
+          <button class="button" id="retry-button">Retry</button>
+        </div>
+        <p id="stale-note" class="banner banner-warn" hidden></p>
+        <div id="live-region" class="sr-only" role="status" aria-live="polite"></div>
+
+        <main id="main" tabindex="-1">
+          <!-- Overview -->
+          <section class="view" id="view-overview" data-view="overview" aria-labelledby="view-title">
+            <div class="kpi-grid">
+              <article class="card kpi kpi-primary">
+                <p class="kpi-label">Network health score</p>
+                <p class="kpi-value"><span id="health-score">—</span><small>/ 100</small></p>
+                <p class="kpi-foot" id="health-caption">Awaiting measurements</p>
+              </article>
+              <article class="card kpi">
+                <p class="kpi-label">Connection</p>
+                <p class="kpi-value kpi-word" id="connection-state">—</p>
+                <p class="kpi-foot" id="route-caption">Route not reported</p>
+              </article>
+              <article class="card kpi">
+                <p class="kpi-label">DNS latency</p>
+                <p class="kpi-value"><span id="dns-latency">—</span><small>ms</small></p>
+                <p class="kpi-foot" id="dns-caption">Resolver status pending</p>
+              </article>
+              <article class="card kpi">
+                <p class="kpi-label">Active incidents</p>
+                <p class="kpi-value"><span id="incident-count">—</span></p>
+                <p class="kpi-foot" id="approval-caption">Approvals pending: —</p>
+              </article>
+            </div>
+
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Decision engine</p><h2>Current recommendation</h2></div><span id="decision-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+                <p id="decision-title" class="lead">Waiting for the first status snapshot…</p>
+                <p id="decision-explanation" class="muted">The API recommendation appears here once data arrives.</p>
+                <dl class="kv kv-inline">
+                  <div><dt>Confidence</dt><dd id="decision-confidence">—</dd></div>
+                  <div><dt>Mode</dt><dd id="decision-mode">—</dd></div>
+                  <div><dt>Policy</dt><dd id="policy-state">—</dd></div>
+                </dl>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Platform</p><h2>Component health</h2></div></header>
+                <div id="module-grid" class="module-grid" aria-live="off"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+              </article>
+            </div>
+
+            <p class="meta-line"><span>Last updated: <strong id="last-updated">waiting for API…</strong></span><span id="source-label">Source: pending</span></p>
+          </section>
+
+          <!-- Connectivity -->
+          <section class="view" id="view-connectivity" data-view="connectivity" aria-label="Connectivity" hidden>
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Route</p><h2>Active path</h2></div><span id="network-health-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+                <dl class="kv">
+                  <div><dt>Current route</dt><dd id="current-route">—</dd></div>
+                  <div><dt>Connection</dt><dd id="connection-detail">—</dd></div>
+                  <div><dt>Routing status</dt><dd id="routing-status">—</dd></div>
+                  <div><dt>Routing mode</dt><dd id="routing-mode">—</dd></div>
+                </dl>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Name resolution</p><h2>DNS</h2></div><span id="dns-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+                <dl class="kv">
+                  <div><dt>Resolver</dt><dd id="dns-resolver">—</dd></div>
+                  <div><dt>Latency</dt><dd id="dns-latency-detail">—</dd></div>
+                  <div><dt>Secure transport</dt><dd id="dns-secure">—</dd></div>
+                  <div><dt>Policy</dt><dd id="dns-policy">—</dd></div>
+                </dl>
+              </article>
+            </div>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Probes</p><h2>Interfaces</h2></div><span class="muted small" id="interface-count">—</span></header>
+              <div id="interface-list" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+            </article>
+          </section>
+
+          <!-- Providers -->
+          <section class="view" id="view-providers" data-view="providers" aria-label="Providers" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Provider discovery</p><h2>Available providers</h2></div></header>
+              <p class="muted">Discovered network interfaces, DNS resolvers, gateways, and tunnel providers from the local system.</p>
+              <div id="provider-list" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+            </article>
+          </section>
+
+          <!-- Zero-cost mode -->
+          <section class="view" id="view-zero-cost" data-view="zero-cost" aria-label="Zero-cost mode" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Personal mode</p><h2>Zero-cost connectivity</h2></div></header>
+              <p class="lead" id="zero-cost-status">Checking eligibility…</p>
+              <dl class="kv">
+                <div><dt>Policy</dt><dd id="zero-cost-policy">—</dd></div>
+                <div><dt>Eligible free providers</dt><dd id="zero-cost-free-count">—</dd></div>
+                <div><dt>Paid-only options rejected</dt><dd id="zero-cost-paid-rejected">—</dd></div>
+                <div><dt>Current path cost</dt><dd id="zero-cost-current-cost">—</dd></div>
+              </dl>
+              <div class="button-group" id="zero-cost-actions">
+                <button class="button button-primary" id="zero-cost-enable">Enable zero-cost mode</button>
+                <button class="button" id="zero-cost-refresh">Refresh providers</button>
+              </div>
+              <div id="zero-cost-providers" class="tile-grid" style="margin-top:16px"></div>
+              <p class="note">IRP personal mode never requires a paid subscription. Paid-only providers are rejected by policy.</p>
+            </article>
+          </section>
+
+          <!-- Devices -->
+          <section class="view" id="view-devices" data-view="devices" aria-label="Devices" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Device management</p><h2>Enrolled devices</h2></div></header>
+              <div id="device-list" class="tile-grid"><div class="skeleton"></div></div>
+              <div id="device-enroll" style="margin-top:16px">
+                <h3>Enroll a new device</h3>
+                <p class="muted">Enroll this device to connect it to the IRP Control Plane.</p>
+                <div class="form-field" style="max-width:400px">
+                  <label for="device-name">Device name</label>
+                  <input type="text" id="device-name" placeholder="My laptop" maxlength="120">
+                </div>
+                <button class="button button-primary" id="device-enroll-button" style="margin-top:8px">Enroll device</button>
+                <div id="device-enroll-message" class="message message-error hidden" style="margin-top:8px"></div>
+              </div>
+            </article>
+          </section>
+
+          <!-- Policy -->
+          <section class="view" id="view-policy" data-view="policy" aria-label="Policy" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Autonomy policy</p><h2>Control policy</h2></div></header>
+              <dl class="kv">
+                <div><dt>Autonomous mode</dt><dd id="policy-autonomous-mode">—</dd></div>
+                <div><dt>Preferred interface</dt><dd id="policy-preferred-interface">—</dd></div>
+                <div><dt>Allowed actions</dt><dd id="policy-allowed-actions">—</dd></div>
+                <div><dt>Confidence threshold</dt><dd id="policy-confidence-threshold">—</dd></div>
+              </dl>
+              <div class="form-field" style="margin-top:16px; max-width:400px">
+                <label class="switch">
+                  <input type="checkbox" id="policy-autonomous-toggle">
+                  <span class="switch-slider"></span>
+                </label>
+                <span>Enable autonomous cycles</span>
+              </div>
+              <p class="note">Autonomous mode allows the control plane to make governed connectivity changes on your behalf. All changes are verified before commit and can be rolled back.</p>
+            </article>
+          </section>
+
+          <!-- Incidents -->
+          <section class="view" id="view-incidents" data-view="incidents" aria-label="Incidents" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Recovery</p><h2>Incidents</h2></div></header>
+              <p class="kpi-value"><span id="incident-total-count">—</span><span id="incident-total-label">reported issues</span></p>
+              <ul id="incident-list" class="list"><li class="muted">Waiting for diagnostics…</li></ul>
+            </article>
+          </section>
+
+          <!-- Decisions -->
+          <section class="view" id="view-decisions" data-view="decisions" aria-label="Decisions" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Decision history</p><h2>Recent decisions</h2></div></header>
+              <div id="decisions-list" class="list"><div class="muted">No decisions recorded yet.</div></div>
+            </article>
+          </section>
+
+          <!-- Settings -->
+          <section class="view" id="view-settings" data-view="settings" aria-label="Settings" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Configuration</p><h2>Settings</h2></div></header>
+              <dl class="kv">
+                <div><dt>API endpoint</dt><dd id="settings-api-endpoint">—</dd></div>
+                <div><dt>Theme</dt><dd id="settings-theme">—</dd></div>
+                <div><dt>Session status</dt><dd id="settings-session-status">—</dd></div>
+              </dl>
+              <div class="button-group" style="margin-top:16px">
+                <button class="button button-danger" id="settings-signout">Sign out</button>
+              </div>
+            </article>
+          </section>
+        </main>
+
+        <footer class="footer"><span>IRP Control Center</span><span>Live API data · Autonomous Internet Superplatform</span></footer>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/web/src/app.js"></script>
+</body>
+</html>
