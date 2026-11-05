@@ -6,7 +6,7 @@ import { findConflictMarkers, scanCommittedConflictMarkers } from './conflict-ma
 
 const root = process.cwd();
 const errors = [];
-const skip = new Set(['.git', 'node_modules', 'dist', '.turbo', 'coverage']);
+const skip = new Set(['.git', 'node_modules', 'dist', 'dist.disabled', '.turbo', 'coverage']);
 const files = [];
 
 const walk = (dir) => {

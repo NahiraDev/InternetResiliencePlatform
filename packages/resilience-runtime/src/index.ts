@@ -44,6 +44,7 @@ export { GatewayEstablishmentError } from './gateway/gateway-registry-plane.js';
 export * from './fabric-lifecycle.js';
 export * from './fabric.js';
 export * from './fabric-authority.js';
+export * from './capacity/capacity-provisioning.js';
 export * from './closed-loop.js';
 export { detectIntentDrift, type IntentDriftResult, type DriftSeverity } from './intent/drift.js';
 export * from './historical-advisory.js';

@@ -56,6 +56,7 @@ const skipDirectories = new Set([
   '.git',
   'node_modules',
   'dist',
+  'dist.disabled',
   '.turbo',
   'coverage',
   'artifacts',
