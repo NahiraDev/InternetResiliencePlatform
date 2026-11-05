@@ -179,26 +179,26 @@ export interface WindowsInterface {
 const IP_ADAPTER_ADDRESSES_LENGTH_OFFSET = 0;          // ULONG Length
 const IP_ADAPTER_ADDRESSES_IF_INDEX_OFFSET = 4;        // DWORD IfIndex
 const IP_ADAPTER_ADDRESSES_NEXT_OFFSET = 8;            // PIP_ADAPTER_ADDRESSES Next (pointer)
-const IP_ADAPTER_ADDRESSES_ADAPTER_NAME_OFFSET = 16;   // PCHAR AdapterName (pointer)
-const IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET = 24;    // PWSTR Description (pointer)
-const IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET = 32;  // PWSTR FriendlyName (pointer)
+const _IP_ADAPTER_ADDRESSES_ADAPTER_NAME_OFFSET = 16;   // PCHAR AdapterName (pointer)
+const _IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET = 24;    // PWSTR Description (pointer)
+const _IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET = 32;  // PWSTR FriendlyName (pointer)
 const IP_ADAPTER_ADDRESSES_OPER_STATUS_OFFSET = 136;   // NET_IFINDEX OperStatus
 const IP_ADAPTER_ADDRESSES_MTU_OFFSET = 152;           // DWORD Mtu
 const IP_ADAPTER_ADDRESSES_PHYS_ADDR_LENGTH_OFFSET = 160; // DWORD PhysicalAddressLength
 const IP_ADAPTER_ADDRESSES_PHYS_ADDR_OFFSET = 168;     // UCHAR PhysicalAddress[32]
-const IP_ADAPTER_ADDRESSES_FLAGS_OFFSET = 208;         // DWORD Flags
+const _IP_ADAPTER_ADDRESSES_FLAGS_OFFSET = 208;         // DWORD Flags
 const IP_ADAPTER_ADDRESSES_FIRST_UNICAST_OFFSET = 216; // PIP_ADAPTER_UNICAST_ADDRESS FirstUnicastAddress (pointer)
 
 // IP_ADAPTER_UNICAST_ADDRESS field offsets
-const IP_ADAPTER_UNICAST_ADDRESS_LENGTH_OFFSET = 0;    // ULONG Length
-const IP_ADAPTER_UNICAST_ADDRESS_FLAGS_OFFSET = 4;     // DWORD Flags
-const IP_ADAPTER_UNICAST_ADDRESS_NEXT_OFFSET = 8;      // PIP_ADAPTER_UNICAST_ADDRESS Next (pointer)
-const IP_ADAPTER_UNICAST_ADDRESS_ADDR_OFFSET = 24;     // SOCKET_ADDRESS Address (SOCKADDR_IN: family at 0, addr at 4)
-const IP_ADAPTER_UNICAST_ADDRESS_PREFIX_LEN_OFFSET = 64; // DWORD PrefixLength
+const _IP_ADAPTER_UNICAST_ADDRESS_LENGTH_OFFSET = 0;    // ULONG Length
+const _IP_ADAPTER_UNICAST_ADDRESS_FLAGS_OFFSET = 4;     // DWORD Flags
+const _IP_ADAPTER_UNICAST_ADDRESS_NEXT_OFFSET = 8;      // PIP_ADAPTER_UNICAST_ADDRESS Next (pointer)
+const _IP_ADAPTER_UNICAST_ADDRESS_ADDR_OFFSET = 24;     // SOCKET_ADDRESS Address (SOCKADDR_IN: family at 0, addr at 4)
+const _IP_ADAPTER_UNICAST_ADDRESS_PREFIX_LEN_OFFSET = 64; // DWORD PrefixLength
 
 // SOCKET_ADDRESS / SOCKADDR_IN offsets
-const SOCKADDR_FAMILY_OFFSET = 0;        // ADDRESS_FAMILY sin_family (USHORT)
-const SOCKADDR_INET_ADDR_OFFSET = 4;     // IN_ADDR sin_addr (DWORD)
+const _SOCKADDR_FAMILY_OFFSET = 0;        // ADDRESS_FAMILY sin_family (USHORT)
+const _SOCKADDR_INET_ADDR_OFFSET = 4;     // IN_ADDR sin_addr (DWORD)
 
 /**
  * Parses an IP_ADAPTER_ADDRESSES buffer into typed interface records.
@@ -208,6 +208,7 @@ const SOCKADDR_INET_ADDR_OFFSET = 4;     // IN_ADDR sin_addr (DWORD)
 export function parseAdapterAddresses(buf: unknown): WindowsInterface[] {
   const entries: WindowsInterface[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ffiBuf: any = buf;
   const bufLen = ffiBuf.length ?? 0;
   if (bufLen < IP_ADAPTER_ADDRESSES_FIRST_UNICAST_OFFSET + 8) {
@@ -223,8 +224,8 @@ export function parseAdapterAddresses(buf: unknown): WindowsInterface[] {
 
     const ifIndex = readUInt32(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_IF_INDEX_OFFSET);
     const nextPtr = readPointer(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_NEXT_OFFSET);
-    const descPtr = readPointer(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET);
-    const friendlyPtr = readPointer(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET);
+    const descPtr = readPointer(ffiBuf, ptr + _IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET);
+    const friendlyPtr = readPointer(ffiBuf, ptr + _IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET);
     const operStatus = readUInt32(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_OPER_STATUS_OFFSET);
     const mtu = readUInt32(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_MTU_OFFSET);
     const physAddrLen = readUInt32(ffiBuf, ptr + IP_ADAPTER_ADDRESSES_PHYS_ADDR_LENGTH_OFFSET);
@@ -314,7 +315,7 @@ export async function discoverInterfaces(): Promise<{
   const { ref, types, Buffer } = ffi;
 
   // First call with a null buffer to learn the required size.
-  let outBufLen = ref.alloc(types.uint, 0);
+  const outBufLen = ref.alloc(types.uint, 0);
   const first = getAdaptersAddresses(
     AF_UNSPEC,
     GAA_FLAG_INCLUDE_ALL_INTERFACES,
@@ -365,14 +366,14 @@ export interface WindowsRoute {
 // MIB_IPFORWARDROW field offsets (x64 layout).
 const MIB_IPFORWARDROW_DEST_OFFSET = 0;      // DWORD dwForwardDest
 const MIB_IPFORWARDROW_MASK_OFFSET = 4;      // DWORD dwForwardMask
-const MIB_IPFORWARDROW_POLICY_OFFSET = 8;    // DWORD dwForwardPolicy
+const _MIB_IPFORWARDROW_POLICY_OFFSET = 8;    // DWORD dwForwardPolicy
 const MIB_IPFORWARDROW_NEXTHOP_OFFSET = 12;  // DWORD dwForwardNextHop
 const MIB_IPFORWARDROW_IF_INDEX_OFFSET = 16; // DWORD dwForwardIfIndex
 const MIB_IPFORWARDROW_METRIC1_OFFSET = 20;  // DWORD dwForwardMetric1
-const MIB_IPFORWARDROW_METRIC2_OFFSET = 24;  // DWORD dwForwardMetric2
-const MIB_IPFORWARDROW_METRIC3_OFFSET = 28;  // DWORD dwForwardMetric3
-const MIB_IPFORWARDROW_METRIC4_OFFSET = 32;  // DWORD dwForwardMetric4
-const MIB_IPFORWARDROW_METRIC5_OFFSET = 36;  // DWORD dwForwardMetric5
+const _MIB_IPFORWARDROW_METRIC2_OFFSET = 24;  // DWORD dwForwardMetric2
+const _MIB_IPFORWARDROW_METRIC3_OFFSET = 28;  // DWORD dwForwardMetric3
+const _MIB_IPFORWARDROW_METRIC4_OFFSET = 32;  // DWORD dwForwardMetric4
+const _MIB_IPFORWARDROW_METRIC5_OFFSET = 36;  // DWORD dwForwardMetric5
 
 /**
  * Parses a MIB_IPFORWARDROW buffer into a WindowsRoute record.
@@ -380,6 +381,7 @@ const MIB_IPFORWARDROW_METRIC5_OFFSET = 36;  // DWORD dwForwardMetric5
  * here because Windows IPv4 route tables on modern systems are x64.
  */
 export function parseIpForwardRow(buf: unknown): WindowsRoute | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ffiBuf: any = buf;
   if (!ffiBuf || typeof ffiBuf.readUInt32LE !== 'function') return undefined;
 
@@ -427,7 +429,7 @@ export async function discoverRoutes(): Promise<{
   }
   const { ref, types, Buffer } = ffi;
 
-  let outBufLen = ref.alloc(types.uint, 0);
+  const outBufLen = ref.alloc(types.uint, 0);
   const first = getIpForwardTable(0, outBufLen, 0);
   if (first !== ERROR_BUFFER_OVERFLOW && first !== ERROR_SUCCESS) {
     return { routes: [], available: false, error: `GetIpForwardTable sizing failed (${first})` };
@@ -439,6 +441,7 @@ export async function discoverRoutes(): Promise<{
     return { routes: [], available: false, error: `GetIpForwardTable failed (${second})` };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ffiBuf: any = buf;
   const numEntries = readUInt32(ffiBuf, 0);
   const rowSize = 40; // MIB_IPFORWARDROW x64 fixed size
@@ -657,7 +660,7 @@ export async function mutateRouteTransactional(
   try {
     verified = await verify();
   } catch {
-    verified = false;
+    // verification failed, verified stays false
   }
   if (!verified) {
     const rolledBack = await deleteRoute(request);

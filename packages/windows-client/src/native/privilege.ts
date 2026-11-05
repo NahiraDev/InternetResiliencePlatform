@@ -52,7 +52,7 @@ async function ensureLibs(): Promise<{ advapi: unknown | undefined; shell32: unk
 }
 
 export async function detectPrivilege(): Promise<PrivilegeReport> {
-  const { advapi, shell32 } = await ensureLibs();
+  const { shell32 } = await ensureLibs();
   if (!shell32) {
     return {
       level: 'unknown',
@@ -89,7 +89,9 @@ export async function readTokenElevation(): Promise<TokenElevation> {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openProcessToken: any = (advapi as any).OpenProcessToken;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getTokenInformation: any = (advapi as any).GetTokenInformation;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const closeHandle: any = (advapi as any).CloseHandle;
   const ffi = await loadFfiNapi();
   if (!ffiAvailable(ffi)) {

@@ -50,6 +50,7 @@ export async function readCredential(): Promise<{ readonly token: string | null;
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const credRead: any = (lib as any).CredReadW;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const coTaskMemFree: any = (lib as any).CoTaskMemFree;
   const ffi = await loadFfiNapi();
   if (!ffiAvailable(ffi)) {
@@ -101,7 +102,6 @@ export async function writeCredential(token: string): Promise<{ readonly ok: boo
     return { ok: false, available: false, error: 'FFI module unavailable' };
   }
   const { ref, types, Buffer } = ffi;
-  const target = Buffer.from(IRP_CREDENTIAL_TARGET, 'ucs2');
   const blob = Buffer.from(token, 'utf16le');
   // Build CREDENTIAL structure best-effort; exact layout is ABI-dependent.
   const cred = Buffer.alloc(256);

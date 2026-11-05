@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { promisify } from 'node:util';
 import {
   discoverInterfaces,
   discoverRoutes,
@@ -11,11 +9,9 @@ import {
   mutateRouteTransactional,
   type RouteMutationRequest,
   ensureIpHelperAvailable,
-  ipHelperError,
 } from './native/ip-helper.js';
 import {
   detectPrivilege,
-  readTokenElevation,
   type PrivilegeLevel,
 } from './native/privilege.js';
 import {
@@ -23,8 +19,6 @@ import {
   writeCredential,
   removeCredential,
 } from './native/credentials.js';
-
-const execFileAsync = promisify(execFile);
 
 export type CapabilityStatus = 'available' | 'unsupported' | 'permission-required';
 
@@ -68,19 +62,6 @@ export interface WindowsSystemAdapter {
   readRefreshToken(): Promise<{ token: string | null; available: boolean; error?: string }>;
   writeRefreshToken(token: string): Promise<{ ok: boolean; available: boolean; error?: string }>;
   removeRefreshToken(): Promise<{ ok: boolean; available: boolean; error?: string }>;
-}
-
-async function command(file: string, args: string[], timeout = 5_000): Promise<string> {
-  try {
-    const result = await execFileAsync(file, args, {
-      timeout,
-      maxBuffer: 512 * 1024,
-      windowsHide: true,
-    });
-    return result.stdout.trim();
-  } catch (error) {
-    return `unavailable: ${error instanceof Error ? error.message : String(error)}`;
-  }
 }
 
 export class WindowsSystem implements WindowsSystemAdapter {
