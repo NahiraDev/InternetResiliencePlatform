@@ -173,3 +173,26 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Issue #420 (CodeQL): still open - default vs advanced workflow conflict.
 - Next prioritized tasks: resolve CodeQL conflict; verify iOS/Android native builds in CI; address remaining auth lifecycle evidence; create integration PR against upstream/main.
 
+## Autonomous engineer checkpoint (2026-11-05 integration)
+
+- Starting base SHA: `ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df` (upstream/main = origin/main, verified after `git fetch origin`)
+- Integration branch: `integration/full-cross-platform-completion` (from `ebf2b0f8b`, does not modify upstream/main)
+- Preserved work: all 3 stashes retained (PostgreSQL port config, lockfile, WIP canonical-network-adapter); PR #480 work (capacity provisioning, PostgreSQL stores, macOS/Windows HTTP clients) already in `origin/main`; 3 iOS Swift compilation fixes after PR #480 also in `origin/main`.
+
+- Completed this run:
+  1. Verified latest upstream main = `ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df` (matches mission-referenced SHA).
+  2. Created dedicated integration branch from verified upstream main; did not touch upstream/main.
+  3. Fixed CRITICAL iOS defect: `clients/ios/App/IRPiOSApp.swift` hardcoded `http://127.0.0.1:3000`. Replaced with endpoint read from `Info.plist` (`IRPControlPlaneBaseURL`), validated at startup (HTTPS required in production; localhost allowed only in DEBUG), fail-closed with explicit "configuration required" error. Added `IRPControlPlaneClientError.configurationRequired`.
+  4. Removed `http://127.0.0.1:3000` default parameter from `clients/ios/Sources/IRPiOSClient/HttpControlPlaneClient.swift` (baseURL now required).
+  5. Fixed CRITICAL Android defect: `clients/android/app/src/main/java/com/nahiradev/irp/HttpControlPlaneClient.kt` `DEFAULT_BASE_URL = "http://127.0.0.1:3000"` removed; `create()` now requires a non-blank `baseUrl`. Added `res/values/strings.xml` (`irp_control_plane_base_url`, empty default = not configured, fail-closed). `MainActivity.kt` reads the configured URL and passes it explicitly.
+  6. Rewrote `packages/windows-client` with real IP Helper API (iphlpapi.dll) FFI bindings via `node-ffi-napi` (dynamic import, graceful degradation): interface/route/gateway/DNS discovery, route add/delete with transactional apply→verify→rollback, privilege detection (IsUserAnAdmin / token elevation), Windows Credential Manager storage, honest capability status (available / permission-required / unsupported). No netsh/ipconfig shell-out as source of truth.
+  7. Rewrote `packages/macos-client` with real SystemConfiguration framework FFI bindings and Security.framework Keychain storage: interface/route/gateway/DNS discovery, reachability monitoring, privilege detection (euid), honest capability status. No ifconfig/route/scutil/networksetup shell-out as source of truth.
+  8. Added `node-ffi-napi` type declaration files so the FFI modules type-check without the native package installed (bindings load at runtime; report "unsupported" when absent).
+
+- Verified: TypeScript typecheck passes for all packages (resilience-runtime, windows-client, macos-client, linux-client, daemon, api, database, etc.). Tests pass: resilience-runtime 972, API 212, daemon 137, linux-client 243, database 16, gateway-registry 113, tunnel 84, windows-client 18, macos-client 24, cli 32, plus core/network/routing/dns/failover/events/sdk/shared/utils/telemetry/config/logger/metrics/types/kernel/security/connectivity. `pnpm validate`, `pnpm validate:docs`, `pnpm architecture:check`, `pnpm architecture:test`, `runtime:integration:strict`, `certification:test` all pass. (Turbo cache log-writing fails in this container due to root-owned `.turbo` dirs; packages verified via direct `tsc`/`vitest` invocation.)
+- iOS/Android native compilation NOT verifiable locally (no Xcode/Gradle/Android SDK). Windows/macOS native runtime NOT verifiable locally (no Windows/macOS runner). These are external blockers, not code defects.
+- Issue #410/#411 (durable stores / PostgreSQL): RESOLVED.
+- Issue #412 (auth lifecycle): auth flows implemented and tested (register→verify→login→refresh→rotate→logout→revoke, refresh-token reuse detection, tenant isolation, expired one-time tokens, account lockout); production deployment evidence still pending.
+- Issue #420 (CodeQL): still open — default vs advanced workflow conflict.
+- Next prioritized tasks: Windows/macOS/iOS/Android native runtime verification in CI; resolve CodeQL conflict; address remaining auth lifecycle evidence; open integration PR against upstream/main.
+

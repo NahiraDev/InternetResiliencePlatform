@@ -284,20 +284,23 @@ class HttpControlPlaneClient private constructor(
         private const val CONNECT_TIMEOUT_MS = 8_000
         private const val READ_TIMEOUT_MS = 15_000
         private const val MAX_REFRESH_RETRIES = 1
-        const val DEFAULT_BASE_URL = "http://127.0.0.1:3000"
 
         /**
          * Create an [HttpControlPlaneClient] wired to the API at [baseUrl].
-         * If [baseUrl] is null, uses [DEFAULT_BASE_URL].
+         * [baseUrl] is required: there is no localhost fallback. Production builds
+         * must supply a configured HTTPS Control Plane endpoint. Passing a blank
+         * URL fails fast with a clear error instead of silently connecting to
+         * localhost.
          */
         fun create(
             context: Context,
             tokenStore: SecureTokenStore,
-            baseUrl: String? = null,
+            baseUrl: String,
         ): HttpControlPlaneClient {
+            require(baseUrl.isNotBlank()) { "Control Plane base URL must not be blank" }
             // context is reserved for future use (e.g., reading app configuration).
             return HttpControlPlaneClient(
-                baseUrl ?: DEFAULT_BASE_URL,
+                baseUrl,
                 tokenStore,
             )
         }

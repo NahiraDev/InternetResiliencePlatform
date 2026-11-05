@@ -44,7 +44,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val diagnostics = AndroidNetworkDiagnosticsAdapter(this)
         val tokenStore = AndroidKeyStoreTokenStore(this)
-        val client = HttpControlPlaneClient.create(this, tokenStore)
+        // The Control Plane base URL is configured via res/values/strings.xml (or
+        // build config). It is required: HttpControlPlaneClient.create fails fast
+        // with a clear error when blank, so the app never silently connects to
+        // localhost.
+        val baseUrl = resources.getString(R.string.irp_control_plane_base_url).trim()
+        val client = HttpControlPlaneClient.create(this, tokenStore, baseUrl)
         val session = ClientSession(
             client,
             tokenStore,

@@ -40,7 +40,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sen
     private let maxRefreshRetries = 1
 
     public init(
-        baseURL: String = "http://127.0.0.1:3000",
+        baseURL: String,
         tokenStore: any IRPSecureTokenStore,
         session: URLSession? = nil
     ) throws {
@@ -335,6 +335,7 @@ public enum IRPControlPlaneClientError: Error, Sendable {
     case invalidBaseURL(String)
     case invalidURL
     case invalidResponse
+    case configurationRequired(String)  // Control Plane endpoint not configured
     case transportError(String)  // Store error description instead of Error
     case serializationError(String)  // Store error description instead of Error
     case httpError(statusCode: Int, body: String)
@@ -346,6 +347,7 @@ extension IRPControlPlaneClientError: Equatable {
         case (.invalidBaseURL(let a), .invalidBaseURL(let b)): return a == b
         case (.invalidURL, .invalidURL): return true
         case (.invalidResponse, .invalidResponse): return true
+        case (.configurationRequired(let a), .configurationRequired(let b)): return a == b
         case (.transportError(let a), .transportError(let b)): return a == b
         case (.serializationError(let a), .serializationError(let b)): return a == b
         case (.httpError(let aStatus, let aBody), .httpError(let bStatus, let bBody)):
