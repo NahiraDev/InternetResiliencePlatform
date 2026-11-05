@@ -85,12 +85,25 @@ export function ipHelperError(): unknown {
   return iphlpError;
 }
 
+/**
+ * Reports whether the IP Helper API native bindings are currently available.
+ * This is only accurate after at least one async operation has called
+ * `ensureIpHlp()` (which loads and caches `iphlp`). Callers that need an
+ * up-to-date availability check should call `ensureIpHlp()` directly and check
+ * its return value instead of relying on this cached flag.
+ */
 export function ipHelperAvailable(): boolean {
-  const ffi = loadFfiNapi() as unknown as { then: unknown } | undefined;
-  // `loadFfiNapi` is async; check the cached module synchronously is not
-  // possible here, so callers should rely on the per-operation `available`
-  // flags instead. This helper returns true only after an async ensure ran.
   return iphlp !== undefined;
+}
+
+/**
+ * Ensures the IP Helper API library is loaded and returns availability.
+ * This is the async entry point callers should use when they need current
+ * availability rather than the cached flag.
+ */
+export async function ensureIpHelperAvailable(): Promise<boolean> {
+  const lib = await ensureIpHlp();
+  return lib !== undefined;
 }
 
 /* ------------------------------------------------------------------ */

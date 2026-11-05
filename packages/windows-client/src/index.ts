@@ -10,7 +10,7 @@ import {
   deleteRoute,
   mutateRouteTransactional,
   type RouteMutationRequest,
-  ipHelperAvailable,
+  ensureIpHelperAvailable,
   ipHelperError,
 } from './native/ip-helper.js';
 import {
@@ -108,7 +108,8 @@ export class WindowsSystem implements WindowsSystemAdapter {
       discoverGateway(),
     ]);
 
-    const dns = ipHelperAvailable()
+    const native = await ensureIpHelperAvailable();
+    const dns = native
       ? 'native IP Helper API'
       : 'unavailable: native bindings not installed';
 
@@ -129,7 +130,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
 
   async getCapabilities(): Promise<WindowsCapabilityReport> {
     await this.ensurePrivilege();
-    const native = ipHelperAvailable();
+    const native = await ensureIpHelperAvailable();
     return {
       interfaceDiscovery: native ? 'available' : 'unsupported',
       routeDiscovery: native ? 'available' : 'unsupported',
@@ -153,7 +154,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
 
   async addRoute(request: RouteMutationRequest): Promise<{ ok: boolean; error?: string }> {
     await this.ensurePrivilege();
-    if (!ipHelperAvailable()) {
+    if (!(await ensureIpHelperAvailable())) {
       return { ok: false, error: 'IP Helper API native bindings not installed' };
     }
     if (this.privileged !== 'administrator') {
@@ -164,7 +165,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
 
   async deleteRoute(request: RouteMutationRequest): Promise<{ ok: boolean; error?: string }> {
     await this.ensurePrivilege();
-    if (!ipHelperAvailable()) {
+    if (!(await ensureIpHelperAvailable())) {
       return { ok: false, error: 'IP Helper API native bindings not installed' };
     }
     if (this.privileged !== 'administrator') {
@@ -178,7 +179,7 @@ export class WindowsSystem implements WindowsSystemAdapter {
     verify: () => Promise<boolean>,
   ): Promise<{ readonly outcome: 'committed' | 'rolled-back' | 'failed'; readonly error?: string | undefined }> {
     await this.ensurePrivilege();
-    if (!ipHelperAvailable()) {
+    if (!(await ensureIpHelperAvailable())) {
       return { outcome: 'failed', error: 'IP Helper API native bindings not installed' };
     }
     if (this.privileged !== 'administrator') {
