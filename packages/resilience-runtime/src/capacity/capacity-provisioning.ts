@@ -14,11 +14,8 @@ import {
   AcquisitionResult,
   VerificationResult,
   UsageLedgerEntry,
-  assertCapacityOffer,
-  assertEntitlement,
-  assertAllocation,
   canEntitlementSatisfy,
-  isAllocationValid,
+  assertAllocation,
   assertUsageLedgerEntry,
   TunnelConfig,
 } from '@irp/gateway-registry';
@@ -293,9 +290,9 @@ export class CapacityProvisioningService {
   /**
    * Select best offer based on cost, trust, latency, failure domain diversity
    */
-  private selectBestOffer(offers: CapacityOffer[], request: ProvisioningRequest): CapacityOffer {
+  private selectBestOffer(_offers: CapacityOffer[], _request: ProvisioningRequest): CapacityOffer {
     // Simple ranking: highest trust, then lowest cost (placeholder), then failure domain diversity
-    const sorted = [...offers].sort((a, b) => {
+    const sorted = [..._offers].sort((a, b) => {
       // Prefer higher trust
       if (b.trust !== a.trust) return b.trust - a.trust;
       // Prefer lower throughput class (more efficient)

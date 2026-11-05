@@ -20,36 +20,36 @@
  * Secure token storage: refresh tokens are persisted to a file with 0600 permissions
  * under the IRP state directory, so only the file's owner can read them.
  */
-import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync } from 'node:fs';
+import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-const DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
-const CONNECT_TIMEOUT_MS = 8_000;
+const _DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
+const _CONNECT_TIMEOUT_MS = 8_000;
 const READ_TIMEOUT_MS = 15_000;
 const MAX_REFRESH_RETRIES = 1;
 
-const jsonEncode = (value: unknown): string => JSON.stringify(value);
+const _jsonEncode = (value: unknown): string => JSON.stringify(value);
 const jsonDecode = <T>(text: string): T => JSON.parse(text) as T;
 
 const escapeJsonString = (s: string): string =>
   s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 
-const toJson = (any: unknown): string => {
-  if (any === null) return 'null';
-  if (typeof any === 'string') return `"${escapeJsonString(any)}"`;
-  if (typeof any === 'number' || typeof any === 'boolean') return String(any);
-  if (Array.isArray(any)) return `[${any.map(toJson).join(',')}]`;
-  if (typeof any === 'object') {
+const _toJson = (value: unknown): string => {
+  if (value === null) return 'null';
+  if (typeof value === 'string') return `"${escapeJsonString(value)}"`;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return `[${value.map(_toJson).join(',')}]`;
+  if (typeof value === 'object') {
     const fields: string[] = [];
-    for (const [key, value] of Object.entries(any)) {
-      fields.push(`"${escapeJsonString(key)}":${toJson(value)}`);
+    for (const [key, val] of Object.entries(value)) {
+      fields.push(`"${escapeJsonString(key)}":${_toJson(val)}`);
     }
     return `{${fields.join(',')}}`;
   }
-  return String(any);
+  return String(value);
 };
 
-const parseConnection = (value: string): string => {
+const _parseConnection = (value: string): string => {
   switch (value.toLowerCase()) {
     case 'online': return 'online';
     case 'degraded': return 'degraded';
@@ -58,40 +58,31 @@ const parseConnection = (value: string): string => {
   }
 };
 
-const parseInt = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-};
-
-const parseBoolean = (value: unknown): boolean | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') {
-    if (value.toLowerCase() === 'true') return true;
-    if (value.toLowerCase() === 'false') return false;
-  }
-  return null;
-};
-
-const parseDouble = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-};
-
-const parseInstant = (value: string | undefined): Date | undefined => {
+const _parseInstant = (value: string | undefined): Date | undefined => {
   if (!value) return undefined;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? undefined : d;
+};
+
+const _parseBoolean = (value: unknown): boolean | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase();
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
+  }
+  return null;
+};
+
+const _parseDouble = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
 };
 
 /**
@@ -108,7 +99,7 @@ class FileTokenStore {
   read(): string | undefined {
     if (!existsSync(this.path)) return undefined;
     try {
-      return require('node:fs').readFileSync(this.path, 'utf8').trim() || undefined;
+      return readFileSync(this.path, 'utf8').trim() || undefined;
     } catch {
       return undefined;
     }
@@ -128,7 +119,7 @@ class FileTokenStore {
 
   remove(): void {
     try {
-      require('node:fs').unlinkSync(this.path);
+      unlinkSync(this.path);
     } catch {
       // ignore if not present
     }
@@ -185,7 +176,7 @@ export class HttpControlPlaneClient {
     requestId: string;
     status: 'pending';
   }> {
-    const body = toJson({ platform: 'macos', label: deviceName });
+    const body = _jsonEncode({ platform: 'macos', label: deviceName });
     const response = await this.request('POST', '/api/v1/auth/remote/devices/request', body, false);
     const data = response.data as Record<string, unknown>;
     return {
@@ -198,7 +189,7 @@ export class HttpControlPlaneClient {
    * Polls for enrollment request approval and returns device credentials.
    * Should be called after requestEnrollment() once admin has approved.
    */
-  async getEnrollmentCredentials(requestId: string): Promise<{
+  async getEnrollmentCredentials(_requestId: string): Promise<{
     credentialId: string;
     deviceId: string;
     secret: string;
@@ -220,10 +211,10 @@ export class HttpControlPlaneClient {
     const response = await this.request('GET', `/api/v1/remote/devices/${encodeURIComponent(deviceId)}/snapshot`, undefined, true);
     const data = response.data as Record<string, unknown>;
     return {
-      connection: String(data.connection ?? 'unknown'),
-      interfaceCount: parseInt(data.interfaceCount) ?? 0,
-      defaultRouteAvailable: parseBoolean(data.defaultRouteAvailable) ?? false,
-      dnsReachable: parseBoolean(data.dnsReachable) ?? false,
+      connection: String((data.connection as string) ?? 'unknown'),
+      interfaceCount: parseInt((data.interfaceCount ?? 0) as string) ?? 0,
+      defaultRouteAvailable: _parseBoolean(data.defaultRouteAvailable) ?? false,
+      dnsReachable: _parseBoolean(data.dnsReachable) ?? false,
       capturedAt: String(data.capturedAt ?? new Date().toISOString()),
     };
   }
@@ -237,24 +228,24 @@ export class HttpControlPlaneClient {
     const response = await this.request('GET', `/api/v1/remote/devices/${encodeURIComponent(deviceId)}/analytics`, undefined, true);
     const data = response.data as Record<string, unknown>;
     return {
-      sampleCount: parseInt(data.sampleCount) ?? 0,
-      availabilityPercent: parseDouble(data.availabilityPercent) ?? 0.0,
-      medianLatencyMs: parseDouble(data.medianLatencyMs) ?? null,
-      packetLossPercent: parseDouble(data.packetLossPercent) ?? null,
+      sampleCount: parseInt((data.sampleCount ?? 0) as string) ?? 0,
+      availabilityPercent: _parseDouble(data.availabilityPercent) ?? 0.0,
+      medianLatencyMs: _parseDouble(data.medianLatencyMs) ?? null,
+      packetLossPercent: _parseDouble(data.packetLossPercent) ?? null,
     };
   }
 
   async setPolicy(deviceId: string, autonomousMode: boolean): Promise<{ autonomousMode: boolean }> {
-    const body = toJson({ autonomousMode });
+    const body = _jsonEncode({ autonomousMode });
     const response = await this.request('POST', `/api/v1/remote/devices/${encodeURIComponent(deviceId)}/policy`, body, true);
     const data = response.data as Record<string, unknown>;
-    return { autonomousMode: parseBoolean(data.autonomousMode) ?? autonomousMode };
+    return { autonomousMode: _parseBoolean(data.autonomousMode) ?? autonomousMode };
   }
 
   // ── Authentication ─────────────────────────────────────────────────────
 
   async authenticateWithCredentials(credentialId: string, secret: string): Promise<void> {
-    const body = toJson({ credentialId, secret });
+    const body = _jsonEncode({ credentialId, secret });
     const response = await this.request('POST', '/api/v1/auth/remote/token', body, false);
     const data = response.data as Record<string, unknown>;
     const access = String(data.accessToken ?? '');
@@ -269,7 +260,7 @@ export class HttpControlPlaneClient {
     const current = this.refreshToken ?? this.tokenStore.read() ?? null;
     if (!current) return false;
     this.refreshToken = current;
-    const body = toJson({ refreshToken: current });
+    const body = _jsonEncode({ refreshToken: current });
     try {
       const response = await this.request('POST', '/api/v1/auth/remote/refresh', body, false);
       const data = response.data as Record<string, unknown>;

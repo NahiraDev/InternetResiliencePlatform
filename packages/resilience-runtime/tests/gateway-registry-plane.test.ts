@@ -7,6 +7,8 @@ import {
   type GatewayTrustAttestation,
   GatewayEstablishmentError,
 } from '../src/gateway/gateway-registry-plane.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in type-only imports below
+import type { GatewayMetadata } from '@irp/gateway-registry';
 import type { ConnectivityManager, ConnectivitySource } from '@irp/connectivity';
 import type {
   GatewayHealthProbe,
@@ -168,7 +170,7 @@ const createRouting = (overrides: Partial<Record<string, unknown>> = {}) => {
 
 const createFleetManager = (overrides: Partial<Record<string, unknown>> = {}) => {
   const record = {
-    gateway: { id: 'gw-1' } as any,
+    gateway: { id: 'gw-1' } as Record<string, unknown>,
     capacity: { limit: 100, allocated: 10, reserved: 5, available: 85, checkedAt: new Date().toISOString() },
     desiredState: 'active' as const,
     provisioning: { requestedBy: 'test', source: 'control-plane' as const, requestedAt: new Date().toISOString(), configurationVersion: '1' },
@@ -639,7 +641,7 @@ describe('GatewayRegistrySelectionPlane — gateway metadata contract', () => {
 describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
   const createFleetManager = (overrides: Partial<Record<string, unknown>> = {}) => {
     const record = {
-      gateway: { id: 'gw-1' } as any,
+      gateway: { id: 'gw-1' } as Record<string, unknown>,
       capacity: { limit: 100, allocated: 10, reserved: 5, available: 85, checkedAt: new Date().toISOString() },
       desiredState: 'active' as const,
       provisioning: { requestedBy: 'test', source: 'control-plane' as const, requestedAt: new Date().toISOString(), configurationVersion: '1' },
@@ -651,7 +653,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
       reserveCapacity: vi.fn().mockReturnValue(record),
       releaseCapacity: vi.fn().mockReturnValue(record),
       ...overrides,
-    } as unknown as GatewayFleetManager & {
+    } as GatewayFleetManager & {
       getCapacity: ReturnType<typeof vi.fn>;
       reserveCapacity: ReturnType<typeof vi.fn>;
       releaseCapacity: ReturnType<typeof vi.fn>;
@@ -659,10 +661,11 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     return manager;
   };
 
-  const createPlaneWithFleet = (fleetManager: ReturnType<typeof createFleetManager>) => {
+  // Helper for creating a plane with a fleet manager (currently unused but kept for future tests)
+  const _createPlaneWithFleet = (_fleetManager: ReturnType<typeof createFleetManager>) => {
     const plane = new GatewayRegistrySelectionPlane(
       createMockConnectivity(),
-      baseOptions({ fleetManager }),
+      baseOptions({ fleetManager: _fleetManager }),
     );
     return plane;
   };
@@ -1182,18 +1185,18 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
         { ...mockSource, sourceId: 'gw-2', providerId: 'prov-2' },
       ]),
     });
-    const resolution1: any = { ...resolution, host: '198.51.100.10' };
-    const resolution2: any = { ...resolution, host: '198.51.100.20', providerId: 'prov-2' };
+    const resolution1: Record<string, unknown> = { ...resolution, host: '198.51.100.10' };
+    const resolution2: Record<string, unknown> = { ...resolution, host: '198.51.100.20', providerId: 'prov-2' };
     const plane = new GatewayRegistrySelectionPlane(
       connectivity,
       baseOptions({ fleetManager, tunnelControlPlane: tunnelPlane, routing }),
     );
     // Override endpoint resolver to return different gateways
-    (plane as any).options.endpointResolver = vi.fn().mockImplementation((source) => 
+    (plane as Record<string, unknown>).options.endpointResolver = vi.fn().mockImplementation((source) => 
       source.sourceId === 'gw-1' ? resolution1 : resolution2
     );
     // Make both gateways trusted
-    (plane as any).options.trustedGatewayIds = ['gw-1', 'gw-2'];
+    (plane as Record<string, unknown>).options.trustedGatewayIds = ['gw-1', 'gw-2'];
     await plane.synchronize();
 
     // Apply both gateways concurrently
@@ -1210,7 +1213,6 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
   });
 
   it('route rollback failure followed by successful retry', async () => {
-    let rollbackCallCount = 0;
     const fleetManager = createFleetManager();
     const tunnelPlane = createTunnelPlane({ rollback: vi.fn().mockResolvedValue(true) });
     const rollbackPlanMock = vi.fn()
@@ -1329,7 +1331,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     const fleetManager = createFleetManager();
     const tunnelPlane = createTunnelPlane();
     const routing = createRouting();
-    const dualResolution: any = {
+    const dualResolution: Record<string, unknown> = {
       ...resolution,
       capabilities: { ...resolution.capabilities, addressFamilies: ['ipv4', 'ipv6'] },
       tunnel: { ...resolution.tunnel!, routingMode: 'fullTunnel', interfaceName: 'irpwg0' },
@@ -1340,7 +1342,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     );
     await plane.synchronize();
 
-    const gateway = (plane as any).registry.get('gw-1');
+    const gateway = (plane as Record<string, unknown>).registry.get('gw-1');
     expect(gateway.capabilities.addressFamilies).toContain('ipv4');
     expect(gateway.capabilities.addressFamilies).toContain('ipv6');
     expect(gateway.tunnel?.routingMode).toBe('fullTunnel');
@@ -1352,8 +1354,8 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     const allRoutes = plan.selectedPath?.metadata?.allRoutes;
     expect(allRoutes).toBeDefined();
     expect(allRoutes.length).toBeGreaterThanOrEqual(2);
-    const hasIpv4Default = allRoutes.some((r: any) => r.family === 'ipv4' && r.destination === 'default');
-    const hasIpv6Default = allRoutes.some((r: any) => r.family === 'ipv6' && r.destination === 'default');
+    const hasIpv4Default = allRoutes.some((r: Record<string, unknown>) => r.family === 'ipv4' && r.destination === 'default');
+    const hasIpv6Default = allRoutes.some((r: Record<string, unknown>) => r.family === 'ipv6' && r.destination === 'default');
     expect(hasIpv4Default).toBe(true);
     expect(hasIpv6Default).toBe(true);
   });
@@ -1362,7 +1364,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     const fleetManager = createFleetManager();
     const tunnelPlane = createTunnelPlane();
     const routing = createRouting();
-    const splitResolution: any = {
+    const splitResolution: Record<string, unknown> = {
       ...resolution,
       tunnel: { ...resolution.tunnel!, routingMode: 'splitTunnel', interfaceName: 'irpwg0', allowedDestinations: ['198.51.100.200/32'], excludedDestinations: ['10.0.0.0/8'] },
     };
@@ -1372,7 +1374,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     );
     await plane.synchronize();
 
-    const gateway = (plane as any).registry.get('gw-1');
+    const gateway = (plane as Record<string, unknown>).registry.get('gw-1');
     expect(gateway.tunnel?.routingMode).toBe('splitTunnel');
     expect(gateway.tunnel?.allowedDestinations).toContain('198.51.100.200/32');
     expect(gateway.tunnel?.excludedDestinations).toContain('10.0.0.0/8');
@@ -1421,7 +1423,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
     await plane.synchronize();
 
     await plane.apply('gw-1');
-    const appBefore = (plane as any).applications.get('gw-1');
+    const appBefore = (plane as Record<string, unknown>).applications.get('gw-1');
     expect(appBefore).toBeDefined();
 
     // Simulate process restart by creating a new plane instance
@@ -1433,7 +1435,7 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
 
     // The new plane has no application state (in-memory only)
     // A durable repository would be needed for true recovery
-    const appAfter = (newPlane as any).applications.get('gw-1');
+    const appAfter = (newPlane as Record<string, unknown>).applications.get('gw-1');
     expect(appAfter).toBeUndefined();
     // Note: Full durable recovery requires integration with canonical persistence layer
   });
@@ -1471,15 +1473,15 @@ describe('GatewayRegistrySelectionPlane — capacity provisioning', () => {
       await plane.synchronize();
 
       // First apply
-      const receipt1 = await plane.apply('gw-1');
-      const app1 = (plane as any).applications.get('gw-1');
+      const _receipt1 = await plane.apply('gw-1');
+      const app1 = (plane as Record<string, unknown>).applications.get('gw-1');
       expect(app1?.allocationId).toBeDefined();
       expect(app1?.allocationId).not.toBe('gw-1'); // Should not be just the gateway ID
 
       // Rollback and apply again
       await plane.rollback('gw-1');
-      const receipt2 = await plane.apply('gw-1');
-      const app2 = (plane as any).applications.get('gw-1');
+      const _receipt2 = await plane.apply('gw-1');
+      const app2 = (plane as Record<string, unknown>).applications.get('gw-1');
       expect(app2?.allocationId).toBeDefined();
       expect(app2?.allocationId).not.toBe(app1?.allocationId); // Should be different
     });
