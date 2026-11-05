@@ -126,6 +126,8 @@ jobs:
     name: Linux network-namespace end-to-end chain (privileged, required)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      PNPM_IGNORE_TTY: "1"
 
     steps:
       - name: Checkout repository
