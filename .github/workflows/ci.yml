@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     container: node:24-trixie
     timeout-minutes: 35
+    env:
+      PNPM_IGNORE_TTY: "1"
 
     steps:
       - name: Checkout repository

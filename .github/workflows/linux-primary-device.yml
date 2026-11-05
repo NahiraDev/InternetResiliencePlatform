@@ -23,6 +23,8 @@ jobs:
     container:
       image: debian:13
     timeout-minutes: 30
+    env:
+      PNPM_IGNORE_TTY: "1"
 
     steps:
       - name: Install CI prerequisites
