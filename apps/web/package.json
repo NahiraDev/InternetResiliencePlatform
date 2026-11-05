@@ -8,7 +8,7 @@
     "build": "echo 'Web app is static - no build step required'",
     "typecheck": "echo 'No TypeScript in web app - vanilla JS'",
     "lint": "echo 'Lint not configured for web app'",
-    "test": "echo 'No tests for web app - manual verification required'",
+    "test": "vitest run",
     "start": "echo 'Serve via the IRP API at / or /dashboard, or use any static file server'"
   },
   "engines": {
