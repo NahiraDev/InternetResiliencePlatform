@@ -36,12 +36,6 @@ class HttpControlPlaneClient private constructor(
     private val tokenStore: SecureTokenStore,
 ) : ControlPlaneClient {
 
-    companion object {
-        private const val CONNECT_TIMEOUT_MS = 8_000
-        private const val READ_TIMEOUT_MS = 15_000
-        private const val MAX_REFRESH_RETRIES = 1
-    }
-
     private var accessToken: String? = null
     private var refreshToken: String? = null
 
@@ -156,7 +150,7 @@ class HttpControlPlaneClient private constructor(
 
     private fun objectToJson(any: Any): String {
         val fields = mutableListOf<String>()
-        any.javaClass.declaredMethods.filter { it.isPublic && it.name.startsWith("get") && it.parameterCount == 0 }
+        any.javaClass.declaredMethods.filter { it.isPublic() && it.name.startsWith("get") && it.parameterCount == 0 }
             .forEach { method ->
                 val key = method.name.removePrefix("get").lowercaseFirst()
                 try {
@@ -286,6 +280,9 @@ class HttpControlPlaneClient private constructor(
     }
 
     companion object {
+        private const val CONNECT_TIMEOUT_MS = 8_000
+        private const val READ_TIMEOUT_MS = 15_000
+        private const val MAX_REFRESH_RETRIES = 1
         const val DEFAULT_BASE_URL = "http://127.0.0.1:3000"
 
         /**
