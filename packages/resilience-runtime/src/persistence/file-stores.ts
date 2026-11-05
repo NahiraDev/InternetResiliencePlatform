@@ -34,6 +34,8 @@ export interface DurableLogStatus {
   readonly skippedCorruptLines: number;
   readonly droppedTornTail: boolean;
   readonly compactions: number;
+  readonly persistent: boolean;
+  readonly store: string;
 }
 
 export interface DurableLogOptions {
@@ -140,6 +142,8 @@ class KeyedJsonlLog<T> {
       skippedCorruptLines: this.skipped,
       droppedTornTail: this.tornTail,
       compactions: this.compactions,
+      persistent: true,
+      store: 'file',
     });
   }
 
@@ -171,7 +175,11 @@ export class FileDecisionStore implements DecisionStore {
     return this.log.get(id);
   }
   status(): DurableLogStatus {
-    return this.log.status();
+    return {
+      ...this.log.status(),
+      persistent: true,
+      store: 'file',
+    };
   }
   close(): void {
     this.log.close();

@@ -29,6 +29,8 @@ import {
   FileIncidentStore,
   PostgresDecisionStore,
   PostgresIncidentStore,
+  type DecisionStore,
+  type IncidentStore,
   TunnelRegistryControlPlane,
   type ClosedLoopOptions,
   type PathStrategyEvidence,
@@ -104,7 +106,12 @@ export class RuntimeDaemonHost {
     this.stateDirectory ? join(this.stateDirectory, 'dns-original.json') : undefined,
     async (file, args) => execFileAsync(file, [...args], { timeout: 5_000, maxBuffer: 64 * 1024 }),
   );
-  private readonly decisionStore = (() => {
+  /** Decision store: PostgreSQL when DATABASE_URL is set, file-based otherwise. */
+  private readonly decisionStore = this.createDecisionStore();
+  /** Incident store: PostgreSQL when DATABASE_URL is set, file-based otherwise. */
+  private readonly incidentStore = this.createIncidentStore();
+
+  private createDecisionStore(): DecisionStore | undefined {
     const databaseUrl = process.env.DATABASE_URL;
     if (databaseUrl) {
       try {
@@ -124,8 +131,9 @@ export class RuntimeDaemonHost {
     return this.stateDirectory
       ? new FileDecisionStore(join(this.stateDirectory, 'decisions.jsonl'))
       : undefined;
-  })();
-  private readonly incidentStore = (() => {
+  }
+
+  private createIncidentStore(): IncidentStore | undefined {
     const databaseUrl = process.env.DATABASE_URL;
     if (databaseUrl) {
       try {
@@ -145,7 +153,7 @@ export class RuntimeDaemonHost {
     return this.stateDirectory
       ? new FileIncidentStore(join(this.stateDirectory, 'incidents.jsonl'))
       : undefined;
-  })();
+  }
   routeRecovery: Awaited<ReturnType<NonNullable<typeof this.linuxPlane>['routeExecutor']['recoverInterrupted']>> | undefined;
   private controlServer: ControlServer | undefined;
   readonly dnsProviders = createAllBuiltinProviders();
@@ -516,6 +524,18 @@ export class RuntimeDaemonHost {
   private readonly startupWarnings: string[] = [];
 
   async initialize() {
+    // Initialize durable stores before any cycle can run. When DATABASE_URL is
+    // configured, PostgreSQL stores must be initialized (schema migration,
+    // connection pool) before the runtime can use them. Failure to initialize
+    // is surfaced immediately - the daemon fails closed rather than silently
+    // falling back to volatile in-memory storage.
+    if (this.decisionStore && 'initialize' in this.decisionStore) {
+      await (this.decisionStore as { initialize: () => Promise<void> }).initialize();
+    }
+    if (this.incidentStore && 'initialize' in this.incidentStore) {
+      await (this.incidentStore as { initialize: () => Promise<void> }).initialize();
+    }
+
     // Before anything observes or mutates: undo any route change that was issued but never
     // verified because the previous process died. Failures are surfaced, not swallowed.
     await this.restoreDns('startup-recovery');
@@ -633,8 +653,8 @@ export class RuntimeDaemonHost {
       await this.runtime.events.emit('daemon.shutdown-with-active-cycle', { waitedMs: SHUTDOWN_DRAIN_MS });
     await this.restoreDns('shutdown');
     await this.plugins.stop();
-    this.decisionStore?.close();
-    this.incidentStore?.close();
+    this.decisionStore?.close?.();
+    this.incidentStore?.close?.();
     this.lifecycle = 'stopped';
   }
   /**
@@ -713,8 +733,8 @@ export class RuntimeDaemonHost {
       storage: {
         persistent: this.stateDirectory !== undefined,
         stateDirectory: this.stateDirectory ?? null,
-        decisions: this.decisionStore?.status() ?? { persistent: false },
-        incidents: this.incidentStore?.status() ?? { persistent: false },
+        decisions: this.decisionStore?.status?.() ?? { persistent: false },
+        incidents: this.incidentStore?.status?.() ?? { persistent: false },
       },
       recovery: {
         routeJournalEnabled: this.linuxPlane !== undefined && this.stateDirectory !== undefined,

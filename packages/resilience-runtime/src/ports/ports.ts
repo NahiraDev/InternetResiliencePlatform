@@ -106,10 +106,22 @@ export interface DecisionStore {
   put(record: DecisionRecord): Promise<void>;
   list(): Promise<readonly DecisionRecord[]>;
   get(id: string): Promise<DecisionRecord | undefined>;
+  /** Initialize schema and connections (e.g., PostgreSQL migrations). */
+  initialize?: () => Promise<void>;
+  /** Close connections and release resources. */
+  close?: () => void;
+  /** Report store status for health checks. */
+  status?: () => { readonly persistent: boolean; readonly store: string };
 }
 export interface IncidentStore {
   put(incident: Incident): Promise<void>;
   list(): Promise<readonly Incident[]>;
+  /** Initialize schema and connections (e.g., PostgreSQL migrations). */
+  initialize?: () => Promise<void>;
+  /** Close connections and release resources. */
+  close?: () => void;
+  /** Report store status for health checks. */
+  status?: () => { readonly persistent: boolean; readonly store: string };
 }
 export interface RuntimeStateStore {
   get(): Promise<RuntimeState>;
