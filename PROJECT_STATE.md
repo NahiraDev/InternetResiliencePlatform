@@ -196,3 +196,26 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Issue #420 (CodeQL): still open — default vs advanced workflow conflict.
 - Next prioritized tasks: Windows/macOS/iOS/Android native runtime verification in CI; resolve CodeQL conflict; address remaining auth lifecycle evidence; open integration PR against upstream/main.
 
+## Autonomous engineer checkpoint (2026-11-05 integration run 2)
+
+- Starting base SHA: `8aa4e3526f2739e996d38a1ffcf19182ecacaffd` (integration/full-cross-platform-completion)
+- Integration branch: `integration/full-cross-platform-completion` (from `ebf2b0f8b` upstream/main, does not modify upstream/main)
+- PR: https://github.com/NahiraDev/InternetResiliencePlatform/pull/481 (open, against upstream/main)
+
+- Completed this run:
+  1. Built `apps/web/` workspace — IRP Web Control Center connected to real IRP API endpoints (`/api/v1/platform/status`, `/api/v1/platform/zero-cost`, `/api/v1/runtime/policies`, `/api/v1/runtime/cycle`, `/api/v1/runtime/decisions`, `/api/v1/runtime/incidents`). No mock data; no hardcoded localhost; honest "Not reported" states for missing fields. Auth (sign in/sign up/sign out) via real auth endpoints. Responsive, accessible design matching IRP design tokens. Served by API at `/web/*`. 3 unit tests pass.
+  2. Implemented zero-cost personal mode: `CostTier` type + `cost` field on `ConnectivityResource` in `@irp/connectivity`; `isZeroCostResource`/`filterZeroCostResources`/`getZeroCostSources` helpers; `/api/v1/platform/zero-cost` and `/api/v1/platform/zero-cost/toggle` API endpoints; web UI zero-cost view connected to real API. Paid-only/unknown-pricing providers rejected; free-tier providers eligible; `$0.00/month` cost.
+  3. Added `web` to `ClientPlatform` type in `@irp/resilience-runtime` platform capabilities (observe-only: `observability.read`).
+  4. Removed unused `_DEFAULT_BASE_URL = 'http://127.0.0.1:3000'` constants from Windows and macOS HTTP clients (were unused; production code never defaults to localhost).
+  5. All 44 packages build (direct `tsc --noEmit` due to root-owned `.turbo` cache dirs in container). All 2,833 tests pass across 44 packages (0 failures).
+  6. `pnpm validate`, `pnpm validate:docs`, `pnpm architecture:check`, `pnpm architecture:test` all pass.
+  7. CI workflows exist for Linux, Windows, macOS, Android, iOS platforms.
+
+- Verified: All endpoints used by web UI exist on API. Zero skipped test suites. No mock data in production paths. No hardcoded localhost in any client (iOS/Android fixed; Windows/macOS constants removed).
+- iOS/Android native compilation NOT verifiable locally (no Xcode/Gradle/Android SDK). Windows/macOS native runtime NOT verifiable locally (no Windows/macOS runner). These are external blockers, not code defects.
+- Issue #410/#411 (durable stores / PostgreSQL): RESOLVED — PostgresDecisionStore and PostgresIncidentStore implemented; daemon uses them when DATABASE_URL is configured; CI runs PostgreSQL service with IRP_TEST_DATABASE_URL.
+- Issue #412 (auth lifecycle): auth flows implemented and tested (register→verify→login→refresh→rotate→logout→revoke, refresh-token reuse detection, tenant isolation, expired one-time tokens, account lockout); production deployment evidence still pending.
+- Issue #420 (CodeQL): still open — default vs advanced workflow conflict requires GitHub repo settings change.
+- Next prioritized tasks: Windows/macOS/iOS/Android native runtime verification in CI; resolve CodeQL conflict; address remaining auth lifecycle evidence; review and merge PR #481.
+
+
