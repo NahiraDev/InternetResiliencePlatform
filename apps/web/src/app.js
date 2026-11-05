@@ -403,40 +403,6 @@
     }
   }
 
-  // ── Devices ───────────────────────────────────────────────────────────
-  async function renderDevices() {
-    const node = $('#device-list');
-    try {
-      const data = await apiJson('/api/v1/runtime/capabilities');
-      node.innerHTML = '<p class="muted">Device enrollment uses the remote client API. Enroll a device below.</p>';
-    } catch (err) {
-      node.innerHTML = '<p class="empty-note">Unable to load device data: ' + escapeHtml(err.message) + '</p>';
-    }
-  }
-
-  $('#device-enroll-button').addEventListener('click', async () => {
-    const name = $('#device-name').value.trim();
-    if (!name) { showFormMessage('device-enroll', 'Device name is required'); return; }
-    try {
-      const res = await apiRequest('/api/v1/auth/remote/devices/enroll', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ platform: 'web', label: name, scopes: ['runtime.inspect'] }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error?.message || `Enrollment failed: ${res.status}`);
-      }
-      const data = await res.json();
-      $('#device-enroll-message').className = 'message message-ok';
-      $('#device-enroll-message').textContent = 'Device enrolled: ' + (data.data.deviceId || name);
-      $('#device-enroll-message').classList.remove('hidden');
-      $('#device-name').value = '';
-    } catch (err) {
-      showFormMessage('device-enroll', err.message || 'Enrollment failed');
-    }
-  });
-
   // ── Policy ────────────────────────────────────────────────────────────
   async function renderPolicy() {
     try {
@@ -454,12 +420,13 @@
 
   $('#policy-autonomous-toggle').addEventListener('change', async (e) => {
     try {
-      const res = await apiRequest('/api/v1/remote/devices/me/policy', {
+      const mode = e.target.checked ? 'live' : 'safe';
+      const res = await apiRequest('/api/v1/runtime/cycle', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ autonomousMode: e.target.checked }),
+        body: JSON.stringify({ mode, idempotencyKey: `ui-policy-${mode}-${Date.now()}` }),
       });
-      if (!res.ok) throw new Error('Policy update failed');
+      if (!res.ok) throw new Error(`Policy update failed: ${res.status}`);
       renderPolicy();
     } catch (err) {
       e.target.checked = !e.target.checked;
@@ -545,7 +512,6 @@
       await renderProviders();
       await renderZeroCost();
       await renderPolicy();
-      await renderDevices();
       await renderDecisions();
       renderSettings();
     } catch (err) {

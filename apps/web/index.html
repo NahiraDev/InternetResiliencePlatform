@@ -219,21 +219,12 @@
             </article>
           </section>
 
-          <!-- Devices -->
+          <!-- Devices (remote clients) -->
           <section class="view" id="view-devices" data-view="devices" aria-label="Devices" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Device management</p><h2>Enrolled devices</h2></div></header>
-              <div id="device-list" class="tile-grid"><div class="skeleton"></div></div>
-              <div id="device-enroll" style="margin-top:16px">
-                <h3>Enroll a new device</h3>
-                <p class="muted">Enroll this device to connect it to the IRP Control Plane.</p>
-                <div class="form-field" style="max-width:400px">
-                  <label for="device-name">Device name</label>
-                  <input type="text" id="device-name" placeholder="My laptop" maxlength="120">
-                </div>
-                <button class="button button-primary" id="device-enroll-button" style="margin-top:8px">Enroll device</button>
-                <div id="device-enroll-message" class="message message-error hidden" style="margin-top:8px"></div>
-              </div>
+              <header class="card-head"><div><p class="eyebrow">Remote clients</p><h2>Enrolled devices</h2></div></header>
+              <p class="muted">Device enrollment is handled through the remote client API (mobile/desktop apps with device credentials). Web users manage their account through Settings.</p>
+              <div id="device-list" class="tile-grid"><div class="muted">Not applicable to web session.</div></div>
             </article>
           </section>
 
