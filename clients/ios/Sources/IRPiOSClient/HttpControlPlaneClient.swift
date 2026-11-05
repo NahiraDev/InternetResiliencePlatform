@@ -25,7 +25,7 @@ import Foundation
  * by a serial dispatch queue (tokenQueue). This is a deliberate design choice
  * to maintain thread safety while conforming to the IRPControlPlaneClient protocol.
  */
-@unchecked Sendable public final class HttpControlPlaneClient: IRPControlPlaneClient {
+public final class HttpControlPlaneClient: IRPControlPlaneClient {
     private let baseURL: URL
     private let session: URLSession
     private let tokenStore: any IRPSecureTokenStore
