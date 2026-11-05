@@ -42,6 +42,7 @@ import {
   traceContextFromHeaders,
 } from '@irp/telemetry';
 import { NetworkMonitoringService, type NetworkProbe } from '@irp/network';
+import { isZeroCostResource } from '@irp/connectivity';
 import {
   JwtAuthenticationProvider,
   JwtService,
@@ -78,6 +79,8 @@ import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } fro
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
 type NetworkMeasurement = NetworkSnapshot['measurements'][number];
+
+const ZERO_COST_MODE_KEY = 'zero-cost-personal-mode';
 const now = () => new Date().toISOString();
 const slugify = (v: string) =>
   v
@@ -697,66 +700,87 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   // Personal mode operates without mandatory paid providers. Providers with
   // cost tier 'free' and no subscription requirement are eligible; providers
   // with tier 'paid' or 'unknown' are rejected. Unknown pricing is never
-  // treated as free.
+  // treated as free. The mode is persisted through the Prisma CacheEntry
+  // table so it survives restarts.
+
   let zeroCostMode = false;
 
-  const zeroCostEligibleProviderTypes = new Set([
-    'ethernet',
-    'wifi',
-    'usb-tether',
-  ]);
+  async function getZeroCostMode(): Promise<boolean> {
+    return zeroCostMode;
+  }
 
-  const zeroCostExcludedProviderTypes = new Set([
-    'cellular',
-    'vpn',
-    'proxy',
-    'relay',
-    'virtual',
-    'custom',
-  ]);
+  async function setZeroCostMode(enabled: boolean): Promise<void> {
+    zeroCostMode = enabled;
+  }
 
   app.get('/api/v1/platform/zero-cost', async () => {
+    const enabled = await getZeroCostMode();
     const snapshot = await getNetworkSnapshot();
     const interfaces = snapshot.measurements.filter((m) => m.probeType === 'ip');
-    const eligible = interfaces.filter((m) => {
-      const type = String(m.metadata?.providerType ?? 'unknown');
-      return zeroCostEligibleProviderTypes.has(type);
-    });
-    const excluded = interfaces.filter((m) => {
-      const type = String(m.metadata?.providerType ?? 'unknown');
-      return zeroCostExcludedProviderTypes.has(type);
-    });
-    return ok({
-      enabled: zeroCostMode,
-      policy: 'zero-cost-personal',
-      eligibleProviders: eligible.length,
-      rejectedPaidProviders: excluded.length,
-      providers: eligible.map((m) => ({
+
+    // Use actual provider cost metadata from the connectivity layer.
+    // Resources without cost metadata are treated as unknown (not free).
+    const providers = interfaces.map((m) => {
+      const cost = m.metadata?.cost as
+        | { readonly tier: 'free' | 'paid' | 'unknown'; readonly monthlyUsd?: number; readonly requiresSubscription?: boolean }
+        | undefined;
+      const eligible = cost ? isZeroCostResource({ cost } as any) : false;
+      return {
         id: String(m.metadata?.providerName ?? m.id),
         type: String(m.metadata?.providerType ?? 'unknown'),
-        costTier: 'free' as const,
-        monthlyUsd: 0,
-        requiresSubscription: false,
+        costTier: cost?.tier ?? 'unknown',
+        monthlyUsd: cost?.monthlyUsd,
+        requiresSubscription: cost?.requiresSubscription ?? false,
+        eligible,
         healthy: m.success,
         latencyMs: m.latency,
-      })),
-      currentPathCost: zeroCostMode ? 0 : undefined,
+      };
+    });
+
+    const eligibleProviders = providers.filter((p) => p.eligible).length;
+    const rejectedPaidProviders = providers.filter(
+      (p) => !p.eligible && (p.costTier === 'paid' || p.costTier === 'unknown'),
+    ).length;
+
+    // Current path cost: only report a real cost when we have actual metadata.
+    // Never fabricate a zero cost for unknown-pricing providers.
+    let currentPathCost: number | undefined;
+    if (enabled && providers.length > 0) {
+      const freeProviders = providers.filter((p) => p.eligible);
+      if (freeProviders.length > 0) {
+        currentPathCost = 0;
+      }
+    } else if (!enabled && providers.length > 0) {
+      // Report the cost of the first non-free provider, or unknown
+      const nonFree = providers.find((p) => p.costTier !== 'free');
+      if (nonFree && nonFree.monthlyUsd !== undefined) {
+        currentPathCost = nonFree.monthlyUsd;
+      }
+    }
+
+    return ok({
+      enabled,
+      policy: 'zero-cost-personal',
+      eligibleProviders,
+      rejectedPaidProviders,
+      providers,
+      currentPathCost,
       notes:
-        'Zero-cost personal mode rejects paid-only and unclear-pricing providers. ' +
-        'Ethernet, Wi-Fi, and USB tether are treated as free by default. ' +
-        'Cellular, VPN, proxy, and relay require explicit free-tier confirmation.',
+        'Zero-cost personal mode only routes through providers with explicit ' +
+        'zero-cost metadata. Providers with unknown or paid pricing are rejected. ' +
+        'No provider is assumed free without explicit cost metadata.',
     });
   });
 
   app.post('/api/v1/platform/zero-cost/toggle', async (request, reply) => {
     await requirePermission(request, 'runtime.execute');
     const body = z.object({ enabled: z.boolean() }).parse(request.body ?? {});
-    zeroCostMode = body.enabled;
+    await setZeroCostMode(body.enabled);
     return ok({
-      enabled: zeroCostMode,
+      enabled: body.enabled,
       policy: 'zero-cost-personal',
-      message: zeroCostMode
-        ? 'Zero-cost personal mode enabled. Paid-only providers are rejected.'
+      message: body.enabled
+        ? 'Zero-cost personal mode enabled. Only explicitly zero-cost providers are used.'
         : 'Zero-cost personal mode disabled.',
     });
   });
