@@ -401,7 +401,7 @@
       text('#zero-cost-free-count', data.eligibleProviders + ' eligible');
       text('#zero-cost-paid-rejected', data.rejectedPaidProviders + ' rejected');
       text('#zero-cost-current-cost',
-        data.currentCost !== undefined ? `$${data.currentCost.toFixed(2)} / month` : (data.enabled ? '$0.00' : 'Not in zero-cost mode'));
+        data.currentPathCost !== undefined ? `$${data.currentPathCost.toFixed(2)} / month` : (data.enabled ? '$0.00' : 'Not in zero-cost mode'));
       text('#zero-cost-status',
         data.enabled ? 'Zero-cost mode active · no paid provider required' : 'Zero-cost mode available · not enabled');
       setPill('#global-status', data.enabled ? 'ok' : 'observing', data.enabled ? 'Zero-cost active' : 'Zero-cost available');
