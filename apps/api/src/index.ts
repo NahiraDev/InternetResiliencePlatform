@@ -356,16 +356,16 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
   // ── Web Control Center static assets ──────────────────────────────────
   // Served from apps/web/ so the UI ships with the API binary.
   const WEB_DIR = new URL('../web', import.meta.url).pathname;
-  app.get('/web', async (_request, reply) =>
+  app.get('/web', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
     reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
   );
-  app.get('/web/', async (_request, reply) =>
+  app.get('/web/', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
     reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
   );
-  app.get('/web/style.css', async (_request, reply) =>
+  app.get('/web/style.css', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
     reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readFile('/web/style.css')),
   );
-  app.get('/web/src/app.js', async (_request, reply) =>
+  app.get('/web/src/app.js', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
     reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readFile('/web/src/app.js')),
   );
 
