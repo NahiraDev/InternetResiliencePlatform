@@ -80,6 +80,8 @@ export interface ConnectivityHealth {
   source?: 'provider' | 'network-intelligence' | 'simulation';
   factors?: Record<string, unknown>;
 }
+export type CostTier = 'free' | 'paid' | 'unknown';
+
 export interface ConnectivityResource {
   providerId: string;
   id: string;
@@ -92,6 +94,12 @@ export interface ConnectivityResource {
   capabilities: ConnectivityCapability[];
   health?: ConnectivityHealth;
   priority?: number;
+  cost?: {
+    tier: CostTier;
+    monthlyUsd?: number;
+    requiresSubscription?: boolean;
+    notes?: string;
+  };
   metadata: Record<string, unknown>;
 }
 export interface ConnectivityOperationResult {
@@ -964,6 +972,41 @@ export class ConnectivityManager {
       throw new ConnectivityError('CONFIG_INVALID', 'failoverRetryCount must be >= 1');
   }
 }
+
+/**
+ * Zero-cost personal mode support.
+ *
+ * Returns true when a resource's cost tier is 'free' and it does not require
+ * a subscription. Resources with tier 'unknown' or 'paid' are rejected —
+ * personal mode never routes through paid-only or unclear-pricing providers.
+ */
+export const isZeroCostResource = (resource: ConnectivityResource): boolean => {
+  const cost = resource.cost;
+  if (!cost) return false;
+  if (cost.tier !== 'free') return false;
+  if (cost.requiresSubscription === true) return false;
+  return true;
+};
+
+/**
+ * Filters connectivity resources to zero-cost (free, non-subscription) only.
+ * Resources without cost metadata are excluded — personal mode does not
+ * assume a resource is free when its pricing is unknown.
+ */
+export const filterZeroCostResources = (
+  resources: readonly ConnectivityResource[],
+): ConnectivityResource[] => resources.filter(isZeroCostResource);
+
+/**
+ * Returns zero-cost eligible sources from the connectivity manager.
+ * Used by personal mode to select connectivity paths without paid providers.
+ */
+export const getZeroCostSources = (
+  manager: ConnectivityManager,
+): ConnectivitySource[] => {
+  const allSources = manager.getAvailableSources();
+  return allSources.filter((s) => isZeroCostResource(s));
+};
 
 export interface SimulationResourceInput {
   id: string;

@@ -388,20 +388,56 @@
   async function renderZeroCost() {
     const statusEl = $('#zero-cost-status');
     try {
-      const data = await apiJson('/api/v1/platform/status');
-      const pd = data.data;
-      text('#zero-cost-policy', 'Zero-cost personal mode');
-      const freeCount = pd.network ? pd.network.interfaces ? pd.network.interfaces.length : 0 : 0;
-      text('#zero-cost-free-count', freeCount + ' discovered');
-      text('#zero-cost-paid-rejected', '0 (paid-only rejected by policy)');
-      text('#zero-cost-current-cost', '$0.00 / month');
-      text('#zero-cost-status', 'Zero-cost mode active · no paid provider required');
-      setPill('#global-status', 'ok', 'Zero-cost');
+      const res = await apiRequest('/api/v1/platform/zero-cost', {
+        cache: 'no-store',
+        headers: { accept: 'application/json', authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(`Zero-cost API returned HTTP ${res.status}`);
+      const payload = await res.json();
+      if (!payload || payload.success !== true || !payload.data)
+        throw new Error('Unexpected zero-cost response shape');
+      const data = payload.data;
+      text('#zero-cost-policy', data.policy || 'zero-cost-personal');
+      text('#zero-cost-free-count', data.eligibleProviders + ' eligible');
+      text('#zero-cost-paid-rejected', data.rejectedPaidProviders + ' rejected');
+      text('#zero-cost-current-cost',
+        data.currentCost !== undefined ? `$${data.currentCost.toFixed(2)} / month` : (data.enabled ? '$0.00' : 'Not in zero-cost mode'));
+      text('#zero-cost-status',
+        data.enabled ? 'Zero-cost mode active · no paid provider required' : 'Zero-cost mode available · not enabled');
+      setPill('#global-status', data.enabled ? 'ok' : 'observing', data.enabled ? 'Zero-cost active' : 'Zero-cost available');
+      const node = $('#zero-cost-providers');
+      if (Array.isArray(data.providers) && data.providers.length > 0) {
+        node.innerHTML = data.providers.map((p) => tile(p.id || 'provider', p.type || 'unknown', p.healthy ? 'ok' : 'degraded')).join('');
+      } else {
+        node.innerHTML = '<p class="empty-note">No zero-cost eligible providers discovered.</p>';
+      }
+      const enableBtn = $('#zero-cost-enable');
+      if (data.enabled) {
+        enableBtn.textContent = 'Disable zero-cost mode';
+        enableBtn.classList.replace('button-primary', 'button-danger');
+      } else {
+        enableBtn.textContent = 'Enable zero-cost mode';
+        enableBtn.classList.replace('button-danger', 'button-primary');
+      }
     } catch (err) {
       text('#zero-cost-status', 'Unable to verify zero-cost eligibility');
-      showError('Zero-cost provider check failed: ' + escapeHtml(err.message));
     }
   }
+
+  $('#zero-cost-enable').addEventListener('click', async () => {
+    const currentlyEnabled = $('#zero-cost-enable').textContent.includes('Disable');
+    try {
+      const res = await apiRequest('/api/v1/platform/zero-cost/toggle', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ enabled: !currentlyEnabled }),
+      });
+      if (!res.ok) throw new Error(`Toggle failed: ${res.status}`);
+      await renderZeroCost();
+    } catch (err) {
+      showError('Failed to toggle zero-cost mode: ' + escapeHtml(err.message));
+    }
+  });
 
   // ── Policy ────────────────────────────────────────────────────────────
   async function renderPolicy() {
