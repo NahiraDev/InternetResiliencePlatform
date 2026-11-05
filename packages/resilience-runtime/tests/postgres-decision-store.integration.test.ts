@@ -22,13 +22,55 @@ function parseDatabaseUrl(url: string): {
   user: string;
   password: string;
 } {
-  const parsed = new URL(url);
+  // PostgreSQL connection string format:
+  // postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
+  // netloc can be a Unix socket path starting with /
+  const prefix = 'postgresql://';
+  const rest = url.startsWith(prefix) ? url.slice(prefix.length) : url;
+  // Split off query string
+  const [pathPart, queryPart] = rest.split('?');
+  const queryParams: Record<string, string> = {};
+  for (const param of (queryPart || '').split('&')) {
+    const [k, v] = param.split('=');
+    if (k) queryParams[k] = v ?? '';
+  }
+  // Split userinfo from host: user:password@host
+  let user = '';
+  let password = '';
+  let hostPort = pathPart;
+  const atIdx = pathPart.indexOf('@');
+  if (atIdx !== -1) {
+    const userPass = pathPart.slice(0, atIdx);
+    const colonIdx = userPass.indexOf(':');
+    if (colonIdx !== -1) {
+      user = userPass.slice(0, colonIdx);
+      password = userPass.slice(colonIdx + 1);
+    } else {
+      user = userPass;
+    }
+    hostPort = pathPart.slice(atIdx + 1);
+  }
+  // Split host:port
+  // For Unix socket paths like /tmp/pgtest, hostPort starts with /
+  // For TCP hosts like host:port, split on last :
+  let host = hostPort;
+  let port = parseInt(queryParams['port'] || '5432', 10);
+  if (hostPort.startsWith('/')) {
+    // Unix socket path - host is the socket path, no port in netloc
+    host = hostPort;
+  } else {
+    const colonIdx = hostPort.lastIndexOf(':');
+    if (colonIdx !== -1) {
+      host = hostPort.slice(0, colonIdx);
+      port = parseInt(hostPort.slice(colonIdx + 1), 10) || port;
+    }
+  }
   return {
-    host: parsed.hostname,
-    port: parsed.port ? parseInt(parsed.port, 10) : 5432,
-    database: parsed.pathname.replace(/^\//, '') || 'postgres',
-    user: parsed.username,
-    password: parsed.password ?? '',
+    host: host || 'localhost',
+    port,
+    database: queryParams['dbname'] || 'postgres',
+    user,
+    password,
   };
 }
 
