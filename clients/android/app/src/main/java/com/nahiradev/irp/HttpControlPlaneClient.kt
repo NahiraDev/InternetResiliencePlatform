@@ -5,6 +5,7 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.lang.reflect.Modifier
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -150,7 +151,7 @@ class HttpControlPlaneClient private constructor(
 
     private fun objectToJson(any: Any): String {
         val fields = mutableListOf<String>()
-        any.javaClass.declaredMethods.filter { it.isPublic() && it.name.startsWith("get") && it.parameterCount == 0 }
+        any.javaClass.declaredMethods.filter { Modifier.isPublic(it.modifiers) && it.name.startsWith("get") && it.parameterCount == 0 }
             .forEach { method ->
                 val key = method.name.removePrefix("get").lowercaseFirst()
                 try {
