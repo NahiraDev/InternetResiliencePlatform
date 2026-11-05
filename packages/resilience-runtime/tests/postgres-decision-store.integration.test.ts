@@ -13,8 +13,26 @@ if (!adminUrl && process.env.CI)
   throw new Error('IRP_TEST_DATABASE_URL is required in CI for the PostgreSQL integration tests.');
 const maybe = adminUrl ? describe : describe.skip;
 
-const DATABASE_URL =
-  adminUrl ?? 'postgresql://nima@/tmp/pgtest?port=5433&dbname=irp_test';
+const DATABASE_URL = adminUrl ?? 'postgresql://nima@/tmp/pgtest?port=5433&dbname=irp_test';
+
+function parseDatabaseUrl(url: string): {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+} {
+  const parsed = new URL(url);
+  return {
+    host: parsed.hostname,
+    port: parsed.port ? parseInt(parsed.port, 10) : 5432,
+    database: parsed.pathname.replace(/^\//, '') || 'postgres',
+    user: parsed.username,
+    password: parsed.password ?? '',
+  };
+}
+
+const dbConfig = parseDatabaseUrl(DATABASE_URL);
 
 const baseContext: RuntimeContext = {
   runtimeId: 'runtime-1',
@@ -63,11 +81,7 @@ maybe('PostgresDecisionStore — real PostgreSQL integration', () => {
 
   beforeAll(async () => {
     store = new PostgresDecisionStore({
-      host: '/tmp/pgtest',
-      port: 5433,
-      database: 'irp_test',
-      user: 'nima',
-      password: '',
+      ...dbConfig,
       ssl: false,
     });
     await store.initialize();
@@ -124,11 +138,7 @@ maybe('PostgresDecisionStore — real PostgreSQL integration', () => {
   it('survives store restart (re-initialize and re-read)', async () => {
     // Use a separate store instance so the main store stays open
     const store2 = new PostgresDecisionStore({
-      host: '/tmp/pgtest',
-      port: 5433,
-      database: 'irp_test',
-      user: 'nima',
-      password: '',
+      ...dbConfig,
       ssl: false,
     });
     await store2.initialize();
@@ -150,11 +160,7 @@ maybe('PostgresIncidentStore — real PostgreSQL integration', () => {
 
   beforeAll(async () => {
     store = new PostgresIncidentStore({
-      host: '/tmp/pgtest',
-      port: 5433,
-      database: 'irp_test',
-      user: 'nima',
-      password: '',
+      ...dbConfig,
       ssl: false,
     });
     await store.initialize();
