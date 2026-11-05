@@ -756,7 +756,7 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
           intentId: intent.id,
           intentVersion: intent.version,
           decisionId: result.decisionId,
-          status: result.status,
+          status: result.outcome,
           correlationId: result.correlationId,
         }),
       );

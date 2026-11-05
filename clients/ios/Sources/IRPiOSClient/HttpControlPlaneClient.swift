@@ -25,8 +25,7 @@ import Foundation
  * by a serial dispatch queue (tokenQueue). This is a deliberate design choice
  * to maintain thread safety while conforming to the IRPControlPlaneClient protocol.
  */
-@unchecked Sendable
-public final class HttpControlPlaneClient: IRPControlPlaneClient {
+public final class HttpControlPlaneClient: IRPControlPlaneClient, @unchecked Sendable {
     private let baseURL: URL
     private let session: URLSession
     private let tokenStore: any IRPSecureTokenStore
@@ -43,7 +42,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
     public init(
         baseURL: String = "http://127.0.0.1:3000",
         tokenStore: any IRPSecureTokenStore,
-        session: URLSession? = nil,
+        session: URLSession? = nil
     ) throws {
         guard let url = URL(string: baseURL) else {
             throw IRPControlPlaneClientError.invalidBaseURL(baseURL)
@@ -87,7 +86,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
         let body: [String: Any] = [
             "platform": "ios",
             "label": deviceName,
-            "scopes": ["runtime.inspect"],
+            "scopes": ["runtime.inspect"]
         ]
         let json: String
         do {
@@ -107,7 +106,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
         return IRPDeviceEnrollment(
             deviceId: data["deviceId"] as? String ?? "",
             deviceName: data["deviceName"] as? String ?? deviceName,
-            refreshToken: data["secret"] as? String ?? "",
+            refreshToken: data["secret"] as? String ?? ""
         )
     }
 
@@ -126,7 +125,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
             interfaceCount: data["interfaceCount"] as? Int ?? 0,
             defaultRouteAvailable: data["defaultRouteAvailable"] as? Bool ?? false,
             dnsReachable: data["dnsReachable"] as? Bool ?? false,
-            capturedAt: (data["capturedAt"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date(),
+            capturedAt: (data["capturedAt"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         )
     }
 
@@ -144,7 +143,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
             sampleCount: data["sampleCount"] as? Int ?? 0,
             availabilityPercent: data["availabilityPercent"] as? Double ?? 0.0,
             medianLatencyMs: data["medianLatencyMs"] as? Double,
-            packetLossPercent: data["packetLossPercent"] as? Double,
+            packetLossPercent: data["packetLossPercent"] as? Double
         )
     }
 
@@ -246,7 +245,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
         path: String,
         body: String? = nil,
         addAuth: Bool = false,
-        refreshRetries: Int = 0,
+        refreshRetries: Int = 0
     ) async throws -> [String: Any] {
         // Read the current auth token under lock (sync, quick).
         let token: String? = tokenQueue.sync { addAuth ? self.accessToken : nil }
@@ -267,7 +266,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
         method: String,
         path: String,
         body: String?,
-        token: String?,
+        token: String?
     ) async throws -> [String: Any] {
         guard let url = URL(string: baseURL.absoluteString + path) else {
             throw IRPControlPlaneClientError.invalidURL
@@ -292,7 +291,7 @@ public final class HttpControlPlaneClient: IRPControlPlaneClient {
             let bodyStr = String(data: data, encoding: .utf8) ?? ""
             throw IRPControlPlaneClientError.httpError(
                 statusCode: httpResponse.statusCode,
-                body: bodyStr,
+                body: bodyStr
             )
         }
         do {

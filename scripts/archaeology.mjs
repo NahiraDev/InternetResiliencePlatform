@@ -27,6 +27,7 @@ const outDir = join(root, 'artifacts/archaeology');
 const SKIP_DIRS = new Set([
   'node_modules',
   'dist',
+  'dist.disabled',
   '.git',
   '.turbo',
   'coverage',

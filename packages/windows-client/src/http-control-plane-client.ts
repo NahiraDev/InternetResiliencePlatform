@@ -23,9 +23,12 @@
 import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+const _DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
+const _CONNECT_TIMEOUT_MS = 8_000;
 const READ_TIMEOUT_MS = 15_000;
 const MAX_REFRESH_RETRIES = 1;
 
+const _jsonEncode = (value: unknown): string => JSON.stringify(value);
 const jsonDecode = <T>(text: string): T => JSON.parse(text) as T;
 
 const escapeJsonString = (s: string): string =>
@@ -44,6 +47,15 @@ const toJson = (value: unknown): string => {
     return `{${fields.join(',')}}`;
   }
   return String(value);
+};
+
+const _parseConnection = (value: string): string => {
+  switch (value.toLowerCase()) {
+    case 'online': return 'online';
+    case 'degraded': return 'degraded';
+    case 'offline': return 'offline';
+    default: return 'unknown';
+  }
 };
 
 const parseInt = (value: unknown): number | null => {

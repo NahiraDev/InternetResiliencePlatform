@@ -1,7 +1,9 @@
 node_modules/
 .pnpm-store/
 .turbo/
+.turbo.disabled/
 dist/
+dist.disabled/
 coverage/
 certification-run.json
 .env

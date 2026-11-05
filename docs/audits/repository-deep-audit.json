@@ -1,14 +1,14 @@
 {
-  "generatedAt": "45c9bd775b3dd9cc5af171a5b56e1e43a99ffae2fb4dfbdff9bf31bc8846a821",
+  "generatedAt": "4b9edf52481e547abd58e9d3c3c8a6c65c94da0d773145b44f93785dcf0d1770",
   "workspaceCount": 43,
-  "workflowCount": 18,
+  "workflowCount": 16,
   "findings": [],
   "workspaces": [
     {
       "name": "@irp/api",
       "path": "apps/api/package.json",
-      "sourceFiles": 12,
-      "testFiles": 9,
+      "sourceFiles": 19,
+      "testFiles": 14,
       "scripts": [
         "build",
         "lint",
@@ -20,8 +20,8 @@
     {
       "name": "@irp/cli",
       "path": "apps/cli/package.json",
-      "sourceFiles": 1,
-      "testFiles": 1,
+      "sourceFiles": 2,
+      "testFiles": 2,
       "scripts": [
         "build",
         "lint",
@@ -33,8 +33,8 @@
     {
       "name": "@irp/daemon",
       "path": "apps/daemon/package.json",
-      "sourceFiles": 6,
-      "testFiles": 7,
+      "sourceFiles": 7,
+      "testFiles": 9,
       "scripts": [
         "build",
         "lint",
@@ -157,8 +157,8 @@
     {
       "name": "@irp/gateway-registry",
       "path": "packages/gateway-registry/package.json",
-      "sourceFiles": 8,
-      "testFiles": 8,
+      "sourceFiles": 11,
+      "testFiles": 11,
       "scripts": [
         "build",
         "lint",
@@ -205,8 +205,8 @@
     {
       "name": "@irp/linux-client",
       "path": "packages/linux-client/package.json",
-      "sourceFiles": 8,
-      "testFiles": 8,
+      "sourceFiles": 19,
+      "testFiles": 18,
       "scripts": [
         "build",
         "lint",
@@ -233,8 +233,8 @@
     {
       "name": "@irp/macos-client",
       "path": "packages/macos-client/package.json",
-      "sourceFiles": 1,
-      "testFiles": 1,
+      "sourceFiles": 4,
+      "testFiles": 3,
       "scripts": [
         "build",
         "lint",
@@ -414,8 +414,8 @@
     {
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
-      "sourceFiles": 162,
-      "testFiles": 71,
+      "sourceFiles": 166,
+      "testFiles": 82,
       "scripts": [
         "build",
         "coverage",
@@ -523,8 +523,8 @@
     {
       "name": "@irp/windows-client",
       "path": "packages/windows-client/package.json",
-      "sourceFiles": 1,
-      "testFiles": 1,
+      "sourceFiles": 2,
+      "testFiles": 2,
       "scripts": [
         "build",
         "lint",

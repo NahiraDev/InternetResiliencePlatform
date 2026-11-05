@@ -21,7 +21,7 @@ struct IRPiOSApp: App {
             NavigationStack {
                 IRPClientDashboardView(session: session)
                     .task {
-                        _ = session.restoreSession()
+                        _ = try? session.restoreSession()
                     }
             }
         }
@@ -32,15 +32,15 @@ struct IRPiOSApp: App {
 /// Used when the HTTP client cannot be constructed (e.g., invalid base URL).
 private struct UnconfiguredIRPControlPlaneClient: IRPControlPlaneClient {
     func enroll(deviceName: String) async throws -> IRPDeviceEnrollment {
-        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+        throw IRPControlPlaneClientError.transportError(String(describing: URLError(.notConnectedToInternet)))
     }
     func snapshot(deviceId: String) async throws -> IRPNetworkSnapshot {
-        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+        throw IRPControlPlaneClientError.transportError(String(describing: URLError(.notConnectedToInternet)))
     }
     func analytics(deviceId: String) async throws -> IRPAnalyticsSummary {
-        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+        throw IRPControlPlaneClientError.transportError(String(describing: URLError(.notConnectedToInternet)))
     }
     func setPolicy(deviceId: String, policy: IRPPolicy) async throws -> IRPPolicy {
-        throw IRPControlPlaneClientError.transportError(URLError(.notConnectedToInternet))
+        throw IRPControlPlaneClientError.transportError(String(describing: URLError(.notConnectedToInternet)))
     }
 }

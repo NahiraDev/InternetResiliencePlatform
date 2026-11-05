@@ -125,7 +125,6 @@ export class GatewayEstablishmentError extends Error {
   }
 }
 
-const DEFAULT_PROBE_TIMEOUT_MS = 5_000;
 const TRANSPORT_EVIDENCE: GatewayProbeEvidence = 'transport';
 
 const TUNNEL_PROTOCOLS: readonly TunnelProtocol[] = [
@@ -700,7 +699,8 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       try {
         capacityRecord = fleetManager.reserveCapacity(gatewayId, 1);
       } catch (error) {
-        throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
+        const cause: Error = error instanceof Error ? error : new Error(String(error));
+        throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`, { cause });
       }
       if (!capacityRecord || !capacityRecord.gateway) {
         throw new Error(`Gateway ${gatewayId} cannot be established: capacity reservation failed`);
@@ -1020,7 +1020,6 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
     allocationId?: string;
   }): Promise<CompensationResult> {
     const errors: Error[] = [];
-    let ok = true;
 
     // Release capacity first - we reserved it at the start
     let capacityReleased = false;
@@ -1052,11 +1051,9 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
         const rolledBack = await this.options.routing?.rollbackPlan(state.routePlan);
         routeRolledBack = rolledBack === true;
         if (!routeRolledBack) {
-          ok = false;
           errors.push(new Error('route rollback returned false'));
         }
       } catch (error) {
-        ok = false;
         errors.push(error instanceof Error ? error : new Error('route rollback failed'));
       }
     }
@@ -1068,11 +1065,9 @@ export class GatewayRegistrySelectionPlane implements CanonicalGatewaySelectionP
       const tunnelRolledBack = await this.options.tunnelControlPlane?.rollback();
       tunnelTornDown = tunnelRolledBack === true;
       if (!tunnelTornDown) {
-        ok = false;
         errors.push(new Error('tunnel teardown returned false'));
       }
     } catch (error) {
-      ok = false;
       errors.push(error instanceof Error ? error : new Error('tunnel teardown failed'));
     }
 

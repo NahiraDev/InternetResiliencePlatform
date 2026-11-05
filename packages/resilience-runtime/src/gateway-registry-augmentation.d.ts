@@ -1,4 +1,5 @@
 // Type augmentations for @irp/gateway-registry to work around stale dist files
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in module augmentation below
 import type { GatewayEndpoint } from '@irp/gateway-registry';
 
 declare module '@irp/gateway-registry' {
@@ -151,6 +152,7 @@ declare module '@irp/gateway-registry' {
     nonce: string;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- placeholder for future artifact attestation fields
   export interface GatewayArtifactAttestation {
     // artifact attestation details
   }

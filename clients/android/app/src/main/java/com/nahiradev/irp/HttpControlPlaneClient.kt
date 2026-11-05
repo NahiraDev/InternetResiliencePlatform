@@ -5,6 +5,7 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.lang.reflect.Modifier
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -36,10 +37,6 @@ class HttpControlPlaneClient private constructor(
     private val tokenStore: SecureTokenStore,
 ) : ControlPlaneClient {
 
-    private const val CONNECT_TIMEOUT_MS = 8_000
-    private const val READ_TIMEOUT_MS = 15_000
-    private const val MAX_REFRESH_RETRIES = 1
-
     private var accessToken: String? = null
     private var refreshToken: String? = null
 
@@ -59,7 +56,7 @@ class HttpControlPlaneClient private constructor(
      * On a 401 response, attempts one token refresh and retries once.
      * Reads the error stream for non-2xx responses so error bodies are captured.
      */
-    private fun request(
+    private suspend fun request(
         method: String,
         path: String,
         body: Any? = null,
@@ -128,11 +125,11 @@ class HttpControlPlaneClient private constructor(
         return when {
             value == null -> null
             targetType == String::class.java -> value.toString()
-            targetType == Int::class.java || targetType == Int::class.java.typeName -> value.toString().toIntOrNull()
-            targetType == Double::class.java || targetType == Double::class.java.typeName -> value.toString().toDoubleOrNull()
-            targetType == Boolean::class.java || targetType == Boolean::class.java.typeName ->
+            targetType.typeName == Int::class.java.typeName -> value.toString().toIntOrNull()
+            targetType.typeName == Double::class.java.typeName -> value.toString().toDoubleOrNull()
+            targetType.typeName == Boolean::class.java.typeName ->
                 when (value.toString().lowercase()) { "true" -> true; "false" -> false; else -> null }
-            targetType == Instant::class.java -> Instant.parse(value.toString())
+            targetType.typeName == Instant::class.java.typeName -> Instant.parse(value.toString())
             else -> value
         }
     }
@@ -154,7 +151,7 @@ class HttpControlPlaneClient private constructor(
 
     private fun objectToJson(any: Any): String {
         val fields = mutableListOf<String>()
-        any.javaClass.declaredMethods.filter { it.isPublic && it.name.startsWith("get") && it.parameterCount == 0 }
+        any.javaClass.declaredMethods.filter { Modifier.isPublic(it.modifiers) && it.name.startsWith("get") && it.parameterCount == 0 }
             .forEach { method ->
                 val key = method.name.removePrefix("get").lowercaseFirst()
                 try {
@@ -284,6 +281,9 @@ class HttpControlPlaneClient private constructor(
     }
 
     companion object {
+        private const val CONNECT_TIMEOUT_MS = 8_000
+        private const val READ_TIMEOUT_MS = 15_000
+        private const val MAX_REFRESH_RETRIES = 1
         const val DEFAULT_BASE_URL = "http://127.0.0.1:3000"
 
         /**

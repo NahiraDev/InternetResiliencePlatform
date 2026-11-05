@@ -7,7 +7,7 @@ export default defineConfig({
   root: workspaceRoot,
   test: {
     environment: 'node',
-    include: ['packages/resilience-runtime/tests/**/*.test.ts'],
+    include: ['packages/resilience-runtime/tests/**/*.test.ts', 'packages/resilience-runtime/tests/**/*.integration.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
