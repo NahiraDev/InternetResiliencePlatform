@@ -1,7 +1,8 @@
 import XCTest
 @testable import IRPiOSClient
 
-private final class MockControlPlane: IRPControlPlaneClient, @unchecked Sendable {
+@unchecked Sendable
+private final class MockControlPlane: IRPControlPlaneClient {
     var enrollment: IRPDeviceEnrollment?
     var snapshotValue: IRPNetworkSnapshot = IRPNetworkSnapshot(
         connection: .online,
