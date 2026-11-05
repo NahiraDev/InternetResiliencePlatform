@@ -103,7 +103,7 @@ fun MainScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    KeyValueRow("Device name", state.deviceName)
+                    KeyValueRow("Device name", state.deviceName ?: "")
                     CheckRow(
                         name = "Authenticated",
                         status = checkPresentation(
