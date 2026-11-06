@@ -68,6 +68,7 @@ function capabilityFor(id) {
     ['control-plane', 'control-plane'],
     ['control', 'control-plane'],
     ['cli', 'control-plane'],
+    ['web', 'api'],
   ];
   if (value.includes('infra') || value.includes('docker')) return 'docker';
   if (value.includes('k8s') || value.includes('kubernetes')) return 'kubernetes';

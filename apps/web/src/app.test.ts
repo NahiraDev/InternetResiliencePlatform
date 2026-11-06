@@ -15,7 +15,7 @@ const WEB_DIR = fileURLToPath(new URL('..', import.meta.url));
 describe('IRP Web Control Center', () => {
   it('ships an index.html', () => {
     const html = readFileSync(join(WEB_DIR, 'index.html'), 'utf8');
-    expect(html).toContain('<title>IRP Control Center</title>');
+    expect(html).toContain('<title>IRP Super Admin Control Center</title>');
     expect(html).toContain('/web/style.css');
     expect(html).toContain('/web/src/app.js');
   });

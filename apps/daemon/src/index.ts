@@ -13,7 +13,14 @@ import {
   type NetworkPath,
 } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
-import { createLinuxNetworkControlPlane, LinuxObservationProvider } from '@irp/linux-client';
+import {
+  createLinuxNetworkControlPlane,
+  LinuxObservationProvider,
+  createLinuxWireGuardIntegrationFromEnvironment,
+  createLinuxGatewaySelectionPlane,
+  readLinuxGatewaySelectionEnvironment,
+  createLinuxDestinationVerifier,
+} from '@irp/linux-client';
 import {
   BoundedClosedLoopController,
   GatewayRegistrySelectionPlane,
@@ -56,12 +63,68 @@ const execFileAsync = promisify(execFile);
 
 const OPERATION_TIMEOUT_MS = 5_000;
 
+// ── Destination URL from environment ──────────────────────────────────────────
 const configuredDestinationUrl = process.env.IRP_DESTINATION_URL;
 const configuredDestination = configuredDestinationUrl
   ? (() => {
       try {
         const url = new URL(configuredDestinationUrl);
         return { hostname: url.hostname, port: url.port ? Number(url.port) : undefined };
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
+
+// ── WireGuard integration from environment (only when explicitly enabled) ────
+const wireGuardIntegration =
+  process.env.IRP_TUNNEL_ENABLED === '1'
+    ? (() => {
+        try {
+          return createLinuxWireGuardIntegrationFromEnvironment(process.env);
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
+// ── Gateway selection environment (only when a tunnel is available) ──────────
+const gatewaySelectionEnv = wireGuardIntegration
+  ? (() => {
+      try {
+        return readLinuxGatewaySelectionEnvironment(process.env);
+      } catch {
+        return { enabled: false, trustedSourceIds: [], destination: undefined };
+      }
+    })()
+  : { enabled: false, trustedSourceIds: [], destination: undefined };
+
+// ── Destination probe + canonical verifyDestination from IRP_DESTINATION_URL ─
+const destinationProbeConfig = process.env.IRP_DESTINATION_URL
+  ? (() => {
+      try {
+        const url = new URL(process.env.IRP_DESTINATION_URL);
+        return {
+          port: url.port ? Number(url.port) : 443,
+          timeoutMs: 5000,
+        };
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
+
+const canonicalExtensions = process.env.IRP_DESTINATION_URL
+  ? (() => {
+      try {
+        const url = new URL(process.env.IRP_DESTINATION_URL);
+        return {
+          destination: parseDestination(url.hostname),
+          verifyDestination: createLinuxDestinationVerifier({
+            port: url.port ? Number(url.port) : 443,
+            timeoutMs: 5000,
+          }),
+        };
       } catch {
         return undefined;
       }
@@ -98,6 +161,19 @@ export class RuntimeDaemonHost {
           enableLiveRouteMutation: this.authorization.liveActive,
           registerStarlink: process.env.IRP_STARLINK_ENABLED === '1',
           ...(this.stateDirectory ? { stateDirectory: this.stateDirectory } : {}),
+          ...(wireGuardIntegration
+            ? {
+                gatewaySelection: {
+                  tunnel: wireGuardIntegration,
+                  trustedSourceIds: gatewaySelectionEnv.trustedSourceIds,
+                  ...(gatewaySelectionEnv.destination
+                    ? { destination: gatewaySelectionEnv.destination }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(destinationProbeConfig ? { destinationProbe: destinationProbeConfig } : {}),
+          ...(canonicalExtensions ? { canonicalExtensions } : {}),
         })
       : undefined;
   readonly connectivity = this.linuxPlane?.connectivity ?? new ConnectivityManager();
@@ -162,6 +238,8 @@ export class RuntimeDaemonHost {
       : undefined;
   }
   routeRecovery: Awaited<ReturnType<NonNullable<typeof this.linuxPlane>['routeExecutor']['recoverInterrupted']>> | undefined;
+  /** Logical customer device ID → network source ID mapping. */
+  private readonly deviceSessions = new Map<string, string>();
   private controlServer: ControlServer | undefined;
   readonly dnsProviders = createAllBuiltinProviders();
   readonly dns = new IntelligentDnsEngine(this.dnsProviders, {
@@ -520,6 +598,65 @@ export class RuntimeDaemonHost {
     });
     this.dns.selectProvider(providerId);
   }
+
+  /**
+   * Resolves a logical customer device ID or a direct network source ID to a
+   * connectivity source ID. Logical device IDs are mapped via the device
+   * session registry established on connect; direct source IDs (e.g.
+   * `linux-host:wlp0s20f3`) are matched against discovered sources.
+   */
+  private resolveDeviceSourceId(deviceId: string): string | undefined {
+    // Direct source ID match (e.g. "linux-host:wlp0s20f3" or "wlp0s20f3")
+    const sources = this.connectivity.getAvailableSources();
+    const direct = sources.find(
+      (s) => s.id === deviceId || s.sourceId === deviceId,
+    );
+    if (direct) return direct.sourceId;
+    // Logical device ID → source ID mapping from the device session registry
+    return this.deviceSessions.get(deviceId);
+  }
+
+  /**
+   * Verifies that the configured external destination is reachable through the
+   * given connectivity source. Returns the verification result; never throws
+   * on probe failure — the caller decides how to treat an unreachable
+   * destination.
+   */
+  private async verifyExternalDestination(sourceId: string): Promise<{
+    status: 'reachable' | 'failed' | 'unknown';
+    reason: string | undefined;
+    latencyMs: number;
+  }> {
+    if (!this.destinationProbe || !configuredDestination) {
+      return { status: 'unknown', reason: 'IRP_DESTINATION_URL is not configured', latencyMs: 0 };
+    }
+    const start = Date.now();
+    try {
+      const controller = new AbortController();
+      const result = await Promise.race([
+        this.destinationProbe.execute({
+          signal: controller.signal,
+          now: () => new Date().toISOString(),
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('destination probe timeout')), 5000),
+        ),
+      ]);
+      controller.abort();
+      return {
+        status: result.success ? 'reachable' : 'failed',
+        reason: result.error,
+        latencyMs: result.latencyMs ?? Date.now() - start,
+      };
+    } catch (error) {
+      return {
+        status: 'failed',
+        reason: error instanceof Error ? error.message : 'destination probe failed',
+        latencyMs: Date.now() - start,
+      };
+    }
+  }
+
   /**
    * Linux capability negotiation stays inside the canonical runtime boundary.
    * The daemon advertises and checks only capabilities implemented by its
@@ -605,6 +742,135 @@ export class RuntimeDaemonHost {
     return socketPath;
   }
 
+  /**
+   * Connect a logical customer device through the canonical connectivity lifecycle.
+   *
+   * Maps the logical device ID to a network source ID, activates the source through
+   * `ConnectivityManager.activateSource()` (prepare → activate → verify → commit),
+   * verifies the external destination, and records the device-session mapping.
+   * Returns the verified connection outcome — never a merely requested state.
+   */
+  private async connectDeviceSource(deviceId: string): Promise<{
+    deviceId: string;
+    sourceId: string;
+    connected: boolean;
+    transition: import('@irp/connectivity').ConnectionTransition;
+    destination: { status: 'reachable' | 'failed' | 'unknown'; reason: string | undefined; latencyMs: number };
+  }> {
+    const sourceId = this.resolveDeviceSourceId(deviceId);
+    if (!sourceId) {
+      // Logical device not yet mapped: auto-discover the primary available source.
+      const sources = this.connectivity.getAvailableSources();
+      if (sources.length === 0) {
+        throw new Error(`No available connectivity source for device: ${deviceId}`);
+      }
+      const primary = sources[0];
+      if (!primary) throw new Error(`No available connectivity source for device: ${deviceId}`);
+      this.deviceSessions.set(deviceId, primary.sourceId);
+      return this.connectDeviceSource(primary.sourceId);
+    }
+    // If called with a logical device ID, recurse with the resolved source ID.
+    if (sourceId !== deviceId) {
+      return this.connectDeviceSource(sourceId);
+    }
+    // Direct source ID: activate through the full ConnectivityManager lifecycle
+    // (prepare → activate → verify → commit), then verify the external destination.
+    const sources = this.connectivity.getAvailableSources();
+    const source = sources.find((s) => s.sourceId === sourceId);
+    if (!source) throw new Error(`Connectivity source not found: ${sourceId}`);
+    const provider = this.connectivity.getProviders().find((p) => p.id === source.providerId);
+    if (!provider) throw new Error(`Provider not found: ${source.providerId}`);
+    if (!provider.capabilities(source.id).includes('activate')) {
+      throw new Error(`Source does not support activation: ${sourceId}`);
+    }
+    const transition = await this.connectivity.activateSource(sourceId, 'manual-request');
+    const destination = await this.verifyExternalDestination(sourceId);
+    let connected = false;
+    let logicalId: string | undefined;
+    if (transition.status === 'committed' && destination.status === 'reachable') {
+      connected = true;
+      logicalId = [...this.deviceSessions.entries()].find(
+        ([, sid]) => sid === sourceId,
+      )?.[0];
+      if (logicalId) this.deviceSessions.set(logicalId, sourceId);
+    } else {
+      // Rollback: destination unreachable after activation — deactivate the source.
+      if (transition.status === 'committed') {
+        try {
+          await this.connectivity.deactivateSource(sourceId);
+        } catch {
+          // Best-effort rollback; report the failure regardless.
+        }
+      }
+    }
+    await this.runtime.events.emit('daemon.device-connected', {
+      deviceId: logicalId ?? deviceId,
+      sourceId,
+      transition,
+      destination,
+      connected,
+    });
+    return {
+      deviceId: logicalId ?? deviceId,
+      sourceId,
+      connected,
+      transition,
+      destination,
+    };
+  }
+
+  /**
+   * Disconnect a logical customer device and clean up its connectivity session.
+   *
+   * Deactivates the active source if it matches, removes the device-session mapping,
+   * and returns the verified disconnection outcome.
+   */
+  private async disconnectDeviceSource(deviceId: string): Promise<{
+    deviceId: string;
+    sourceId: string;
+    connected: boolean;
+  }> {
+    const sourceId = this.resolveDeviceSourceId(deviceId);
+    if (!sourceId) throw new Error(`Device not found: ${deviceId}`);
+    // If called with a logical device ID, recurse with the resolved source ID.
+    if (sourceId !== deviceId) {
+      return this.disconnectDeviceSource(sourceId);
+    }
+    // Direct source ID: deactivate the active source if it matches.
+    const sources = this.connectivity.getAvailableSources();
+    const source = sources.find((s) => s.sourceId === sourceId);
+    let deactivated = false;
+    let deactivateError: string | undefined;
+    if (source && source.active) {
+      try {
+        await this.connectivity.deactivateSource(sourceId);
+        deactivated = true;
+      } catch (err) {
+        // Linux host interfaces cannot be brought down without CAP_NET_ADMIN;
+        // the provider's deactivate() reports this. We still clear the logical
+        // session and report the outcome honestly.
+        deactivateError = err instanceof Error ? err.message : String(err);
+      }
+    }
+    // Remove the device session mapping.
+    const logicalId = [...this.deviceSessions.entries()].find(
+      ([, sid]) => sid === sourceId,
+    )?.[0];
+    if (logicalId) this.deviceSessions.delete(logicalId);
+    await this.runtime.events.emit('daemon.device-disconnected', {
+      deviceId: logicalId ?? deviceId,
+      sourceId,
+      deactivated,
+      deactivateError,
+    });
+    return {
+      deviceId: logicalId ?? deviceId,
+      sourceId,
+      connected: false,
+      ...(deactivateError ? { deactivateError } : {}),
+    };
+  }
+
   controlPort(): ControlPort {
     return {
       health: () => this.health(),
@@ -676,31 +942,8 @@ export class RuntimeDaemonHost {
           gateway: active ? { id: active.sourceId, gateway: active.gateway, interface: active.interfaceName } : null,
         };
       },
-      connectDevice: async (deviceId) => {
-        // Find the resource by resourceId matching deviceId
-        const sources = this.connectivity.getAvailableSources();
-        const source = sources.find((s) => s.id === deviceId || s.sourceId === deviceId);
-        if (!source) throw new Error(`Device not found: ${deviceId}`);
-        const provider = this.connectivity.getProviders().find((p) => p.id === source.providerId);
-        if (!provider) throw new Error(`Provider not found: ${source.providerId}`);
-        if (!provider.capabilities(source.id).includes('connect'))
-          throw new Error(`Device does not support connect: ${deviceId}`);
-        const result = await provider.connect(source.id);
-        await this.runtime.events.emit('daemon.device-connected', { deviceId, sourceId: source.sourceId, result });
-        return result;
-      },
-      disconnectDevice: async (deviceId) => {
-        const sources = this.connectivity.getAvailableSources();
-        const source = sources.find((s) => s.id === deviceId || s.sourceId === deviceId);
-        if (!source) throw new Error(`Device not found: ${deviceId}`);
-        const provider = this.connectivity.getProviders().find((p) => p.id === source.providerId);
-        if (!provider) throw new Error(`Provider not found: ${source.providerId}`);
-        if (!provider.capabilities(source.id).includes('disconnect'))
-          throw new Error(`Device does not support disconnect: ${deviceId}`);
-        const result = await provider.disconnect(source.id);
-        await this.runtime.events.emit('daemon.device-disconnected', { deviceId, sourceId: source.sourceId, result });
-        return result;
-      },
+      connectDevice: async (deviceId) => this.connectDeviceSource(deviceId),
+      disconnectDevice: async (deviceId) => this.disconnectDeviceSource(deviceId),
     };
   }
 
