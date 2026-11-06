@@ -631,6 +631,7 @@ export * from './route-journal.js';
 export * from './linux-network-control-plane.js';
 export * from './linux-route-executor.js';
 export * from './linux-destination-probe.js';
+export * from './linux-gateway-selection.js';
 
 export * from './linux-observation-provider.js';
 export * from './linux-wireguard.js';

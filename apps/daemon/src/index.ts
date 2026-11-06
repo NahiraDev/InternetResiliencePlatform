@@ -13,7 +13,14 @@ import {
   type NetworkPath,
 } from '@irp/routing';
 import { TunnelProviderRegistry } from '@irp/tunnel';
-import { createLinuxNetworkControlPlane, LinuxObservationProvider } from '@irp/linux-client';
+import {
+  createLinuxNetworkControlPlane,
+  LinuxObservationProvider,
+  createLinuxWireGuardIntegrationFromEnvironment,
+  createLinuxGatewaySelectionPlane,
+  readLinuxGatewaySelectionEnvironment,
+  createLinuxDestinationVerifier,
+} from '@irp/linux-client';
 import {
   BoundedClosedLoopController,
   GatewayRegistrySelectionPlane,
@@ -56,12 +63,68 @@ const execFileAsync = promisify(execFile);
 
 const OPERATION_TIMEOUT_MS = 5_000;
 
+// ── Destination URL from environment ──────────────────────────────────────────
 const configuredDestinationUrl = process.env.IRP_DESTINATION_URL;
 const configuredDestination = configuredDestinationUrl
   ? (() => {
       try {
         const url = new URL(configuredDestinationUrl);
         return { hostname: url.hostname, port: url.port ? Number(url.port) : undefined };
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
+
+// ── WireGuard integration from environment (only when explicitly enabled) ────
+const wireGuardIntegration =
+  process.env.IRP_TUNNEL_ENABLED === '1'
+    ? (() => {
+        try {
+          return createLinuxWireGuardIntegrationFromEnvironment(process.env);
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
+// ── Gateway selection environment (only when a tunnel is available) ──────────
+const gatewaySelectionEnv = wireGuardIntegration
+  ? (() => {
+      try {
+        return readLinuxGatewaySelectionEnvironment(process.env);
+      } catch {
+        return { enabled: false, trustedSourceIds: [], destination: undefined };
+      }
+    })()
+  : { enabled: false, trustedSourceIds: [], destination: undefined };
+
+// ── Destination probe + canonical verifyDestination from IRP_DESTINATION_URL ─
+const destinationProbeConfig = process.env.IRP_DESTINATION_URL
+  ? (() => {
+      try {
+        const url = new URL(process.env.IRP_DESTINATION_URL);
+        return {
+          port: url.port ? Number(url.port) : 443,
+          timeoutMs: 5000,
+        };
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
+
+const canonicalExtensions = process.env.IRP_DESTINATION_URL
+  ? (() => {
+      try {
+        const url = new URL(process.env.IRP_DESTINATION_URL);
+        return {
+          destination: parseDestination(url.hostname),
+          verifyDestination: createLinuxDestinationVerifier({
+            port: url.port ? Number(url.port) : 443,
+            timeoutMs: 5000,
+          }),
+        };
       } catch {
         return undefined;
       }
@@ -98,6 +161,19 @@ export class RuntimeDaemonHost {
           enableLiveRouteMutation: this.authorization.liveActive,
           registerStarlink: process.env.IRP_STARLINK_ENABLED === '1',
           ...(this.stateDirectory ? { stateDirectory: this.stateDirectory } : {}),
+          ...(wireGuardIntegration
+            ? {
+                gatewaySelection: {
+                  tunnel: wireGuardIntegration,
+                  trustedSourceIds: gatewaySelectionEnv.trustedSourceIds,
+                  ...(gatewaySelectionEnv.destination
+                    ? { destination: gatewaySelectionEnv.destination }
+                    : {}),
+                },
+              }
+            : {}),
+          ...(destinationProbeConfig ? { destinationProbe: destinationProbeConfig } : {}),
+          ...(canonicalExtensions ? { canonicalExtensions } : {}),
         })
       : undefined;
   readonly connectivity = this.linuxPlane?.connectivity ?? new ConnectivityManager();
