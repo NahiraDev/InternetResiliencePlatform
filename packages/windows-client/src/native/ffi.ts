@@ -1,9 +1,9 @@
 /**
- * @fileoverview Dynamic loader for the `node-ffi-napi` native bindings module.
+ * @fileoverview Dynamic loader for the `ffi-napi` native bindings module.
  *
  * IRP's Windows and macOS clients call real operating-system networking APIs
  * (IP Helper API on Windows, SystemConfiguration / Network.framework on macOS)
- * through foreign-function interfaces. `node-ffi-napi` is an *optional* native
+ * through foreign-function interfaces. `ffi-napi` is an *optional* native
  * dependency: it is required for production privileged mutation, but the
  * clients must never crash or fake success when it is unavailable.
  *
@@ -51,7 +51,7 @@ let loaded: FfiNapiModule | undefined;
 let loadError: unknown;
 
 /**
- * Attempts to load `node-ffi-napi`. Safe to call repeatedly; the result is
+ * Attempts to load `ffi-napi`. Safe to call repeatedly; the result is
  * cached. When the module is not installed (development/CI without the native
  * dependency), returns `undefined` and records the error for diagnostics.
  */
@@ -60,7 +60,7 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   try {
     // Dynamic import so the package does not hard-require a native build in
     // environments where it is not installed (e.g. this Linux build host).
-    loaded = (await import('node-ffi-napi')) as FfiNapiModule;
+    loaded = (await import('ffi-napi')) as FfiNapiModule;
   } catch (error) {
     loadError = error;
     loaded = undefined;
@@ -69,7 +69,7 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
 }
 
 /**
- * The last error encountered while loading `node-ffi-napi`, if any.
+ * The last error encountered while loading `ffi-napi`, if any.
  */
 export function ffiLoadError(): unknown {
   return loadError;

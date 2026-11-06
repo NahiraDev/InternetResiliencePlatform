@@ -1,9 +1,9 @@
 /**
- * @fileoverview Dynamic loader for the `node-ffi-napi` native bindings module.
+ * @fileoverview Dynamic loader for the `ffi-napi` native bindings module.
  *
  * IRP's macOS client calls real operating-system networking APIs
  * (SystemConfiguration, Network.framework) through foreign-function interfaces.
- * `node-ffi-napi` is an *optional* native dependency: required for production
+ * `ffi-napi` is an *optional* native dependency: required for production
  * privileged mutation, but the client must never crash or fake success when it
  * is unavailable.
  */
@@ -49,7 +49,7 @@ let loadError: unknown;
 export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   if (loaded !== undefined) return loaded;
   try {
-    loaded = (await import('node-ffi-napi')) as FfiNapiModule;
+    loaded = (await import('ffi-napi')) as FfiNapiModule;
   } catch (error) {
     loadError = error;
     loaded = undefined;

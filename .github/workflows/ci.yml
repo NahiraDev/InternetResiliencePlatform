@@ -125,7 +125,10 @@ jobs:
   linux-netns-e2e:
     name: Linux network-namespace end-to-end chain (privileged, required)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    container:
+      image: node:24-trixie
+      options: --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --security-opt seccomp=unconfined
     env:
       PNPM_IGNORE_TTY: "1"
 
@@ -148,8 +151,9 @@ jobs:
 
       - name: Install Linux namespace tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends iproute2
+          apt-get update
+          apt-get install -y --no-install-recommends iproute2
+          rm -rf /var/lib/apt/lists/*
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
@@ -159,7 +163,7 @@ jobs:
 
       - name: Require real kernel network-namespace execution
         run: |
-          sudo -E env "PATH=$PATH" IRP_REQUIRE_NETNS_E2E=1 \
+          IRP_REQUIRE_NETNS_E2E=1 \
             pnpm --filter @irp/linux-client exec vitest run src/linux-chain.e2e.test.ts
 
   architecture:

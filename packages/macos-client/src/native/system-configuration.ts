@@ -4,7 +4,7 @@
  * IRP uses SystemConfiguration (and Network.framework) for real macOS
  * networking integration: interface discovery, IP configuration, route/gateway
  * discovery, DNS inspection, and reachability/connectivity monitoring. All
- * calls go through `node-ffi-napi` (loaded dynamically via `./ffi.js`). When
+ * calls go through `ffi-napi` (loaded dynamically via `./ffi.js`). When
  * the native binding is unavailable, every method reports the subsystem as
  * unsupported rather than fabricating results.
  *
@@ -45,7 +45,7 @@ async function ensureSC(): Promise<unknown | undefined> {
   if (sc !== undefined) return sc;
   const ffi = await loadFfiNapi();
   if (!ffiAvailable(ffi)) {
-    scLoadErr = 'node-ffi-napi native bindings are not installed';
+    scLoadErr = 'ffi-napi native bindings are not installed';
     return undefined;
   }
   try {

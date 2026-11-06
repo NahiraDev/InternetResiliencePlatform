@@ -3,7 +3,7 @@
  *
  * IRP uses the IP Helper API for real Windows networking integration:
  * interface discovery, IP configuration, route table, DNS servers, gateway
- * discovery, and route/DNS mutation. All calls go through `node-ffi-napi`
+ * discovery, and route/DNS mutation. All calls go through `ffi-napi`
  * (loaded dynamically via `./ffi.js`). When the native binding is unavailable,
  * every method reports the subsystem as unsupported rather than fabricating
  * results.
@@ -60,7 +60,7 @@ async function ensureIpHlp(): Promise<unknown | undefined> {
   if (iphlp !== undefined) return iphlp;
   const ffi = await loadFfiNapi();
   if (!ffiAvailable(ffi)) {
-    iphlpError = 'node-ffi-napi native bindings are not installed';
+    iphlpError = 'ffi-napi native bindings are not installed';
     return undefined;
   }
   try {

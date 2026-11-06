@@ -5,7 +5,7 @@
  * logic, and API error handling without requiring Windows or native FFI
  * bindings (which are not available on this Linux host).
  *
- * Where a test requires the native `node-ffi-napi` module, it is skipped on
+ * Where a test requires the native `ffi-napi` module, it is skipped on
  * platforms where the module is not installed — never silently passing.
  */
 
