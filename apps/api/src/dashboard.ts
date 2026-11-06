@@ -21,6 +21,31 @@ export const dashboardHtml = String.raw`<!doctype html>
   <script defer src="/assets/dashboard.js"></script>
 </head>
 <body>
+  <div id="auth-overlay" class="auth-overlay" hidden>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="signin">Sign in</button>
+        <button class="auth-tab" data-tab="signup">Create account</button>
+      </div>
+      <form id="signin-form" class="auth-form">
+        <div class="form-group"><label>Email</label><input id="signin-email" type="email" required placeholder="you@example.com"></div>
+        <div class="form-group"><label>Password</label><input id="signin-password" type="password" required></div>
+        <div class="form-actions"><button class="button button-primary" type="submit">Sign in</button></div>
+        <p id="signin-message" class="form-message" hidden></p>
+      </form>
+      <form id="signup-form" class="auth-form" hidden>
+        <div class="form-group"><label>Email</label><input id="signup-email" type="email" required placeholder="you@example.com"></div>
+        <div class="form-group"><label>Name</label><input id="signup-name" type="text" required></div>
+        <div class="form-group"><label>Password (min 12 chars)</label><input id="signup-password" type="password" required></div>
+        <div class="form-actions"><button class="button button-primary" type="submit">Create account</button></div>
+        <p id="signup-message" class="form-message" hidden></p>
+      </form>
+      <div class="auth-footer">
+        <p id="auth-loading" class="muted small" hidden>Loading…</p>
+        <button id="auth-close" class="button button-text">Close</button>
+      </div>
+    </div>
+  </div>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="app is-loading" id="app">
     <aside class="sidebar">
@@ -36,6 +61,23 @@ export const dashboardHtml = String.raw`<!doctype html>
         <a href="#security" data-view="security"><span class="nav-glyph" aria-hidden="true">⬡</span>Security</a>
         <a href="#automation" data-view="automation"><span class="nav-glyph" aria-hidden="true">◎</span>Automation</a>
         <a href="#diagnostics" data-view="diagnostics"><span class="nav-glyph" aria-hidden="true">▦</span>Diagnostics</a>
+        <hr class="nav-divider">
+        <nav class="member-nav" hidden>
+          <a href="#member" data-view="member"><span class="nav-glyph" aria-hidden="true">👤</span>Member Portal</a>
+          <a href="#plans" data-view="plans"><span class="nav-glyph" aria-hidden="true">💳</span>Subscription Plans</a>
+          <a href="#member-devices" data-view="member-devices"><span class="nav-glyph" aria-hidden="true">📱</span>My Devices</a>
+        </nav>
+        <nav class="admin-nav" hidden>
+          <a href="#admin" data-view="admin"><span class="nav-glyph" aria-hidden="true">⚙️</span>Super Admin Control Center</a>
+          <a href="#components" data-view="components"><span class="nav-glyph" aria-hidden="true">🧩</span>Components</a>
+          <a href="#capabilities" data-view="capabilities"><span class="nav-glyph" aria-hidden="true">🔌</span>Capabilities</a>
+          <a href="#providers" data-view="providers"><span class="nav-glyph" aria-hidden="true">📡</span>Providers</a>
+          <a href="#decisions" data-view="decisions"><span class="nav-glyph" aria-hidden="true">📋</span>Decisions</a>
+          <a href="#incidents" data-view="incidents"><span class="nav-glyph" aria-hidden="true">🚨</span>Incidents</a>
+          <a href="#events" data-view="events"><span class="nav-glyph" aria-hidden="true">📢</span>Events</a>
+          <a href="#storage" data-view="storage"><span class="nav-glyph" aria-hidden="true">💾</span>Storage</a>
+          <a href="#security" data-view="security"><span class="nav-glyph" aria-hidden="true">🛡️</span>Security</a>
+        </nav>
       </nav>
       <p class="sidebar-note">Read-only view of live API data. It never changes host networking.</p>
     </aside>
@@ -51,6 +93,7 @@ export const dashboardHtml = String.raw`<!doctype html>
           <button id="refresh-button" class="button" type="button">Refresh</button>
           <button id="auto-button" class="button" type="button" aria-pressed="true">Auto refresh: on</button>
           <button id="theme-button" class="button" type="button" aria-label="Colour theme: automatic. Activate to change.">Theme: auto</button>
+          <button id="logout-button" class="button button-text" style="display:none" type="button">Sign out</button>
         </div>
       </header>
 
@@ -236,6 +279,130 @@ export const dashboardHtml = String.raw`<!doctype html>
             <pre id="raw-payload">No data loaded.</pre>
           </details>
         </section>
+
+        <!-- Member Portal Views -->
+        <section class="view" id="view-member" data-view="member" aria-label="Member Portal" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">My Subscription</p><h2>Subscription</h2></div></header>
+            <div id="member-subscription"><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Available Plans</p><h2>Subscription Plans</h2></div></header>
+            <div id="member-plans"><div class="skeleton"></div></div>
+          </div>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Connection</p><h2>Connection Status</h2></div></header>
+            <dl class="kv">
+              <div><dt>Status</dt><dd id="member-conn-status">—</dd></div>
+              <div><dt>Authorized</dt><dd id="member-conn-authorized">—</dd></div>
+              <div><dt>Connection Quality</dt><dd id="member-conn-quality">—</dd></div>
+              <div><dt>Last Connected</dt><dd id="member-conn-last-connected">—</dd></div>
+            </dl>
+            <div style="margin-top:16px">
+              <button class="button" id="member-connect-btn" onclick="appConnectDevice('current-device')">Connect</button>
+              <button class="button button-danger" id="member-disconnect-btn" onclick="appDisconnectDevice('current-device')" hidden>Disconnect</button>
+            </div>
+            <p class="muted small" id="member-conn-history">Connection history tracked by daemon.</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-plans" data-view="plans" aria-label="Subscription Plans" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Available Plans</p><h2>Choose a Plan</h2></div></header>
+            <div id="member-plans"><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-member-devices" data-view="member-devices" aria-label="My Devices" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Device Management</p><h2>My Devices</h2></div></header>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+              <input id="member-enroll-device-id" type="text" placeholder="Device ID" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--bg);color:var(--text)">
+              <input id="member-enroll-label" type="text" placeholder="Label" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--bg);color:var(--text)">
+              <input id="member-enroll-platform" type="text" placeholder="Platform (linux/macos/windows)" value="linux" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--bg);color:var(--text)">
+              <button class="button button-primary" onclick="appEnrollDevice()">Enroll</button>
+            </div>
+            <div id="member-device-list"><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <!-- Admin Control Center Views -->
+        <section class="view" id="view-admin" data-view="admin" aria-label="Super Admin Control Center" hidden>
+          <div class="grid two">
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Components</p><h2>Runtime Components</h2></div></header>
+              <div id="admin-components"><div class="skeleton"></div></div>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Capabilities</p><h2>Platform Capabilities</h2></div></header>
+              <div id="admin-capabilities"><div class="skeleton"></div></div>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Providers</p><h2>Network Providers</h2></div></header>
+              <div id="admin-providers"><div class="skeleton"></div></div>
+            </article>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Devices</p><h2>Enrolled Devices</h2></div></header>
+              <div id="admin-devices"><div class="skeleton"></div></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-components" data-view="components" aria-label="Components" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Runtime Components</p><h2>Components & Integrations</h2></div></header>
+            <div id="admin-components"><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-capabilities" data-view="capabilities" aria-label="Capabilities" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Platform Capabilities</p><h2>Capability Directory</h2></div></header>
+            <div id="admin-capabilities"><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-providers" data-view="providers" aria-label="Providers" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Providers</p><h2>Providers & Plugins</h2></div></header>
+            <div id="admin-providers"><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-decisions" data-view="decisions" aria-label="Decisions" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Decisions</p><h2>Decision History</h2></div></header>
+            <div id="admin-decisions"><div class="skeleton"></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-incidents" data-view="incidents" aria-label="Incidents" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Incidents</p><h2>Incidents & Recovery</h2></div></header>
+            <ul id="admin-incidents" class="list"><li class="muted">Loading incidents…</li></ul>
+          </div>
+        </section>
+
+        <section class="view" id="view-events" data-view="events" aria-label="Events" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Events</p><h2>Event Timeline</h2></div></header>
+            <div id="admin-events"><div class="muted">Connecting to event stream…</div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-storage" data-view="storage" aria-label="Storage" hidden>
+          <div class="card">
+            <header class="card-head"><div><p class="eyebrow">Storage</p><h2>Storage & Service Health</h2></div></header>
+            <dl class="kv">
+              <div><dt>Database</dt><dd id="admin-storage-db">—</dd></div>
+              <div><dt>Database Latency</dt><dd id="admin-storage-latency">—</dd></div>
+              <div><dt>Queue</dt><dd id="admin-storage-queue">—</dd></div>
+              <div><dt>Event Bus</dt><dd id="admin-storage-eventbus">—</dd></div>
+              <div><dt>Telemetry</dt><dd id="admin-storage-telemetry">—</dd></div>
+              <div><dt>Telemetry Exporter</dt><dd id="admin-storage-exporter">—</dd></div>
+            </dl>
+          </div>
+        </section>
       </main>
 
       <footer class="footer"><span>IRP Control Center</span><span>Live API data · Read-only dashboard · No host-network changes</span></footer>
@@ -383,8 +550,24 @@ main{flex:1;padding-bottom:24px}
   .topbar-actions .button{flex:1 1 auto}
   .card{padding:16px}
 }
+/* Auth overlay */
+.auth-overlay{position:fixed;inset:0;z-index:60;background:rgba(10,15,28,.85);display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;min-width:320px;max-width:420px;width:90%}
+.auth-tabs{display:flex;gap:8px;margin-bottom:16px}
+.auth-tab{flex:1;padding:8px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:var(--control);cursor:pointer;font-size:13px;font-weight:600}
+.auth-tab.active{border-color:var(--primary);color:var(--primary)}
+.auth-form{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:12px;color:var(--muted);font-weight:600}
+.form-group input{padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--bg);color:var(--text);font-size:14px}
+.form-actions{display:flex;gap:8px}
+.form-message{color:var(--danger);font-size:13px;margin-top:8px}
+.auth-footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+/* Member / Admin nav */
+.nav-divider{margin:16px 0;border:none;border-top:1px solid var(--border)}
+.member-nav,.admin-nav{display:flex;flex-direction:column;gap:4px}
+.member-nav a,.admin-nav a{font-size:13px}
 `;
-
 export const dashboardScript = String.raw`
 (function () {
   'use strict';
@@ -395,7 +578,19 @@ export const dashboardScript = String.raw`
     tunnel: ['Encrypted path', 'Tunnel'],
     security: ['Protection', 'Security'],
     automation: ['Resilience engine', 'Automation'],
-    diagnostics: ['Health and support', 'Diagnostics']
+    diagnostics: ['Health and support', 'Diagnostics'],
+    member: ['Member Portal', 'Member Portal'],
+    plans: ['Subscription Plans', 'Plans'],
+    member-devices: ['My Devices', 'My Devices'],
+    admin: ['Super Admin Control Center', 'Control Center'],
+    components: ['Components', 'Components & Integrations'],
+    capabilities: ['Capabilities', 'Platform Capabilities'],
+    providers: ['Providers', 'Providers & Plugins'],
+    decisions: ['Decisions', 'Decision History'],
+    incidents: ['Incidents', 'Incidents & Recovery'],
+    events: ['Events', 'Event Timeline'],
+    storage: ['Storage', 'Storage & Service Health'],
+    security: ['Security', 'Security & Authorization']
   };
   var THEMES = ['auto', 'light', 'dark'];
   var THEME_KEY = 'irp.dashboard.theme';
@@ -405,6 +600,9 @@ export const dashboardScript = String.raw`
   var refreshTimer = null;
   var lastGoodAt = null;
   var inFlight = false;
+  var accessToken = null;
+  var userRole = null;
+  var userEmail = null;
 
   function $(selector) { return document.querySelector(selector); }
 
@@ -415,6 +613,58 @@ export const dashboardScript = String.raw`
   }
 
   function isNum(value) { return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)); }
+
+  function apiAuthHeaders() {
+    var h = { 'accept': 'application/json', 'content-type': 'application/json' };
+    if (accessToken) h.authorization = 'Bearer ' + accessToken;
+    return h;
+  }
+
+  async function apiAuthRequest(path, init) {
+    var headers = new Headers(init && init.headers || {});
+    headers.set('accept', 'application/json');
+    if (accessToken) headers.set('authorization', 'Bearer ' + accessToken);
+    var opts = Object.assign({}, init, { headers: headers });
+    return fetch(path, opts);
+  }
+
+  async function apiAuthJson(path, init) {
+    var res = await apiAuthRequest(path, init);
+    if (!res.ok) {
+      var body = await res.json().catch(() => ({}));
+      throw new Error(body.error && body.error.message ? body.error.message : 'Request failed: ' + res.status);
+    }
+    return res.json();
+  }
+
+  function showAuth() {
+    $('#auth-overlay').classList.remove('hidden');
+    $('#app-shell').classList.add('hidden');
+    $('#signin-form').classList.remove('hidden');
+    $('#signup-form').classList.add('hidden');
+    $('#auth-loading').classList.add('hidden');
+    $('#signin-message').classList.add('hidden');
+    $('#signup-message').classList.add('hidden');
+  }
+
+  function showApp() {
+    $('#auth-overlay').classList.add('hidden');
+    $('#app-shell').classList.remove('hidden');
+    var adminNav = $('#admin-nav');
+    var memberNav = $('#member-nav');
+    var logoutBtn = $('#logout-button');
+    if (userRole === 'platform_admin') {
+      adminNav.hidden = false;
+      memberNav.hidden = true;
+      if (!VIEWS[currentView || 'overview']) currentView = 'overview';
+    } else {
+      adminNav.hidden = true;
+      memberNav.hidden = false;
+      if (!VIEWS[currentView || 'overview']) currentView = 'member';
+    }
+    logoutBtn.style.display = accessToken ? 'inline-block' : 'none';
+    text('#user-email', userEmail || '—');
+  }
 
   function text(selector, value, fallback) {
     var node = $(selector);
@@ -729,6 +979,18 @@ export const dashboardScript = String.raw`
     text('#view-title', VIEWS[name][1]);
     document.title = VIEWS[name][1] + ' · IRP Control Center';
     if (moveFocus) $('#main').focus();
+    // Render view-specific content
+    if (name === 'member') { renderMemberSubscription(); renderMemberConnection(); }
+    if (name === 'plans') { renderMemberPlans(); }
+    if (name === 'member-devices') { renderMemberDevices(); }
+    if (name === 'admin') { renderComponents(); renderCapabilities(); renderProvidersView(); renderDevicesView(); }
+    if (name === 'components') { renderComponents(); }
+    if (name === 'capabilities') { renderCapabilities(); }
+    if (name === 'providers') { renderProvidersView(); }
+    if (name === 'decisions') { renderDecisions(); }
+    if (name === 'incidents') { renderIncidents(); }
+    if (name === 'events') { renderEvents(); }
+    if (name === 'storage') { renderStorage(); }
   }
 
   function currentViewFromHash() { return (window.location.hash || '').replace('#', '') || 'overview'; }
@@ -762,7 +1024,413 @@ export const dashboardScript = String.raw`
     try { window.localStorage.setItem(THEME_KEY, next); } catch (error) { /* storage unavailable: theme still applies for this page */ }
     applyTheme(next);
   });
-  window.addEventListener('hashchange', function () { showView(currentViewFromHash(), true); });
+  $('#auth-close').addEventListener('click', function () { showApp(); });
+  $('#logout-button').addEventListener('click', function () {
+    accessToken = null;
+    userEmail = null;
+    userRole = null;
+    try { window.localStorage.removeItem('irp_access_token'); window.localStorage.removeItem('irp_user_email'); window.localStorage.removeItem('irp_user_role'); } catch {}
+    showAuth();
+  });
+  $('#signin-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('#signin-email').value;
+    var password = $('#signin-password').value;
+    try {
+      var data = await apiAuthJson('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ email: email, password: password }) });
+      accessToken = data.data.accessToken;
+      userEmail = data.data.user.email;
+      userRole = (data.data.user.roles && data.data.user.roles[0]) || null;
+      localStorage.setItem('irp_access_token', accessToken);
+      localStorage.setItem('irp_user_email', userEmail);
+      localStorage.setItem('irp_user_role', userRole);
+      showApp();
+      refresh();
+    } catch (error) {
+      var m = $('#signin-message');
+      m.textContent = error.message || 'Sign in failed';
+      m.hidden = false;
+    }
+  });
+  $('#signup-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var email = $('#signup-email').value;
+    var name = $('#signup-name').value;
+    var password = $('#signup-password').value;
+    try {
+      await apiAuthJson('/api/v1/auth/register', { method: 'POST', body: JSON.stringify({ email: email, password: password, name: name }) });
+      var m = $('#signup-message');
+      m.textContent = 'Account created. Check dev email capture at /api/v1/dev/emails for the verification token, then sign in.';
+      m.hidden = false;
+      m.className = 'form-message muted';
+    } catch (error) {
+      var m = $('#signup-message');
+      m.textContent = error.message || 'Account creation failed';
+      m.hidden = false;
+    }
+  });
+  var authTabs = document.querySelectorAll('.auth-tab');
+  authTabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      authTabs.forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      var target = tab.getAttribute('data-tab');
+      document.getElementById('signin-form').hidden = target !== 'signin';
+      document.getElementById('signup-form').hidden = target !== 'signup';
+    });
+  });
+  // Restore auth state from localStorage
+  try {
+    var storedToken = window.localStorage.getItem('irp_access_token');
+    var storedEmail = window.localStorage.getItem('irp_user_email');
+    var storedRole = window.localStorage.getItem('irp_user_role');
+    if (storedToken) {
+      accessToken = storedToken;
+      userEmail = storedEmail || null;
+      userRole = storedRole || null;
+      showApp();
+    }
+  } catch (error) { /* storage unavailable */ }
+
+  // ── Member portal rendering ─────────────────────────────────────────
+  async function renderMemberSubscription() {
+    try {
+      var data = await apiAuthJson('/api/v1/subscriptions/me');
+      var sub = data.data.subscription;
+      var ents = data.data.entitlements || [];
+      var node = $('#member-subscription');
+      if (!node) return;
+      if (!sub) {
+        node.innerHTML = '<div class="empty-note">No active subscription. Select a plan to get started.</div>';
+        text('#member-plan-name', 'None');
+        text('#member-plan-status', 'Not subscribed');
+        text('#member-plan-expires', '—');
+        return;
+      }
+      text('#member-plan-name', sub.planName || '—');
+      text('#member-plan-status', sub.status || '—');
+      text('#member-plan-expires', sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : '—');
+      text('#member-plan-auto-renew', sub.autoRenew ? 'Enabled' : 'Disabled');
+      var entHtml = ents.map(function (e) {
+        var active = e.status === 'ACTIVE';
+        var expires = e.expiresAt ? new Date(e.expiresAt) : null;
+        var expired = expires && expires <= new Date();
+        return '<span class="chip ' + (active && !expired ? 'ok' : 'warn') + '">' + escapeHtml(e.feature) + ' ' + (active && !expired ? '●' : '○') + '</span>';
+      }).join('');
+      $('#member-entitlements').innerHTML = entHtml || '<span class="muted">No entitlements.</span>';
+      var payNode = $('#member-payments');
+      if (payNode) {
+        try {
+          var payData = await apiAuthJson('/api/v1/subscriptions/payments');
+          var pays = payData.data.payments || [];
+          payNode.innerHTML = pays.map(function (p) {
+            var date = p.paidAt || p.createdAt;
+            return '<div style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--surface-raised);margin-bottom:8px"><div><strong>$' + (Number(p.amountUsd) / 100).toFixed(2) + ' ' + escapeHtml(p.currency) + '</strong><small>' + escapeHtml(p.status) + '</small></div><div style="margin-top:4px;font-size:13px;color:var(--muted)">' + escapeHtml(p.provider) + ' · ' + new Date(date).toLocaleDateString() + '</div></div>';
+          }).join('') || '<div class="muted">No payment history.</div>';
+        } catch { payNode.innerHTML = '<div class="muted">Unable to load payment history.</div>'; }
+      }
+    } catch (err) {
+      $('#member-plan-status').textContent = 'Unable to load';
+    }
+  }
+
+  async function renderMemberPlans() {
+    try {
+      var data = await apiAuthJson('/api/v1/subscriptions/plans');
+      var plans = data.data.plans || [];
+      var node = $('#member-plans');
+      if (!node) return;
+      if (plans.length === 0) { node.innerHTML = '<p class="empty-note">No plans available.</p>'; return; }
+      node.innerHTML = plans.map(function (p) {
+        var features = p.planFeatures || p.features || {};
+        var featureList = Object.entries(features).filter(function (kv) { return kv[1] === true; }).map(function (kv) { return '<li>' + escapeHtml(kv[0]) + '</li>'; }).join('');
+        return '<article class="card"><div class="card-head"><strong>' + escapeHtml(p.planname || p.name || 'Unknown') + '</span><span class="pill" style="float:right">$' + (Number(p.priceUsd || 0) / 100).toFixed(2) + '/mo</span></div><p style="color:var(--muted);font-size:13px;margin:8px 0">' + escapeHtml(p.plandescription || p.description || '') + '</p><ul class="list" style="margin-bottom:12px">' + featureList + '</ul><div><button class="button button-primary" onclick="appPurchasePlan(\'' + escapeHtml(p.planslug || p.slug) + '\')">Subscribe</button></div></article>';
+      }).join('');
+    } catch (err) {
+      $('#member-plans').innerHTML = '<p class="empty-note">Unable to load plans.</p>';
+    }
+  }
+
+  window.appPurchasePlan = async function (planSlug) {
+    try {
+      var res = await apiAuthRequest('/api/v1/subscriptions/purchase', { method: 'POST', body: JSON.stringify({ planSlug: planSlug, paymentProvider: 'test' }) });
+      if (!res.ok) throw new Error('Purchase failed: ' + res.status);
+      var data = await res.json();
+      alert('Subscription registered. Complete payment verification to activate.');
+      await renderMemberSubscription();
+      await renderMemberPlans();
+    } catch (err) { alert('Failed to purchase: ' + err.message); }
+  };
+
+  window.appVerifyPayment = async function (txId) {
+    try {
+      var res = await apiAuthRequest('/api/v1/subscriptions/verify-payment', { method: 'POST', body: JSON.stringify({ paymentTransactionId: txId, providerRef: 'test_verify_' + Date.now() }) });
+      if (!res.ok) throw new Error('Verification failed: ' + res.status);
+      alert('Payment verified! Subscription activated.');
+      await renderMemberSubscription();
+    } catch (err) { alert('Payment verification failed: ' + err.message); }
+  };
+
+  async function renderMemberDevices() {
+    try {
+      var data = await apiAuthJson('/api/v1/devices');
+      var devices = data.data.devices || [];
+      var node = $('#member-device-list');
+      if (!node) return;
+      if (devices.length === 0) { node.innerHTML = '<p class="empty-note">No devices enrolled.</p>'; return; }
+      node.innerHTML = devices.map(function (d) {
+        var authz = d.subStatus === 'ACTIVE' ? 'authorized' : 'unauthorized';
+        var active = d.status === 'ACTIVE';
+        return '<div class="tile"><div><strong>' + escapeHtml(d.label || d.deviceId) + '</strong><small>' + escapeHtml(d.platform || '—') + '</small></div><div><span class="chip ' + (active ? 'ok' : 'warn') + '">' + escapeHtml(d.status) + '</span><span class="chip ' + authz + '">' + authz + '</span>' + (active ? '<button class="button button-danger" onclick="appDisconnectDevice(\'' + escapeHtml(d.deviceId) + '\')">Disconnect</button>' : '<button class="button button-primary" onclick="appConnectDevice(\'' + escapeHtml(d.deviceId) + '\')">Connect</button>') + '<button class="button button-text" onclick="appRevokeDevice(\'' + escapeHtml(d.deviceId) + '\')">Revoke</button></div></div>';
+      }).join('');
+    } catch (err) {
+      $('#member-device-list').innerHTML = '<p class="empty-note">Unable to load devices.</p>';
+    }
+  }
+
+  window.appConnectDevice = async function (deviceId) {
+    try {
+      var res = await apiAuthRequest('/api/v1/devices/' + deviceId + '/connect', { method: 'POST', body: JSON.stringify({}) });
+      if (!res.ok) throw new Error('Connect failed: ' + res.status);
+      await renderMemberDevices();
+    } catch (err) { alert('Connect failed: ' + err.message); }
+  };
+
+  window.appDisconnectDevice = async function (deviceId) {
+    try {
+      var res = await apiAuthRequest('/api/v1/devices/' + deviceId + '/disconnect', { method: 'POST', body: JSON.stringify({}) });
+      if (!res.ok) throw new Error('Disconnect failed: ' + res.status);
+      await renderMemberDevices();
+    } catch (err) { alert('Disconnect failed: ' + err.message); }
+  };
+
+  window.appRevokeDevice = async function (deviceId) {
+    if (!confirm('Revoke this device? This cannot be undone.')) return;
+    try {
+      var res = await apiAuthRequest('/api/v1/devices/' + deviceId, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Revoke failed: ' + res.status);
+      await renderMemberDevices();
+    } catch (err) { alert('Revoke failed: ' + err.message); }
+  };
+
+  window.appEnrollDevice = async function () {
+    var deviceId = $('#member-enroll-device-id').value;
+    var label = $('#member-enroll-label').value;
+    var platform = $('#member-enroll-platform').value;
+    if (!deviceId) { alert('Device ID is required'); return; }
+    try {
+      var res = await apiAuthRequest('/api/v1/devices/enroll', { method: 'POST', body: JSON.stringify({ deviceId: deviceId, label: label, platform: platform }) });
+      if (!res.ok) throw new Error('Enroll failed: ' + res.status);
+      $('#member-enroll-form').hidden = true;
+      $('#member-enroll-device-id').value = '';
+      $('#member-enroll-label').value = '';
+      $('#member-enroll-platform').value = '';
+      await renderMemberDevices();
+    } catch (err) { alert('Enroll failed: ' + err.message); }
+  };
+
+  window.appRenewSubscription = async function () {
+    try {
+      var res = await apiAuthRequest('/api/v1/subscriptions/renew', { method: 'POST', body: JSON.stringify({ paymentProvider: 'test' }) });
+      if (!res.ok) throw new Error('Renew failed: ' + res.status);
+      var data = await res.json();
+      alert('Renewal payment pending. Verify payment to extend.');
+      window.appPendingRenewTxId = data.data.paymentTransactionId;
+      await renderMemberSubscription();
+    } catch (err) { alert('Renew failed: ' + err.message); }
+  };
+
+  window.appCancelSubscription = async function () {
+    if (!confirm('Cancel your subscription? This will suspend your devices.')) return;
+    try {
+      var res = await apiAuthRequest('/api/v1/subscriptions/cancel', { method: 'POST', body: JSON.stringify({}) });
+      if (!res.ok) throw new Error('Cancel failed: ' + res.status);
+      alert('Subscription cancelled.');
+      await renderMemberSubscription();
+    } catch (err) { alert('Cancel failed: ' + err.message); }
+  };
+
+  async function renderMemberConnection() {
+    try {
+      var data = await apiAuthJson('/api/v1/subscriptions/me');
+      var sub = data.data.subscription;
+      var ents = data.data.entitlements || [];
+      var connectEnt = ents.find(function (e) { return e.feature === 'connect'; });
+      var hasActiveEnt = connectEnt && connectEnt.status === 'ACTIVE' && (!connectEnt.expiresAt || new Date(connectEnt.expiresAt) > new Date());
+      var subActive = sub && sub.status === 'ACTIVE' && (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
+      var authorized = subActive && hasActiveEnt;
+      $('#member-conn-status').textContent = subActive ? 'Active' : 'Inactive';
+      $('#member-conn-authorized').textContent = authorized ? 'Yes' : 'No';
+      $('#member-conn-quality').textContent = authorized ? 'Good' : '—';
+      $('#member-conn-last-connected').textContent = '—';
+      $('#member-connect-btn').hidden = authorized || subActive ? false : true;
+      $('#member-disconnect-btn').hidden = !authorized;
+      var btn = $('#member-connect-btn');
+      if (authorized) btn.textContent = 'Connect';
+      btn.hidden = false;
+    } catch (err) { $('#member-conn-status').textContent = 'Unable to load'; }
+  }
+
+  // ── Admin control center rendering ──────────────────────────────────
+  async function renderComponents() {
+    try {
+      var data = await apiAuthJson('/api/v1/runtime/capabilities');
+      var caps = data.data || [];
+      var node = $('#admin-components');
+      if (!node) return;
+      if (caps.length === 0) { node.innerHTML = '<p class="empty-note">No components reported.</p>'; return; }
+      node.innerHTML = caps.map(function (c) {
+        return '<div class="tile"><div><strong>' + escapeHtml(c.adapterId || c.id) + '</strong><small>' + escapeHtml(c.subsystem || '') + '</small></div><span class="chip ' + (c.supportsLive ? 'ok' : 'warn') + '">' + (c.supportsLive ? 'live' : 'simulation-only') + '</span></div>';
+      }).join('');
+    } catch (err) {
+      $('#admin-components').innerHTML = '<p class="empty-note">Unable to load components.</p>';
+    }
+  }
+
+  async function renderCapabilities() {
+    try {
+      var data = await apiAuthJson('/api/v1/runtime/capabilities');
+      var caps = data.data || [];
+      var node = $('#admin-capabilities');
+      if (!node) return;
+      if (caps.length === 0) { node.innerHTML = '<p class="empty-note">No capabilities reported.</p>'; return; }
+      node.innerHTML = caps.map(function (c) {
+        var capsList = Array.isArray(c.capabilities) ? c.capabilities.join(', ') : '—';
+        return '<div class="tile"><div><strong>' + escapeHtml(c.adapterId || c.id) + '</strong><small>' + escapeHtml(c.subsystem || '') + '</small></div><span class="chip ' + (c.supportsLive ? 'ok' : 'warn') + '">' + capsList + '</span></div>';
+      }).join('');
+    } catch (err) {
+      $('#admin-capabilities').innerHTML = '<p class="empty-note">Unable to load capabilities.</p>';
+    }
+  }
+
+  async function renderProvidersView() {
+    try {
+      var data = await apiAuthJson('/api/v1/platform/status');
+      var pd = data.data || {};
+      var node = $('#admin-providers');
+      if (!node) return;
+      var items = [];
+      if (pd.network && pd.network.interfaces) {
+        pd.network.interfaces.forEach(function (iface) { items.push({ name: iface.name || 'Interface', detail: 'Latency ' + ms(iface.latencyMs), state: iface.state || 'unknown' }); });
+      }
+      if (pd.dns) items.push({ name: 'DNS resolver', detail: pd.dns.resolver || 'Not reported', state: pd.dns.health || 'unknown' });
+      if (pd.routing) items.push({ name: 'Current route', detail: pd.routing.currentRoute || 'Not reported', state: pd.routing.status || 'unknown' });
+      if (items.length === 0) { node.innerHTML = '<p class="empty-note">No providers reported.</p>'; return; }
+      node.innerHTML = items.map(function (i) { return tile(i.name, i.detail, i.state); }).join('');
+    } catch (err) {
+      $('#admin-providers').innerHTML = '<p class="empty-note">Unable to load providers.</p>';
+    }
+  }
+
+  async function renderDevicesView() {
+    try {
+      var data = await apiAuthJson('/api/v1/devices');
+      var devices = data.data.devices || [];
+      var node = $('#admin-devices');
+      if (!node) return;
+      if (devices.length === 0) { node.innerHTML = '<p class="empty-note">No devices enrolled.</p>'; return; }
+      node.innerHTML = devices.map(function (d) {
+        var authz = d.subStatus === 'ACTIVE' ? 'authorized' : 'unauthorized';
+        var active = d.status === 'ACTIVE';
+        return '<div class="tile"><div><strong>' + escapeHtml(d.label || d.deviceId) + '</strong><small>' + escapeHtml(d.platform || '—') + ' · ' + escapeHtml(d.userEmail || '—') + '</small></div><div><span class="chip ' + (active ? 'ok' : 'warn') + '">' + escapeHtml(d.status) + '</span><span class="chip ' + authz + '">' + authz + '</span>' + (active ? '<button class="button button-danger" onclick="appDisconnectDevice(\'' + escapeHtml(d.deviceId) + '\')">Disconnect</button>' : '<button class="button button-primary" onclick="appConnectDevice(\'' + escapeHtml(d.deviceId) + '\')">Connect</button>') + '<button class="button button-text" onclick="appRevokeDevice(\'' + escapeHtml(d.deviceId) + '\')">Revoke</button></div></div>';
+      }).join('');
+    } catch (err) {
+      $('#admin-devices').innerHTML = '<p class="empty-note">Unable to load devices.</p>';
+    }
+  }
+
+  async function renderDecisions() {
+    try {
+      var data = await apiAuthJson('/api/v1/runtime/decisions');
+      var decisions = data.data || [];
+      var node = $('#admin-decisions');
+      if (!node) return;
+      if (decisions.length === 0) { node.innerHTML = '<div class="muted">No decisions recorded yet.</div>'; return; }
+      node.innerHTML = decisions.map(function (d) {
+        return '<div class="list-item" style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--control);background:var(--surface-raised);margin-bottom:8px"><div><strong>' + escapeHtml(d.decisionId) + '</strong><small>' + escapeHtml(d.outcome) + ' · ' + escapeHtml(d.durationMs != null ? d.durationMs + 'ms' : '') + '</small></div><div style="margin-top:4px;font-size:13px;color:var(--muted)">' + escapeHtml(d.explanation ? (d.explanation[0] || 'No explanation recorded') : 'No explanation recorded') + '</div></div>';
+      }).join('');
+    } catch (err) {
+      $('#admin-decisions').innerHTML = '<p class="empty-note">Unable to load decisions.</p>';
+    }
+  }
+
+  async function renderIncidents() {
+    try {
+      var data = await apiAuthJson('/api/v1/runtime/incidents');
+      var incidents = data.data || [];
+      var node = $('#admin-incidents');
+      if (!node) return;
+      if (incidents.length === 0) { node.innerHTML = '<li data-tone="ok">● No incidents reported.</li>'; return; }
+      node.innerHTML = incidents.map(function (i) {
+        var value = typeof i === 'string' ? i : (i && (i.message || i.reason || i.code)) || JSON.stringify(i);
+        return '<li data-tone="warn">▲ ' + escapeHtml(value) + '</li>';
+      }).join('');
+    } catch (err) {
+      $('#admin-incidents').innerHTML = '<li class="muted">Unable to load incidents.</li>';
+    }
+  }
+
+  async function renderEvents() {
+    try {
+      var res = await apiAuthRequest('/api/v1/platform/events/stream');
+      if (!res.ok) throw new Error('Events stream unavailable');
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var node = $('#admin-events');
+      if (!node) return;
+      node.innerHTML = '';
+      var count = 0;
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+        var chunk = decoder.decode(result.value, { stream: true });
+        var lines = chunk.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.startsWith('event:')) {
+            var evType = line.substring(6).trim();
+          } else if (line.startsWith('data:')) {
+            try {
+              var payload = JSON.parse(line.substring(5));
+              var ev = document.createElement('div');
+              ev.className = 'list-item';
+              ev.style.padding = '8px 12px';
+              ev.style.border = '1px solid var(--border)';
+              ev.style.borderRadius = 'var(--control)';
+              ev.style.background = 'var(--surface-raised)';
+              ev.style.marginBottom = '8px';
+              ev.style.fontSize = '13px';
+              ev.innerHTML = '<strong>' + escapeHtml(evType || 'event') + '</strong><span style="float:right;color:var(--muted);font-size:11px">' + new Date().toLocaleTimeString() + '</span><div style="margin-top:4px;color:var(--muted)">' + escapeHtml(JSON.stringify(payload.payload || payload)).slice(0, 200) + '</div>';
+              node.prepend(ev);
+              count++;
+              if (count > 50) node.removeChild(node.lastChild);
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      }
+    } catch (err) {
+      $('#admin-events').innerHTML = '<li class="muted">Unable to load events stream.</li>';
+    }
+  }
+
+  async function renderStorage() {
+    try {
+      var data = await apiAuthJson('/api/v1/platform/status');
+      var deps = data.data.dependencies || {};
+      var diagnostics = data.data.diagnostics || {};
+      var eventBus = data.data.eventBus || {};
+      var obs = data.data.observability || {};
+      text('#admin-storage-db', label(deps.database));
+      text('#admin-storage-latency', ms(diagnostics.databaseLatencyMs));
+      text('#admin-storage-queue', label(deps.queue));
+      text('#admin-storage-eventbus', label(eventBus.status) + (eventBus.scope ? ' (' + eventBus.scope + ')' : ''));
+      var telemetry = obs.telemetry || {};
+      text('#admin-storage-telemetry', telemetry.enabled === false ? 'Disabled' : (telemetry.enabled ? 'Enabled' : label(obs.metrics)));
+      text('#admin-storage-exporter', telemetry.exporterConfigured ? 'Configured' : 'Not configured');
+    } catch (err) {
+      $('#admin-storage-db').textContent = 'Unable to load';
+    }
+  }
 
   applyTheme(loadTheme());
   showView(currentViewFromHash(), false);
