@@ -359,18 +359,22 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
   // ── Web Control Center static assets ──────────────────────────────────
   // Served from apps/web/ so the UI ships with the API binary.
   const WEB_DIR = new URL('../web', import.meta.url).pathname;
-  app.get('/web', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
-    reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
-  );
-  app.get('/web/', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
-    reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
-  );
-  app.get('/web/style.css', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
-    reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readFile('/web/style.css')),
-  );
-  app.get('/web/src/app.js', { preHandler: sharedRateLimitPreHandler }, async (_request, reply) =>
-    reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readFile('/web/src/app.js')),
-  );
+  app.register(async (web) => {
+    web.addHook('preHandler', sharedRateLimitPreHandler);
+
+    web.get('', async (_request, reply) =>
+      reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
+    );
+    web.get('/', async (_request, reply) =>
+      reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
+    );
+    web.get('/style.css', async (_request, reply) =>
+      reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readFile('/web/style.css')),
+    );
+    web.get('/src/app.js', async (_request, reply) =>
+      reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readFile('/web/src/app.js')),
+    );
+  }, { prefix: '/web' });
 
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
   app.get('/api/v1/ready', async (_request, reply) => {
