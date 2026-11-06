@@ -9,7 +9,7 @@ permissions:
 
 concurrency:
   group: windows-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'

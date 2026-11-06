@@ -107,8 +107,8 @@ export class MacOSSystem implements MacOSSystemAdapter {
         ? `route table readable (${routesResult.routes.length} route(s))`
         : `unavailable: ${routesResult.error ?? 'unknown error'}`,
       dns,
-      networkServices: interfacesResult.available ? 'SystemConfiguration' : '',
-      vpnServices: '',
+      networkServices: interfacesResult.available ? 'SystemConfiguration' : 'unavailable: interface discovery failed',
+      vpnServices: interfacesResult.available ? 'No VPN services configured' : 'unavailable: interface discovery failed',
       gateway: gatewayResult.available ? gatewayResult.gateway : null,
       capturedAt: new Date().toISOString(),
       platform: 'darwin',

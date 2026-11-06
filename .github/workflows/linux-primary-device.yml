@@ -191,6 +191,14 @@ jobs:
           }
           SMOKE
 
+      - name: Document netns E2E separation
+        run: |
+          echo 'NOTE: This job (Linux Primary Device) validates the Debian package and runtime smoke.'
+          echo 'Real kernel network-namespace E2E (IRP_REQUIRE_NETNS_E2E=1) is a SEPARATE job:'
+          echo '  .github/workflows/ci.yml -> linux-netns-e2e'
+          echo '  Requires: self-hosted Linux runner with CAP_SYS_ADMIN and CAP_NET_ADMIN'
+          echo '  GitHub-hosted runners do not provide these capabilities.'
+
       - name: Upload Debian package evidence
         uses: actions/upload-artifact@v7.0.1
         with:
