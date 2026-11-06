@@ -116,13 +116,18 @@ export class RuntimeDaemonHost {
     if (databaseUrl) {
       try {
         const url = new URL(databaseUrl);
+        // Only enable SSL for production (postgresql:// with explicit sslmode=require)
+        // or when explicitly configured via IRP_DB_SSL=true. Local/test postgres typically
+        // doesn't support SSL.
+        const ssl = process.env.IRP_DB_SSL === 'true' ||
+          (url.searchParams.get('sslmode') === 'require');
         return new PostgresDecisionStore({
           host: url.hostname,
           port: Number(url.port) || 5432,
           database: url.pathname.replace(/^\//, ''),
           user: url.username,
           password: url.password,
-          ssl: url.protocol === 'postgresql:',
+          ssl,
         });
       } catch {
         // Fall through to file store below
@@ -138,13 +143,15 @@ export class RuntimeDaemonHost {
     if (databaseUrl) {
       try {
         const url = new URL(databaseUrl);
+        const ssl = process.env.IRP_DB_SSL === 'true' ||
+          (url.searchParams.get('sslmode') === 'require');
         return new PostgresIncidentStore({
           host: url.hostname,
           port: Number(url.port) || 5432,
           database: url.pathname.replace(/^\//, ''),
           user: url.username,
           password: url.password,
-          ssl: url.protocol === 'postgresql:',
+          ssl,
         });
       } catch {
         // Fall through to file store below
@@ -393,8 +400,12 @@ export class RuntimeDaemonHost {
   /**
    * Drives the canonical bounded closed loop using validated configuration.
    * Callers must handle `RangeError` from invalid configuration.
+   * Ensures durable stores are initialized before the first cycle.
    */
   async runClosedLoop(): Promise<ReturnType<BoundedClosedLoopController['run']>> {
+    if (this.lifecycle === 'created') {
+      await this.initialize();
+    }
     return this.closedLoop.run(this.getClosedLoopOptions());
   }
 

@@ -362,9 +362,6 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
   app.register(async (web) => {
     web.addHook('preHandler', sharedRateLimitPreHandler);
 
-    web.get('', async (_request, reply) =>
-      reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
-    );
     web.get('/', async (_request, reply) =>
       reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
     );

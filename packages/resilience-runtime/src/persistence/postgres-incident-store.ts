@@ -115,6 +115,7 @@ export class PostgresIncidentStore implements IncidentStore {
       password: this.config.password,
       ssl: this.config.ssl,
       max: this.config.max ?? 10,
+      connectionTimeoutMillis: 5_000,
     });
     (this.pool as InstanceType<typeof Pool>).on('error', (error: Error) => {
       process.stderr.write(
