@@ -43,7 +43,10 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Windows native FFI bindings (optional, for native command surface)
+      - name: Approve native dependency builds (ffi-napi, ref-napi)
+        run: pnpm approve-builds ffi-napi@^4.0.3 ref-napi@^3.0.3
+
+      - name: Install Windows native FFI bindings (for native command surface)
         run: pnpm add -w ffi-napi@^4.0.3
         shell: pwsh
 

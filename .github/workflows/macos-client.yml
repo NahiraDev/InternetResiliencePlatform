@@ -9,7 +9,9 @@ permissions:
 
 concurrency:
   group: macos-client-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Do not cancel in-progress macOS runs; they are long-running and flaky cancellations
+  # waste CI capacity. Only the latest PR push should queue, not cancel the running job.
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '24'
