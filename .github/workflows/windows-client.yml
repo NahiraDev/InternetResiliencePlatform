@@ -41,13 +41,13 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install build tools for native modules
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
         with:
           vs-version: '17.0'
           vs-components: 'Microsoft.VisualStudio.Workload.VCTools'
 
       - name: Install Python for node-gyp
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 

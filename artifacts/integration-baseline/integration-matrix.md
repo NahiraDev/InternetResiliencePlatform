@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-11-05T19:11:56.862Z
+Generated: 2026-11-06T18:48:53.466Z
 Commit: unknown
 
 ## Component status
@@ -126,6 +126,7 @@ Commit: unknown
 | @irp/api | @irp/auth | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/api | @irp/config | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/api | @irp/core | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
+| @irp/api | @irp/connectivity | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/api | @irp/database | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/api | @irp/dns | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
 | @irp/api | @irp/events | workspace dependency | node module import/link | CONNECTED_BUT_UNVERIFIED |
