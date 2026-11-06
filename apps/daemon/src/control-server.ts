@@ -32,6 +32,8 @@ export interface ControlPort {
   reload(): Promise<unknown>;
   events(): Promise<unknown>;
   topology(): Promise<unknown>;
+  connectDevice(deviceId: string): Promise<unknown>;
+  disconnectDevice(deviceId: string): Promise<unknown>;
 }
 
 /** Thrown by a ControlPort when the request is valid but conflicts with current runtime state. */
@@ -112,6 +114,18 @@ export class ControlServer {
         case 'GET /v1/capabilities': return send(res, 200, this.port.capabilities());
         case 'GET /v1/events': return send(res, 200, await this.port.events());
         case 'GET /v1/topology': return send(res, 200, await this.port.topology());
+        case 'POST /v1/connect-device': {
+          const body = (await readJson(req)) as { deviceId?: unknown };
+          const deviceId = typeof body.deviceId === 'string' ? body.deviceId : undefined;
+          if (!deviceId) return send(res, 400, { error: 'deviceId is required' });
+          return send(res, 200, await this.port.connectDevice(deviceId));
+        }
+        case 'POST /v1/disconnect-device': {
+          const body = (await readJson(req)) as { deviceId?: unknown };
+          const deviceId = typeof body.deviceId === 'string' ? body.deviceId : undefined;
+          if (!deviceId) return send(res, 400, { error: 'deviceId is required' });
+          return send(res, 200, await this.port.disconnectDevice(deviceId));
+        }
         case 'POST /v1/reload': return send(res, 200, await this.port.reload());
         case 'POST /v1/cycle': {
           const body = (await readJson(req)) as { mode?: unknown };
