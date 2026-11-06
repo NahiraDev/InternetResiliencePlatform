@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508",
+  "generatedAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21",
   "packages": [
     {
       "group": "apps",
@@ -21,6 +21,7 @@
         "@fastify/swagger-ui",
         "@irp/auth",
         "@irp/config",
+        "@irp/connectivity",
         "@irp/core",
         "@irp/database",
         "@irp/dns",
@@ -395,7 +396,7 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 4,
+      "sourceFiles": 11,
       "testFiles": 3,
       "hasTests": true
     },
@@ -684,7 +685,7 @@
         "@irp/utils"
       ],
       "sourceFiles": 169,
-      "testFiles": 82,
+      "testFiles": 83,
       "hasTests": true
     },
     {
@@ -845,6 +846,23 @@
       "hasTests": true
     },
     {
+      "group": "apps",
+      "name": "@irp/web",
+      "path": "apps/web",
+      "kind": "workspace-package",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "dependencies": [],
+      "sourceFiles": 2,
+      "testFiles": 1,
+      "hasTests": true
+    },
+    {
       "group": "packages",
       "name": "@irp/windows-client",
       "path": "packages/windows-client",
@@ -856,8 +874,8 @@
         "typecheck"
       ],
       "dependencies": [],
-      "sourceFiles": 4,
-      "testFiles": 2,
+      "sourceFiles": 12,
+      "testFiles": 3,
       "hasTests": true
     },
     {
@@ -884,12 +902,12 @@
     }
   ],
   "totals": {
-    "packages": 45,
-    "workspacePackages": 43,
+    "packages": 46,
+    "workspacePackages": 44,
     "nativeClients": 2,
     "packagesWithoutTests": 0,
     "workflows": 16,
-    "docs": 237,
+    "docs": 238,
     "phaseDocs": 115
   },
   "infrastructure": {
@@ -1006,6 +1024,7 @@
       "docs/architecture/connectivity.md",
       "docs/architecture/control-plane-ownership.md",
       "docs/architecture/control-plane-phase72-dependencies.md",
+      "docs/architecture/cross-platform-integration-trace.md",
       "docs/architecture/data-flow.md",
       "docs/architecture/dns.md",
       "docs/architecture/e2e-integration-invariants.md",

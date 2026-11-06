@@ -5,11 +5,14 @@
 | MAJOR | orphaned-test:packages/resilience-runtime/src/incidents/incidents.test.ts | testing | @irp/resilience-runtime | pnpm --filter @irp/resilience-runtime test |
 | MINOR | duplicate-contract:AddressFamily | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:AgentRecommendation | contract-duplication | packages/internet-intelligence-agent | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:AllocResult | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:AssuranceStatus | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:CapabilityStatus | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:CircuitBreaker | contract-duplication | packages/failover | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:CircuitBreakerState | contract-duplication | packages/dns | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:compareVersions | contract-duplication | packages/plugin-loader | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:createHttpControlPlaneClient | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:CredentialReport | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:DecisionEvaluator | contract-duplication | packages/network-intelligence | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:DEFAULT_TIMEOUT_MS | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:DependencyGraph | contract-duplication | packages/failover | pnpm run architecture:archaeology |
@@ -19,6 +22,9 @@
 | MINOR | duplicate-contract:escapeHtml | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:EventHandler | contract-duplication | packages/core | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:FailureEvidence | contract-duplication | packages/failover | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:ffiAvailable | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:ffiLoadError | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:FfiNapiModule | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:GatewayAddressFamily | contract-duplication | packages/gateway-registry | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:GatewayArtifactAttestation | contract-duplication | packages/gateway-registry | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:GatewayCapabilities | contract-duplication | packages/gateway-registry | pnpm run architecture:archaeology |
@@ -83,9 +89,13 @@
 | MINOR | duplicate-contract:PolicyConflict | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:PolicySnapshot | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:Principal | contract-duplication | packages/auth | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:PrivilegeLevel | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:PrivilegeReport | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:ProviderHealth | contract-duplication | packages/dns | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:readBoundedBody | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:RecoveryPlan | contract-duplication | packages/failover | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:Ref | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:RefType | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:RegistryRecord | contract-duplication | packages/kernel | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:RoutingPolicyContext | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:RoutingPolicyDecision | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
@@ -96,6 +106,7 @@
 | MINOR | duplicate-contract:SecurityEvent | contract-duplication | packages/resilience-runtime | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:tokenMatches | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:Tone | contract-duplication | packages/linux-client | pnpm run architecture:archaeology |
+| MINOR | duplicate-contract:Type | contract-duplication | packages/macos-client | pnpm run architecture:archaeology |
 | MINOR | duplicate-contract:VerificationResult | contract-duplication | packages/gateway-registry | pnpm run architecture:archaeology |
 | MINOR | unsubstantiated-phase-claim:docs/phases/phase-46.md | documentation | docs-owner | pnpm run validate:docs |
 | MINOR | unsubstantiated-phase-claim:docs/phases/phase-54.md | documentation | docs-owner | pnpm run validate:docs |
