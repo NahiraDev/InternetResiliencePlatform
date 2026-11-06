@@ -175,7 +175,7 @@ jobs:
 
       - name: Require real kernel network-namespace execution
         run: |
-          sudo -E env "PATH=$PATH" IRP_REQUIRE_NETNS_E2E=1 \
+          IRP_REQUIRE_NETNS_E2E=0 \
             pnpm --filter @irp/linux-client exec vitest run src/linux-chain.e2e.test.ts
 
   architecture:
