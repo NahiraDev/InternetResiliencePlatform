@@ -14,5 +14,9 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js"
+  },
+  "optionalDependencies": {
+    "ffi-napi": "^3.1.0",
+    "ref-napi": "^3.0.3"
   }
 }

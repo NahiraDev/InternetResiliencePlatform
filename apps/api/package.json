@@ -19,6 +19,7 @@
     "@irp/auth": "workspace:*",
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
+    "@irp/connectivity": "workspace:*",
     "@irp/database": "workspace:*",
     "@irp/dns": "workspace:*",
     "@irp/events": "workspace:*",

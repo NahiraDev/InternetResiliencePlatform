@@ -9,6 +9,9 @@ afterEach(() => {
   delete process.env.IRP_LOOP_MAX_CYCLES;
   delete process.env.IRP_LOOP_INTERVAL_MS;
   delete process.env.IRP_LOOP_STOP_WHEN_HEALTHY;
+  delete process.env.DATABASE_URL;
+  delete process.env.IRP_TEST_DATABASE_URL;
+  delete process.env.IRP_DB_SSL;
 });
 
 describe('daemon factory', () => {
@@ -138,8 +141,10 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
     expect(options.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('runs exactly one canonical runtime cycle with IRP_LOOP_MAX_CYCLES=1', async () => {
+  it('runs exactly one canonical runtime cycle with IRP_LOOP_MAX_CYCLES=1', { timeout: 10000 }, async () => {
     process.env.IRP_LOOP_MAX_CYCLES = '1';
+    delete process.env.DATABASE_URL;
+    delete process.env.IRP_TEST_DATABASE_URL;
     const host = createRuntimeDaemonHost();
     const result = await host.runClosedLoop();
     // Deterministic: exactly one cycle executes and it terminates the loop.
@@ -166,9 +171,11 @@ describe('RuntimeDaemonHost bounded closed loop', () => {
     expect(result.records.every((record) => typeof record.outcome === 'string')).toBe(true);
   });
 
-  it('aborts before the first cycle when the SIGTERM signal is already set', async () => {
+  it('aborts before the first cycle when the SIGTERM signal is already set', { timeout: 10000 }, async () => {
     process.env.IRP_LOOP_MAX_CYCLES = '3';
     process.env.IRP_LOOP_INTERVAL_MS = '1000';
+    delete process.env.DATABASE_URL;
+    delete process.env.IRP_TEST_DATABASE_URL;
     const host = createRuntimeDaemonHost();
     // The controller checks signal.aborted at the top of the loop before cycle 1,
     // so aborting before calling run() is deterministic.

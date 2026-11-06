@@ -19,3 +19,5 @@ allowBuilds:
   esbuild: true
   prisma: true
   protobufjs: true
+  ffi-napi: true
+  ref-napi: true

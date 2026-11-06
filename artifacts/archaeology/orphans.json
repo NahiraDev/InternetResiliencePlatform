@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508",
+  "generatedAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21",
   "vitestIncludeGlobs": [
-    "packages/resilience-runtime/tests/**/*.test.ts"
+    "packages/resilience-runtime/tests/**/*.test.ts",
+    "packages/resilience-runtime/tests/**/*.integration.test.ts"
   ],
   "orphanTests": [
     "packages/resilience-runtime/src/adapters/adapters.test.ts",
@@ -331,10 +332,25 @@
       ]
     },
     {
+      "name": "AllocResult",
+      "declaredIn": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ]
+    },
+    {
       "name": "AssuranceStatus",
       "declaredIn": [
         "packages/network-intelligence/src/identity/IdentityAssurance.ts",
         "packages/resilience-runtime/src/telemetry-plane/closed-loop-assurance.ts"
+      ]
+    },
+    {
+      "name": "CapabilityStatus",
+      "declaredIn": [
+        "packages/macos-client/src/index.ts",
+        "packages/macos-client/src/native/system-configuration.ts",
+        "packages/windows-client/src/index.ts"
       ]
     },
     {
@@ -363,6 +379,13 @@
       "declaredIn": [
         "packages/macos-client/src/http-control-plane-client.ts",
         "packages/windows-client/src/http-control-plane-client.ts"
+      ]
+    },
+    {
+      "name": "CredentialReport",
+      "declaredIn": [
+        "packages/macos-client/src/native/credentials.ts",
+        "packages/windows-client/src/native/credentials.ts"
       ]
     },
     {
@@ -427,6 +450,31 @@
       "declaredIn": [
         "packages/failover/src/index.ts",
         "packages/resilience-runtime/src/resilience/failure-classifier.ts"
+      ]
+    },
+    {
+      "name": "ffiAvailable",
+      "declaredIn": [
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/ffi.ts"
+      ]
+    },
+    {
+      "name": "ffiLoadError",
+      "declaredIn": [
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/ffi.ts"
+      ]
+    },
+    {
+      "name": "FfiNapiModule",
+      "declaredIn": [
+        "packages/macos-client/src/native/ffi-napi.d.ts",
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/macos-client/src/native/node-ffi-napi.d.ts",
+        "packages/windows-client/src/native/ffi-napi.d.ts",
+        "packages/windows-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/node-ffi-napi.d.ts"
       ]
     },
     {
@@ -880,6 +928,20 @@
       ]
     },
     {
+      "name": "PrivilegeLevel",
+      "declaredIn": [
+        "packages/macos-client/src/native/privilege.ts",
+        "packages/windows-client/src/native/privilege.ts"
+      ]
+    },
+    {
+      "name": "PrivilegeReport",
+      "declaredIn": [
+        "packages/macos-client/src/native/privilege.ts",
+        "packages/windows-client/src/native/privilege.ts"
+      ]
+    },
+    {
       "name": "ProviderHealth",
       "declaredIn": [
         "packages/dns/src/index.ts",
@@ -898,6 +960,20 @@
       "declaredIn": [
         "packages/failover/src/index.ts",
         "packages/resilience-runtime/src/domain/types.ts"
+      ]
+    },
+    {
+      "name": "Ref",
+      "declaredIn": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ]
+    },
+    {
+      "name": "RefType",
+      "declaredIn": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
       ]
     },
     {
@@ -971,6 +1047,13 @@
       ]
     },
     {
+      "name": "Type",
+      "declaredIn": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ]
+    },
+    {
       "name": "VerificationResult",
       "declaredIn": [
         "packages/gateway-registry/src/capacity-contracts.ts",
@@ -983,7 +1066,7 @@
     "orphanTests": 3,
     "orphanModules": 6,
     "orphanExports": 59,
-    "duplicateContracts": 94,
+    "duplicateContracts": 105,
     "unreferencedPersistenceModels": 0
   }
 }

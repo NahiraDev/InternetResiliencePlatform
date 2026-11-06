@@ -1,6 +1,6 @@
 # Integration Baseline Matrix
 
-Generated: 2026-11-04T10:08:18.808Z
+Generated: 2026-11-05T19:11:56.862Z
 Commit: unknown
 
 ## Component status
@@ -50,6 +50,7 @@ Commit: unknown
 | @irp/api | yes | CONNECTED_BUT_UNVERIFIED | BLOCKED |
 | @irp/cli | yes | CONNECTED_BUT_UNVERIFIED | BLOCKED |
 | @irp/daemon | yes | CONNECTED_BUT_UNVERIFIED | BLOCKED |
+| @irp/web | yes | CONNECTED_BUT_UNVERIFIED | BLOCKED |
 
 ## Integration edges
 

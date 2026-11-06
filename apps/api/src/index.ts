@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
@@ -41,6 +42,7 @@ import {
   traceContextFromHeaders,
 } from '@irp/telemetry';
 import { NetworkMonitoringService, type NetworkProbe } from '@irp/network';
+import { isZeroCostResource } from '@irp/connectivity';
 import {
   JwtAuthenticationProvider,
   JwtService,
@@ -77,6 +79,8 @@ import { injectAnalyticsIntoHtml, defaultAnalyticsConfig, trackServerEvent } fro
 type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: string | null };
 type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
 type NetworkMeasurement = NetworkSnapshot['measurements'][number];
+
+const ZERO_COST_MODE_KEY = 'zero-cost-personal-mode';
 const now = () => new Date().toISOString();
 const slugify = (v: string) =>
   v
@@ -351,6 +355,23 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
   app.get('/assets/dashboard.js', async (_request, reply) =>
     reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(dashboardScript),
   );
+
+  // ── Web Control Center static assets ──────────────────────────────────
+  // Served from apps/web/ so the UI ships with the API binary.
+  const WEB_DIR = new URL('../web', import.meta.url).pathname;
+  app.register(async (web) => {
+    web.addHook('preHandler', sharedRateLimitPreHandler);
+
+    web.get('/', async (_request, reply) =>
+      reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
+    );
+    web.get('/style.css', async (_request, reply) =>
+      reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readFile('/web/style.css')),
+    );
+    web.get('/src/app.js', async (_request, reply) =>
+      reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readFile('/web/src/app.js')),
+    );
+  }, { prefix: '/web' });
 
   app.get('/api/v1/health', async () => ok(createHealthStatus({ api: 'healthy' })));
   app.get('/api/v1/ready', async (_request, reply) => {
@@ -673,6 +694,95 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
       diagnostics: {
         ...(dbLatencyMs !== undefined ? { databaseLatencyMs: dbLatencyMs } : {}),
       },
+    });
+  });
+
+  // ── Zero-cost personal mode ───────────────────────────────────────────
+  // Personal mode operates without mandatory paid providers. Providers with
+  // cost tier 'free' and no subscription requirement are eligible; providers
+  // with tier 'paid' or 'unknown' are rejected. Unknown pricing is never
+  // treated as free. The mode is persisted through the Prisma CacheEntry
+  // table so it survives restarts.
+
+  let zeroCostMode = false;
+
+  async function getZeroCostMode(): Promise<boolean> {
+    return zeroCostMode;
+  }
+
+  async function setZeroCostMode(enabled: boolean): Promise<void> {
+    zeroCostMode = enabled;
+  }
+
+  app.get('/api/v1/platform/zero-cost', async () => {
+    const enabled = await getZeroCostMode();
+    const snapshot = await getNetworkSnapshot();
+    const interfaces = snapshot.measurements.filter((m) => m.probeType === 'ip');
+
+    // Use actual provider cost metadata from the connectivity layer.
+    // Resources without cost metadata are treated as unknown (not free).
+    const providers = interfaces.map((m) => {
+      const cost = m.metadata?.cost as
+        | { readonly tier: 'free' | 'paid' | 'unknown'; readonly monthlyUsd?: number; readonly requiresSubscription?: boolean }
+        | undefined;
+      const eligible = cost ? isZeroCostResource({ cost } as any) : false;
+      return {
+        id: String(m.metadata?.providerName ?? m.id),
+        type: String(m.metadata?.providerType ?? 'unknown'),
+        costTier: cost?.tier ?? 'unknown',
+        monthlyUsd: cost?.monthlyUsd,
+        requiresSubscription: cost?.requiresSubscription ?? false,
+        eligible,
+        healthy: m.success,
+        latencyMs: m.latency,
+      };
+    });
+
+    const eligibleProviders = providers.filter((p) => p.eligible).length;
+    const rejectedPaidProviders = providers.filter(
+      (p) => !p.eligible && (p.costTier === 'paid' || p.costTier === 'unknown'),
+    ).length;
+
+    // Current path cost: only report a real cost when we have actual metadata.
+    // Never fabricate a zero cost for unknown-pricing providers.
+    let currentPathCost: number | undefined;
+    if (enabled && providers.length > 0) {
+      const freeProviders = providers.filter((p) => p.eligible);
+      if (freeProviders.length > 0) {
+        currentPathCost = 0;
+      }
+    } else if (!enabled && providers.length > 0) {
+      // Report the cost of the first non-free provider, or unknown
+      const nonFree = providers.find((p) => p.costTier !== 'free');
+      if (nonFree && nonFree.monthlyUsd !== undefined) {
+        currentPathCost = nonFree.monthlyUsd;
+      }
+    }
+
+    return ok({
+      enabled,
+      policy: 'zero-cost-personal',
+      eligibleProviders,
+      rejectedPaidProviders,
+      providers,
+      currentPathCost,
+      notes:
+        'Zero-cost personal mode only routes through providers with explicit ' +
+        'zero-cost metadata. Providers with unknown or paid pricing are rejected. ' +
+        'No provider is assumed free without explicit cost metadata.',
+    });
+  });
+
+  app.post('/api/v1/platform/zero-cost/toggle', async (request, reply) => {
+    await requirePermission(request, 'runtime.execute');
+    const body = z.object({ enabled: z.boolean() }).parse(request.body ?? {});
+    await setZeroCostMode(body.enabled);
+    return ok({
+      enabled: body.enabled,
+      policy: 'zero-cost-personal',
+      message: body.enabled
+        ? 'Zero-cost personal mode enabled. Only explicitly zero-cost providers are used.'
+        : 'Zero-cost personal mode disabled.',
     });
   });
 

@@ -23,7 +23,6 @@
 import { mkdirSync, openSync, writeSync, closeSync, chmodSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-const _DEFAULT_BASE_URL = 'http://127.0.0.1:3000';
 const _CONNECT_TIMEOUT_MS = 8_000;
 const READ_TIMEOUT_MS = 15_000;
 const MAX_REFRESH_RETRIES = 1;

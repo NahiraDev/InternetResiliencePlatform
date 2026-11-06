@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-04T10:08:18.808Z",
+  "generatedAt": "2026-11-05T19:11:56.862Z",
   "commit": "unknown",
   "nodes": [
     {
@@ -607,6 +607,21 @@
       "path": "apps/daemon",
       "executable": true,
       "entrypoint": "dist/index.js",
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ],
+      "status": "CONNECTED_BUT_UNVERIFIED",
+      "realEnvironment": "BLOCKED"
+    },
+    {
+      "id": "@irp/web",
+      "path": "apps/web",
+      "executable": true,
+      "entrypoint": null,
       "scripts": [
         "build",
         "lint",
@@ -1836,6 +1851,13 @@
       "build": "DECLARED",
       "test": "DECLARED",
       "entrypoint": "dist/index.js",
+      "runtimeExecution": "UNVERIFIED"
+    },
+    {
+      "componentId": "@irp/web",
+      "build": "DECLARED",
+      "test": "DECLARED",
+      "entrypoint": null,
       "runtimeExecution": "UNVERIFIED"
     }
   ],

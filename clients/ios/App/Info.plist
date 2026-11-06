@@ -20,5 +20,10 @@
     <true/>
     <key>UILaunchScreen</key>
     <dict/>
+    <!-- IRP Control Plane endpoint. Production must supply a configured HTTPS URL.
+         An empty or missing value fails closed: the app reports "configuration required"
+         instead of silently connecting to localhost. -->
+    <key>IRPControlPlaneBaseURL</key>
+    <string></string>
 </dict>
 </plist>

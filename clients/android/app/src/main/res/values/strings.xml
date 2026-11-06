@@ -1,0 +1,7 @@
+<resources>
+    <!-- IRP Control Plane endpoint.
+         Configure the production HTTPS URL here (or override via build config).
+         An empty value means "not configured": the app fails closed and reports
+         "configuration required" instead of silently connecting to localhost. -->
+    <string name="irp_control_plane_base_url" translatable="false"></string>
+</resources>

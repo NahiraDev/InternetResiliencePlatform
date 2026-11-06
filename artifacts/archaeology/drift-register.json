@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508",
+  "generatedAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21",
   "findings": [
     {
       "id": "orphaned-test:packages/resilience-runtime/src/adapters/adapters.test.ts",
@@ -14,7 +14,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "orphaned-test:packages/resilience-runtime/src/canonical-tunnel-adapter.test.ts",
@@ -28,7 +28,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "orphaned-test:packages/resilience-runtime/src/incidents/incidents.test.ts",
@@ -42,7 +42,7 @@
       "owner": "@irp/resilience-runtime",
       "fix": "Move the test under tests/ so the configured include glob executes it.",
       "verification": "pnpm --filter @irp/resilience-runtime test",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:AddressFamily",
@@ -57,7 +57,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:AgentRecommendation",
@@ -71,7 +71,21 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:AllocResult",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ],
+      "impact": "Symbol AllocResult is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:AssuranceStatus",
@@ -85,7 +99,22 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:CapabilityStatus",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/index.ts",
+        "packages/macos-client/src/native/system-configuration.ts",
+        "packages/windows-client/src/index.ts"
+      ],
+      "impact": "Symbol CapabilityStatus is declared in 3 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:CircuitBreaker",
@@ -99,7 +128,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:CircuitBreakerState",
@@ -113,7 +142,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:compareVersions",
@@ -127,7 +156,7 @@
       "owner": "packages/plugin-loader",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:createHttpControlPlaneClient",
@@ -141,7 +170,21 @@
       "owner": "packages/macos-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:CredentialReport",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/credentials.ts",
+        "packages/windows-client/src/native/credentials.ts"
+      ],
+      "impact": "Symbol CredentialReport is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:DecisionEvaluator",
@@ -155,7 +198,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:DEFAULT_TIMEOUT_MS",
@@ -170,7 +213,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:DependencyGraph",
@@ -184,7 +227,7 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:DeviceIdentity",
@@ -198,7 +241,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:DomainEvent",
@@ -212,7 +255,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:EndpointRegistry",
@@ -226,7 +269,7 @@
       "owner": "packages/security",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:escapeHtml",
@@ -240,7 +283,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:EventHandler",
@@ -254,7 +297,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:FailureEvidence",
@@ -268,7 +311,53 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:ffiAvailable",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/ffi.ts"
+      ],
+      "impact": "Symbol ffiAvailable is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:ffiLoadError",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/ffi.ts"
+      ],
+      "impact": "Symbol ffiLoadError is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:FfiNapiModule",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ffi-napi.d.ts",
+        "packages/macos-client/src/native/ffi.ts",
+        "packages/macos-client/src/native/node-ffi-napi.d.ts",
+        "packages/windows-client/src/native/ffi-napi.d.ts",
+        "packages/windows-client/src/native/ffi.ts",
+        "packages/windows-client/src/native/node-ffi-napi.d.ts"
+      ],
+      "impact": "Symbol FfiNapiModule is declared in 6 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayAddressFamily",
@@ -282,7 +371,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayArtifactAttestation",
@@ -296,7 +385,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayCapabilities",
@@ -310,7 +399,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayCapacity",
@@ -324,7 +413,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayCapacityState",
@@ -338,7 +427,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayEndpoint",
@@ -352,7 +441,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayEndpointResolution",
@@ -366,7 +455,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFilter",
@@ -380,7 +469,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetDesiredState",
@@ -394,7 +483,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetEvent",
@@ -408,7 +497,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetEventType",
@@ -422,7 +511,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetManager",
@@ -436,7 +525,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetRecord",
@@ -450,7 +539,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayFleetTelemetry",
@@ -464,7 +553,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayHealth",
@@ -478,7 +567,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayHealthProbe",
@@ -492,7 +581,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayHealthSample",
@@ -506,7 +595,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayId",
@@ -520,7 +609,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayIdentityAttestation",
@@ -534,7 +623,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayIdentityAttestationPayload",
@@ -548,7 +637,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayLifecycle",
@@ -562,7 +651,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayMaintenanceWindow",
@@ -576,7 +665,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayMetadata",
@@ -590,7 +679,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayOwnership",
@@ -604,7 +693,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayPatch",
@@ -618,7 +707,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayProbeEvidence",
@@ -632,7 +721,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayProbeResult",
@@ -646,7 +735,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayProvisioningMetadata",
@@ -660,7 +749,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayRegistry",
@@ -674,7 +763,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayRegistrySelectionPlaneOptions",
@@ -688,7 +777,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewaySecurityVerifier",
@@ -702,7 +791,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewaySelectionCandidate",
@@ -716,7 +805,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewaySelectionPolicy",
@@ -730,7 +819,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewaySelectionRequest",
@@ -744,7 +833,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewaySelectionResult",
@@ -758,7 +847,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayTrust",
@@ -772,7 +861,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayTrustAttestation",
@@ -786,7 +875,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayTunnelDeclaration",
@@ -800,7 +889,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayUpgradeState",
@@ -814,7 +903,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GatewayUpgradeStatus",
@@ -828,7 +917,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GLOBAL_PROVIDER_METADATA",
@@ -842,7 +931,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:guardRequest",
@@ -856,7 +945,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:guardStateChange",
@@ -870,7 +959,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:GuardVerdict",
@@ -884,7 +973,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:HealthState",
@@ -898,7 +987,7 @@
       "owner": "packages/network-intelligence",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:HttpControlPlaneClient",
@@ -912,7 +1001,7 @@
       "owner": "packages/macos-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:InternetEvidence",
@@ -926,7 +1015,7 @@
       "owner": "packages/internet-intelligence-agent",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:IP_BINARY",
@@ -941,7 +1030,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:IRANIAN_PROVIDER_METADATA",
@@ -955,7 +1044,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:isAllowedHost",
@@ -969,7 +1058,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:isLoopbackPeer",
@@ -983,7 +1072,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:issueControlToken",
@@ -997,7 +1086,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:isUnavailable",
@@ -1011,7 +1100,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:LifecycleState",
@@ -1025,7 +1114,7 @@
       "owner": "packages/kernel",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:LOCAL_DASHBOARD_CSS",
@@ -1039,7 +1128,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:ManualOverrideMode",
@@ -1053,7 +1142,7 @@
       "owner": "packages/connectivity",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:MAX_CONTROL_BODY_BYTES",
@@ -1067,7 +1156,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:NetworkSnapshot",
@@ -1081,7 +1170,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:nowIso",
@@ -1095,7 +1184,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:parseAutonomyRequest",
@@ -1109,7 +1198,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:PluginManifest",
@@ -1123,7 +1212,7 @@
       "owner": "packages/plugin-sdk",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:PolicyConflict",
@@ -1137,7 +1226,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:PolicySnapshot",
@@ -1151,7 +1240,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:Principal",
@@ -1166,7 +1255,35 @@
       "owner": "packages/auth",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:PrivilegeLevel",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/privilege.ts",
+        "packages/windows-client/src/native/privilege.ts"
+      ],
+      "impact": "Symbol PrivilegeLevel is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:PrivilegeReport",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/privilege.ts",
+        "packages/windows-client/src/native/privilege.ts"
+      ],
+      "impact": "Symbol PrivilegeReport is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:ProviderHealth",
@@ -1180,7 +1297,7 @@
       "owner": "packages/dns",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:readBoundedBody",
@@ -1194,7 +1311,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RecoveryPlan",
@@ -1208,7 +1325,35 @@
       "owner": "packages/failover",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:Ref",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ],
+      "impact": "Symbol Ref is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:RefType",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ],
+      "impact": "Symbol RefType is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RegistryRecord",
@@ -1222,7 +1367,7 @@
       "owner": "packages/kernel",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RoutingPolicyContext",
@@ -1236,7 +1381,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RoutingPolicyDecision",
@@ -1250,7 +1395,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RuntimeContext",
@@ -1264,7 +1409,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:RuntimeState",
@@ -1278,7 +1423,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:satisfies",
@@ -1292,7 +1437,7 @@
       "owner": "packages/plugin-loader",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:Scheduler",
@@ -1306,7 +1451,7 @@
       "owner": "packages/core",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:SecurityEvent",
@@ -1320,7 +1465,7 @@
       "owner": "packages/resilience-runtime",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:tokenMatches",
@@ -1334,7 +1479,7 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:Tone",
@@ -1348,7 +1493,21 @@
       "owner": "packages/linux-client",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
+    },
+    {
+      "id": "duplicate-contract:Type",
+      "severity": "MINOR",
+      "area": "contract-duplication",
+      "evidence": [
+        "packages/macos-client/src/native/ref-napi.d.ts",
+        "packages/windows-client/src/native/ref-napi.d.ts"
+      ],
+      "impact": "Symbol Type is declared in 2 modules, risking divergent semantics.",
+      "owner": "packages/macos-client",
+      "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
+      "verification": "pnpm run architecture:archaeology",
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "duplicate-contract:VerificationResult",
@@ -1362,7 +1521,7 @@
       "owner": "packages/gateway-registry",
       "fix": "Re-export a single canonical declaration instead of redefining the symbol.",
       "verification": "pnpm run architecture:archaeology",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-46.md",
@@ -1375,7 +1534,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-54.md",
@@ -1388,7 +1547,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-66.md",
@@ -1401,7 +1560,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-75.md",
@@ -1414,7 +1573,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-76.md",
@@ -1427,7 +1586,7 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     },
     {
       "id": "unsubstantiated-phase-claim:docs/phases/phase-80.md",
@@ -1440,13 +1599,13 @@
       "owner": "docs-owner",
       "fix": "Cite the implementing commit/PR and tests, or mark the phase as historical.",
       "verification": "pnpm run validate:docs",
-      "registeredAt": "9a45a23c2d3563244f9247c0ec51c238c29c2ad6a3af497dd61aa859acd88508"
+      "registeredAt": "a16673f2806e784ac618a4d81b78f5301f440da185f7d8d25fcc47931d5c4c21"
     }
   ],
   "summary": {
-    "total": 103,
+    "total": 114,
     "critical": 0,
     "major": 3,
-    "minor": 100
+    "minor": 111
   }
 }

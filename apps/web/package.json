@@ -1,0 +1,18 @@
+{
+  "name": "@irp/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "IRP Web Control Center - Autonomous Internet Superplatform UI",
+  "scripts": {
+    "build": "echo 'Web app is static - no build step required'",
+    "typecheck": "echo 'No TypeScript in web app - vanilla JS'",
+    "lint": "echo 'Lint not configured for web app'",
+    "test": "vitest run",
+    "start": "echo 'Serve via the IRP API at / or /dashboard, or use any static file server'"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.21.0"
+  }
+}

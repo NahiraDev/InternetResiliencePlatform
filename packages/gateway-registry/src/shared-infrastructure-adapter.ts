@@ -15,13 +15,11 @@ import {
   ReleaseResult,
   VerificationResult,
   TunnelConfig,
-  GatewayEndpoint,
   CapacityAcquisitionModel,
   assertCapacityOffer,
   assertEntitlement,
   assertAllocation,
   isCapacityOfferFresh,
-  isAllocationValid,
 } from './capacity-contracts.js';
 import { randomUUID } from 'node:crypto';
 

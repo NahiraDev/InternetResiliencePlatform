@@ -6,7 +6,7 @@
  * and privileged work always routes to the canonical runtime/adapters.
  */
 
-export type ClientPlatform = 'linux' | 'macos' | 'windows' | 'ios' | 'android';
+export type ClientPlatform = 'linux' | 'macos' | 'windows' | 'ios' | 'android' | 'web';
 
 const LINUX_CAPABILITIES = [
   'dns.write',
@@ -22,12 +22,16 @@ const DESKTOP_OBSERVE_CAPABILITIES = ['observability.read'] as const;
 
 const MOBILE_TUNNEL_CAPABILITIES = ['tunnel.execute', 'observability.read'] as const;
 
+const WEB_OBSERVE_CAPABILITIES = ['observability.read'] as const;
+
 const PLATFORM_CAPABILITIES: Readonly<Record<ClientPlatform, readonly string[]>> = Object.freeze({
   // Full local adapter behind the canonical composition boundary.
   linux: LINUX_CAPABILITIES,
   // Snapshot/observe adapters only; mutation stays canonical.
   macos: DESKTOP_OBSERVE_CAPABILITIES,
   windows: DESKTOP_OBSERVE_CAPABILITIES,
+  // Web client: observe-only through the canonical API.
+  web: WEB_OBSERVE_CAPABILITIES,
   // OS tunnel adapters; selection/policy/failover remain canonical.
   ios: MOBILE_TUNNEL_CAPABILITIES,
   android: MOBILE_TUNNEL_CAPABILITIES,
