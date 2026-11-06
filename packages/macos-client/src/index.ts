@@ -7,11 +7,9 @@ import {
   discoverDNS,
   checkReachability,
   scAvailable,
-  scLoadError,
 } from './native/system-configuration.js';
 import {
   detectPrivilege,
-  readTokenElevation,
   type PrivilegeLevel,
 } from './native/privilege.js';
 import {
@@ -22,7 +20,6 @@ import {
 import {
   guardRequest,
   guardStateChange,
-  issueControlToken,
   parseAutonomyRequest,
   readBoundedBody,
   type GuardVerdict,
@@ -143,8 +140,6 @@ export class MacOSSystem implements MacOSSystemAdapter {
     return { ...this.policy };
   }
 
-  // ── Secure credential storage (Keychain) ────────────────────────────────
-
   async readRefreshToken(): Promise<{ token: string | null; available: boolean; error?: string }> {
     return readCredential();
   }
@@ -156,8 +151,6 @@ export class MacOSSystem implements MacOSSystemAdapter {
   async removeRefreshToken(): Promise<{ ok: boolean; available: boolean; error?: string }> {
     return removeCredential();
   }
-
-  // ── Connectivity monitoring (SystemConfiguration reachability) ──────────
 
   async checkReachability(host: string): Promise<{
     readonly reachable: boolean;
@@ -252,7 +245,6 @@ export class MacOSClientServer {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
 
-    // Serve the HTML dashboard at root with CSP.
     if (request.method === 'GET' && request.url === '/') {
       const port = this.address()?.port ?? 0;
       const verdict = guardRequest(request, port);
