@@ -219,3 +219,16 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Next prioritized tasks: Windows/macOS/iOS/Android native runtime verification in CI; resolve CodeQL conflict; address remaining auth lifecycle evidence; review and merge PR #481.
 
 
+
+## Autonomous engineer checkpoint (2026-11-06)
+
+- Starting base SHA: ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df (upstream/main)
+- Current integration head: 04505cfd225a0604317ed67025ccefd4e78dd609 (PR #481)
+- Completed this run: fixed CI blockers on integration/full-cross-platform-completion.
+  1. windows-client.yml and macos-client.yml: NODE_VERSION 20 → 22 so pnpm 11.21.0 can execute (Node >=22.13 required; previous caused node:sqlite builtin error on Node 20).
+  2. ci.yml: restored `sudo -E env PATH=... IRP_REQUIRE_NETNS_E2E=1` on the real kernel netns e2e step so the test process inherits CAP_NET_ADMIN/CAP_SYS_ADMIN when the runner permits it via sudo. Unprivileged process previously failed the hard-require even after the sudo verify step succeeded.
+- Branches/PRs: integration/full-cross-platform-completion (PR #481 open against main)
+- Actual CI: in progress on new SHA 04505cf (windows-client, Linux primary, netns chain, architecture, etc.)
+- Verified merges: none this run
+- Blockers: exact-SHA full CI green; CodeQL default/advanced conflict (#420); privileged netns still depends on runner capabilities even with sudo; Windows/macOS/iOS/Android native full runtime evidence remains external; auth production evidence (#412).
+- Next prioritized tasks: poll exact-SHA checks on 04505cf; fix any remaining root-cause failures; reconcile PROJECT_STATE further; address #420 if possible without weakening gates; continue evidence for remaining phases.
