@@ -12,8 +12,10 @@
  * to the operator instead of inventing results.
  */
 
+import type { Buffer } from 'node:buffer';
+
 export type FfiNapiModule = {
-  Library: unknown;
+  Library: (library: string, methods: Record<string, [string, string[]]>) => unknown;
   types: {
     readonly void: unknown;
     readonly int: unknown;
@@ -39,7 +41,6 @@ export type FfiNapiModule = {
   };
   readonly ref: {
     alloc: (type: unknown, value: unknown) => { deref: () => unknown };
-    // Add other ref methods as needed
   };
   readonly Struct: unknown;
   readonly ArrayType: unknown;
@@ -63,11 +64,8 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   try {
     // Dynamic import so the package does not hard-require a native build in
     // environments where it is not installed (e.g. this Linux build host).
-    const ffiModule = (await import('ffi-napi')) as Omit<FfiNapiModule, 'ref'>;
-    // ref-napi is a separate package that ffi-napi depends on
-    const refModule = (await import('ref-napi')) as {
-      alloc: (type: unknown, value: unknown) => { deref: () => unknown };
-    };
+    const ffiModule = await import('ffi-napi');
+    const refModule = await import('ref-napi');
     loaded = {
       ...ffiModule,
       ref: refModule,

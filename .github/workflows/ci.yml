@@ -125,7 +125,10 @@ jobs:
   linux-netns-e2e:
     name: Linux network-namespace end-to-end chain (privileged, required)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    container:
+      image: node:24-trixie
+      options: --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --security-opt seccomp=unconfined
     env:
       PNPM_IGNORE_TTY: "1"
 
@@ -148,9 +151,9 @@ jobs:
 
       - name: Install Linux namespace tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends iproute2
-          sudo rm -rf /var/lib/apt/lists/*
+          apt-get update
+          apt-get install -y --no-install-recommends iproute2
+          rm -rf /var/lib/apt/lists/*
 
       - name: Verify CAP_SYS_ADMIN and CAP_NET_ADMIN availability
         run: |
@@ -159,8 +162,8 @@ jobs:
             echo "WARNING: Cannot read capability information"
           fi
           # Check if we can create network namespaces (requires CAP_SYS_ADMIN)
-          if sudo ip netns add irp-test-ns 2>/dev/null; then
-            sudo ip netns del irp-test-ns
+          if ip netns add irp-test-ns 2>/dev/null; then
+            ip netns del irp-test-ns
             echo "Network namespace creation: OK"
           else
             echo "ERROR: Cannot create network namespace (missing CAP_SYS_ADMIN or kernel support)"

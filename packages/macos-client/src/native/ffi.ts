@@ -8,8 +8,10 @@
  * is unavailable.
  */
 
+import type { Buffer } from 'node:buffer';
+
 export type FfiNapiModule = {
-  Library: unknown;
+  Library: (library: string, methods: Record<string, [string, string[]]>) => unknown;
   types: {
     readonly void: unknown;
     readonly int: unknown;
@@ -51,10 +53,8 @@ let loadError: unknown;
 export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   if (loaded !== undefined) return loaded;
   try {
-    const ffiModule = (await import('ffi-napi')) as Omit<FfiNapiModule, 'ref'>;
-    const refModule = (await import('ref-napi')) as {
-      alloc: (type: unknown, value: unknown) => { deref: () => unknown };
-    };
+    const ffiModule = await import('ffi-napi');
+    const refModule = await import('ref-napi');
     loaded = {
       ...ffiModule,
       ref: refModule,
