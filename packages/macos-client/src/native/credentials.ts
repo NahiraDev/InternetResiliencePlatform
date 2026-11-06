@@ -64,12 +64,14 @@ export async function readCredential(): Promise<{
   }
   const { ref, types, Buffer } = ffi;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const libAny = lib as any;
   const query: Record<string, unknown> = {
-    [(lib as any).kSecClassGenericPassword as unknown as string]: true,
-    [(lib as any).kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
-    [(lib as any).kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
-    [(lib as any).kSecReturnData as unknown as string]: true,
-    [(lib as any).kSecMatchLimitOne as unknown as string]: true,
+    [libAny.kSecClassGenericPassword as unknown as string]: true,
+    [libAny.kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
+    [libAny.kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
+    [libAny.kSecReturnData as unknown as string]: true,
+    [libAny.kSecMatchLimitOne as unknown as string]: true,
   };
   const queryBuf = Buffer.from(JSON.stringify(query), 'utf8');
   const queryPtr = ref.alloc(types.pointer, queryBuf);
@@ -103,11 +105,13 @@ export async function writeCredential(token: string): Promise<{
     return { ok: false, available: false, error: 'FFI module unavailable' };
   }
   const { ref, types, Buffer } = ffi;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const libAny = lib as any;
   const attributes: Record<string, unknown> = {
-    [(lib as any).kSecClassGenericPassword as unknown as string]: 'genp',
-    [(lib as any).kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
-    [(lib as any).kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
-    [(lib as any).kSecValueData as unknown as string]: token,
+    [libAny.kSecClassGenericPassword as unknown as string]: 'genp',
+    [libAny.kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
+    [libAny.kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
+    [libAny.kSecValueData as unknown as string]: token,
   };
   const attrBuf = Buffer.from(JSON.stringify(attributes), 'utf8');
   const attrPtr = ref.alloc(types.pointer, attrBuf);
@@ -131,10 +135,12 @@ export async function removeCredential(): Promise<{
     return { ok: false, available: false, error: 'FFI module unavailable' };
   }
   const { ref, types, Buffer } = ffi;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const libAny = lib as any;
   const query: Record<string, unknown> = {
-    [(lib as any).kSecClassGenericPassword as unknown as string]: true,
-    [(lib as any).kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
-    [(lib as any).kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
+    [libAny.kSecClassGenericPassword as unknown as string]: true,
+    [libAny.kSecAttrService as unknown as string]: IRP_KEYCHAIN_SERVICE,
+    [libAny.kSecAttrAccount as unknown as string]: IRP_KEYCHAIN_ACCOUNT,
   };
   const queryBuf = Buffer.from(JSON.stringify(query), 'utf8');
   const queryPtr = ref.alloc(types.pointer, queryBuf);
