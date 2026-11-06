@@ -47,7 +47,7 @@ jobs:
           vs-components: 'Microsoft.VisualStudio.Workload.VCTools'
 
       - name: Install Python for node-gyp
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 

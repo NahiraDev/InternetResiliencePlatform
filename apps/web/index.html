@@ -78,7 +78,7 @@
           <span class="brand-mark" aria-hidden="true">IR</span>
           <span class="brand-copy"><strong>IRP Super Admin</strong><small>Live Network Console</small></span>
         </div>
-        <nav class="nav" aria-label="Super Admin navigation">
+        <nav class="nav" aria-label="Super Admin navigation" id="admin-nav">
           <a href="#system-map" data-view="system-map" class="nav-item"><span class="nav-glyph" aria-hidden="true">◈</span><span>System Map</span></a>
           <a href="#live-network" data-view="live-network" class="nav-item"><span class="nav-glyph" aria-hidden="true">⌁</span><span>Live Network</span></a>
           <a href="#runtime" data-view="runtime" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚡</span><span>Runtime</span></a>
@@ -92,6 +92,12 @@
           <a href="#events" data-view="events" class="nav-item"><span class="nav-glyph" aria-hidden="true">📡</span><span>Event Timeline</span></a>
           <a href="#storage" data-view="storage" class="nav-item"><span class="nav-glyph" aria-hidden="true">💾</span><span>Storage</span></a>
           <a href="#security" data-view="security" class="nav-item"><span class="nav-glyph" aria-hidden="true">🔐</span><span>Security</span></a>
+        </nav>
+        <nav class="nav" aria-label="Member navigation" id="member-nav" hidden>
+          <a href="#subscription-dashboard" data-view="subscription-dashboard" class="nav-item"><span class="nav-glyph" aria-hidden="true">📊</span><span>Subscription</span></a>
+          <a href="#subscription-plans" data-view="subscription-plans" class="nav-item"><span class="nav-glyph" aria-hidden="true">💳</span><span>Plans</span></a>
+          <a href="#member-devices" data-view="member-devices" class="nav-item"><span class="nav-glyph" aria-hidden="true">📱</span><span>Devices</span></a>
+          <a href="#member-connection" data-view="member-connection" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚡</span><span>Connection</span></a>
         </nav>
         <div class="sidebar-footer">
           <div class="user-badge" id="user-badge">
@@ -345,6 +351,93 @@
                 <div><dt>Route leak</dt><dd id="security-route-leak">—</dd></div>
               </dl>
             </article>
+          </section>
+
+          <!-- Member: Subscription Dashboard -->
+          <section class="view" id="view-subscription-dashboard" data-view="subscription-dashboard" aria-label="Subscription Dashboard" hidden>
+            <div class="grid two">
+              <article class="card kpi-primary">
+                <header class="card-head"><div><p class="eyebrow">Subscription</p><h2>Plan Status</h2></div></header>
+                <dl class="kv">
+                  <div><dt>Plan</dt><dd id="member-plan-name">—</dd></div>
+                  <div><dt>Status</dt><dd id="member-plan-status">—</dd></div>
+                  <div><dt>Started</dt><dd id="member-plan-started">—</dd></div>
+                  <div><dt>Expires</dt><dd id="member-plan-expires">—</dd></div>
+                  <div><dt>Auto-renew</dt><dd id="member-plan-auto-renew">—</dd></div>
+                </dl>
+                <div class="button-group" style="margin-top:16px">
+                  <button class="button button-primary" id="member-renew-btn" hidden>Renew Subscription</button>
+                  <button class="button button-danger" id="member-cancel-btn" hidden>Cancel Subscription</button>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Entitlements</p><h2>Active Features</h2></div></header>
+                <div id="member-entitlements" class="tile-grid"><div class="skeleton"></div></div>
+              </article>
+            </div>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Payment History</p><h2>Transactions</h2></div></header>
+              <div id="member-payments" class="list"><div class="muted">No payments yet.</div></div>
+            </article>
+          </section>
+
+          <!-- Member: Subscription Plans -->
+          <section class="view" id="view-subscription-plans" data-view="subscription-plans" aria-label="Subscription Plans" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Available Plans</p><h2>Choose a Plan</h2></div></header>
+              <div id="member-plans" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              <p class="note" style="margin-top:12px">Select a plan to purchase. Payment is processed through our development test provider.</p>
+            </article>
+          </section>
+
+          <!-- Member: Devices -->
+          <section class="view" id="view-member-devices" data-view="member-devices" aria-label="My Devices" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Device Management</p><h2>Enrolled Devices</h2></div></header>
+              <div id="member-device-list" class="tile-grid"><div class="skeleton"></div></div>
+              <div class="button-group" style="margin-top:16px">
+                <button class="button button-primary" id="member-enroll-btn">Enroll New Device</button>
+              </div>
+              <div id="member-enroll-form" hidden style="margin-top:12px;padding:16px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-card)">
+                <h3 style="margin-top:0">Enroll Device</h3>
+                <div class="form-field" style="margin-bottom:12px">
+                  <label>Device ID</label><input type="text" id="member-enroll-device-id" placeholder="e.g. my-laptop-001">
+                </div>
+                <div class="form-field" style="margin-bottom:12px">
+                  <label>Label</label><input type="text" id="member-enroll-label" placeholder="My Laptop">
+                </div>
+                <div class="form-field" style="margin-bottom:12px">
+                  <label>Platform</label><input type="text" id="member-enroll-platform" placeholder="linux/macos/windows/ios/android">
+                </div>
+                <div class="button-group">
+                  <button class="button button-primary" id="member-enroll-submit">Enroll</button>
+                  <button class="button" id="member-enroll-cancel">Cancel</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <!-- Member: Connection -->
+          <section class="view" id="view-member-connection" data-view="member-connection" aria-label="Connection Status" hidden>
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Connection Status</p><h2>Current Connection</h2></div></header>
+                <dl class="kv">
+                  <div><dt>Status</dt><dd id="member-conn-status">—</dd></div>
+                  <div><dt>Authorized</dt><dd id="member-conn-authorized">—</dd></div>
+                  <div><dt>Quality</dt><dd id="member-conn-quality">—</dd></div>
+                  <div><dt>Last Connected</dt><dd id="member-conn-last-connected">—</dd></div>
+                </dl>
+                <div class="button-group" style="margin-top:16px">
+                  <button class="button button-primary" id="member-connect-btn" hidden>Connect</button>
+                  <button class="button button-danger" id="member-disconnect-btn" hidden>Disconnect</button>
+                </div>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Connection History</p><h2>Recent Events</h2></div></header>
+                <div id="member-conn-history" class="list"><div class="muted">No connection events yet.</div></div>
+              </article>
+            </div>
           </section>
         </main>
 
