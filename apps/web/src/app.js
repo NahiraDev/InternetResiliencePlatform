@@ -14,6 +14,7 @@
   let lastGoodAt = null;
   let inFlight = false;
   let currentView = 'system-map';
+  let userRole = null;
   let eventSource = null;
   let events = [];
   let maxEvents = 200;
@@ -42,6 +43,10 @@
     events: ['Events', 'Event Timeline'],
     storage: ['Storage', 'Storage & Service Health'],
     security: ['Security', 'Security & Authorization'],
+    'subscription-dashboard': ['Subscription', 'My Subscription'],
+    'subscription-plans': ['Plans', 'Available Plans'],
+    'member-devices': ['Devices', 'My Devices'],
+    'member-connection': ['Connection', 'Connection Status'],
   };
 
   // ── Auth state ────────────────────────────────────────────────────────
@@ -59,6 +64,18 @@
     $('#auth-overlay').classList.add('hidden');
     $('#app-shell').classList.remove('hidden');
     $('#user-email').textContent = '';
+    // Show/hide navigation based on role
+    const adminNav = $('#admin-nav');
+    const memberNav = $('#member-nav');
+    if (userRole === 'platform_admin') {
+      adminNav.hidden = false;
+      memberNav.hidden = true;
+      if (!VIEWS[currentView]) currentView = 'system-map';
+    } else {
+      adminNav.hidden = true;
+      memberNav.hidden = false;
+      if (!VIEWS[currentView]) currentView = 'subscription-dashboard';
+    }
   }
 
   function setAuthLoading(loading) {
@@ -112,6 +129,8 @@
       accessToken = data.data.accessToken;
       localStorage.setItem('irp_access_token', accessToken);
       localStorage.setItem('irp_user_email', email);
+      userRole = data.data.user?.roles?.[0] || null;
+      localStorage.setItem('irp_user_role', userRole);
       showApp();
       initApp();
     } catch (err) {
@@ -148,8 +167,10 @@
       await apiRequest('/api/v1/auth/logout', { method: 'POST' });
     } catch {}
     accessToken = null;
+    userRole = null;
     localStorage.removeItem('irp_access_token');
     localStorage.removeItem('irp_user_email');
+    localStorage.removeItem('irp_user_role');
     if (eventSource) { eventSource.close(); eventSource = null; }
     location.reload();
   }
@@ -246,6 +267,298 @@
     $('#stale-note').classList.add('hidden');
   }
 
+  // ── Member User Portal ───────────────────────────────────────────────
+  async function renderMemberSubscription() {
+    try {
+      const data = await apiJson('/api/v1/subscriptions/me', {
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+      const sub = data.data.subscription;
+      const ents = data.data.entitlements || [];
+
+      if (!sub) {
+        $('#member-plan-name').textContent = 'No active subscription';
+        $('#member-plan-status').textContent = 'Not subscribed';
+        $('#member-plan-started').textContent = '—';
+        $('#member-plan-expires').textContent = '—';
+        $('#member-plan-auto-renew').textContent = '—';
+        $('#member-renew-btn').hidden = true;
+        $('#member-cancel-btn').hidden = true;
+        $('#member-entitlements').innerHTML = '<p class="muted">No active subscription. Select a plan to get started.</p>';
+        $('#member-payments').innerHTML = '<div class="muted">No payment history.</div>';
+        return;
+      }
+
+      $('#member-plan-name').textContent = sub.planName || '—';
+      $('#member-plan-status').textContent = sub.status || '—';
+      $('#member-plan-started').textContent = sub.startedAt ? new Date(sub.startedAt).toLocaleDateString() : '—';
+      $('#member-plan-expires').textContent = sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : '—';
+      $('#member-plan-auto-renew').textContent = sub.autoRenew ? 'Enabled' : 'Disabled';
+
+      const isActive = sub.status === 'ACTIVE';
+      $('#member-renew-btn').hidden = isActive;
+      $('#member-cancel-btn').hidden = !isActive;
+
+      if (ents.length === 0) {
+        $('#member-entitlements').innerHTML = '<p class="muted">No active entitlements.</p>';
+      } else {
+        $('#member-entitlements').innerHTML = ents.map((e) => {
+          const active = e.status === 'ACTIVE';
+          const expires = e.expiresAt ? new Date(e.expiresAt) : null;
+          const expired = expires && expires <= new Date();
+          return `<span class="entitlement-chip ${active && !expired ? 'active' : 'inactive'}">
+            ${escapeHtml(e.feature)} ${active && !expired ? '●' : '○'}
+          </span>`;
+        }).join('');
+      }
+
+      // Payment history
+      try {
+        const payData = await apiJson('/api/v1/subscriptions/payments', {
+          headers: { authorization: `Bearer ${accessToken}` },
+        });
+        const pays = payData.data.payments || [];
+        if (pays.length === 0) {
+          $('#member-payments').innerHTML = '<div class="muted">No payment history.</div>';
+        } else {
+          $('#member-payments').innerHTML = pays.map((p) => {
+            const date = p.paidAt || p.createdAt;
+            return `<div class="list-item" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-control);background:var(--surface-raised);margin-bottom:8px">
+              <div><strong>${escapeHtml(p.amountUsd / 100).toFixed(2)} ${escapeHtml(p.currency)}</strong><small>${escapeHtml(p.status)}</small></div>
+              <div style="margin-top:4px;font-size:13px;color:var(--muted)">${escapeHtml(p.provider)} · ${new Date(date).toLocaleDateString()}</div>
+            </div>`;
+          }).join('');
+        }
+      } catch {
+        $('#member-payments').innerHTML = '<div class="muted">Unable to load payment history.</div>';
+      }
+    } catch (err) {
+      $('#member-plan-status').textContent = 'Unable to load';
+    }
+  }
+
+  async function renderMemberPlans() {
+    try {
+      const data = await apiJson('/api/v1/subscriptions/plans');
+      const plans = data.data.plans || [];
+      const node = $('#member-plans');
+      if (plans.length === 0) {
+        node.innerHTML = '<p class="muted">No plans available.</p>';
+        return;
+      }
+      node.innerHTML = plans.map((p) => {
+        const features = p.planFeatures || p.features || {};
+        const featureList = Object.entries(features)
+          .filter(([k, v]) => v === true)
+          .map(([k]) => escapeHtml(k))
+          .join(', ') || 'None';
+        return `<article class="plan-card ${p.slug === 'starter' ? '' : 'featured'}">
+          <div><strong>${escapeHtml(p.name)}</strong><span class="plan-price">$${(p.priceUsd / 100).toFixed(2)}<span>/mo</span></span></div>
+          <p style="color:var(--muted);font-size:13px;margin:0">${escapeHtml(p.description)}</p>
+          <ul class="plan-features">${featureList.split(',').map(f => `<li>${f}</li>`).join('')}</ul>
+          <div class="button-group">
+            <button class="button button-primary" onclick="appPurchasePlan('${p.slug}')">Subscribe</button>
+          </div>
+        </article>`;
+      }).join('');
+    } catch (err) {
+      $('#member-plans').innerHTML = '<p class="muted">Unable to load plans.</p>';
+    }
+  }
+
+  window.appPurchasePlan = async (planSlug) => {
+    try {
+      const res = await apiRequest('/api/v1/subscriptions/purchase', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ planSlug, paymentProvider: 'test' }),
+      });
+      if (!res.ok) throw new Error(`Purchase failed: ${res.status}`);
+      const data = await res.json();
+      alert('Subscription registered. Please complete payment verification to activate.');
+      await renderMemberSubscription();
+    } catch (err) {
+      alert('Failed to purchase: ' + err.message);
+    }
+  };
+
+  window.appVerifyPayment = async (txId) => {
+    try {
+      const res = await apiRequest('/api/v1/subscriptions/verify-payment', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ paymentTransactionId: txId, providerRef: 'test_verify_' + Date.now() }),
+      });
+      if (!res.ok) throw new Error(`Verification failed: ${res.status}`);
+      alert('Payment verified! Subscription activated.');
+      await renderMemberSubscription();
+    } catch (err) {
+      alert('Payment verification failed: ' + err.message);
+    }
+  };
+
+  async function renderMemberDevices() {
+    try {
+      const data = await apiJson('/api/v1/devices', {
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+      const devices = data.data.devices || [];
+      const node = $('#member-device-list');
+      if (devices.length === 0) {
+        node.innerHTML = '<p class="muted">No devices enrolled.</p>';
+        return;
+      }
+      node.innerHTML = devices.map((d) => {
+        const authz = d.subStatus === 'ACTIVE' ? 'authorized' : 'unauthorized';
+        return `<div class="tile">
+          <div><strong>${escapeHtml(d.label || d.deviceId)}</strong><small>${escapeHtml(d.platform || '—')}</small></div>
+          <div>
+            <span class="entitlement-chip ${d.status === 'ACTIVE' ? 'active' : 'inactive'}">${escapeHtml(d.status)}</span>
+            <span class="entitlement-chip ${authz}">${authz}</span>
+            ${d.status === 'ACTIVE' ?
+              `<button class="button" onclick="appDisconnectDevice('${escapeHtml(d.deviceId)}')">Disconnect</button>` :
+              `<button class="button button-primary" onclick="appConnectDevice('${escapeHtml(d.deviceId)}')">Connect</button>`
+            }
+            <button class="button button-danger" onclick="appRevokeDevice('${escapeHtml(d.deviceId)}')">Revoke</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch (err) {
+      $('#member-device-list').innerHTML = '<p class="muted">Unable to load devices.</p>';
+    }
+  }
+
+  window.appConnectDevice = async (deviceId) => {
+    try {
+      const res = await apiRequest(`/api/v1/devices/${deviceId}/connect`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`Connect failed: ${res.status}`);
+      await renderMemberDevices();
+    } catch (err) {
+      alert('Connect failed: ' + err.message);
+    }
+  };
+
+  window.appDisconnectDevice = async (deviceId) => {
+    try {
+      const res = await apiRequest(`/api/v1/devices/${deviceId}/disconnect`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`Disconnect failed: ${res.status}`);
+      await renderMemberDevices();
+    } catch (err) {
+      alert('Disconnect failed: ' + err.message);
+    }
+  };
+
+  window.appRevokeDevice = async (deviceId) => {
+    if (!confirm('Revoke this device? This cannot be undone.')) return;
+    try {
+      const res = await apiRequest(`/api/v1/devices/${deviceId}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(`Revoke failed: ${res.status}`);
+      await renderMemberDevices();
+    } catch (err) {
+      alert('Revoke failed: ' + err.message);
+    }
+  };
+
+  window.appEnrollDevice = async () => {
+    const deviceId = $('#member-enroll-device-id').value;
+    const label = $('#member-enroll-label').value;
+    const platform = $('#member-enroll-platform').value;
+    if (!deviceId) { alert('Device ID is required'); return; }
+    try {
+      const res = await apiRequest('/api/v1/devices/enroll', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ deviceId, label, platform }),
+      });
+      if (!res.ok) throw new Error(`Enroll failed: ${res.status}`);
+      $('#member-enroll-form').hidden = true;
+      $('#member-enroll-device-id').value = '';
+      $('#member-enroll-label').value = '';
+      $('#member-enroll-platform').value = '';
+      await renderMemberDevices();
+    } catch (err) {
+      alert('Enroll failed: ' + err.message);
+    }
+  };
+
+  window.appRenewSubscription = async () => {
+    try {
+      const res = await apiRequest('/api/v1/subscriptions/renew', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ paymentProvider: 'test' }),
+      });
+      if (!res.ok) throw new Error(`Renew failed: ${res.status}`);
+      const data = await res.json();
+      alert('Renewal payment pending. Please verify payment to extend your subscription.');
+      // Store txId for verification
+      window.appPendingRenewTxId = data.data.paymentTransactionId;
+      await renderMemberSubscription();
+    } catch (err) {
+      alert('Renew failed: ' + err.message);
+    }
+  };
+
+  window.appCancelSubscription = async () => {
+    if (!confirm('Cancel your subscription? This will suspend your devices.')) return;
+    try {
+      const res = await apiRequest('/api/v1/subscriptions/cancel', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
+      alert('Subscription cancelled.');
+      await renderMemberSubscription();
+    } catch (err) {
+      alert('Cancel failed: ' + err.message);
+    }
+  };
+
+  async function renderMemberConnection() {
+    try {
+      const data = await apiJson('/api/v1/subscriptions/me', {
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+      const sub = data.data.subscription;
+      const ents = data.data.entitlements || [];
+      const connectEnt = ents.find((e) => e.feature === 'connect');
+      const hasActiveEnt = connectEnt && connectEnt.status === 'ACTIVE' &&
+        (!connectEnt.expiresAt || new Date(connectEnt.expiresAt) > new Date());
+      const subActive = sub && sub.status === 'ACTIVE' &&
+        (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
+      const authorized = subActive && hasActiveEnt;
+
+      $('#member-conn-status').textContent = subActive ? 'Active' : 'Inactive';
+      $('#member-conn-authorized').textContent = authorized ? 'Yes' : 'No';
+      $('#member-conn-quality').textContent = authorized ? 'Good' : '—';
+      $('#member-conn-last-connected').textContent = '—';
+
+      $('#member-connect-btn').hidden = authorized || subActive ? false : true;
+      $('#member-disconnect-btn').hidden = !authorized;
+
+      // Show connect button only if authorized and not already connected
+      const btn = $('#member-connect-btn');
+      if (authorized) btn.textContent = 'Connect';
+      btn.hidden = false;
+
+      $('#member-conn-history').innerHTML = '<div class="muted">Connection history tracked by daemon.</div>';
+    } catch (err) {
+      $('#member-conn-status').textContent = 'Unable to load';
+    }
+  }
+
   // ── Views ─────────────────────────────────────────────────────────────
   function showView(name, moveFocus) {
     if (!VIEWS[name]) name = 'system-map';
@@ -257,10 +570,14 @@
     });
     text('#view-eyebrow', VIEWS[name][0]);
     text('#view-title', VIEWS[name][1]);
-    document.title = VIEWS[name][1] + ' · IRP Super Admin';
+    document.title = VIEWS[name][1] + ' · IRP';
     if (moveFocus) $('#main').focus();
     if (name === 'system-map') renderGraph();
     if (name === 'events') renderEvents();
+    if (name === 'subscription-dashboard') renderMemberSubscription();
+    if (name === 'subscription-plans') renderMemberPlans();
+    if (name === 'member-devices') renderMemberDevices();
+    if (name === 'member-connection') renderMemberConnection();
   }
 
   // ── Platform status ───────────────────────────────────────────────────
@@ -1186,6 +1503,25 @@
     });
   });
 
+  // Member portal button wiring
+  $('#member-enroll-btn').addEventListener('click', () => {
+    $('#member-enroll-form').hidden = !$('#member-enroll-form').hidden;
+  });
+  $('#member-enroll-cancel').addEventListener('click', () => {
+    $('#member-enroll-form').hidden = true;
+  });
+  $('#member-enroll-submit').addEventListener('click', appEnrollDevice);
+  $('#member-renew-btn').addEventListener('click', appRenewSubscription);
+  $('#member-cancel-btn').addEventListener('click', appCancelSubscription);
+  $('#member-connect-btn').addEventListener('click', () => {
+    // Find first authorized device and connect it
+    // For now, show a prompt or connect the first device
+    alert('Connect feature: use the Devices view to connect individual devices.');
+  });
+  $('#member-disconnect-btn').addEventListener('click', () => {
+    alert('Disconnect feature: use the Devices view to disconnect individual devices.');
+  });
+
   // Sidebar toggle (mobile)
   let sidebarOpen = false;
   $('#sidebar-toggle').addEventListener('click', () => {
@@ -1227,6 +1563,7 @@
   const stored = localStorage.getItem('irp_access_token');
   if (stored) {
     accessToken = stored;
+    userRole = localStorage.getItem('irp_user_role') || null;
     showApp();
     initApp();
   } else {
