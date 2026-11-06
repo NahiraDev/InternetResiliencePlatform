@@ -21,6 +21,8 @@ const port: ControlPort = {
   capabilities: () => ['network.observe'],
   cycle: async (mode) => { calls.push(mode); return { ran: mode }; },
   reload: async () => ({ reloaded: true }),
+  events: async () => ({ events: [], count: 0 }),
+  topology: async () => ({ interfaces: [], routes: [], dns: { resolvers: [], activeProviderId: undefined }, tunnels: [], providers: [], gateway: null }),
 };
 const start = async (path: string): Promise<ControlServer> => {
   const s = new ControlServer(path, port);

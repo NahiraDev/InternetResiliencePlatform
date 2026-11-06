@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0A0F1C">
-  <meta name="description" content="IRP Control Center - Autonomous Internet Superplatform">
-  <title>IRP Control Center</title>
+  <meta name="description" content="IRP Super Admin Control Center - Live Network Console">
+  <title>IRP Super Admin Control Center</title>
   <link rel="stylesheet" href="/web/style.css">
   <script type="module" src="/web/src/app.js"></script>
 </head>
@@ -17,6 +17,10 @@
     <!-- Authentication overlay (shown when not signed in) -->
     <div id="auth-overlay" class="auth-overlay hidden">
       <div class="auth-card">
+        <div class="auth-header">
+          <span class="brand-mark" aria-hidden="true">IR</span>
+          <span>Super Admin Sign In</span>
+        </div>
         <div class="auth-tabs">
           <button class="auth-tab active" data-tab="signin">Sign in</button>
           <button class="auth-tab" data-tab="signup">Create account</button>
@@ -72,18 +76,22 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
           <span class="brand-mark" aria-hidden="true">IR</span>
-          <span class="brand-copy"><strong>Internet Resilience</strong><small>Control Center</small></span>
+          <span class="brand-copy"><strong>IRP Super Admin</strong><small>Live Network Console</small></span>
         </div>
-        <nav class="nav" aria-label="Views">
-          <a href="#overview" data-view="overview" class="nav-item"><span class="nav-glyph" aria-hidden="true">◈</span><span>Overview</span></a>
-          <a href="#connectivity" data-view="connectivity" class="nav-item"><span class="nav-glyph" aria-hidden="true">⌁</span><span>Connectivity</span></a>
+        <nav class="nav" aria-label="Super Admin navigation">
+          <a href="#system-map" data-view="system-map" class="nav-item"><span class="nav-glyph" aria-hidden="true">◈</span><span>System Map</span></a>
+          <a href="#live-network" data-view="live-network" class="nav-item"><span class="nav-glyph" aria-hidden="true">⌁</span><span>Live Network</span></a>
+          <a href="#runtime" data-view="runtime" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚡</span><span>Runtime</span></a>
+          <a href="#components" data-view="components" class="nav-item"><span class="nav-glyph" aria-hidden="true">🧩</span><span>Components</span></a>
+          <a href="#capabilities" data-view="capabilities" class="nav-item"><span class="nav-glyph" aria-hidden="true">🛡️</span><span>Capabilities</span></a>
           <a href="#providers" data-view="providers" class="nav-item"><span class="nav-glyph" aria-hidden="true">⎋</span><span>Providers</span></a>
-          <a href="#zero-cost" data-view="zero-cost" class="nav-item"><span class="nav-glyph" aria-hidden="true">₍free₎</span><span>Zero-cost mode</span></a>
-          <a href="#devices" data-view="devices" class="nav-item"><span class="nav-glyph" aria-hidden="true">⎙</span><span>Devices</span></a>
-          <a href="#policy" data-view="policy" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚖</span><span>Policy</span></a>
-          <a href="#incidents" data-view="incidents" class="nav-item"><span class="nav-glyph" aria-hidden="true">▦</span><span>Incidents</span></a>
+          <a href="#devices" data-view="devices" class="nav-item"><span class="nav-glyph" aria-hidden="true">📱</span><span>Devices</span></a>
+          <a href="#policies" data-view="policies" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚖</span><span>Policies</span></a>
           <a href="#decisions" data-view="decisions" class="nav-item"><span class="nav-glyph" aria-hidden="true">⟡</span><span>Decisions</span></a>
-          <a href="#settings" data-view="settings" class="nav-item"><span class="nav-glyph" aria-hidden="true">⚙</span><span>Settings</span></a>
+          <a href="#incidents" data-view="incidents" class="nav-item"><span class="nav-glyph" aria-hidden="true">▦</span><span>Incidents</span></a>
+          <a href="#events" data-view="events" class="nav-item"><span class="nav-glyph" aria-hidden="true">📡</span><span>Event Timeline</span></a>
+          <a href="#storage" data-view="storage" class="nav-item"><span class="nav-glyph" aria-hidden="true">💾</span><span>Storage</span></a>
+          <a href="#security" data-view="security" class="nav-item"><span class="nav-glyph" aria-hidden="true">🔐</span><span>Security</span></a>
         </nav>
         <div class="sidebar-footer">
           <div class="user-badge" id="user-badge">
@@ -99,13 +107,14 @@
             <span class="hamburger" aria-hidden="true"></span>
           </button>
           <div class="topbar-title">
-            <p class="eyebrow" id="view-eyebrow">Live operations</p>
-            <h1 id="view-title">Overview</h1>
+            <p class="eyebrow" id="view-eyebrow">Super Admin Control Center</p>
+            <h1 id="view-title">System Map</h1>
           </div>
           <div class="topbar-actions">
-            <span id="global-status" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Connecting</span></span>
+            <span id="connection-indicator" class="pill connection-pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Disconnected</span></span>
+            <span id="live-indicator" class="pill live-pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Live</span></span>
             <button class="button" id="refresh-button">Refresh</button>
-            <button class="button" id="auto-button" aria-pressed="true">Auto refresh: on</button>
+            <button class="button" id="pause-button" aria-pressed="false">Pause</button>
           </div>
         </header>
 
@@ -117,135 +126,165 @@
         <div id="live-region" class="sr-only" role="status" aria-live="polite"></div>
 
         <main id="main" tabindex="-1">
-          <!-- Overview -->
-          <section class="view" id="view-overview" data-view="overview" aria-labelledby="view-title">
-            <div class="kpi-grid">
-              <article class="card kpi kpi-primary">
-                <p class="kpi-label">Network health score</p>
-                <p class="kpi-value"><span id="health-score">—</span><small>/ 100</small></p>
-                <p class="kpi-foot" id="health-caption">Awaiting measurements</p>
-              </article>
-              <article class="card kpi">
-                <p class="kpi-label">Connection</p>
-                <p class="kpi-value kpi-word" id="connection-state">—</p>
-                <p class="kpi-foot" id="route-caption">Route not reported</p>
-              </article>
-              <article class="card kpi">
-                <p class="kpi-label">DNS latency</p>
-                <p class="kpi-value"><span id="dns-latency">—</span><small>ms</small></p>
-                <p class="kpi-foot" id="dns-caption">Resolver status pending</p>
-              </article>
-              <article class="card kpi">
-                <p class="kpi-label">Active incidents</p>
-                <p class="kpi-value"><span id="incident-count">—</span></p>
-                <p class="kpi-foot" id="approval-caption">Approvals pending: —</p>
-              </article>
+          <!-- System Map / Live System Map -->
+          <section class="view" id="view-system-map" data-view="system-map" aria-labelledby="view-title">
+            <div class="toolbar">
+              <div class="toolbar-group">
+                <label class="filter-label">Layer</label>
+                <select id="layer-filter">
+                  <option value="all">All Layers</option>
+                  <option value="experience">Experience</option>
+                  <option value="control">Control Plane</option>
+                  <option value="fabric">Connectivity Fabric</option>
+                  <option value="data">Data Plane</option>
+                  <option value="security">Security</option>
+                  <option value="persistence">Persistence</option>
+                </select>
+                <label class="filter-label">Status</label>
+                <select id="status-filter">
+                  <option value="all">All Statuses</option>
+                  <option value="healthy">Healthy</option>
+                  <option value="degraded">Degraded</option>
+                  <option value="failed">Failed</option>
+                  <option value="unknown">Unknown</option>
+                  <option value="contract-only">Contract Only</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+              </div>
+              <div class="toolbar-group">
+                <label class="filter-label">Search</label>
+                <input type="search" id="graph-search" placeholder="Search nodes, edges…">
+              </div>
+              <div class="toolbar-group">
+                <button class="button" id="zoom-fit">Fit to View</button>
+                <button class="button" id="zoom-reset">Reset</button>
+              </div>
             </div>
 
-            <div class="grid two">
-              <article class="card">
-                <header class="card-head"><div><p class="eyebrow">Decision engine</p><h2>Current recommendation</h2></div><span id="decision-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
-                <p id="decision-title" class="lead">Waiting for the first status snapshot…</p>
-                <p id="decision-explanation" class="muted">The API recommendation appears here once data arrives.</p>
-                <dl class="kv kv-inline">
-                  <div><dt>Confidence</dt><dd id="decision-confidence">—</dd></div>
-                  <div><dt>Mode</dt><dd id="decision-mode">—</dd></div>
-                  <div><dt>Policy</dt><dd id="policy-state">—</dd></div>
-                </dl>
-              </article>
-              <article class="card">
-                <header class="card-head"><div><p class="eyebrow">Platform</p><h2>Component health</h2></div></header>
-                <div id="module-grid" class="module-grid" aria-live="off"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
-              </article>
+            <div class="graph-container" id="graph-container">
+              <div class="graph-legend" id="graph-legend">
+                <h3>Node Types</h3>
+                <div class="legend-item"><span class="legend-dot experience"></span>Experience</div>
+                <div class="legend-item"><span class="legend-dot control"></span>Control Plane</div>
+                <div class="legend-item"><span class="legend-dot fabric"></span>Fabric</div>
+                <div class="legend-item"><span class="legend-dot data"></span>Data Plane</div>
+                <div class="legend-item"><span class="legend-dot security"></span>Security</div>
+                <div class="legend-item"><span class="legend-dot persistence"></span>Persistence</div>
+                <h3>Edge Types</h3>
+                <div class="legend-item"><span class="legend-edge depends-on"></span>depends-on</div>
+                <div class="legend-item"><span class="legend-edge routes-through"></span>routes-through</div>
+                <div class="legend-item"><span class="legend-edge resolves-through"></span>resolves-through</div>
+                <div class="legend-item"><span class="legend-edge tunnels-through"></span>tunnels-through</div>
+                <div class="legend-item"><span class="legend-edge connected-to"></span>connected-to</div>
+                <h3>Status</h3>
+                <div class="legend-item"><span class="legend-status healthy"></span>Healthy</div>
+                <div class="legend-item"><span class="legend-status degraded"></span>Degraded</div>
+                <div class="legend-item"><span class="legend-status failed"></span>Failed</div>
+                <div class="legend-item"><span class="legend-status unknown"></span>Unknown</div>
+                <div class="legend-item"><span class="legend-status contract-only"></span>Contract Only</div>
+              </div>
+              <svg id="system-graph" class="system-graph" tabindex="0" role="region" aria-label="Live System Map"></svg>
+              <div id="graph-loading" class="graph-loading">Loading system map…</div>
+              <div id="graph-empty" class="graph-empty hidden">No topology data available.</div>
             </div>
-
-            <p class="meta-line"><span>Last updated: <strong id="last-updated">waiting for API…</strong></span><span id="source-label">Source: pending</span></p>
           </section>
 
-          <!-- Connectivity -->
-          <section class="view" id="view-connectivity" data-view="connectivity" aria-label="Connectivity" hidden>
+          <!-- Live Network -->
+          <section class="view" id="view-live-network" data-view="live-network" aria-label="Live Network" hidden>
             <div class="grid two">
               <article class="card">
-                <header class="card-head"><div><p class="eyebrow">Route</p><h2>Active path</h2></div><span id="network-health-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
+                <header class="card-head"><div><p class="eyebrow">Interfaces</p><h2>Network Interfaces</h2></div></header>
+                <div id="network-interfaces" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Routes</p><h2>Routing Table</h2></div></header>
+                <div id="network-routes" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              </article>
+            </div>
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">DNS</p><h2>Resolvers</h2></div></header>
+                <div id="network-dns" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Tunnels</p><h2>Tunnel State</h2></div></header>
+                <div id="network-tunnels" class="tile-grid"><div class="skeleton"></div></div>
+              </article>
+            </div>
+          </section>
+
+          <!-- Runtime -->
+          <section class="view" id="view-runtime" data-view="runtime" aria-label="Runtime" hidden>
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Runtime State</p><h2>ResilienceRuntime</h2></div></header>
                 <dl class="kv">
-                  <div><dt>Current route</dt><dd id="current-route">—</dd></div>
-                  <div><dt>Connection</dt><dd id="connection-detail">—</dd></div>
-                  <div><dt>Routing status</dt><dd id="routing-status">—</dd></div>
-                  <div><dt>Routing mode</dt><dd id="routing-mode">—</dd></div>
+                  <div><dt>Runtime ID</dt><dd id="runtime-id">—</dd></div>
+                  <div><dt>Instance ID</dt><dd id="runtime-instance-id">—</dd></div>
+                  <div><dt>State</dt><dd id="runtime-state">—</dd></div>
+                  <div><dt>Mode</dt><dd id="runtime-mode">—</dd></div>
+                  <div><dt>Health</dt><dd id="runtime-health">—</dd></div>
+                  <div><dt>Uptime</dt><dd id="runtime-uptime">—</dd></div>
                 </dl>
               </article>
               <article class="card">
-                <header class="card-head"><div><p class="eyebrow">Name resolution</p><h2>DNS</h2></div><span id="dns-chip" class="pill" data-tone="unknown"><span class="pill-glyph" aria-hidden="true">○</span><span class="pill-text">Waiting</span></span></header>
-                <dl class="kv">
-                  <div><dt>Resolver</dt><dd id="dns-resolver">—</dd></div>
-                  <div><dt>Latency</dt><dd id="dns-latency-detail">—</dd></div>
-                  <div><dt>Secure transport</dt><dd id="dns-secure">—</dd></div>
-                  <div><dt>Policy</dt><dd id="dns-policy">—</dd></div>
-                </dl>
+                <header class="card-head"><div><p class="eyebrow">Capabilities</p><h2>Runtime Capabilities</h2></div></header>
+                <div id="runtime-capabilities" class="tile-grid"><div class="skeleton"></div></div>
               </article>
             </div>
+          </section>
+
+          <!-- Components -->
+          <section class="view" id="view-components" data-view="components" aria-label="Components" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Probes</p><h2>Interfaces</h2></div><span class="muted small" id="interface-count">—</span></header>
-              <div id="interface-list" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              <header class="card-head"><div><p class="eyebrow">Component Inventory</p><h2>Components and Integrations</h2></div></header>
+              <p class="muted">Declared contracts vs verified runtime integration.</p>
+              <div id="components-list" class="list"><div class="skeleton"></div></div>
+            </article>
+          </section>
+
+          <!-- Capabilities -->
+          <section class="view" id="view-capabilities" data-view="capabilities" aria-label="Capabilities" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Platform Capabilities</p><h2>Capability Status</h2></div></header>
+              <p class="muted">Every capability carries a truthful status and source.</p>
+              <div id="capabilities-list" class="list"><div class="skeleton"></div></div>
             </article>
           </section>
 
           <!-- Providers -->
           <section class="view" id="view-providers" data-view="providers" aria-label="Providers" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Provider discovery</p><h2>Available providers</h2></div></header>
-              <p class="muted">Discovered network interfaces, DNS resolvers, gateways, and tunnel providers from the local system.</p>
-              <div id="provider-list" class="tile-grid"><div class="skeleton"></div><div class="skeleton"></div></div>
+              <header class="card-head"><div><p class="eyebrow">Providers and Plugins</p><h2>Provider Registry</h2></div></header>
+              <div id="providers-list" class="tile-grid"><div class="skeleton"></div></div>
             </article>
           </section>
 
-          <!-- Zero-cost mode -->
-          <section class="view" id="view-zero-cost" data-view="zero-cost" aria-label="Zero-cost mode" hidden>
-            <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Personal mode</p><h2>Zero-cost connectivity</h2></div></header>
-              <p class="lead" id="zero-cost-status">Checking eligibility…</p>
-              <dl class="kv">
-                <div><dt>Policy</dt><dd id="zero-cost-policy">—</dd></div>
-                <div><dt>Eligible free providers</dt><dd id="zero-cost-free-count">—</dd></div>
-                <div><dt>Paid-only options rejected</dt><dd id="zero-cost-paid-rejected">—</dd></div>
-                <div><dt>Current path cost</dt><dd id="zero-cost-current-cost">—</dd></div>
-              </dl>
-              <div class="button-group" id="zero-cost-actions">
-                <button class="button button-primary" id="zero-cost-enable">Enable zero-cost mode</button>
-                <button class="button" id="zero-cost-refresh">Refresh providers</button>
-              </div>
-              <div id="zero-cost-providers" class="tile-grid" style="margin-top:16px"></div>
-              <p class="note">IRP personal mode never requires a paid subscription. Paid-only providers are rejected by policy.</p>
-            </article>
-          </section>
-
-          <!-- Devices (remote clients) -->
+          <!-- Devices -->
           <section class="view" id="view-devices" data-view="devices" aria-label="Devices" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Remote clients</p><h2>Enrolled devices</h2></div></header>
-              <p class="muted">Device enrollment is handled through the remote client API (mobile/desktop apps with device credentials). Web users manage their account through Settings.</p>
-              <div id="device-list" class="tile-grid"><div class="muted">Not applicable to web session.</div></div>
+              <header class="card-head"><div><p class="eyebrow">Devices</p><h2>Platform Adapters</h2></div></header>
+              <div id="devices-list" class="tile-grid"><div class="skeleton"></div></div>
             </article>
           </section>
 
-          <!-- Policy -->
-          <section class="view" id="view-policy" data-view="policy" aria-label="Policy" hidden>
+          <!-- Policies -->
+          <section class="view" id="view-policies" data-view="policies" aria-label="Policies" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Autonomy policy</p><h2>Control policy</h2></div></header>
+              <header class="card-head"><div><p class="eyebrow">Policy and Safety</p><h2>Policy Status</h2></div></header>
               <dl class="kv">
-                <div><dt>Autonomous mode</dt><dd id="policy-autonomous-mode">—</dd></div>
-                <div><dt>Preferred interface</dt><dd id="policy-preferred-interface">—</dd></div>
+                <div><dt>Autonomous mode</dt><dd id="policy-mode">—</dd></div>
                 <div><dt>Allowed actions</dt><dd id="policy-allowed-actions">—</dd></div>
                 <div><dt>Confidence threshold</dt><dd id="policy-confidence-threshold">—</dd></div>
               </dl>
-              <div class="form-field" style="margin-top:16px; max-width:400px">
-                <label class="switch">
-                  <input type="checkbox" id="policy-autonomous-toggle">
-                  <span class="switch-slider"></span>
-                </label>
-                <span>Enable autonomous cycles</span>
-              </div>
-              <p class="note">Autonomous mode allows the control plane to make governed connectivity changes on your behalf. All changes are verified before commit and can be rolled back.</p>
+            </article>
+          </section>
+
+          <!-- Decisions -->
+          <section class="view" id="view-decisions" data-view="decisions" aria-label="Decisions" hidden>
+            <article class="card">
+              <header class="card-head"><div><p class="eyebrow">Decision History</p><h2>Execution History</h2></div></header>
+              <div id="decisions-list" class="list"><div class="muted">No decisions recorded yet.</div></div>
             </article>
           </section>
 
@@ -258,31 +297,73 @@
             </article>
           </section>
 
-          <!-- Decisions -->
-          <section class="view" id="view-decisions" data-view="decisions" aria-label="Decisions" hidden>
+          <!-- Events -->
+          <section class="view" id="view-events" data-view="events" aria-label="Event Timeline" hidden>
+            <div class="toolbar">
+              <div class="toolbar-group">
+                <button class="button" id="event-pause" aria-pressed="false">Pause</button>
+                <button class="button" id="event-clear">Clear</button>
+              </div>
+            </div>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Decision history</p><h2>Recent decisions</h2></div></header>
-              <div id="decisions-list" class="list"><div class="muted">No decisions recorded yet.</div></div>
+              <header class="card-head"><div><p class="eyebrow">Event Timeline</p><h2>Live Events</h2></div></header>
+              <div id="events-timeline" class="event-timeline"><div class="muted">Waiting for events…</div></div>
+              <p id="event-last" class="muted small">Last event: —</p>
             </article>
           </section>
 
-          <!-- Settings -->
-          <section class="view" id="view-settings" data-view="settings" aria-label="Settings" hidden>
+          <!-- Storage -->
+          <section class="view" id="view-storage" data-view="storage" aria-label="Storage" hidden>
+            <div class="grid two">
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Storage</p><h2>Database Health</h2></div></header>
+                <dl class="kv">
+                  <div><dt>Database</dt><dd id="storage-database">—</dd></div>
+                  <div><dt>Latency</dt><dd id="storage-latency">—</dd></div>
+                  <div><dt>Queue</dt><dd id="storage-queue">—</dd></div>
+                </dl>
+              </article>
+              <article class="card">
+                <header class="card-head"><div><p class="eyebrow">Event Bus</p><h2>Event Bus</h2></div></header>
+                <dl class="kv">
+                  <div><dt>Status</dt><dd id="storage-eventbus">—</dd></div>
+                  <div><dt>Scope</dt><dd id="storage-eventbus-scope">—</dd></div>
+                </dl>
+              </article>
+            </div>
+          </section>
+
+          <!-- Security -->
+          <section class="view" id="view-security" data-view="security" aria-label="Security" hidden>
             <article class="card">
-              <header class="card-head"><div><p class="eyebrow">Configuration</p><h2>Settings</h2></div></header>
+              <header class="card-head"><div><p class="eyebrow">Security and Authorization</p><h2>Security Evidence</h2></div></header>
               <dl class="kv">
-                <div><dt>API endpoint</dt><dd id="settings-api-endpoint">—</dd></div>
-                <div><dt>Theme</dt><dd id="settings-theme">—</dd></div>
-                <div><dt>Session status</dt><dd id="settings-session-status">—</dd></div>
+                <div><dt>State</dt><dd id="security-state">—</dd></div>
+                <div><dt>Protection</dt><dd id="security-protection">—</dd></div>
+                <div><dt>Kill switch</dt><dd id="security-kill-switch">—</dd></div>
+                <div><dt>DNS leak</dt><dd id="security-dns-leak">—</dd></div>
+                <div><dt>Route leak</dt><dd id="security-route-leak">—</dd></div>
               </dl>
-              <div class="button-group" style="margin-top:16px">
-                <button class="button button-danger" id="settings-signout">Sign out</button>
-              </div>
             </article>
           </section>
         </main>
 
-        <footer class="footer"><span>IRP Control Center</span><span>Live API data · Autonomous Internet Superplatform</span></footer>
+        <footer class="footer"><span>IRP Super Admin Control Center</span><span>Live daemon data · Read-only observation · No host changes</span></footer>
+      </div>
+    </div>
+
+    <!-- Detail Drawer -->
+    <div id="detail-drawer" class="detail-drawer hidden" role="region" aria-label="Node/Edge Details">
+      <button class="detail-close" id="detail-close">&times;</button>
+      <div class="detail-header">
+        <h2 id="detail-title">Details</h2>
+        <span id="detail-kind" class="pill" data-tone="unknown">—</span>
+      </div>
+      <div class="detail-content" id="detail-content">
+        <!-- Populated by JS -->
+      </div>
+      <div class="detail-footer">
+        <button class="button button-text" id="detail-dismiss">Dismiss</button>
       </div>
     </div>
   </div>

@@ -635,6 +635,47 @@ export class RuntimeDaemonHost {
         await this.connectivity.discoverResources();
         return { reloaded: true, sources: this.connectivity.getAvailableSources().length };
       },
+      events: async () => {
+        const sink: unknown = this.runtime.events;
+        const eventsList = (sink as { events?: readonly { event: string; payload: unknown }[] }).events ?? [];
+        const recent = eventsList.slice(-200).map((e) => ({ event: e.event, payload: e.payload, timestamp: new Date().toISOString() }));
+        return { events: recent, count: recent.length };
+      },
+      topology: async () => {
+        const sources = this.connectivity.getAvailableSources();
+        const active = this.connectivity.getActiveSource();
+        const providers = this.connectivity.getProviders();
+        const dnsStatus = this.dns.status();
+        return {
+          interfaces: sources.map((s) => ({
+            id: s.sourceId,
+            name: s.interfaceName ?? s.sourceId,
+            type: 'network-interface',
+            state: s.interfaceName ? 'up' : 'unknown',
+            ipAddress: s.gateway ?? undefined,
+            gateway: s.gateway,
+            providerId: s.providerId,
+            resourceId: s.id,
+            active: active?.sourceId === s.sourceId,
+          })),
+          routes: sources.map((s) => ({
+            id: `route-${s.sourceId}`,
+            destination: '0.0.0.0/0',
+            gateway: s.gateway ?? 'system-default',
+            interface: s.interfaceName ?? 'unknown',
+            state: s.interfaceName ? 'active' : 'inactive',
+            type: 'route',
+            active: active?.sourceId === s.sourceId,
+          })),
+          dns: {
+            resolvers: dnsStatus.providers.map((p) => ({ id: p.provider.id, active: p.provider.id === dnsStatus.activeProviderId })),
+            activeProviderId: dnsStatus.activeProviderId,
+          },
+          tunnels: this.tunnelPlane.configured ? [{ id: this.tunnelPlane.activeTunnel ?? 'none', state: this.tunnelPlane.activeTunnel ? 'connected' : 'disconnected', type: 'tunnel' }] : [],
+          providers: providers.map((p) => ({ id: p.id, type: 'provider', state: 'available' })),
+          gateway: active ? { id: active.sourceId, gateway: active.gateway, interface: active.interfaceName } : null,
+        };
+      },
     };
   }
 

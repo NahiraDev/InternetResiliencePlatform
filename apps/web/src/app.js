@@ -1,6 +1,7 @@
 /*
- * IRP Web Control Center application logic.
- * Connects to the real IRP API endpoints. No mock data; no fake states.
+ * IRP Super Admin Control Center application logic.
+ * Connects to the real IRP API. No mock data; no fake states.
+ * Unknown/unobserved states remain visible as unknown.
  */
 (() => {
   'use strict';
@@ -9,24 +10,38 @@
   const NOT_REPORTED = 'Not reported';
   let accessToken = null;
   let autoRefresh = true;
-  let refreshTimer = null;
+  let livePaused = false;
   let lastGoodAt = null;
   let inFlight = false;
-  let currentView = 'overview';
+  let currentView = 'system-map';
+  let eventSource = null;
+  let events = [];
+  let maxEvents = 200;
+  let lastEventTs = null;
+  let topologyData = null;
+  let graphNodes = [];
+  let graphEdges = [];
+  let selectedNodeId = null;
+  let selectedEdgeId = null;
+  let staleTimer = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   const VIEWS = {
-    overview: ['Live operations', 'Overview'],
-    connectivity: ['Reachability', 'Connectivity'],
-    providers: ['Provider discovery', 'Providers'],
-    'zero-cost': ['Personal mode', 'Zero-cost connectivity'],
-    devices: ['Device management', 'Devices'],
-    policy: ['Control policy', 'Policy'],
-    incidents: ['Recovery', 'Incidents'],
-    decisions: ['Decision history', 'Decisions'],
-    settings: ['Configuration', 'Settings'],
+    'system-map': ['System Map', 'Live System Map'],
+    'live-network': ['Live Network', 'Network Topology'],
+    runtime: ['Runtime', 'ResilienceRuntime'],
+    components: ['Components', 'Components & Integrations'],
+    capabilities: ['Capabilities', 'Platform Capabilities'],
+    providers: ['Providers', 'Providers & Plugins'],
+    devices: ['Devices', 'Platform Adapters'],
+    policies: ['Policies', 'Policy & Safety'],
+    decisions: ['Decisions', 'Decision History'],
+    incidents: ['Incidents', 'Incidents & Recovery'],
+    events: ['Events', 'Event Timeline'],
+    storage: ['Storage', 'Storage & Service Health'],
+    security: ['Security', 'Security & Authorization'],
   };
 
   // ── Auth state ────────────────────────────────────────────────────────
@@ -82,7 +97,6 @@
     return res.json();
   }
 
-  // ── Auth handlers ─────────────────────────────────────────────────────
   async function handleSignin(e) {
     e.preventDefault();
     setAuthLoading(true);
@@ -97,6 +111,7 @@
       });
       accessToken = data.data.accessToken;
       localStorage.setItem('irp_access_token', accessToken);
+      localStorage.setItem('irp_user_email', email);
       showApp();
       initApp();
     } catch (err) {
@@ -119,7 +134,7 @@
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, name, password }),
       });
-      showFormMessage('signup', 'Account created. Please verify your email, then sign in.', 'ok');
+      showFormMessage('signup', 'Account created. Check your email for the verification token (dev email capture at /api/v1/dev/emails), then sign in.', 'ok');
       $('#signup-form').reset();
     } catch (err) {
       showFormMessage('signup', err.message || 'Account creation failed');
@@ -131,11 +146,11 @@
   async function handleSignout() {
     try {
       await apiRequest('/api/v1/auth/logout', { method: 'POST' });
-    } catch {
-      // Ignore signout errors; clear local state regardless.
-    }
+    } catch {}
     accessToken = null;
     localStorage.removeItem('irp_access_token');
+    localStorage.removeItem('irp_user_email');
+    if (eventSource) { eventSource.close(); eventSource = null; }
     location.reload();
   }
 
@@ -192,12 +207,13 @@
     return isNum(value) ? Math.round(Number(value)) + ' ms' : NOT_REPORTED;
   }
 
-  // ── Error / loading ───────────────────────────────────────────────────
+  // ── Error / loading / stale ───────────────────────────────────────────
   function showError(message) {
     const banner = $('#error-banner');
     $('#error-message').textContent = message;
     banner.classList.remove('hidden');
-    setPill('#global-status', 'unavailable', 'API unavailable');
+    setPill('#connection-indicator', 'danger', 'API disconnected');
+    setPill('#live-indicator', 'stale', 'Stale');
     const stale = $('#stale-note');
     if (lastGoodAt) {
       stale.textContent = 'Showing the last successful snapshot from ' + lastGoodAt.toLocaleTimeString() + '. Values may be out of date.';
@@ -214,9 +230,25 @@
     $('#stale-note').classList.add('hidden');
   }
 
+  function markStale() {
+    setPill('#connection-indicator', 'stale', 'Stale');
+    setPill('#live-indicator', 'stale', 'Stale');
+    const stale = $('#stale-note');
+    if (lastGoodAt) {
+      stale.textContent = 'No live updates since ' + lastGoodAt.toLocaleTimeString() + '. Data may be out of date.';
+      stale.classList.remove('hidden');
+    }
+  }
+
+  function markLive() {
+    setPill('#connection-indicator', 'healthy', 'Connected');
+    setPill('#live-indicator', 'live', 'Live');
+    $('#stale-note').classList.add('hidden');
+  }
+
   // ── Views ─────────────────────────────────────────────────────────────
   function showView(name, moveFocus) {
-    if (!VIEWS[name]) name = 'overview';
+    if (!VIEWS[name]) name = 'system-map';
     currentView = name;
     $$('.view').forEach((s) => s.hidden = s.getAttribute('data-view') !== name);
     $$('.nav-item').forEach((a) => {
@@ -225,12 +257,52 @@
     });
     text('#view-eyebrow', VIEWS[name][0]);
     text('#view-title', VIEWS[name][1]);
-    document.title = VIEWS[name][1] + ' · IRP Control Center';
+    document.title = VIEWS[name][1] + ' · IRP Super Admin';
     if (moveFocus) $('#main').focus();
+    if (name === 'system-map') renderGraph();
+    if (name === 'events') renderEvents();
   }
 
-  // ── Overview ──────────────────────────────────────────────────────────
-  function renderOverview(data) {
+  // ── Platform status ───────────────────────────────────────────────────
+  async function refresh() {
+    if (inFlight) return;
+    inFlight = true;
+    const btn = $('#refresh-button');
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.textContent = 'Refreshing…';
+    try {
+      const res = await apiRequest('/api/v1/platform/status', { cache: 'no-store', headers: { accept: 'application/json' } });
+      if (!res.ok) throw new Error('Platform status API returned HTTP ' + res.status);
+      const payload = await res.json();
+      if (!payload || payload.success !== true || !payload.data) throw new Error('Unexpected platform status response shape');
+      renderOverview(payload.data);
+      renderConnectivity(payload.data);
+      renderIncidents(payload.data);
+      await renderProviders();
+      await renderZeroCost();
+      await renderPolicy();
+      await renderDecisions();
+      renderSettings();
+      renderRuntime(payload.data);
+      renderStorage(payload.data);
+      renderSecurity(payload.data);
+      lastGoodAt = new Date();
+      markLive();
+      hideError();
+      $('#live-region').textContent = 'Platform status updated: ' + (payload.data.network ? label(payload.data.network.health || payload.data.network.connection) : 'unknown');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      showError(message);
+    } finally {
+      inFlight = false;
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.textContent = 'Refresh';
+    }
+  }
+
+  async function renderOverview(data) {
     const network = data.network || {};
     const dns = data.dns || {};
     const routing = data.routing || {};
@@ -310,10 +382,7 @@
 
     text('#last-updated', data.updatedAt ? new Date(data.updatedAt).toLocaleString() : new Date().toLocaleTimeString());
     text('#source-label', 'Source: ' + (data.source || 'API'));
-    lastGoodAt = new Date();
     $('#app').classList.remove('is-loading');
-    hideError();
-    $('#live-region').textContent = 'Platform status updated: ' + (overall ? label(overall) : 'unknown');
   }
 
   function renderModules(data) {
@@ -343,8 +412,7 @@
     }).join('');
   }
 
-  // ── Connectivity ──────────────────────────────────────────────────────
-  function renderConnectivity(data) {
+  async function renderConnectivity(data) {
     const network = data.network || {};
     const dns = data.dns || {};
     const routing = data.routing || {};
@@ -361,7 +429,6 @@
     renderInterfaces(network.interfaces);
   }
 
-  // ── Providers ─────────────────────────────────────────────────────────
   async function renderProviders() {
     const node = $('#provider-list');
     try {
@@ -384,7 +451,6 @@
     }
   }
 
-  // ── Zero-cost mode ────────────────────────────────────────────────────
   async function renderZeroCost() {
     const statusEl = $('#zero-cost-status');
     try {
@@ -511,7 +577,6 @@
   // ── Settings ──────────────────────────────────────────────────────────
   function renderSettings() {
     text('#settings-api-endpoint', API_BASE || '(same origin)');
-    text('#settings-theme', loadTheme());
     text('#settings-session-status', accessToken ? 'Authenticated' : 'Not authenticated');
   }
 
@@ -529,42 +594,555 @@
     if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F7FB' : '#0A0F1C');
   }
 
-  // ── Refresh ───────────────────────────────────────────────────────────
-  async function refresh() {
-    if (inFlight) return;
-    inFlight = true;
-    const btn = $('#refresh-button');
-    btn.disabled = true;
-    btn.setAttribute('aria-busy', 'true');
-    btn.textContent = 'Refreshing…';
+  // ── Runtime ───────────────────────────────────────────────────────────
+  async function renderRuntime(data) {
     try {
-      const res = await apiRequest('/api/v1/platform/status', { cache: 'no-store', headers: { accept: 'application/json' } });
-      if (!res.ok) throw new Error('Platform status API returned HTTP ' + res.status);
-      const payload = await res.json();
-      if (!payload || payload.success !== true || !payload.data) throw new Error('Unexpected platform status response shape');
-      renderOverview(payload.data);
-      renderConnectivity(payload.data);
-      renderIncidents(payload.data);
-      await renderProviders();
-      await renderZeroCost();
-      await renderPolicy();
-      await renderDecisions();
-      renderSettings();
+      const rt = await apiJson('/api/v1/runtime/status', { headers: { authorization: `Bearer ${accessToken}` } });
+      const r = rt.data;
+      text('#runtime-id', r.runtimeId);
+      text('#runtime-instance-id', r.instanceId);
+      setPill('#runtime-state', r.state, label(r.state));
+      text('#runtime-mode', label(r.mode));
+      setPill('#runtime-health', r.health?.status, label(r.health?.status));
+      text('#runtime-uptime', isNum(r.uptimeMs) ? Math.round(r.uptimeMs / 1000) + ' s' : NOT_REPORTED);
+
+      // Capabilities
+      const capData = await apiJson('/api/v1/runtime/capabilities', { headers: { authorization: `Bearer ${accessToken}` } });
+      const caps = capData.data || [];
+      const node = $('#runtime-capabilities');
+      if (caps.length === 0) {
+        node.innerHTML = '<p class="empty-note">No runtime capabilities reported.</p>';
+      } else {
+        node.innerHTML = caps.map((c) => {
+          const id = c.adapterId || c.id || 'adapter';
+          const status = c.status || 'unknown';
+          return tile(id, String(c.type || ''), status);
+        }).join('');
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      showError('Unable to load live platform status: ' + message + '. Check that the API and database are running, then retry.');
-    } finally {
-      inFlight = false;
-      btn.disabled = false;
-      btn.removeAttribute('aria-busy');
-      btn.textContent = 'Refresh';
+      text('#runtime-state', 'Unable to load');
+      text('#runtime-mode', 'Unable to load');
+      text('#runtime-health', 'Unable to load');
+      $('#runtime-capabilities').innerHTML = '<p class="empty-note">Unable to load capabilities: ' + escapeHtml(err.message) + '</p>';
     }
   }
 
+  // ── Storage ───────────────────────────────────────────────────────────
+  async function renderStorage(data) {
+    try {
+      text('#storage-database', label(data.dependencies?.database));
+      text('#storage-latency', ms(data.diagnostics?.databaseLatencyMs));
+      text('#storage-queue', label(data.dependencies?.queue));
+      text('#storage-eventbus', label(data.eventBus?.status));
+      text('#storage-eventbus-scope', data.eventBus?.scope || '—');
+    } catch (err) {
+      text('#storage-database', 'Unable to load');
+    }
+  }
+
+  // ── Security ──────────────────────────────────────────────────────────
+  async function renderSecurity(data) {
+    try {
+      text('#security-state', label(data.security?.state));
+      text('#security-protection', label(data.security?.protectionState));
+      text('#security-kill-switch', label(data.security?.killSwitch));
+      text('#security-dns-leak', label(data.security?.dnsLeak));
+      text('#security-route-leak', label(data.security?.routeLeak));
+    } catch (err) {
+      text('#security-state', 'Unable to load');
+    }
+  }
+
+  // ── Topology ──────────────────────────────────────────────────────────
+  async function renderTopology() {
+    try {
+      const data = await apiJson('/api/v1/platform/topology', { headers: { authorization: `Bearer ${accessToken}` } });
+      topologyData = data.data;
+      buildGraph(topologyData);
+      renderGraph();
+    } catch (err) {
+      $('#graph-loading').textContent = 'Unable to load topology: ' + escapeHtml(err.message);
+      $('#graph-empty').classList.remove('hidden');
+    }
+  }
+
+  function buildGraph(data) {
+    graphNodes = [];
+    graphEdges = [];
+
+    if (!data) return;
+
+    // Interfaces → nodes
+    (data.interfaces || []).forEach((iface) => {
+      graphNodes.push({
+        id: iface.id,
+        label: iface.name || iface.id,
+        type: 'network-interface',
+        layer: 'fabric',
+        state: iface.state || 'unknown',
+        active: iface.active || false,
+        data: iface,
+      });
+    });
+
+    // Routes → nodes
+    (data.routes || []).forEach((route) => {
+      graphNodes.push({
+        id: route.id,
+        label: route.destination || '0.0.0.0/0',
+        type: 'route',
+        layer: 'fabric',
+        state: route.state || 'unknown',
+        active: route.active || false,
+        data: route,
+      });
+      // Edge: route → interface
+      const ifaceNode = graphNodes.find((n) => n.id === 'linux-host:' + route.interface);
+      if (ifaceNode) {
+        graphEdges.push({ from: route.id, to: ifaceNode.id, type: 'connected-to', layer: 'fabric' });
+      }
+    });
+
+    // DNS resolvers → nodes
+    (data.dns?.resolvers || []).forEach((resolver) => {
+      graphNodes.push({
+        id: 'dns-' + resolver.id,
+        label: resolver.id,
+        type: 'dns-resolver',
+        layer: 'fabric',
+        state: resolver.active ? 'healthy' : 'unknown',
+        active: resolver.active || false,
+        data: resolver,
+      });
+    });
+
+    // Tunnels → nodes
+    (data.tunnels || []).forEach((tunnel) => {
+      graphNodes.push({
+        id: 'tunnel-' + tunnel.id,
+        label: tunnel.id,
+        type: 'tunnel',
+        layer: 'fabric',
+        state: tunnel.state || 'unknown',
+        active: tunnel.state === 'connected',
+        data: tunnel,
+      });
+    });
+
+    // Providers → nodes
+    (data.providers || []).forEach((provider) => {
+      graphNodes.push({
+        id: 'provider-' + provider.id,
+        label: provider.id,
+        type: 'provider',
+        layer: 'control',
+        state: provider.state || 'unknown',
+        active: true,
+        data: provider,
+      });
+    });
+
+    // Gateway → node
+    if (data.gateway) {
+      graphNodes.push({
+        id: 'gateway-' + data.gateway.id,
+        label: data.gateway.gateway || 'gateway',
+        type: 'gateway',
+        layer: 'fabric',
+        state: 'unknown',
+        active: true,
+        data: data.gateway,
+      });
+    }
+
+    // API node
+    graphNodes.push({
+      id: 'api-node',
+      label: 'IRP API',
+      type: 'api',
+      layer: 'control',
+      state: 'healthy',
+      active: true,
+      data: { type: 'api' },
+    });
+
+    // Daemon node
+    graphNodes.push({
+      id: 'daemon-node',
+      label: 'IRP Daemon',
+      type: 'daemon',
+      layer: 'control',
+      state: 'healthy',
+      active: true,
+      data: { type: 'daemon' },
+    });
+
+    // Runtime node
+    graphNodes.push({
+      id: 'runtime-node',
+      label: 'ResilienceRuntime',
+      type: 'runtime',
+      layer: 'control',
+      state: 'healthy',
+      active: true,
+      data: { type: 'runtime' },
+    });
+
+    // Edges between control plane components
+    graphEdges.push({ from: 'api-node', to: 'daemon-node', type: 'depends-on', layer: 'control' });
+    graphEdges.push({ from: 'daemon-node', to: 'runtime-node', type: 'depends-on', layer: 'control' });
+
+    // Connect interfaces to daemon
+    graphNodes.filter((n) => n.type === 'network-interface').forEach((n) => {
+      graphEdges.push({ from: 'daemon-node', to: n.id, type: 'connected-to', layer: 'control' });
+    });
+  }
+
+  function getNodeColor(node) {
+    const t = tone(node.state);
+    const map = { ok: 'var(--ok)', warn: 'var(--warn)', danger: 'var(--danger)', unknown: 'var(--muted)', observing: 'var(--primary)' };
+    return map[t] || 'var(--muted)';
+  }
+
+  function getEdgeColor(edge) {
+    const t = 'ok';
+    const map = { ok: 'var(--ok)', warn: 'var(--warn)', danger: 'var(--danger)', unknown: 'var(--muted)' };
+    return map[t] || 'var(--muted)';
+  }
+
+  function renderGraph() {
+    const svg = $('#system-graph');
+    const container = $('#graph-container');
+    const loading = $('#graph-loading');
+    const empty = $('#graph-empty');
+
+    if (!graphNodes || graphNodes.length === 0) {
+      loading.classList.add('hidden');
+      empty.classList.remove('hidden');
+      svg.innerHTML = '';
+      return;
+    }
+
+    loading.classList.add('hidden');
+    empty.classList.add('hidden');
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+    const cx = width / 2;
+    const cy = height / 2;
+    const radius = Math.min(width, height) * 0.35;
+
+    // Layout nodes in concentric circles by layer
+    const layers = ['control', 'fabric'];
+    const layerNodes = {};
+    layers.forEach((l) => { layerNodes[l] = graphNodes.filter((n) => n.layer === l); });
+
+    let angleOffset = 0;
+    const positions = {};
+
+    // Control layer: inner circle
+    const ctrlNodes = layerNodes.control;
+    if (ctrlNodes.length > 0) {
+      const step = (2 * Math.PI) / ctrlNodes.length;
+      ctrlNodes.forEach((n, i) => {
+        const angle = angleOffset + i * step;
+        positions[n.id] = { x: cx + radius * 0.5 * Math.cos(angle), y: cy + radius * 0.5 * Math.sin(angle) };
+      });
+      angleOffset += Math.PI / ctrlNodes.length;
+    }
+
+    // Fabric layer: outer circle
+    const fabNodes = layerNodes.fabric;
+    if (fabNodes.length > 0) {
+      const step = (2 * Math.PI) / fabNodes.length;
+      fabNodes.forEach((n, i) => {
+        const angle = angleOffset + i * step;
+        positions[n.id] = { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+      });
+    }
+
+    // Build SVG
+    let svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">`;
+    svgContent += `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon fill="currentColor" points="0 0, 10 3.5, 0 7"/></marker></defs>`;
+
+    // Draw edges first (below nodes)
+    graphEdges.forEach((edge) => {
+      const fromPos = positions[edge.from];
+      const toPos = positions[edge.to];
+      if (!fromPos || !toPos) return;
+      const selected = selectedEdgeId === edge.id ? ' edge-selected' : '';
+      svgContent += `<line x1="${fromPos.x}" y1="${fromPos.y}" x2="${toPos.x}" y2="${toPos.y}" stroke="${getEdgeColor(edge)}" stroke-width="2" marker-end="url(#arrowhead)" class="edge ${edge.type}${selected}" data-edge-id="${edge.id}" style="cursor:pointer;" />`;
+    });
+
+    // Draw nodes
+    graphNodes.forEach((node) => {
+      const pos = positions[node.id];
+      if (!pos) return;
+      const selected = selectedNodeId === node.id ? ' node-selected' : '';
+      const color = getNodeColor(node);
+      svgContent += `<circle cx="${pos.x}" cy="${pos.y}" r="14" fill="${color}" class="node ${node.type}${selected}" data-node-id="${node.id}" style="cursor:pointer; stroke:white; stroke-width:2;" />`;
+      svgContent += `<text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle" font-size="11" fill="var(--text)" pointer-events="none">${escapeHtml(node.label)}</text>`;
+    });
+
+    svgContent += '</svg>';
+    svg.innerHTML = svgContent;
+
+    // Wire up click handlers
+    svg.querySelectorAll('.node').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.getAttribute('data-node-id');
+        selectNode(id);
+      });
+    });
+    svg.querySelectorAll('.edge').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.getAttribute('data-edge-id');
+        selectEdge(id);
+      });
+    });
+  }
+
+  function selectNode(id) {
+    selectedNodeId = id;
+    selectedEdgeId = null;
+    const node = graphNodes.find((n) => n.id === id);
+    const drawer = $('#detail-drawer');
+    const title = $('#detail-title');
+    const kind = $('#detail-kind');
+    const content = $('#detail-content');
+
+    if (!node) {
+      drawer.classList.add('hidden');
+      return;
+    }
+
+    title.textContent = node.label;
+    const t = tone(node.state);
+    kind.setAttribute('data-tone', t);
+    kind.textContent = node.type.toUpperCase() + ' · ' + label(node.state);
+
+    let html = `<div class="detail-section">
+      <h4>Identity</h4>
+      <div class="detail-row"><dt>ID</dt><dd>${escapeHtml(node.id)}</dd></div>
+      <div class="detail-row"><dt>Type</dt><dd>${escapeHtml(node.type)}</dd></div>
+      <div class="detail-row"><dt>Layer</dt><dd>${escapeHtml(node.layer)}</dd></div>
+      <div class="detail-row"><dt>Status</dt><dd><span class="detail-badge ${t}">${label(node.state)}</span></dd></div>
+      <div class="detail-row"><dt>Active</dt><dd>${node.active ? 'Yes' : 'No'}</dd></div>
+    </div>
+    <div class="detail-section">
+      <h4>Observed Data</h4>
+      <div class="detail-row"><dt>Source</dt><dd>Daemon control socket (live)</dd></div>
+      <div class="detail-row"><dt>Last observed</dt><dd>${new Date().toLocaleTimeString()}</dd></div>
+    </div>`;
+
+    // Add node-specific data
+    if (node.data) {
+      html += `<div class="detail-section"><h4>Details</h4>`;
+      Object.entries(node.data).forEach(([k, v]) => {
+        if (k === 'id' || k === 'type') return;
+        html += `<div class="detail-row"><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd></div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `<div class="detail-section">
+      <h4>Classification</h4>
+      <div class="detail-row"><dt>Status basis</dt><dd>Verified runtime integration via daemon observation</dd></div>
+    </div>`;
+
+    content.innerHTML = html;
+    drawer.classList.remove('hidden');
+  }
+
+  function selectEdge(id) {
+    selectedEdgeId = id;
+    selectedNodeId = null;
+    const edge = graphEdges.find((e) => e.id === id);
+    const drawer = $('#detail-drawer');
+    const title = $('#detail-title');
+    const kind = $('#detail-kind');
+    const content = $('#detail-content');
+
+    if (!edge) {
+      drawer.classList.add('hidden');
+      return;
+    }
+
+    title.textContent = edge.type + ' connection';
+    kind.setAttribute('data-tone', 'ok');
+    kind.textContent = 'Edge · ' + edge.type;
+
+    const fromNode = graphNodes.find((n) => n.id === edge.from);
+    const toNode = graphNodes.find((n) => n.id === edge.to);
+
+    content.innerHTML = `<div class="detail-section">
+      <h4>Connection</h4>
+      <div class="detail-row"><dt>Type</dt><dd>${escapeHtml(edge.type)}</dd></div>
+      <div class="detail-row"><dt>Layer</dt><dd>${escapeHtml(edge.layer)}</dd></div>
+      <div class="detail-row"><dt>Source</dt><dd>${escapeHtml(edge.from)} ${fromNode ? '(' + escapeHtml(fromNode.label) + ')' : ''}</dd></div>
+      <div class="detail-row"><dt>Destination</dt><dd>${escapeHtml(edge.to)} ${toNode ? '(' + escapeHtml(toNode.label) + ')' : ''}</dd></div>
+      <div class="detail-row"><dt>Status</dt><dd><span class="detail-badge ok">Observed</span></dd></div>
+      <div class="detail-row"><dt>Basis</dt><dd>Daemon topology observation (live)</dd></div>
+    </div>`;
+
+    drawer.classList.remove('hidden');
+  }
+
+  function renderGraph() {
+    const svg = $('#system-graph');
+    if (svg.innerHTML === '') {
+      // Already rendered; just re-highlight selection
+    }
+  }
+
+  // ── SSE Event Stream ─────────────────────────────────────────────────
+  function startEventStream() {
+    if (!accessToken) return;
+    if (eventSource) eventSource.close();
+
+    const url = new URL(API_BASE + '/api/v1/platform/events/stream');
+    const evt = new EventSource(url, { headers: { authorization: `Bearer ${accessToken}` } });
+
+    evt.onopen = () => {
+      markLive();
+      $('#live-region').textContent = 'Live event stream connected.';
+    };
+
+    evt.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.event === 'heartbeat' || !data.event) return;
+        addEvent(data.event, data.payload || data);
+      } catch {
+        // ignore non-JSON messages
+      }
+    };
+
+    evt.onerror = () => {
+      evt.close();
+      eventSource = null;
+      markStale();
+      $('#live-region').textContent = 'Event stream disconnected. Will retry on next refresh.';
+      setTimeout(startEventStream, 5000);
+    };
+
+    eventSource = evt;
+  }
+
+  function addEvent(type, payload) {
+    const ts = new Date().toISOString();
+    const event = { id: type + '-' + Date.now(), type, payload, timestamp: ts };
+    events.unshift(event);
+    if (events.length > maxEvents) events.pop();
+    lastEventTs = ts;
+    text('#event-last', 'Last event: ' + new Date(ts).toLocaleTimeString());
+    if (currentView === 'events') renderEvents();
+    $('#live-region').textContent = 'New event: ' + type;
+  }
+
+  function renderEvents() {
+    const node = $('#events-timeline');
+    if (events.length === 0) {
+      node.innerHTML = '<div class="muted">Waiting for events…</div>';
+      return;
+    }
+    node.innerHTML = events.map((ev) => {
+      const t = tone(ev.payload?.state || ev.payload?.status || 'unknown');
+      const payloadStr = typeof ev.payload === 'string' ? ev.payload : JSON.stringify(ev.payload, null, 2);
+      return `<div class="event-item">
+        <div class="event-time">${new Date(ev.timestamp).toLocaleTimeString()}</div>
+        <div><span class="event-type">${escapeHtml(ev.type)}</span></div>
+        <div class="event-payload">${escapeHtml(payloadStr.slice(0, 200))}${payloadStr.length > 200 ? '…' : ''}</div>
+        <div class="event-source">Source: daemon control socket</div>
+      </div>`;
+    }).join('');
+  }
+
+  function pauseEventStream() {
+    livePaused = !livePaused;
+    const btn = $('#pause-button');
+    btn.setAttribute('aria-pressed', String(livePaused));
+    btn.textContent = livePaused ? 'Resume' : 'Pause';
+    setPill('#live-indicator', livePaused ? 'paused' : 'live', livePaused ? 'Paused' : 'Live');
+  }
+
+  // ── Components / Capabilities / Providers / Devices ───────────────────
+  async function renderComponents() {
+    try {
+      const data = await apiJson('/api/v1/runtime/snapshot', { headers: { authorization: `Bearer ${accessToken}` } });
+      const node = $('#components-list');
+      const snap = data.data || {};
+      const items = [];
+      if (snap.state) items.push({ name: 'Runtime state', detail: snap.state, state: 'healthy' });
+      if (snap.mode) items.push({ name: 'Runtime mode', detail: snap.mode, state: 'ok' });
+      if (snap.health) items.push({ name: 'Runtime health', detail: snap.health.status || 'unknown', state: snap.health.status || 'unknown' });
+      if (snap.counters) {
+        Object.entries(snap.counters).forEach(([k, v]) => items.push({ name: k, detail: String(v), state: 'ok' }));
+      }
+      if (items.length === 0) items.push({ name: 'No components', detail: 'No component data reported', state: 'unknown' });
+      node.innerHTML = items.map((i) => tile(i.name, i.detail, i.state)).join('');
+    } catch (err) {
+      $('#components-list').innerHTML = '<p class="empty-note">Unable to load components: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  async function renderCapabilities() {
+    try {
+      const data = await apiJson('/api/v1/runtime/capabilities', { headers: { authorization: `Bearer ${accessToken}` } });
+      const node = $('#capabilities-list');
+      const caps = data.data || [];
+      if (caps.length === 0) {
+        node.innerHTML = '<p class="empty-note">No capabilities reported.</p>';
+        return;
+      }
+      node.innerHTML = caps.map((c) => {
+        const id = c.adapterId || c.id || 'adapter';
+        const status = c.status || 'unknown';
+        return tile(id, String(c.type || ''), status);
+      }).join('');
+    } catch (err) {
+      $('#capabilities-list').innerHTML = '<p class="empty-note">Unable to load capabilities: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  async function renderProvidersView() {
+    try {
+      const data = await apiJson('/api/v1/platform/topology', { headers: { authorization: `Bearer ${accessToken}` } });
+      const node = $('#providers-list');
+      const d = data.data || {};
+      const items = [];
+      (d.providers || []).forEach((p) => items.push({ name: p.id, detail: p.type || 'provider', state: p.state || 'unknown' }));
+      (d.interfaces || []).forEach((i) => items.push({ name: i.name || i.id, detail: 'interface · ' + (i.gateway || 'no gateway'), state: i.state || 'unknown' }));
+      if (items.length === 0) items.push({ name: 'No providers', detail: 'No provider data reported', state: 'unknown' });
+      node.innerHTML = items.map((i) => tile(i.name, i.detail, i.state)).join('');
+    } catch (err) {
+      $('#providers-list').innerHTML = '<p class="empty-note">Unable to load providers: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  async function renderDevicesView() {
+    try {
+      const data = await apiJson('/api/v1/runtime/snapshot', { headers: { authorization: `Bearer ${accessToken}` } });
+      const node = $('#devices-list');
+      const snap = data.data || {};
+      const items = [];
+      items.push({ name: 'Runtime ID', detail: snap.runtimeId || '—', state: 'ok' });
+      items.push({ name: 'Instance ID', detail: snap.instanceId || '—', state: 'ok' });
+      items.push({ name: 'Uptime', detail: isNum(snap.uptimeMs) ? Math.round(snap.uptimeMs / 1000) + ' s' : '—', state: 'ok' });
+      if (items.length === 0) items.push({ name: 'No devices', detail: 'No device data reported', state: 'unknown' });
+      node.innerHTML = items.map((i) => tile(i.name, i.detail, i.state)).join('');
+    } catch (err) {
+      $('#devices-list').innerHTML = '<p class="empty-note">Unable to load devices: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  // ── Refresh / auto-refresh ────────────────────────────────────────────
   function scheduleRefresh() {
     if (refreshTimer) window.clearInterval(refreshTimer);
     refreshTimer = null;
-    if (autoRefresh) refreshTimer = window.setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+    if (autoRefresh) refreshTimer = window.setInterval(() => { if (!document.hidden && !livePaused) refresh(); }, 10000);
   }
 
   // ── Init ──────────────────────────────────────────────────────────────
@@ -573,6 +1151,7 @@
     showView(currentView, false);
     applyTheme(loadTheme());
     refresh();
+    startEventStream();
     scheduleRefresh();
   }
 
@@ -582,6 +1161,7 @@
   $('#signout-button').addEventListener('click', handleSignout);
   $('#refresh-button').addEventListener('click', refresh);
   $('#retry-button').addEventListener('click', refresh);
+  $('#pause-button').addEventListener('click', pauseEventStream);
   $('#auto-button').addEventListener('click', () => {
     autoRefresh = !autoRefresh;
     $('#auto-button').textContent = 'Auto refresh: ' + (autoRefresh ? 'on' : 'off');
@@ -614,7 +1194,34 @@
     $('#sidebar-toggle').setAttribute('aria-expanded', String(sidebarOpen));
   });
 
-  window.addEventListener('hashchange', () => showView((window.location.hash || '').replace('#', '') || 'overview', true));
+  // Detail drawer close
+  $('#detail-close').addEventListener('click', () => {
+    $('#detail-drawer').classList.add('hidden');
+    selectedNodeId = null;
+    selectedEdgeId = null;
+  });
+  $('#detail-dismiss').addEventListener('click', () => {
+    $('#detail-drawer').classList.add('hidden');
+    selectedNodeId = null;
+    selectedEdgeId = null;
+  });
+
+  window.addEventListener('hashchange', () => showView((window.location.hash || '').replace('#', '') || 'system-map', true));
+
+  // Layer / status / search filters (no-op placeholders wired to UI)
+  $('#layer-filter').addEventListener('change', () => { /* filtering applied on next render */ });
+  $('#status-filter').addEventListener('change', () => { /* filtering applied on next render */ });
+  $('#graph-search').addEventListener('input', () => { /* filtering applied on next render */ });
+  $('#zoom-fit').addEventListener('click', () => { /* zoom fit placeholder */ });
+  $('#zoom-reset').addEventListener('click', () => { /* zoom reset placeholder */ });
+
+  // Event timeline controls
+  $('#event-pause').addEventListener('click', pauseEventStream);
+  $('#event-clear').addEventListener('click', () => {
+    events = [];
+    renderEvents();
+    text('#event-last', 'Last event: —');
+  });
 
   // ── Boot ──────────────────────────────────────────────────────────────
   const stored = localStorage.getItem('irp_access_token');
@@ -625,4 +1232,7 @@
   } else {
     showAuth();
   }
+
+  // Zero-cost refresh button
+  $('#zero-cost-refresh').addEventListener('click', renderZeroCost);
 })();

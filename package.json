@@ -8,6 +8,7 @@
     "pnpm": ">=11.21.0"
   },
   "scripts": {
+    "dev:local": "node scripts/dev-local.mjs",
     "dev": "docker-compose -f compose.dev.yaml up --build",
     "dev:down": "docker-compose -f compose.dev.yaml down",
     "dev:logs": "docker-compose -f compose.dev.yaml logs -f --tail=100",

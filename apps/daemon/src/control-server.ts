@@ -30,6 +30,8 @@ export interface ControlPort {
   capabilities(): unknown;
   cycle(mode: 'simulation' | 'safe'): Promise<unknown>;
   reload(): Promise<unknown>;
+  events(): Promise<unknown>;
+  topology(): Promise<unknown>;
 }
 
 /** Thrown by a ControlPort when the request is valid but conflicts with current runtime state. */
@@ -108,6 +110,8 @@ export class ControlServer {
         case 'GET /v1/decisions': return send(res, 200, await this.port.decisions());
         case 'GET /v1/incidents': return send(res, 200, await this.port.incidents());
         case 'GET /v1/capabilities': return send(res, 200, this.port.capabilities());
+        case 'GET /v1/events': return send(res, 200, await this.port.events());
+        case 'GET /v1/topology': return send(res, 200, await this.port.topology());
         case 'POST /v1/reload': return send(res, 200, await this.port.reload());
         case 'POST /v1/cycle': {
           const body = (await readJson(req)) as { mode?: unknown };
