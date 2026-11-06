@@ -37,7 +37,10 @@ export type FfiNapiModule = {
     readonly int64: unknown;
     readonly uint64: unknown;
   };
-  readonly ref: { alloc: (type: unknown, value: unknown) => { deref: () => unknown } };
+  readonly ref: {
+    alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+    // Add other ref methods as needed
+  };
   readonly Struct: unknown;
   readonly ArrayType: unknown;
   readonly Callback: unknown;
@@ -51,7 +54,7 @@ let loaded: FfiNapiModule | undefined;
 let loadError: unknown;
 
 /**
- * Attempts to load `ffi-napi`. Safe to call repeatedly; the result is
+ * Attempts to load `ffi-napi` and `ref-napi`. Safe to call repeatedly; the result is
  * cached. When the module is not installed (development/CI without the native
  * dependency), returns `undefined` and records the error for diagnostics.
  */
@@ -60,7 +63,15 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   try {
     // Dynamic import so the package does not hard-require a native build in
     // environments where it is not installed (e.g. this Linux build host).
-    loaded = (await import('ffi-napi')) as FfiNapiModule;
+    const ffiModule = (await import('ffi-napi')) as Omit<FfiNapiModule, 'ref'>;
+    // ref-napi is a separate package that ffi-napi depends on
+    const refModule = (await import('ref-napi')) as {
+      alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+    };
+    loaded = {
+      ...ffiModule,
+      ref: refModule,
+    } as FfiNapiModule;
   } catch (error) {
     loadError = error;
     loaded = undefined;
@@ -69,7 +80,7 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
 }
 
 /**
- * The last error encountered while loading `ffi-napi`, if any.
+ * The last error encountered while loading `ffi-napi` or `ref-napi`, if any.
  */
 export function ffiLoadError(): unknown {
   return loadError;

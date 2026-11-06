@@ -33,7 +33,9 @@ export type FfiNapiModule = {
     readonly int64: unknown;
     readonly uint64: unknown;
   };
-  readonly ref: { alloc: (type: unknown, value: unknown) => { deref: () => unknown } };
+  readonly ref: {
+    alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+  };
   readonly Struct: unknown;
   readonly ArrayType: unknown;
   readonly Callback: unknown;
@@ -49,7 +51,14 @@ let loadError: unknown;
 export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
   if (loaded !== undefined) return loaded;
   try {
-    loaded = (await import('ffi-napi')) as FfiNapiModule;
+    const ffiModule = (await import('ffi-napi')) as Omit<FfiNapiModule, 'ref'>;
+    const refModule = (await import('ref-napi')) as {
+      alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+    };
+    loaded = {
+      ...ffiModule,
+      ref: refModule,
+    } as FfiNapiModule;
   } catch (error) {
     loadError = error;
     loaded = undefined;

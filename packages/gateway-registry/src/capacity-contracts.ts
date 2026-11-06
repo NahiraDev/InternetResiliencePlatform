@@ -6,7 +6,7 @@
  * docs/architecture/autonomous-capacity-provisioning.md
  */
 
-import type { GatewayId, GatewayLifecycle, GatewayTrust, GatewayCapabilities, GatewayEndpoint, GatewayOwnership } from './index.js';
+import type { GatewayEndpoint } from './index.js';
 
 // Re-export GatewayEndpoint for use in other modules
 export type { GatewayEndpoint };
