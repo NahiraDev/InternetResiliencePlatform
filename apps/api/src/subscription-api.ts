@@ -20,7 +20,7 @@ import {
 import type { Principal } from '@irp/auth';
 import { type SqlClient } from '@irp/database';
 import { sharedRateLimitPreHandler } from './security/rate-limit.js';
-import { controlRequest } from '@irp/resilience-runtime';
+import { controlRequest, resolveControlSocketPath } from '@irp/resilience-runtime';
 import { join } from 'node:path';
 import os from 'node:os';
 
@@ -507,34 +507,54 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const entActive = a.entStatus === 'ACTIVE' && (!a.entExpiresAt || new Date(a.entExpiresAt) > now);
     if (!subActive || !entActive) throw new ForbiddenAppError('Device not authorized for connect. Active subscription with connect entitlement required.');
     const t = now.toISOString();
-    await sql.query(`UPDATE "Device" SET "status"='ACTIVE',"authorizedAt"=$1,"lastConnectedAt"=$2,"updatedAt"=$3 WHERE "deviceId" = $4`, [now, now, now, deviceId]);
-    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,true,'good',$2)`, [a.id, now]);
-    await repos.audit.record({
-      actorUserId: principal.id,
-      action: 'device.connect',
-      resource: 'device',
-      resourceId: deviceId,
-      metadata: { connectedAt: t },
-      ipAddress: request.ip,
-    });
 
-    // Also connect through the daemon's ConnectivityManager via control socket
-    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    // Connect through the daemon's canonical connectivity lifecycle.
+    // The daemon maps the logical device ID to a network source, activates it
+    // through ConnectivityManager.activateSource() (prepare → activate → verify →
+    // commit), and verifies the external destination. We report the verified
+    // outcome, never a merely requested state.
+    const sockPath = process.env.IRP_CONTROL_SOCKET || resolveControlSocketPath(process.env) || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    let daemonConnected = false;
+    let daemonSourceId: string | undefined;
+    let daemonDestination: { status: string; reason?: string; latencyMs?: number } | undefined;
+    let daemonError: string | undefined;
     try {
-      await controlRequest(sockPath, 'POST', '/v1/connect-device', { deviceId }, 10000);
+      const result = await controlRequest(sockPath, 'POST', '/v1/connect-device', { deviceId }, 15000) as {
+        connected?: boolean;
+        sourceId?: string;
+        destination?: { status: string; reason?: string; latencyMs?: number };
+        error?: string;
+      };
+      daemonConnected = result.connected === true;
+      daemonSourceId = result.sourceId;
+      daemonDestination = result.destination;
     } catch (daemonErr) {
-      // Daemon may not be running; database state is still updated. Log but don't fail.
+      daemonError = daemonErr instanceof Error ? daemonErr.message : String(daemonErr);
       await repos.audit.record({
         actorUserId: principal.id,
         action: 'device.connect.daemon_unreachable',
         resource: 'device',
         resourceId: deviceId,
-        metadata: { error: daemonErr instanceof Error ? daemonErr.message : String(daemonErr) },
+        metadata: { error: daemonError },
         ipAddress: request.ip,
       });
     }
 
-    return okResp({ deviceId, status: 'ACTIVE', connected: true, connectedAt: t });
+    // Only mark the device as connected in the database if the daemon verified
+    // the connection. The logical status is ACTIVE (authorized) regardless;
+    // the connected field reflects the verified execution outcome.
+    await sql.query(`UPDATE "Device" SET "status"='ACTIVE',"authorizedAt"=$1,"lastConnectedAt"=$2,"updatedAt"=$3 WHERE "deviceId" = $4`, [now, now, now, deviceId]);
+    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,$2,'good',$3)`, [a.id, daemonConnected, now]);
+    await repos.audit.record({
+      actorUserId: principal.id,
+      action: 'device.connect',
+      resource: 'device',
+      resourceId: deviceId,
+      metadata: { connectedAt: t, connected: daemonConnected, sourceId: daemonSourceId, daemonError },
+      ipAddress: request.ip,
+    });
+
+    return okResp({ deviceId, status: 'ACTIVE', connected: daemonConnected, connectedAt: t, ...(daemonSourceId ? { sourceId: daemonSourceId } : {}), ...(daemonDestination ? { destination: daemonDestination } : {}), ...(daemonError ? { daemonError } : {}) });
   });
 
   app.post('/api/v1/devices/:deviceId/disconnect', { preHandler: [deviceLimit] }, async (request) => {
@@ -545,33 +565,43 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const t = now.toISOString();
     const r = await sql.query(`UPDATE "Device" SET "status"='ENROLLED',"lastDisconnectedAt"=$1,"updatedAt"=$2 WHERE "deviceId" = $3 AND "userId" = $4 RETURNING "id"`, [now, now, deviceId, principal.id]) as any[];
     if (r.length === 0) throw new NotFoundAppError('Device not found');
-    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,false,'good',$2)`, [r[0].id, now]);
-    await repos.audit.record({
-      actorUserId: principal.id,
-      action: 'device.disconnect',
-      resource: 'device',
-      resourceId: deviceId,
-      metadata: { disconnectedAt: t },
-      ipAddress: request.ip,
-    });
 
-    // Also disconnect through the daemon's ConnectivityManager via control socket
-    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    // Disconnect through the daemon's canonical connectivity lifecycle.
+    const sockPath = process.env.IRP_CONTROL_SOCKET || resolveControlSocketPath(process.env) || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    let daemonDisconnected = false;
+    let daemonSourceId: string | undefined;
+    let daemonError: string | undefined;
     try {
-      await controlRequest(sockPath, 'POST', '/v1/disconnect-device', { deviceId }, 10000);
+      const result = await controlRequest(sockPath, 'POST', '/v1/disconnect-device', { deviceId }, 15000) as {
+        connected?: boolean;
+        sourceId?: string;
+        error?: string;
+      };
+      daemonDisconnected = result.connected === false;
+      daemonSourceId = result.sourceId;
     } catch (daemonErr) {
-      // Daemon may not be running; database state is still updated. Log but don't fail.
+      daemonError = daemonErr instanceof Error ? daemonErr.message : String(daemonErr);
       await repos.audit.record({
         actorUserId: principal.id,
         action: 'device.disconnect.daemon_unreachable',
         resource: 'device',
         resourceId: deviceId,
-        metadata: { error: daemonErr instanceof Error ? daemonErr.message : String(daemonErr) },
+        metadata: { error: daemonError },
         ipAddress: request.ip,
       });
     }
 
-    return okResp({ deviceId, status: 'ENROLLED', connected: false, disconnectedAt: t });
+    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,$2,'good',$3)`, [r[0].id, !daemonDisconnected, now]);
+    await repos.audit.record({
+      actorUserId: principal.id,
+      action: 'device.disconnect',
+      resource: 'device',
+      resourceId: deviceId,
+      metadata: { disconnectedAt: t, connected: !daemonDisconnected, sourceId: daemonSourceId, daemonError },
+      ipAddress: request.ip,
+    });
+
+    return okResp({ deviceId, status: 'ENROLLED', connected: !daemonDisconnected, disconnectedAt: t, ...(daemonSourceId ? { sourceId: daemonSourceId } : {}), ...(daemonError ? { daemonError } : {}) });
   });
 
   // ── Admin: Customer & Subscription Visibility ─────────────────────────

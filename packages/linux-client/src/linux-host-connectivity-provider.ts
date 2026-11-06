@@ -280,7 +280,10 @@ export class LinuxHostConnectivityProvider implements ConnectivityProvider {
     return [
       'monitor',
       'health-check',
+      'connect',
+      'disconnect',
       'activate',
+      'deactivate',
       'supports-ipv4',
       'supports-ipv6',
       'supports-default-route',
