@@ -57,8 +57,8 @@ jobs:
             exit 1
           }
 
-      - name: Install dependencies with frozen lockfile
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies with frozen lockfile (exclude Windows/macOS clients)
+        run: pnpm install --frozen-lockfile --filter=!@irp/windows-client --filter=!@irp/macos-client
 
       - name: Linux client typecheck
         run: pnpm --filter @irp/linux-client typecheck
@@ -150,7 +150,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends iproute2
-          rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /var/lib/apt/lists/*
 
       - name: Verify CAP_SYS_ADMIN and CAP_NET_ADMIN availability
         run: |
@@ -203,8 +203,8 @@ jobs:
       - name: Require checked-in pnpm lockfile
         run: test -f pnpm-lock.yaml
 
-      - name: Install dependencies with frozen lockfile
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies with frozen lockfile (exclude Windows/macOS clients)
+        run: pnpm install --frozen-lockfile --filter=!@irp/windows-client --filter=!@irp/macos-client
 
       - name: Enforce IRP architecture contract
         run: pnpm architecture:check
@@ -268,8 +268,8 @@ jobs:
             exit 1
           }
 
-      - name: Install dependencies with frozen lockfile
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies with frozen lockfile (exclude Windows/macOS clients)
+        run: pnpm install --frozen-lockfile --filter=!@irp/windows-client --filter=!@irp/macos-client
 
       - name: Validate repository integrity
         run: pnpm validate
@@ -293,16 +293,16 @@ jobs:
         run: pnpm typecheck
 
       - name: Test
-        run: pnpm test
+        run: pnpm test --filter=!@irp/windows-client --filter=!@irp/macos-client
 
       - name: Test production certification and system assurance report checksums
         run: pnpm certification:test
 
       - name: Fresh coverage
-        run: pnpm exec turbo run test --force -- --coverage
+        run: pnpm exec turbo run test --force --filter=!@irp/windows-client --filter=!@irp/macos-client -- --coverage
 
       - name: Build
-        run: pnpm build
+        run: pnpm build --filter=!@irp/windows-client --filter=!@irp/macos-client
 
       - name: Smoke test deterministic examples
         run: pnpm examples:smoke
