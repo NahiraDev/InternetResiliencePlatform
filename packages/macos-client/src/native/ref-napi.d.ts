@@ -9,11 +9,11 @@ declare module 'ref-napi' {
   export type Type = string | RefType;
 
   export interface AllocResult {
-    deref(): any;
+    deref(): unknown;
   }
 
   export interface Ref {
-    alloc: (type: Type, value?: any) => AllocResult;
+    alloc: (type: Type, value?: unknown) => AllocResult;
     allocCString: (str: string, encoding?: string) => AllocResult;
     readPointer: (buf: Buffer, offset?: number) => AllocResult;
     writePointer: (buf: Buffer, offset: number, ptr: AllocResult) => void;
@@ -60,7 +60,7 @@ declare module 'ref-napi' {
     readUInt64LE: (buf: Buffer, offset?: number) => bigint;
     writeUInt64LE: (buf: Buffer, val: bigint | number, offset?: number) => void;
     ref: (buf: Buffer) => AllocResult;
-    deref: (buf: Buffer) => any;
+    deref: (buf: Buffer) => unknown;
     refType: (type: Type, size?: number) => RefType;
     coerceType: (type: Type) => RefType;
     isNull: (ptr: AllocResult) => boolean;

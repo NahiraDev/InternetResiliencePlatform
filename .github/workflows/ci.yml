@@ -124,17 +124,48 @@ jobs:
 
   linux-netns-e2e:
     name: Linux network-namespace end-to-end chain (privileged, required)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, privileged]
     timeout-minutes: 30
-    container:
-      image: node:24-trixie
-      options: --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --security-opt seccomp=unconfined
     env:
       PNPM_IGNORE_TTY: "1"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Verify runner capabilities
+        run: |
+          # Verify this is a privileged self-hosted runner
+          if ! grep -q 'CapEff.*[0-9a-f]' /proc/self/status; then
+            echo "ERROR: Cannot read capability information from /proc/self/status"
+            exit 1
+          fi
+          # Verify CAP_SYS_ADMIN and CAP_NET_ADMIN are present
+          capsh --print 2>/dev/null | grep -q 'cap_sys_admin+ep' || {
+            echo "ERROR: CAP_SYS_ADMIN not available on this runner"
+            exit 1
+          }
+          capsh --print 2>/dev/null | grep -q 'cap_net_admin+ep' || {
+            echo "ERROR: CAP_NET_ADMIN not available on this runner"
+            exit 1
+          }
+          echo "Runner capabilities: OK"
+
+      - name: Verify network namespace creation
+        run: |
+          if ip netns add irp-test-ns 2>/dev/null; then
+            ip netns del irp-test-ns
+            echo "Network namespace creation: OK"
+          else
+            echo "ERROR: Cannot create network namespace"
+            exit 1
+          fi
+
+      - name: Install Linux namespace tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends iproute2
+          rm -rf /var/lib/apt/lists/*
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -148,27 +179,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install Linux namespace tools
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends iproute2
-          rm -rf /var/lib/apt/lists/*
-
-      - name: Verify CAP_SYS_ADMIN and CAP_NET_ADMIN availability
-        run: |
-          # Check if we have the required capabilities
-          if ! grep -q 'CapEff.*[0-9a-f]' /proc/self/status; then
-            echo "WARNING: Cannot read capability information"
-          fi
-          # Check if we can create network namespaces (requires CAP_SYS_ADMIN)
-          if ip netns add irp-test-ns 2>/dev/null; then
-            ip netns del irp-test-ns
-            echo "Network namespace creation: OK"
-          else
-            echo "ERROR: Cannot create network namespace (missing CAP_SYS_ADMIN or kernel support)"
-            exit 1
-          fi
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
