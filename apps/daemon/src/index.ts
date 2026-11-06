@@ -676,6 +676,31 @@ export class RuntimeDaemonHost {
           gateway: active ? { id: active.sourceId, gateway: active.gateway, interface: active.interfaceName } : null,
         };
       },
+      connectDevice: async (deviceId) => {
+        // Find the resource by resourceId matching deviceId
+        const sources = this.connectivity.getAvailableSources();
+        const source = sources.find((s) => s.id === deviceId || s.sourceId === deviceId);
+        if (!source) throw new Error(`Device not found: ${deviceId}`);
+        const provider = this.connectivity.getProviders().find((p) => p.id === source.providerId);
+        if (!provider) throw new Error(`Provider not found: ${source.providerId}`);
+        if (!provider.capabilities(source.id).includes('connect'))
+          throw new Error(`Device does not support connect: ${deviceId}`);
+        const result = await provider.connect(source.id);
+        await this.runtime.events.emit('daemon.device-connected', { deviceId, sourceId: source.sourceId, result });
+        return result;
+      },
+      disconnectDevice: async (deviceId) => {
+        const sources = this.connectivity.getAvailableSources();
+        const source = sources.find((s) => s.id === deviceId || s.sourceId === deviceId);
+        if (!source) throw new Error(`Device not found: ${deviceId}`);
+        const provider = this.connectivity.getProviders().find((p) => p.id === source.providerId);
+        if (!provider) throw new Error(`Provider not found: ${source.providerId}`);
+        if (!provider.capabilities(source.id).includes('disconnect'))
+          throw new Error(`Device does not support disconnect: ${deviceId}`);
+        const result = await provider.disconnect(source.id);
+        await this.runtime.events.emit('daemon.device-disconnected', { deviceId, sourceId: source.sourceId, result });
+        return result;
+      },
     };
   }
 
