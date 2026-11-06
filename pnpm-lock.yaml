@@ -504,8 +504,8 @@ importers:
   packages/macos-client:
     optionalDependencies:
       ffi-napi:
-        specifier: ^4.0.3
-        version: 4.0.3(supports-color@7.2.0)
+        specifier: ^3.1.0
+        version: 3.1.0(supports-color@7.2.0)
       ref-napi:
         specifier: ^3.0.3
         version: 3.0.3(supports-color@7.2.0)
@@ -995,8 +995,8 @@ importers:
   packages/windows-client:
     optionalDependencies:
       ffi-napi:
-        specifier: ^4.0.3
-        version: 4.0.3(supports-color@7.2.0)
+        specifier: ^3.1.0
+        version: 3.1.0(supports-color@7.2.0)
       ref-napi:
         specifier: ^3.0.3
         version: 3.0.3(supports-color@7.2.0)
@@ -2417,8 +2417,8 @@ packages:
       picomatch:
         optional: true
 
-  ffi-napi@4.0.3:
-    resolution: {integrity: sha512-PMdLCIvDY9mS32RxZ0XGb95sonPRal8aqRhLbeEtWKZTe2A87qRFG9HjOhvG8EX2UmQw5XNRMIOT+1MYlWmdeg==}
+  ffi-napi@3.1.0:
+    resolution: {integrity: sha512-EsHO+sP2p/nUC/3l/l8m9niee1BLm4asUFDzkkBGR4kYVgp2KqdAYUomZhkKtzim4Fq7mcYHjpUaIHsMqs+E1g==}
     engines: {node: '>=10'}
 
   file-entry-cache@11.1.5:
@@ -2709,6 +2709,9 @@ packages:
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
 
+  node-addon-api@2.0.2:
+    resolution: {integrity: sha512-Ntyt4AIXyaLIuMHF6IOoTakB3K+RWxwtsHNRxllEoA6vPwP9o4866g6YWDLUdnucilZhmkxiHwHr11gAENw+QA==}
+
   node-addon-api@3.2.1:
     resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
 
@@ -2921,6 +2924,10 @@ packages:
 
   real-require@1.0.0:
     resolution: {integrity: sha512-P4nbQYQfePJxRSmY+v/KINxVucm4NF3p3s7pJveMTtom52FR4YGltUQLB8idDXwDDWW+eYrWDFbuzUnjoWHF7g==}
+
+  ref-napi@2.1.2:
+    resolution: {integrity: sha512-aFl+vrIuLWUXMUTQGAwGAuSNLX3Ub5W3iVP8b7KyFFZUdn4+i4U1TXXTop0kCTUfGNu8glBGVz4lowkwMcPVVA==}
+    engines: {node: '>= 6.0'}
 
   ref-napi@3.0.3:
     resolution: {integrity: sha512-LiMq/XDGcgodTYOMppikEtJelWsKQERbLQsYm0IOOnzhwE9xYZC7x8txNnFC9wJNOkPferQI4vD4ZkC0mDyrOA==}
@@ -4664,13 +4671,13 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ffi-napi@4.0.3(supports-color@7.2.0):
+  ffi-napi@3.1.0(supports-color@7.2.0):
     dependencies:
       debug: 4.4.3(supports-color@7.2.0)
       get-uv-event-loop-napi-h: 1.0.6
-      node-addon-api: 3.2.1
+      node-addon-api: 2.0.2
       node-gyp-build: 4.8.4
-      ref-napi: 3.0.3(supports-color@7.2.0)
+      ref-napi: 2.1.2(supports-color@7.2.0)
       ref-struct-di: 1.1.1(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
@@ -4951,6 +4958,9 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
+  node-addon-api@2.0.2:
+    optional: true
+
   node-addon-api@3.2.1:
     optional: true
 
@@ -5179,6 +5189,16 @@ snapshots:
   readdirp@4.1.2: {}
 
   real-require@1.0.0: {}
+
+  ref-napi@2.1.2(supports-color@7.2.0):
+    dependencies:
+      debug: 4.4.3(supports-color@7.2.0)
+      get-symbol-from-current-process-h: 1.0.2
+      node-addon-api: 2.0.2
+      node-gyp-build: 4.8.4
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
 
   ref-napi@3.0.3(supports-color@7.2.0):
     dependencies:
