@@ -23,6 +23,8 @@ const port: ControlPort = {
   reload: async () => ({ reloaded: true }),
   events: async () => ({ events: [], count: 0 }),
   topology: async () => ({ interfaces: [], routes: [], dns: { resolvers: [], activeProviderId: undefined }, tunnels: [], providers: [], gateway: null }),
+  connectDevice: async (deviceId) => ({ deviceId, connected: true }),
+  disconnectDevice: async (deviceId) => ({ deviceId, connected: false }),
 };
 const start = async (path: string): Promise<ControlServer> => {
   const s = new ControlServer(path, port);
