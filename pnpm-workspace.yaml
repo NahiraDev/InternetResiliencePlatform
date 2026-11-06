@@ -21,3 +21,4 @@ allowBuilds:
   protobufjs: true
   ffi-napi: true
   ref-napi: true
+  '@prisma/client': true

@@ -41,6 +41,10 @@ model User {
   memberships Membership[]
   sessions Session[]
   auditLogs AuditLog[] @relation("ActorAuditLogs")
+  subscriptions Subscription[]
+  payments PaymentTransaction[]
+  devices Device[]
+  entitlements Entitlement[]
   @@index([status, createdAt])
   @@index([deletedAt])
 }
@@ -321,4 +325,142 @@ model RateLimitBucket {
   count Int
   resetAt DateTime
   @@index([resetAt])
+}
+
+enum SubscriptionStatus {
+  REGISTERED
+  PAYMENT_PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum DeviceStatus {
+  ENROLLED
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String?
+  priceUsd    Int      // cents
+  currency    String   @default("usd")
+  durationDays Int     // plan duration in days
+  maxDevices  Int      @default(1)
+  features    Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subscriptions Subscription[]
+  @@index([isActive, slug])
+}
+
+model Subscription {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @db.Uuid
+  planId            String           @db.Uuid
+  status            SubscriptionStatus @default(REGISTERED)
+  startedAt         DateTime?
+  expiresAt         DateTime?
+  renewedAt         DateTime?
+  canceledAt        DateTime?
+  autoRenew         Boolean          @default(false)
+  metadata          Json             @default("{}")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan @relation(fields: [planId], references: [id])
+  payments          PaymentTransaction[]
+  entitlements      Entitlement[]
+  devices           Device[]
+  @@index([userId, status])
+  @@index([planId, status])
+}
+
+model PaymentTransaction {
+  id             String      @id @default(uuid()) @db.Uuid
+  subscriptionId String      @db.Uuid
+  userId         String      @db.Uuid
+  amountUsd      Int         // cents
+  currency       String      @default("usd")
+  status         PaymentStatus @default(PENDING)
+  provider       String      // e.g. 'stripe', 'test'
+  providerRef    String?     @unique
+  paidAt         DateTime?
+  failureReason  String?
+  metadata       Json        @default("{}")
+  createdAt      DateTime    @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([subscriptionId, status])
+  @@index([userId, status])
+  @@index([providerRef])
+}
+
+model Device {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @db.Uuid
+  subscriptionId String?     @db.Uuid
+  deviceId       String      @unique // client-generated device identifier
+  label          String?
+  platform       String?     // ios, android, linux, macos, windows
+  status         DeviceStatus @default(ENROLLED)
+  authorizedAt   DateTime?
+  revokedAt      DateTime?
+  lastConnectedAt DateTime?
+  lastDisconnectedAt DateTime?
+  metadata       Json        @default("{}")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  connectionState ConnectionState[]
+  @@index([userId, status])
+  @@index([subscriptionId])
+}
+
+model ConnectionState {
+  id        String   @id @default(uuid()) @db.Uuid
+  deviceId  String   @db.Uuid
+  connected Boolean  @default(false)
+  quality   String?  // e.g. 'good', 'degraded', 'poor'
+  latencyMs Int?
+  reason    String?
+  recordedAt DateTime @default(now())
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  @@index([deviceId, recordedAt])
+}
+
+model Entitlement {
+  id            String        @id @default(uuid()) @db.Uuid
+  subscriptionId String       @db.Uuid
+  userId        String        @db.Uuid
+  feature       String        // e.g. 'connect', 'tunnel', 'dns', 'multi-device'
+  status        EntitlementStatus @default(ACTIVE)
+  startedAt     DateTime      @default(now())
+  expiresAt     DateTime?
+  metadata      Json          @default("{}")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, feature, status])
+  @@index([subscriptionId, status])
 }

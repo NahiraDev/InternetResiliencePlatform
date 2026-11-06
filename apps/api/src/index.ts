@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import os from 'node:os';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
@@ -51,7 +53,7 @@ import {
 } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
 import { MemoryQueue } from '@irp/queue';
-import { checkDatabaseHealth, createPrismaClient } from '@irp/database';
+import { checkDatabaseHealth, createPrismaClient, createSqlClient } from '@irp/database';
 import { PostgresHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { AuthService } from './identity/auth-service.js';
 import { resolveEmailSender, type EmailSender } from './identity/mailer.js';
@@ -59,6 +61,7 @@ import { resolveIdentityRepositories } from './identity/resolve.js';
 import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
+  controlRequest,
   explainDecision,
   negotiatePlatformCapabilities,
   runtimeEnvelope,
@@ -66,6 +69,7 @@ import {
   type ObservationProvider,
 } from '@irp/resilience-runtime';
 import { registerIntentRoutes } from './intent-api.js';
+import { registerSubscriptionRoutes } from './subscription-api.js';
 import { sharedRateLimitPreHandler } from './security/rate-limit.js';
 import {
   generateSpeedInsightsScript,
@@ -164,6 +168,10 @@ const permissions = [
   'autopilot.execute',
   'autopilot.approve',
   'autopilot.admin',
+  'platform.read',
+  'platform.topology',
+  'platform.events',
+  'platform.admin',
 ];
 const requireAuth = async (request: FastifyRequest): Promise<Principal> => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
@@ -358,18 +366,26 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
 
   // ── Web Control Center static assets ──────────────────────────────────
   // Served from apps/web/ so the UI ships with the API binary.
-  const WEB_DIR = new URL('../web', import.meta.url).pathname;
+  // WEB_DIR resolves to the actual on-disk location of apps/web relative to
+  // this compiled entrypoint so assets load correctly from any runtime
+  // location (local host, Docker, or installed package).
+  const apiDistDir = new URL('.', import.meta.url); // directory of this compiled file
+  const WEB_DIR = new URL('../../web', apiDistDir).pathname;
+  const readWebAsset = async (relativePath: string): Promise<string> => {
+    const fsPath = new URL(relativePath, `file://${WEB_DIR.endsWith('/') ? WEB_DIR : WEB_DIR + '/'}`).pathname;
+    return readFile(fsPath, 'utf8');
+  };
   app.register(async (web) => {
-    web.addHook('preHandler', sharedRateLimitPreHandler);
+    web.addHook('preHandler', sharedRateLimitPreHandler(repos.rateLimits, { name: 'web', max: 100, windowMs: 60_000 }));
 
     web.get('/', async (_request, reply) =>
-      reply.type('text/html; charset=utf-8').send(await readFile('/web/index.html')),
+      reply.type('text/html; charset=utf-8').send(await readWebAsset('index.html')),
     );
     web.get('/style.css', async (_request, reply) =>
-      reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readFile('/web/style.css')),
+      reply.header('cache-control', 'public, max-age=300').type('text/css; charset=utf-8').send(await readWebAsset('style.css')),
     );
     web.get('/src/app.js', async (_request, reply) =>
-      reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readFile('/web/src/app.js')),
+      reply.header('cache-control', 'public, max-age=300').type('application/javascript; charset=utf-8').send(await readWebAsset('src/app.js')),
     );
   }, { prefix: '/web' });
 
@@ -786,30 +802,116 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
     });
   });
 
-  app.get('/api/v1/platform/metrics/stream', async (_request, reply) => {
-    const snapshot = await getNetworkSnapshot();
-    const metrics = snapshot.measurements.map((measurement: NetworkMeasurement) => ({
-      timestamp: measurement.timestamp,
-      probeType: measurement.probeType,
-      latencyMs: measurement.latency,
-      success: measurement.success,
-      packetLossPct:
-        measurement.probeType === 'packet_loss' &&
-        typeof measurement.metadata['lossRatio'] === 'number'
-          ? Number(measurement.metadata['lossRatio']) * 100
-          : undefined,
-      dnsPerformanceMs: measurement.probeType === 'dns' ? measurement.latency : undefined,
-    }));
-    reply.header('cache-control', 'no-cache, no-transform');
-    reply.header('connection', 'keep-alive');
-    reply.header('x-accel-buffering', 'no');
-    return reply.type('text/event-stream').send(
-      `retry: 10000
-event: platform.metrics
-data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, metrics })}
+  // ── Live event stream (SSE) ──────────────────────────────────────────
+  // Replaces the old single-snapshot /api/v1/platform/metrics/stream with a
+  // continuous, heartbeat-buffered, authorization-checked event stream that
+  // forwards daemon control-plane events to the browser.
+  app.get('/api/v1/platform/events/stream', { preHandler: generalRateLimit }, async (request, reply) => {
+    await requirePermission(request, 'platform.events');
+    const rawQuery = (request.query ?? {}) as Readonly<Record<string, unknown>>;
+    const lastEventId = String(rawQuery['lastEventId'] ?? '');
+    const heartbeatMs = 15000;
+    const maxEvents = 500;
 
-`,
-    );
+    reply.raw.writeHead(200, {
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    });
+
+    const sendEvent = (event: string, data: unknown, id?: string): void => {
+      const lines: string[] = [];
+      if (id) lines.push(`id: ${id}`);
+      lines.push(`event: ${event}`);
+      lines.push(`data: ${JSON.stringify(data)}`);
+      lines.push('');
+      reply.raw.write(lines.join('\n'));
+    };
+
+    sendEvent('heartbeat', { source: 'LIVE', timestamp: new Date().toISOString() }, '0');
+
+    let heartbeatTimer: NodeJS.Timeout | undefined;
+    let clientClosed = false;
+
+    reply.raw.on('close', () => {
+      clientClosed = true;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    });
+
+    heartbeatTimer = setInterval(() => {
+      if (!clientClosed) sendEvent('heartbeat', { source: 'LIVE', timestamp: new Date().toISOString() });
+    }, heartbeatMs);
+
+    // Poll the daemon control socket for new events. This is the local-host
+    // source of truth; the API does not maintain a separate event buffer.
+    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    let lastSeenId = lastEventId;
+
+    const poll = async (): Promise<void> => {
+      if (clientClosed) return;
+      try {
+        const data = await controlRequest(sockPath, 'GET', '/v1/events', undefined, 5000);
+        const eventsList = (data as { events?: { event: string; payload: unknown }[] }).events ?? [];
+        for (const e of eventsList) {
+          if (clientClosed) break;
+          if (lastSeenId && e.event <= lastSeenId) continue;
+          sendEvent(e.event, e.payload, e.event);
+          lastSeenId = e.event;
+        }
+      } catch (err) {
+        // Daemon temporarily unreachable; next poll will retry.
+        void err;
+      }
+      if (!clientClosed) setTimeout(poll, 2000);
+    };
+    void poll();
+
+    // Hold the connection open; the client drives reconnection via Last-Event-Id.
+    reply.raw.on('error', () => {
+      clientClosed = true;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    });
+  });
+
+  // ── Platform topology ────────────────────────────────────────────────
+  // Real host topology observed by the daemon, exposed read-only to Super Admin.
+  app.get('/api/v1/platform/topology', { preHandler: generalRateLimit }, async (request) => {
+    await requirePermission(request, 'platform.topology');
+    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    try {
+      const data = await controlRequest(sockPath, 'GET', '/v1/topology', undefined, 10000);
+      return ok({ source: 'daemon', updatedAt: new Date().toISOString(), ...(data as Record<string, unknown>) });
+    } catch (err) {
+      void err;
+      return ok({
+        source: 'daemon',
+        updatedAt: new Date().toISOString(),
+        error: err instanceof Error ? err.message : 'daemon unreachable',
+        interfaces: [],
+        routes: [],
+        dns: { resolvers: [], activeProviderId: undefined },
+        tunnels: [],
+        providers: [],
+        gateway: null,
+      });
+    }
+  });
+
+  // ── Metrics snapshot (replaced continuous stream with /events/stream) ──
+  app.get('/api/v1/platform/metrics', async () => {
+    const snapshot = await getNetworkSnapshot();
+    return ok({
+      source: 'LIVE',
+      updatedAt: snapshot.score.timestamp,
+      score: snapshot.score.score,
+      measurements: snapshot.measurements.map((measurement: NetworkMeasurement) => ({
+        timestamp: measurement.timestamp,
+        probeType: measurement.probeType,
+        latencyMs: measurement.latency,
+        success: measurement.success,
+      })),
+    });
   });
   const runtimeObservationProvider: ObservationProvider = {
     id: 'api-network-monitor',
@@ -1407,6 +1509,41 @@ data: ${JSON.stringify({ source: 'LIVE', updatedAt: snapshot.score.timestamp, me
       });
     },
   );
+
+  // ── Development-only: inspect captured verification emails ─────────────
+  // Only available when NODE_ENV is not production/staging and only from
+  // loopback. Never exposed in production or staging.
+  if (!isProductionRuntime()) {
+    app.get('/api/v1/dev/emails', async (request, reply) => {
+      // Loopback-only restriction
+      const ip = request.ip ?? request.socket.remoteAddress ?? '';
+      if (!/^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|::1|localhost)$/.test(ip)) {
+        reply.status(403);
+        return { success: false, error: { code: 'FORBIDDEN', message: 'Loopback only' } };
+      }
+      if (!mailer || (mailer as { mode?: string }).mode !== 'development-capture') {
+        return { success: true, emails: [], note: 'Email capture not active.' };
+      }
+      const outbox = (mailer as unknown as { outbox: Array<{ to: string; kind: string; token: string; subject: string; text: string }> }).outbox;
+      return {
+        success: true,
+        count: outbox.length,
+        emails: outbox.map((m) => ({
+          to: m.to,
+          kind: m.kind,
+          subject: m.subject,
+          token: m.token,
+          text: m.text,
+        })),
+      };
+    });
+  }
+
+  // Subscription & entitlement lifecycle (customer product).
+  registerSubscriptionRoutes(app, {
+    sql: process.env.DATABASE_URL ? createSqlClient(process.env.DATABASE_URL) : undefined,
+    repos,
+  });
 
   // Extended product API routes. Registered inside buildServer so the main server
   // (not just the Vercel handler) serves the full surface. The shared rate-limit
