@@ -17,13 +17,13 @@
     "prisma:migrate:reset": "cd ../.. && PRISMA_GENERATE_SKIP_AUTOINSTALL=1 pnpm exec prisma migrate reset --schema packages/database/prisma/schema.prisma"
   },
   "devDependencies": {
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.6",
     "@types/pg": "8.23.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@prisma/client": "6.19.3",
+    "@prisma/client": "7.10.1",
     "pg": "8.23.1"
   }
 }

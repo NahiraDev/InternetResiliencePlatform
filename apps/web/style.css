@@ -427,3 +427,47 @@ select:focus, input[type="search"]:focus { border-color: var(--primary); outline
 
 /* ── Stale data indicator ───────────────────────────────────────────── */
 #stale-note { font-size: 13px; }
+
+/* ── Member User Portal ─────────────────────────────────────────────── */
+.member-view { animation: fade 0.18s ease-out; }
+.entitlement-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: var(--radius-pill); font-size: 12px; font-weight: 600;
+  background: var(--surface-raised); border: 1px solid var(--border); color: var(--text);
+  margin: 4px 4px 4px 0;
+}
+.entitlement-chip.active { border-color: var(--ok); color: var(--ok); }
+.entitlement-chip.inactive { border-color: var(--muted); color: var(--muted); }
+.plan-card {
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface-raised); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 20px;
+}
+.plan-card.featured { border-color: var(--primary); }
+.plan-price { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; }
+.plan-price span { font-size: 16px; font-weight: 500; color: var(--muted); }
+.plan-features { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 6px; }
+.plan-features li {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text);
+}
+.plan-features li::before { content: "✓"; color: var(--ok); font-weight: 700; }
+.plan-features li.unavailable::before { content: "✗"; color: var(--muted); }
+.connection-status-card {
+  display: flex; flex-direction: column; gap: 16px;
+  background: var(--surface-raised); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 20px;
+}
+.connection-status-indicator {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px; background: var(--surface); border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+}
+.status-dot { width: 12px; height: 12px; border-radius: 50%; }
+.status-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.status-dot.disconnected { background: var(--muted); }
+.status-dot.authorized { background: var(--ok); }
+.status-dot.unauthorized { background: var(--danger); }
+.enroll-form {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 20px;
+}
