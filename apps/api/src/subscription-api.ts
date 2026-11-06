@@ -20,6 +20,9 @@ import {
 import type { Principal } from '@irp/auth';
 import { type SqlClient } from '@irp/database';
 import { sharedRateLimitPreHandler } from './security/rate-limit.js';
+import { controlRequest } from '@irp/resilience-runtime';
+import { join } from 'node:path';
+import os from 'node:os';
 
 const isoNow = () => new Date().toISOString();
 
@@ -514,6 +517,23 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       metadata: { connectedAt: t },
       ipAddress: request.ip,
     });
+
+    // Also connect through the daemon's ConnectivityManager via control socket
+    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    try {
+      await controlRequest(sockPath, 'POST', '/v1/connect-device', { deviceId }, 10000);
+    } catch (daemonErr) {
+      // Daemon may not be running; database state is still updated. Log but don't fail.
+      await repos.audit.record({
+        actorUserId: principal.id,
+        action: 'device.connect.daemon_unreachable',
+        resource: 'device',
+        resourceId: deviceId,
+        metadata: { error: daemonErr instanceof Error ? daemonErr.message : String(daemonErr) },
+        ipAddress: request.ip,
+      });
+    }
+
     return okResp({ deviceId, status: 'ACTIVE', connected: true, connectedAt: t });
   });
 
@@ -534,6 +554,23 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       metadata: { disconnectedAt: t },
       ipAddress: request.ip,
     });
+
+    // Also disconnect through the daemon's ConnectivityManager via control socket
+    const sockPath = process.env.IRP_CONTROL_SOCKET || join(os.homedir(), '.local', 'state', 'irp', 'irp.sock');
+    try {
+      await controlRequest(sockPath, 'POST', '/v1/disconnect-device', { deviceId }, 10000);
+    } catch (daemonErr) {
+      // Daemon may not be running; database state is still updated. Log but don't fail.
+      await repos.audit.record({
+        actorUserId: principal.id,
+        action: 'device.disconnect.daemon_unreachable',
+        resource: 'device',
+        resourceId: deviceId,
+        metadata: { error: daemonErr instanceof Error ? daemonErr.message : String(daemonErr) },
+        ipAddress: request.ip,
+      });
+    }
+
     return okResp({ deviceId, status: 'ENROLLED', connected: false, disconnectedAt: t });
   });
 
