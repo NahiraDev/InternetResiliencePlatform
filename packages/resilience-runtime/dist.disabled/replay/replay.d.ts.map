@@ -1,0 +1,1 @@
+{"version":3,"file":"replay.d.ts","sourceRoot":"","sources":["../../src/replay/replay.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,mBAAmB,EAAE,oBAAoB,EAAE,MAAM,oBAAoB,CAAC;AAEpF,OAAO,EAAE,oBAAoB,EAAE,MAAM,wBAAwB,CAAC;AAC9D,qBAAa,oBAAoB;IACnB,OAAO,CAAC,QAAQ,CAAC,OAAO;gBAAP,OAAO,uBAA6B;IAC3D,MAAM,CAAC,KAAK,EAAE,mBAAmB,GAAG,OAAO,CAAC,oBAAoB,CAAC;CAsBxE"}

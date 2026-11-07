@@ -1,0 +1,1 @@
+{"version":3,"file":"history-api.d.ts","sourceRoot":"","sources":["../src/history-api.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,eAAe,EAAkB,MAAM,SAAS,CAAC;AAG/D,OAAO,EAIL,KAAK,0BAA0B,EAChC,MAAM,0BAA0B,CAAC;AAsBlC,MAAM,WAAW,gBAAgB;IAC/B,KAAK,EAAE,0BAA0B,CAAC;CACnC;AAED,eAAO,MAAM,qBAAqB,GAChC,KAAK,eAAe,EACpB,QAAO,0BAAqE,KAC3E,gBAqBF,CAAC"}

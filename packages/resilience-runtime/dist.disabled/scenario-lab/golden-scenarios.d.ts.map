@@ -1,0 +1,1 @@
+{"version":3,"file":"golden-scenarios.d.ts","sourceRoot":"","sources":["../../src/scenario-lab/golden-scenarios.ts"],"names":[],"mappings":"AAAA;;;;;;;;GAQG;AAEH,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,eAAe,CAAC;AA8BxD,sEAAsE;AACtE,eAAO,MAAM,gBAAgB,EAAE,SAAS,kBAAkB,EAmDxD,CAAC;AAEH,eAAO,MAAM,cAAc,GAAI,MAAM,MAAM,KAAG,kBAAkB,GAAG,SACZ,CAAC;AAExD,eAAO,MAAM,qBAAqB,EAAE,SAAS,MAAM,EAElD,CAAC"}

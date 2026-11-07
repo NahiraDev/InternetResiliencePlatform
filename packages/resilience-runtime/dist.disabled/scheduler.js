@@ -1,0 +1,92 @@
+export class RuntimeScheduler {
+    runtime;
+    config;
+    timer;
+    active = 0;
+    lastRun = 0;
+    runsTotal = 0;
+    skippedTotal = 0;
+    overlapPreventedTotal = 0;
+    failedTotal = 0;
+    lastFailure;
+    constructor(runtime, config) {
+        this.runtime = runtime;
+        this.config = config;
+    }
+    start() {
+        if (!this.config.enabled || this.timer)
+            return;
+        this.timer = setInterval(() => void this.runOnce(), this.config.cycleIntervalMs);
+    }
+    async runOnce() {
+        const now = Date.now();
+        if (this.active >= this.config.maxConcurrentCycles) {
+            this.overlapPreventedTotal++;
+            this.skippedTotal++;
+            return;
+        }
+        if (now - this.lastRun < this.config.cooldownMs) {
+            this.skippedTotal++;
+            return;
+        }
+        this.active++;
+        this.lastRun = now;
+        try {
+            this.runsTotal++;
+            const budgetMs = Math.max(1, this.config.executionBudgetMs);
+            // The runtime validates this deadline before every mutation via its
+            // canonical validation and safety kernel.  Racing the cycle against a
+            // timer used to mark a still-running cycle as finished, which allowed a
+            // second scheduler tick to contend with it and hid the actual outcome.
+            // Keep the scheduler active until the canonical runtime has completed.
+            await this.runtime.cycle({
+                mode: this.config.mode,
+                deadline: new Date(now + budgetMs).toISOString(),
+            });
+            this.lastFailure = undefined;
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.skippedTotal++;
+            if (message === 'runtime cycle already active') {
+                // Another caller (e.g. an operator-requested cycle) holds the runtime: that is overlap
+                // prevention working, not a scheduler failure.
+                this.overlapPreventedTotal++;
+            }
+            else {
+                this.failedTotal++;
+                this.lastFailure = message;
+            }
+        }
+        finally {
+            this.active--;
+        }
+    }
+    /** Resolves once no scheduled cycle is running (or false after `timeoutMs`). */
+    async whenIdle(timeoutMs) {
+        const deadline = Date.now() + timeoutMs;
+        while (this.active > 0) {
+            if (Date.now() >= deadline)
+                return false;
+            await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        return true;
+    }
+    stop() {
+        if (this.timer)
+            clearInterval(this.timer);
+        this.timer = undefined;
+    }
+    status() {
+        return {
+            enabled: this.config.enabled,
+            active: this.active,
+            runsTotal: this.runsTotal,
+            skippedTotal: this.skippedTotal,
+            overlapPreventedTotal: this.overlapPreventedTotal,
+            failedTotal: this.failedTotal,
+            ...(this.lastFailure === undefined ? {} : { lastFailure: this.lastFailure }),
+        };
+    }
+}
+//# sourceMappingURL=scheduler.js.map
