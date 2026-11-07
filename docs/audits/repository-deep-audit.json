@@ -1,13 +1,13 @@
 {
-  "generatedAt": "4b9edf52481e547abd58e9d3c3c8a6c65c94da0d773145b44f93785dcf0d1770",
-  "workspaceCount": 43,
+  "generatedAt": "ceb323910c9710f06cfeb65290ff0d1111419b65686bb8efd1a489f3841cd541",
+  "workspaceCount": 44,
   "workflowCount": 16,
   "findings": [],
   "workspaces": [
     {
       "name": "@irp/api",
       "path": "apps/api/package.json",
-      "sourceFiles": 19,
+      "sourceFiles": 20,
       "testFiles": 14,
       "scripts": [
         "build",
@@ -35,6 +35,19 @@
       "path": "apps/daemon/package.json",
       "sourceFiles": 7,
       "testFiles": 9,
+      "scripts": [
+        "build",
+        "lint",
+        "start",
+        "test",
+        "typecheck"
+      ]
+    },
+    {
+      "name": "@irp/web",
+      "path": "apps/web/package.json",
+      "sourceFiles": 1,
+      "testFiles": 1,
       "scripts": [
         "build",
         "lint",
@@ -233,7 +246,7 @@
     {
       "name": "@irp/macos-client",
       "path": "packages/macos-client/package.json",
-      "sourceFiles": 4,
+      "sourceFiles": 11,
       "testFiles": 3,
       "scripts": [
         "build",
@@ -415,7 +428,7 @@
       "name": "@irp/resilience-runtime",
       "path": "packages/resilience-runtime/package.json",
       "sourceFiles": 166,
-      "testFiles": 82,
+      "testFiles": 83,
       "scripts": [
         "build",
         "coverage",
@@ -523,8 +536,8 @@
     {
       "name": "@irp/windows-client",
       "path": "packages/windows-client/package.json",
-      "sourceFiles": 2,
-      "testFiles": 2,
+      "sourceFiles": 9,
+      "testFiles": 3,
       "scripts": [
         "build",
         "lint",
