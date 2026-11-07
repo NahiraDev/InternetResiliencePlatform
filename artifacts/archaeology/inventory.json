@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9157db8bf12ef04405c078ad19c18dc5aa0deafbb6b48bbc62bd80d4a83edf3a",
+  "generatedAt": "a25485edee19d77fb1ef6513643f5702dd47464bd34e39ba618e1e220030fe07",
   "packages": [
     {
       "group": "apps",
@@ -42,7 +42,7 @@
         "prom-client",
         "zod"
       ],
-      "sourceFiles": 34,
+      "sourceFiles": 35,
       "testFiles": 14,
       "hasTests": true
     },

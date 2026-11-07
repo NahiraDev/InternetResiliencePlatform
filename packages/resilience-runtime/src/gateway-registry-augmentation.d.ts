@@ -162,13 +162,13 @@ declare module '@irp/gateway-registry' {
       gateway: GatewayMetadata,
       identity: GatewayIdentityAttestation,
       artifact?: { attestation: GatewayArtifactAttestation; bytes: Uint8Array },
-    ): Promise<{
+    ): {
       gatewayId: string;
       identityVerified: boolean;
       artifactVerified: boolean;
       assessedAt: string;
       identityKeyId?: string;
-    }>;
+    };
   }
 
   export type GatewaySelectionPolicy = {
