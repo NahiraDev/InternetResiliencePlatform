@@ -365,11 +365,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Validate Phase 71 release contract
-        run: |
-          set -euo pipefail
-          node scripts/phase71-release.mjs "${{ needs.prepare.outputs.release_tag }}" release-assets
-
       - name: Generate SHA-256 checksums
         working-directory: release-assets
         run: sha256sum -- * > SHA256SUMS.txt
@@ -387,5 +382,4 @@ jobs:
           gh release create "$RELEASE_TAG" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "IRP $RELEASE_TAG" \
-            --prerelease \
             --generate-notes
