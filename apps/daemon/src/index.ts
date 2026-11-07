@@ -17,7 +17,6 @@ import {
   createLinuxNetworkControlPlane,
   LinuxObservationProvider,
   createLinuxWireGuardIntegrationFromEnvironment,
-  createLinuxGatewaySelectionPlane,
   readLinuxGatewaySelectionEnvironment,
   createLinuxDestinationVerifier,
 } from '@irp/linux-client';
@@ -622,7 +621,7 @@ export class RuntimeDaemonHost {
    * on probe failure — the caller decides how to treat an unreachable
    * destination.
    */
-  private async verifyExternalDestination(sourceId: string): Promise<{
+  private async verifyExternalDestination(_sourceId: string): Promise<{
     status: 'reachable' | 'failed' | 'unknown';
     reason: string | undefined;
     latencyMs: number;
