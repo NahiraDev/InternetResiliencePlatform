@@ -105,7 +105,7 @@ export async function discoverInterfaces(): Promise<{
   if (!ffiAvailable(ffi)) {
     return { interfaces: [], available: false, error: 'FFI module unavailable' };
   }
-  const { ref, types, Buffer } = ffi;
+  const { ref: _ref, types: _types, Buffer: _Buffer } = ffi;
 
   const arrayRef = getAllInterfaces();
   if (!arrayRef) {
@@ -163,13 +163,6 @@ export async function discoverDNS(): Promise<{
   if (!lib) {
     return { servers: [], available: false, error: String(scLoadError()) };
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const copyValue: any = (lib as any).SCDynamicStoreCopyValue;
-  const ffi = await loadFfiNapi();
-  if (!ffiAvailable(ffi)) {
-    return { servers: [], available: false, error: 'FFI module unavailable' };
-  }
-  const { ref, types, Buffer } = ffi;
 
   // SCDynamicStoreCreate is required before copying values. We do not fabricate
   // DNS server lists; report availability only.
@@ -180,7 +173,7 @@ export async function discoverDNS(): Promise<{
 /* Reachability / connectivity monitoring                             */
 /* ------------------------------------------------------------------ */
 
-export async function checkReachability(host: string): Promise<{
+export async function checkReachability(_host: string): Promise<{
   readonly reachable: boolean;
   readonly available: boolean;
   readonly error?: string;
