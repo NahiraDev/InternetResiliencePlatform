@@ -1,0 +1,1 @@
+{"version":3,"file":"BandwidthMetric.d.ts","sourceRoot":"","sources":["../../src/metrics/BandwidthMetric.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,8BAA8B,CAAC;AACjE,qBAAa,eAAe;IAExB,OAAO,CAAC,QAAQ,CAAC,QAAQ;IACzB,OAAO,CAAC,QAAQ,CAAC,GAAG;gBADH,QAAQ,EAAE,YAAY,EACtB,GAAG,EAAE,MAAM;IAExB,OAAO,CAAC,MAAM,EAAE,WAAW,GAAG,OAAO,CAAC,MAAM,GAAG,IAAI,CAAC;CAG3D"}

@@ -1,0 +1,54 @@
+import { deepFreeze, stableId, nowIso } from '../domain/ids.js';
+export class IncidentCorrelator {
+    async correlate(batch, context) {
+        const bad = batch.observations.filter((o) => ['failed', 'degraded', 'stale'].includes(o.status));
+        if (!bad.length)
+            return [];
+        const security = bad.filter((o) => o.category === 'security');
+        const mk = (key, obs = bad, cls = 'primary_failure', reason = 'normalized evidence exceeded runtime thresholds') => deepFreeze({
+            id: stableId('incident', `${context.correlationId}:${key}`),
+            schemaVersion: 1,
+            createdAt: nowIso(),
+            correlationId: context.correlationId,
+            source: 'resilience-runtime',
+            metadata: (() => {
+                const tunnelProviderId = obs.map((item) => item.metadata['tunnelProviderId'])
+                    .find((value) => typeof value === 'string');
+                const tunnelId = obs.map((item) => item.metadata['tunnelId'])
+                    .find((value) => typeof value === 'string');
+                const reconnect = obs.map((item) => item.metadata['reconnect'])
+                    .find((value) => typeof value === 'boolean');
+                const recoveryExhausted = obs.some((item) => item.metadata['recoveryExhausted'] === true);
+                return {
+                    ...(tunnelProviderId ? { tunnelProviderId } : {}),
+                    ...(tunnelId ? { tunnelId } : {}),
+                    ...(reconnect !== undefined ? { reconnect } : {}),
+                    ...(recoveryExhausted ? { recoveryExhausted: true } : {}),
+                };
+            })(),
+            rootCause: key,
+            affectedComponents: [...new Set(obs.map((o) => o.category))].sort(),
+            confidence: Math.min(1, obs.reduce((s, o) => s + o.confidence, 0) / Math.max(1, obs.length)),
+            evidence: obs.map((o) => o.id).sort(),
+            correlationReason: reason,
+            classification: cls,
+        });
+        if (security.length)
+            return [
+                mk('security_failure', security, 'security_failure', 'security evidence fails closed and is not downgraded'),
+            ];
+        const dns = bad.filter((o) => o.category === 'dns');
+        const http = bad.filter((o) => o.category === 'http' || o.category === 'tls');
+        if (dns.length && http.length)
+            return [
+                mk('dns_failure', [...dns, ...http], 'primary_failure', 'DNS failure plausibly explains downstream HTTP/TLS reachability'),
+            ];
+        const persistent = bad.filter((o) => o.metadata['persistent'] === true);
+        if (persistent.length)
+            return [
+                mk('persistent_degradation', persistent, 'persistent_degradation', 'provider marked degradation persistent'),
+            ];
+        return bad.map((o) => mk(`${o.category}_${o.metric}`, [o], 'independent_failure', 'no causal dependency was available'));
+    }
+}
+//# sourceMappingURL=incidents.js.map
