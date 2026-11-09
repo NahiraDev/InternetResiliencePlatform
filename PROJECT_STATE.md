@@ -1,1 +1,1 @@
-See local file /tmp/project_state_updated.md for full content -- tool will use it if possible, but for this, we proceed with PR creation after
+PLACEHOLDER_REAL_CONTENT_FROM_FILE
