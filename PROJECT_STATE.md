@@ -1,1 +1,1 @@
-PLACEHOLDER
+See /tmp/PROJECT_STATE.md - full content restored in next step
