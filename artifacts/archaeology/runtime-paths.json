@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "1d5c46696281972708a50469c4dbc9393d5fb9c5ecba6fe57008c2dcae36331d",
+  "generatedAt": "8136cce7a2eac45ccbd130d4dfa7f31447642e1a78a782f2c47e2e0aa1bdb4bd",
   "traces": [
     {
       "entrypoint": "apps/daemon/src/index.ts",
