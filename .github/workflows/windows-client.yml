@@ -44,7 +44,6 @@ jobs:
         uses: microsoft/setup-msbuild@v3
         with:
           vs-version: '17.0'
-          vs-components: 'Microsoft.VisualStudio.Workload.VCTools'
 
       - name: Install Python for node-gyp
         uses: actions/setup-python@v7
