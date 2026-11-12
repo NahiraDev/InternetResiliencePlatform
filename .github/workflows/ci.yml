@@ -290,6 +290,9 @@ jobs:
       - name: Test repository validation guards
         run: pnpm validate:test
 
+      - name: Test Phase 71 release contract guards
+        run: pnpm phase71:test
+
       - name: Enforce IRP architecture contract
         run: pnpm architecture:check
 

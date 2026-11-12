@@ -1,1 +1,0 @@
-{"version":3,"file":"incidents.d.ts","sourceRoot":"","sources":["../../src/incidents/incidents.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,QAAQ,EAAE,gBAAgB,EAAE,cAAc,EAAE,MAAM,oBAAoB,CAAC;AACrF,qBAAa,kBAAkB;IACvB,SAAS,CAAC,KAAK,EAAE,gBAAgB,EAAE,OAAO,EAAE,cAAc,GAAG,OAAO,CAAC,SAAS,QAAQ,EAAE,CAAC;CAkFhG"}

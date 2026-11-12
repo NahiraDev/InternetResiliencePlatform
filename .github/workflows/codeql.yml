@@ -50,7 +50,7 @@ jobs:
         - language: javascript-typescript
           build-mode: none
         - language: swift
-          build-mode: autobuild
+          build-mode: manual
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both
         # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
@@ -124,6 +124,83 @@ jobs:
       if: matrix.language == 'java-kotlin'
       working-directory: clients/android
       run: gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
+
+    # Issue #420: this repository uses the advanced CodeQL model. GitHub default
+    # setup must stay disabled, otherwise the two models overlap and SARIF
+    # processing is rejected as a configuration mismatch. The check fails closed
+    # only for the contradictory state; an unreadable settings endpoint is
+    # reported as a warning because the workflow token may not be allowed to
+    # read repository security settings.
+    - name: Verify GitHub default CodeQL setup is disabled
+      if: matrix.language == 'actions'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        response="$(gh api "repos/${GITHUB_REPOSITORY}/code-scanning/default-setup" 2>&1)" || {
+          echo "::warning::Could not read the CodeQL default setup state (${response}); the advanced workflow remains this repository's CodeQL model."
+          exit 0
+        }
+        state="$(printf '%s' "$response" | jq -r '.state // "unknown"')"
+        if [ "$state" != "not-configured" ] && [ "$state" != "disabled" ]; then
+          echo "::error::GitHub default CodeQL setup is '${state}' while the advanced workflow is authoritative. Disable default setup so exactly one CodeQL model is active (issue #420)."
+          exit 1
+        fi
+        echo "GitHub default CodeQL setup state: ${state}"
+
+    - name: Select and verify Xcode
+      if: matrix.language == 'swift'
+      run: |
+        set -euo pipefail
+        # Prefer a known-good toolchain; selecting an installed compatible
+        # Xcode is a compatibility fix, not a validation bypass.
+        for candidate in \
+          /Applications/Xcode_16.3.app/Contents/Developer \
+          /Applications/Xcode_16.2.app/Contents/Developer \
+          /Applications/Xcode_16.4.app/Contents/Developer \
+          /Applications/Xcode_16.app/Contents/Developer \
+          /Applications/Xcode_26.2.app/Contents/Developer \
+          /Applications/Xcode_26.1.app/Contents/Developer \
+          /Applications/Xcode_26.0.app/Contents/Developer \
+          /Applications/Xcode.app/Contents/Developer; do
+          if [ -d "$candidate" ]; then
+            sudo xcode-select -s "$candidate"
+            break
+          fi
+        done
+        test -x "$(xcode-select -p)/usr/bin/xcodebuild"
+        xcodebuild -version
+        swift --version
+
+    - name: Regenerate Xcode project (XcodeGen)
+      if: matrix.language == 'swift'
+      run: |
+        set -euo pipefail
+        # clients/ios/project.yml is the canonical project definition; the
+        # generated project must contain every client source file.
+        brew install xcodegen
+        (cd clients/ios && xcodegen generate)
+
+    # Issue #420: `autobuild` reported success for a run whose Xcode build had
+    # failed with compiler errors, producing a false-green security gate. The
+    # Swift analysis now runs in manual mode with a mandatory build, so a
+    # compiler error fails the CodeQL job instead of being ignored.
+    - name: Build Swift sources for CodeQL
+      if: matrix.language == 'swift'
+      run: |
+        set -euo pipefail
+        swift build --package-path clients/ios
+        xcodebuild \
+          -project clients/ios/IRP.xcodeproj \
+          -scheme IRP \
+          -sdk iphonesimulator \
+          -destination 'generic/platform=iOS Simulator' \
+          -configuration Debug \
+          -jobs 1 \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY=- \
+          build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

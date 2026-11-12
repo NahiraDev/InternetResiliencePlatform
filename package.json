@@ -34,6 +34,7 @@
     "integration:graph": "node scripts/integration-graph.mjs",
     "integration:baseline": "node scripts/integration-baseline.mjs",
     "phase71:release": "node scripts/phase71-release.mjs",
+    "phase71:test": "vitest run scripts/phase71-release.test.mjs",
     "linux:package": "bash scripts/build-linux-deb.sh",
     "docker:smoke": "bash scripts/docker-smoke.sh",
     "diagnostics": "node scripts/operational-diagnostics.mjs",

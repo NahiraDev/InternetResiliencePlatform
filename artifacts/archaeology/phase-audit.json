@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9157db8bf12ef04405c078ad19c18dc5aa0deafbb6b48bbc62bd80d4a83edf3a",
+  "generatedAt": "89aeea12533e8660a8dcf3851ea06d82712f53ed454cb020cc58f71e4c792adc",
   "phases": [
     {
       "file": "docs/phases/README.md",
@@ -1580,18 +1580,12 @@
       "hasTestEvidence": false,
       "pinnedShas": [
         "200de484edb0ed3105f094fba8daf85dab81158c",
-        "3a5ce2dd3c4f14356e374c6853a77fb0119951d1",
-        "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-        "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-        "8aa4e3526f2739e996d38a1ffcf19182ecacaffd"
+        "3a5ce2dd3c4f14356e374c6853a77fb0119951d1"
       ],
       "stalePins": [],
       "behindHead": [
         "200de484edb0ed3105f094fba8daf85dab81158c",
-        "3a5ce2dd3c4f14356e374c6853a77fb0119951d1",
-        "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-        "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-        "8aa4e3526f2739e996d38a1ffcf19182ecacaffd"
+        "3a5ce2dd3c4f14356e374c6853a77fb0119951d1"
       ],
       "evidenceClass": "behind-head"
     },
@@ -1601,16 +1595,12 @@
       "number": null,
       "beyondPhase78": false,
       "claimsImplementation": true,
-      "citesEvidence": true,
+      "citesEvidence": false,
       "hasTestEvidence": false,
-      "pinnedShas": [
-        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
-      ],
+      "pinnedShas": [],
       "stalePins": [],
-      "behindHead": [
-        "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
-      ],
-      "evidenceClass": "behind-head"
+      "behindHead": [],
+      "evidenceClass": "descriptive"
     }
   ],
   "summary": {
@@ -1707,16 +1697,7 @@
         "file": "PROJECT_STATE.md",
         "behindHead": [
           "200de484edb0ed3105f094fba8daf85dab81158c",
-          "3a5ce2dd3c4f14356e374c6853a77fb0119951d1",
-          "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-          "ebf2b0f8b7ddfd6e89164b7823ca6cbcbf9a95df",
-          "8aa4e3526f2739e996d38a1ffcf19182ecacaffd"
-        ]
-      },
-      {
-        "file": ".github/ACTIVE_WORK.md",
-        "behindHead": [
-          "9d6c1d562e5c3b0e868cc03b3acd3993b0346a13"
+          "3a5ce2dd3c4f14356e374c6853a77fb0119951d1"
         ]
       }
     ]

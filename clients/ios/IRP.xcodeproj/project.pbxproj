@@ -14,7 +14,12 @@
 		A10000010000000000000005 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000005 /* Views.swift */; };
 		A10000010000000000000006 /* PacketTunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000006 /* PacketTunnelConfiguration.swift */; };
 		A10000010000000000000007 /* NetworkExtensionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000007 /* NetworkExtensionController.swift */; };
+		A10000010000000000000008 /* HttpControlPlaneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000015 /* HttpControlPlaneClient.swift */; };
 		A10000010000000000000009 /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000009 /* PacketTunnelProvider.swift */; };
+		A10000010000000000000010 /* NetworkExtensionAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000016 /* NetworkExtensionAdapter.swift */; };
+		A10000010000000000000012 /* IRPComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000017 /* IRPComponents.swift */; };
+		A10000010000000000000013 /* IRPPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000018 /* IRPPresentation.swift */; };
+		A10000010000000000000014 /* IRPTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000019 /* IRPTheme.swift */; };
 		A10000010000000000000011 /* IRPPacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B10000010000000000000012 /* IRPPacketTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -43,6 +48,11 @@
 		B10000010000000000000012 /* IRPPacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = IRPPacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000010000000000000013 /* IRP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IRP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000010000000000000014 /* PacketTunnel Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B10000010000000000000015 /* HttpControlPlaneClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HttpControlPlaneClient.swift; sourceTree = "<group>"; };
+		B10000010000000000000016 /* NetworkExtensionAdapter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NetworkExtensionAdapter.swift; sourceTree = "<group>"; };
+		B10000010000000000000017 /* IRPComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IRPComponents.swift; sourceTree = "<group>"; };
+		B10000010000000000000018 /* IRPPresentation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IRPPresentation.swift; sourceTree = "<group>"; };
+		B10000010000000000000019 /* IRPTheme.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IRPTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,7 +63,8 @@
 /* Begin PBXGroup section */
 		010000010000000000000001 = {isa = PBXGroup; children = (010000010000000000000002, 010000010000000000000003, 010000010000000000000004, 010000010000000000000005); sourceTree = "<group>"; };
 		010000010000000000000002 /* App */ = {isa = PBXGroup; children = (B10000010000000000000001, B10000010000000000000008, B10000010000000000000011); path = App; sourceTree = "<group>"; };
-		010000010000000000000003 /* SharedSources */ = {isa = PBXGroup; children = (B10000010000000000000002, B10000010000000000000003, B10000010000000000000004, B10000010000000000000005, B10000010000000000000006, B10000010000000000000007); path = Sources/IRPiOSClient; sourceTree = "<group>"; };
+		010000010000000000000003 /* SharedSources */ = {isa = PBXGroup; children = (B10000010000000000000002, B10000010000000000000003, B10000010000000000000004, B10000010000000000000005, B10000010000000000000006, B10000010000000000000007, B10000010000000000000015, B10000010000000000000016, 010000010000000000000006); path = Sources/IRPiOSClient; sourceTree = "<group>"; };
+		010000010000000000000006 /* UI */ = {isa = PBXGroup; children = (B10000010000000000000017, B10000010000000000000018, B10000010000000000000019); path = UI; sourceTree = "<group>"; };
 		010000010000000000000004 /* PacketTunnel */ = {isa = PBXGroup; children = (B10000010000000000000009, B10000010000000000000010, B10000010000000000000014); path = PacketTunnel; sourceTree = "<group>"; };
 		010000010000000000000005 /* Products */ = {isa = PBXGroup; children = (B10000010000000000000013, B10000010000000000000012); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
@@ -110,7 +121,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		410000010000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000001, A10000010000000000000002, A10000010000000000000003, A10000010000000000000004, A10000010000000000000005, A10000010000000000000006, A10000010000000000000007); runOnlyForDeploymentPostprocessing = 0; };
+		410000010000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000001, A10000010000000000000002, A10000010000000000000003, A10000010000000000000004, A10000010000000000000005, A10000010000000000000006, A10000010000000000000007, A10000010000000000000008, A10000010000000000000010, A10000010000000000000012, A10000010000000000000013, A10000010000000000000014); runOnlyForDeploymentPostprocessing = 0; };
 		410000010000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000009); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
