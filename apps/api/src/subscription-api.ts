@@ -97,7 +97,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
   app.post('/api/v1/subscriptions/purchase', { preHandler: [subLimit] }, async (request) => {
     const principal = await requireAuthDep(request);
     if (!sql) throw new Error('Database not configured');
-    const body = z.object({ planSlug: z.string().min(1), paymentProvider: z.string().default('test') }).parse(request.body ?? {});
+    const body = z.object({ planSlug: z.string().min(1), paymentProvider: z.string() }).parse(request.body ?? {});
 
     const planRows = await sql.query(
       `SELECT "id","slug","name","priceUsd","currency","durationDays","maxDevices","features" FROM "SubscriptionPlan" WHERE "slug" = $1 AND "isActive" = true`,
@@ -169,9 +169,24 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     }
 
     // Backend-authoritative verification against the payment provider.
+    // The 'test' provider is development-only and must never be accepted in
+    // production or staging — otherwise a client can activate an entitlement
+    // with a fake payment and no server-side verification.
+    const isTestEnv = ['development', 'test'].includes((process.env.NODE_ENV ?? '').toLowerCase());
     let verified = false;
     let providerRef = body.providerRef;
     if (tx.provider === 'test') {
+      if (!isTestEnv) {
+        await repos.audit.record({
+          actorUserId: principal.id,
+          action: 'payment.rejected_test_provider_in_production',
+          resource: 'payment',
+          resourceId: tx.id,
+          metadata: { provider: tx.provider, reason: 'test_provider_not_allowed_in_production' },
+          ipAddress: request.ip,
+        });
+        throw new ForbiddenAppError('Test payment provider is not allowed in this environment.');
+      }
       // DEVELOPMENT-ONLY test provider: never used in production.
       verified = true;
       providerRef = body.providerRef ?? `test_${crypto.randomUUID()}`;
@@ -279,7 +294,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
   app.post('/api/v1/subscriptions/renew', { preHandler: [subLimit] }, async (request) => {
     const principal = await requireAuthDep(request);
     if (!sql) throw new Error('Database not configured');
-    const body = z.object({ paymentProvider: z.string().default('test') }).parse(request.body ?? {});
+    const body = z.object({ paymentProvider: z.string() }).parse(request.body ?? {});
 
     const subRows = await sql.query(
       `SELECT s."id",s."status",s."expiresAt",s."planId" FROM "Subscription" s WHERE s."userId" = $1 AND s."status" = 'ACTIVE' ORDER BY s."createdAt" DESC LIMIT 1`,

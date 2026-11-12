@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "9157db8bf12ef04405c078ad19c18dc5aa0deafbb6b48bbc62bd80d4a83edf3a",
+  "generatedAt": "89aeea12533e8660a8dcf3851ea06d82712f53ed454cb020cc58f71e4c792adc",
   "packages": [
     {
       "group": "apps",
@@ -955,6 +955,7 @@
       "scripts/phase69-readiness.mjs",
       "scripts/phase70-certification.mjs",
       "scripts/phase71-release.mjs",
+      "scripts/phase71-release.test.mjs",
       "scripts/production-assurance.mjs",
       "scripts/production-certification.mjs",
       "scripts/production-certification.test.mjs",

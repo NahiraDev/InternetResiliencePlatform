@@ -1,2 +1,0 @@
-export {};
-//# sourceMappingURL=kill-switch.test.d.ts.map

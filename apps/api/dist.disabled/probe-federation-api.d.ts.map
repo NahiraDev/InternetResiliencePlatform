@@ -1,1 +1,0 @@
-{"version":3,"file":"probe-federation-api.d.ts","sourceRoot":"","sources":["../src/probe-federation-api.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,eAAe,EAAkB,MAAM,SAAS,CAAC;AAG/D,OAAO,EAAE,eAAe,EAA4B,MAAM,yBAAyB,CAAC;AAsDpF,MAAM,WAAW,wBAAwB;IACvC,UAAU,EAAE,eAAe,CAAC;CAC7B;AAED,eAAO,MAAM,6BAA6B,GACxC,KAAK,eAAe,EACpB,4BAAkC,KACjC,wBA0CF,CAAC"}

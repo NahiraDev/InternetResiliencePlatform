@@ -29,8 +29,8 @@ The release pipeline must never label an unsigned iOS bundle as an installable i
 - Release creation is fail-closed: if any required platform build fails, the release job does not run.
 - GitHub Actions uses `contents: write` only for the release workflow.
 - A machine-readable release contract defines the expected platform asset set.
-- Release assets are validated for uniqueness, versioned naming, non-empty content and forbidden unsigned iOS `.ipa` output.
-- A `SHA256SUMS.txt` file is generated and verified before publication.
+- Release assets are validated against the machine-readable contract in `ops/release/phase-71-release.json`: exactly one asset per platform, named exactly for the release tag, non-empty, and free of forbidden artifacts such as unsigned iOS `.ipa` output.
+- A `SHA256SUMS.txt` file is generated before validation, must cover exactly the published assets, and every recorded digest is verified against the asset contents before publication.
 
 ## Installation surface
 
@@ -49,7 +49,7 @@ An installable iOS `.ipa` requires Apple code signing/provisioning and an approp
 5. The release job depends on every required platform build.
 6. Release validation rejects missing, duplicate, empty or incorrectly versioned assets.
 7. Release validation rejects unsigned iOS `.ipa` output.
-8. SHA-256 checksums are generated and verified before release publication.
+8. SHA-256 checksums are generated before validation, cover exactly the published assets, and are verified against the asset contents before release publication.
 9. Release creation contains no `continue-on-error`, `|| true`, or equivalent false-green mechanism.
 10. Human-facing download documentation distinguishes installable artifacts from developer/source bundles.
 

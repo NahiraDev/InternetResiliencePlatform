@@ -365,14 +365,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Generate SHA-256 checksums
+        working-directory: release-assets
+        run: sha256sum -- * > SHA256SUMS.txt
+
       - name: Validate Phase 71 release contract
         run: |
           set -euo pipefail
           node scripts/phase71-release.mjs "${{ needs.prepare.outputs.release_tag }}" release-assets
-
-      - name: Generate SHA-256 checksums
-        working-directory: release-assets
-        run: sha256sum -- * > SHA256SUMS.txt
 
       - name: Validate checksums file
         working-directory: release-assets
