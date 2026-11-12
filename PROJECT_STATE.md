@@ -125,3 +125,15 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Blockers: exact-SHA CI evidence; durable conflict-journal restart coverage; Linux runtime soak (#254/#323); production PostgreSQL / durable stores (#410); auth lifecycle (#412); CodeQL config (#420).
 - Next prioritized tasks: formalize Phase 93 Advanced Routing Control contract + regression evidence; address #413 fully; continue roadmap to Phase 150.
 
+
+## Autonomous engineer checkpoint (2026-11-12)
+
+- Starting base SHA: 459cf083207332136fc3dec203724818a3502af9 (upstream/main)
+- Ending base SHA: (pending this PR)
+- Completed this run: reconciled PROJECT_STATE.md with live main HEAD after #497 merge. Confirmed Phases 94–150 modules and tests present; dispositions remain PARTIAL pending exact-SHA CI evidence and external runtime verification (issues #254, #323). No runtime authority changes. Open PRs #498 (#412 payment guard) and #499 (state reconcile) noted; windows-client and swift Analyze checks failing on #498.
+- Branches/PRs: chore/update-project-state-current-sha (this PR)
+- Actual CI: pending
+- Verified merges: #497 (CodeQL) previously merged
+- Blockers: exact-SHA CI evidence for phases 94–150; Linux runtime soak (#254/#323); auth payment provider guard pending merge of #498.
+- Next prioritized tasks: merge #498 after CI green; address windows-client/swift Analyze failures; continue evidence attachment for Phase 150 certification; durable stores already resolved.
+

@@ -4,7 +4,7 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 
 ## Current baseline
 
-- Current implementation baseline: **Phases 94–150 implemented locally** (branch `phase/94-150-implementation`, PARTIAL pending exact-SHA CI). Phase 93 Advanced Routing Control foundational regression evidence merged on main. Phase 92 — Connectivity Service Assurance regression evidence merged on main (PR #415). ResilienceRuntime remains the sole production mutation authority.
+- Current implementation baseline: **Phases 94–150 implemented on main** (branch `phase/94-150-implementation`, PARTIAL pending exact-SHA CI). Phase 93 Advanced Routing Control foundational regression evidence merged on main. Phase 92 — Connectivity Service Assurance regression evidence merged on main (PR #415). ResilienceRuntime remains the sole production mutation authority.
 - Phase 71 status: implementation/release contract work exists; external release certification remains open. Published GitHub Release v0.2.1 is developer-preview evidence only.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
 - Current work must close source → contract → consumer → entrypoint → execution → outcome gaps without creating a second control plane or declaring completion from source presence alone.
