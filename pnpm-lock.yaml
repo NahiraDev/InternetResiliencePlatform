@@ -131,8 +131,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@vercel/speed-insights':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.1.0
+        version: 2.1.0
       fastify:
         specifier: ^5.12.8
         version: 5.12.8
@@ -1968,10 +1968,10 @@ packages:
       vue-router:
         optional: true
 
-  '@vercel/speed-insights@2.0.0':
-    resolution: {integrity: sha512-jwkNcrTeafWxjmWq4AHBaptSqZiJkYU5adLC9QBSqeim0GcqDMgN5Ievh8OG1rJ6W3A4l1oiP7qr9CWxGuzu3w==}
+  '@vercel/speed-insights@2.1.0':
+    resolution: {integrity: sha512-tkDiIEjjmlwPpTFnOK14hBhsRLMo5yoCeK2Er3AHWlL7WTzHgFSyItps3TOW0HukErUlYlaUeHiVLCyfiE4WAA==}
     peerDependencies:
-      '@sveltejs/kit': ^1 || ^2
+      '@sveltejs/kit': ^1 || ^2 || ^3 || ^3.0.0-next.0
       next: '>= 13'
       nuxt: '>= 3'
       react: ^18 || ^19 || ^19.0.0-rc
@@ -4205,7 +4205,7 @@ snapshots:
 
   '@vercel/analytics@2.0.1': {}
 
-  '@vercel/speed-insights@2.0.0': {}
+  '@vercel/speed-insights@2.1.0': {}
 
   '@vitest/coverage-v8@3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/node@26.6.6)(jiti@2.7.0)(supports-color@7.2.0)(yaml@2.9.1))':
     dependencies:
