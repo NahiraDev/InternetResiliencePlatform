@@ -1,1 +1,1 @@
-PLACEHOLDER_TO_BE_REPLACED
+$(cat /tmp/project_state_updated.md)
