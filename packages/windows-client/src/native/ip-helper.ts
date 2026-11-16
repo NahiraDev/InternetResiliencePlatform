@@ -118,8 +118,14 @@ export async function ensureIpHelperAvailable(): Promise<boolean> {
 /* Opaque buffer helpers                                              */
 /* ------------------------------------------------------------------ */
 
-/** Reads an unsigned 32-bit integer from a buffer at a byte offset. */
-function readUInt32(buffer: unknown, offset: number): number {
+/**
+ * Reads an unsigned 32-bit integer from a buffer at a byte offset.
+ *
+ * `ref.alloc(types.uint, 0).deref()` returns the already-decoded number, not a buffer,
+ * so a plain number is accepted as-is (regression: 'Buffer-like object has no readUInt32LE').
+ */
+export function readUInt32(buffer: unknown, offset: number): number {
+  if (typeof buffer === 'number') return buffer >>> 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buf: any = buffer;
   if (typeof buf.readUInt32LE === 'function') return buf.readUInt32LE(offset);

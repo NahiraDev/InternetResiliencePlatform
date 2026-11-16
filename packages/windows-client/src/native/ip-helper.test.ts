@@ -17,6 +17,7 @@ import {
   parseAdapterAddresses,
   readStringFromPtr,
   IPHLPAPI_SIGNATURES,
+  readUInt32,
 } from './ip-helper.js';
 
 describe('IP Helper API IPv4 parsing', () => {
@@ -206,5 +207,21 @@ describe('iphlpapi FFI signatures', () => {
 
   it('declares no function without a known Win32 arity', () => {
     expect(Object.keys(IPHLPAPI_SIGNATURES).sort()).toEqual(Object.keys(win32Arity).sort());
+  });
+});
+
+describe('readUInt32', () => {
+  it('reads from a buffer at an offset', () => {
+    const b = Buffer.from([0, 0, 0x34, 0x12, 0, 0]);
+    expect(readUInt32(b, 2)).toBe(0x1234);
+  });
+
+  it('accepts the decoded number returned by ref deref()', () => {
+    expect(readUInt32(4096, 0)).toBe(4096);
+    expect(readUInt32(0xffffffff, 0)).toBe(0xffffffff);
+  });
+
+  it('rejects values that are neither buffer nor number', () => {
+    expect(() => readUInt32({}, 0)).toThrow(/no readUInt32LE/);
   });
 });
