@@ -43,11 +43,7 @@ export interface CredentialReport {
 }
 
 /** Read the stored refresh token for the target. Returns null when absent. */
-export async function readCredential(): Promise<{
-  readonly token: string | null;
-  readonly available: boolean;
-  readonly error?: string;
-}> {
+export async function readCredential(): Promise<{ readonly token: string | null; readonly available: boolean; readonly error?: string }> {
   const lib = await ensureAdvapi();
   if (!lib) {
     return { token: null, available: false, error: 'native FFI bindings not installed' };
@@ -91,9 +87,7 @@ export async function readCredential(): Promise<{
 }
 
 /** Persist the refresh token for the target. */
-export async function writeCredential(
-  token: string,
-): Promise<{ readonly ok: boolean; readonly available: boolean; readonly error?: string }> {
+export async function writeCredential(token: string): Promise<{ readonly ok: boolean; readonly available: boolean; readonly error?: string }> {
   if (!token) {
     return { ok: false, available: true, error: 'refusing to store empty token' };
   }
@@ -111,18 +105,14 @@ export async function writeCredential(
   const blob = Buffer.from(token, 'utf16le');
   // Build CREDENTIAL structure best-effort; exact layout is ABI-dependent.
   const cred = Buffer.alloc(256);
-  writeUInt32At(cred, 92, blob.length); // CredentialBlobSize (best-effort offset)
+  writeUInt32At(cred, 92, blob.length);       // CredentialBlobSize (best-effort offset)
   writePointerAt(cred, 100, ref.alloc(types.pointer, blob)); // CredentialBlob (best-effort)
   const ok = credWrite(cred, CRED_PERSIST_LOCAL_MACHINE);
   return { ok: !!ok, available: true };
 }
 
 /** Remove the stored credential for the target. */
-export async function removeCredential(): Promise<{
-  readonly ok: boolean;
-  readonly available: boolean;
-  readonly error?: string;
-}> {
+export async function removeCredential(): Promise<{ readonly ok: boolean; readonly available: boolean; readonly error?: string }> {
   const lib = await ensureAdvapi();
   if (!lib) {
     return { ok: false, available: false, error: 'native FFI bindings not installed' };
@@ -169,9 +159,7 @@ function readPointerAt(ptr: unknown, offset: number): unknown {
 
 function writePointerAt(buf: unknown, offset: number, value: unknown): void {
   // best-effort no-op; exact pointer layout is ABI-dependent
-  void buf;
-  void offset;
-  void value;
+  void buf; void offset; void value;
 }
 
 /** Treat an ffi pointer/buffer value as a readable buffer-like object. */
