@@ -41,6 +41,8 @@ export type FfiNapiModule = {
   };
   readonly ref: {
     alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+    /** NULL pointer buffer; ffi-napi 'pointer' arguments reject `null`/`0` and need this. */
+    readonly NULL: Buffer;
   };
   readonly Struct: unknown;
   readonly ArrayType: unknown;
@@ -68,8 +70,9 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
     const refModule = await import('ref-napi');
     loaded = {
       ...ffiModule,
-      ref: refModule,
-    } as FfiNapiModule;
+      // ref-napi is CommonJS: only `default` carries every export (e.g. NULL is not a named ESM export).
+      ref: (refModule as { default?: unknown }).default ?? refModule,
+    } as unknown as FfiNapiModule;
   } catch (error) {
     loadError = error;
     loaded = undefined;

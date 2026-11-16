@@ -342,8 +342,8 @@ export async function discoverInterfaces(): Promise<{
   const first = getAdaptersAddresses(
     AF_UNSPEC,
     GAA_FLAG_INCLUDE_ALL_INTERFACES,
-    0,
-    null as unknown as never,
+    ref.NULL,
+    ref.NULL,
     outBufLen,
   );
   if (first !== ERROR_BUFFER_OVERFLOW && first !== ERROR_SUCCESS) {
@@ -358,7 +358,7 @@ export async function discoverInterfaces(): Promise<{
   const second = getAdaptersAddresses(
     AF_UNSPEC,
     GAA_FLAG_INCLUDE_ALL_INTERFACES,
-    0,
+    ref.NULL,
     buf,
     outBufLen,
   );
