@@ -33,7 +33,8 @@ async function ensureLibs(): Promise<{
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       advapi = (ffi as any).Library('advapi32.dll', {
-        OpenProcessToken: ['bool', ['pointer', 'uint', 'pointer']],
+        // HANDLE ProcessHandle is a pseudo-handle value (-1), not a buffer: pass it as an integer.
+        OpenProcessToken: ['bool', ['int64', 'uint', 'pointer']],
         GetTokenInformation: ['bool', ['pointer', 'uint', 'pointer', 'uint', 'pointer']],
         CloseHandle: ['bool', ['pointer']],
       });
@@ -105,8 +106,8 @@ export async function readTokenElevation(): Promise<TokenElevation> {
     return { tokenIsElevated: false, available: false };
   }
   // TOKEN_QUERY = 0x0008; TokenElevation = 20
-  const currentProcess = 0xffffffff; // pseudo-handle
-  const tokenHandle = ref.alloc(types.pointer, 0);
+  const currentProcess = -1; // GetCurrentProcess() pseudo-handle
+  const tokenHandle = ref.alloc(types.pointer);
   const opened = openProcessToken(currentProcess, 0x0008, tokenHandle);
   if (!opened) {
     return { tokenIsElevated: false, available: true };
@@ -114,7 +115,7 @@ export async function readTokenElevation(): Promise<TokenElevation> {
   try {
     const size = ref.alloc(types.uint, 0);
     // First call to get required size.
-    getTokenInformation(tokenHandle.deref(), 20, 0, 0, size);
+    getTokenInformation(tokenHandle.deref(), 20, ref.NULL, 0, size);
     const bufSize = readUInt32Ptr(size.deref());
     const buf = Buffer.alloc(bufSize);
     const ok = getTokenInformation(tokenHandle.deref(), 20, buf, bufSize, size);

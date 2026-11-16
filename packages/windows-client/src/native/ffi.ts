@@ -40,7 +40,7 @@ export type FfiNapiModule = {
     readonly uint64: unknown;
   };
   readonly ref: {
-    alloc: (type: unknown, value: unknown) => { deref: () => unknown };
+    alloc: (type: unknown, value?: unknown) => { deref: () => unknown };
     /** NULL pointer buffer; ffi-napi 'pointer' arguments reject `null`/`0` and need this. */
     readonly NULL: Buffer;
   };

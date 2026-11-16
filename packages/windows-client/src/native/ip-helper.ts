@@ -459,7 +459,7 @@ export async function discoverRoutes(): Promise<{
   const { ref, types, Buffer } = ffi;
 
   const outBufLen = ref.alloc(types.uint, 0);
-  const first = getIpForwardTable(0, outBufLen, 0);
+  const first = getIpForwardTable(ref.NULL, outBufLen, 0);
   if (first !== ERROR_BUFFER_OVERFLOW && first !== ERROR_SUCCESS) {
     return { routes: [], available: false, error: `GetIpForwardTable sizing failed (${first})` };
   }
