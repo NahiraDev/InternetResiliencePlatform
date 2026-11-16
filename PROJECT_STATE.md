@@ -5,9 +5,9 @@
 ## Current implementation gate
 
 - **Current implementation baseline:** Phases 94–150 implemented locally on branch `phase/94-150-implementation` (authorized by the repository owner's explicit request); each phase is PARTIAL pending exact-SHA CI evidence. Phase 93 and earlier baselines are unchanged.
-- **Current main HEAD inspected (2026-11-16):** `3f6535aee9228764f93f35ee2d7371af0e4d1e2c` (post-merge of #496 integration/full-cross-platform-completion). Previous inspected SHA was stale. Independent audit and the durable identity/auth work package are in `docs/audit/` (branch `fix/durable-identity-auth`, not merged; exact-SHA GitHub CI evidence pending).
+- **Current main HEAD inspected (2026-11-15):** `d6e9fe2aeb517f86c3ca5a314475cbe2a8851e92` (post-merge of #499 chore/reconcile-project-state-2026-11-11). Previous inspected SHA was stale. Phases 94–150 modules and docs are present on main. Disposition PARTIAL pending exact-SHA CI evidence and external runtime verification. Independent audit and durable identity/auth work remain pending exact-SHA CI.
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
-- **Current open issues (authoritative tracker):** #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411 (durable stores / PostgreSQL production evidence), #463 (Autonomous bandwidth/egress provisioning). Issue #410/#411 (durable stores / PostgreSQL): RESOLVED — PostgresDecisionStore and PostgresIncidentStore implemented; daemon uses them when DATABASE_URL is configured.
+- **Current open issues (authoritative tracker):** #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411 (durable stores / PostgreSQL — implementation present but issue remains open pending production evidence), #463 (Autonomous bandwidth/egress provisioning). #254 and #420 closed as completed.
 - **Phase 77 status:** implementation is complete and merged on `main`; the safety/rollback/recovery kernel is available from `@irp/resilience-runtime`.
 - **Phase 78 status:** the bounded closed-loop controller is implemented and present on `main`.
 - **Phase 79 status:** NetworkIntent model, lifecycle transitions, effective-window evaluation, autonomy levels and dedicated tests are implemented and present on `main` in `packages/core/src/intent.ts` and `intent.test.ts`. Exported from the core barrel.
@@ -257,13 +257,13 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Blockers: exact-SHA CI evidence for phases 94-150; windows-client ffi-napi/node version failures; CodeQL (#420); auth lifecycle (#412); Linux soak (#254/#323).
 - Next prioritized tasks: fix windows-client CI failures; resolve open PR check failures; continue evidence for 94-150; address durable/auth blockers.
 
-## Autonomous engineer checkpoint (2026-11-16 run 2)
+## Autonomous engineer checkpoint (2026-11-15)
 
-- Starting base SHA: 3f6535aee9228764f93f35ee2d7371af0e4d1e2c (upstream/main)
+- Starting base SHA: d6e9fe2aeb517f86c3ca5a314475cbe2a8851e92 (upstream/main)
 - Ending base SHA: (pending this PR)
-- Completed this run: updated PROJECT_STATE.md inspected main SHA to current 3f6535aee9228764f93f35ee2d7371af0e4d1e2c. Aligned open issues tracker to current live state (#272, #323, #410/#411, #463). Confirmed Phase 150 certification module and tests present on main; disposition remains PARTIAL pending exact-SHA CI evidence and external production gates. No runtime authority changes.
-- Branches/PRs: chore/reconcile-project-state-current-3f6535ae (this PR)
+- Completed this run: reconciled PROJECT_STATE.md with live main SHA d6e9fe2aeb517f86c3ca5a314475cbe2a8851e92. Confirmed phases 94–150 modules under packages/resilience-runtime/src/{traffic,telemetry-plane,...} and docs/phases/phase-94.md through phase-150.md exist on main. Updated open issues list to match live state (#254 and #420 closed). No runtime authority changes. Disposition remains PARTIAL pending exact-SHA CI and external evidence (Linux soak, production PostgreSQL verification, release certification).
+- Branches/PRs: chore/reconcile-project-state-current-d6e9fe2a (this PR)
 - Actual CI: pending
 - Verified merges: none this run
-- Blockers: exact-SHA CI evidence; production PostgreSQL verification (#410/#411); Linux runtime soak (#323); capacity provisioning (#463).
-- Next prioritized tasks: obtain exact-SHA CI on phase 94-150 tests; address production durable store evidence; continue remaining production gates.
+- Blockers: exact-SHA CI evidence on current main; Linux runtime soak and external validation (#323); production PostgreSQL provisioning/verification (#410/#411); full production certification gates.
+- Next prioritized tasks: address remaining open issues with evidence where possible; continue production gate verification; do not declare Phase 150 complete without required evidence.
