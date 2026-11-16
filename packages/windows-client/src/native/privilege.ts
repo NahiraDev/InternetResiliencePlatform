@@ -14,14 +14,17 @@ export type PrivilegeLevel = 'unknown' | 'standard-user' | 'administrator';
 export interface PrivilegeReport {
   readonly level: PrivilegeLevel;
   readonly elevated: boolean;
- readonly available: boolean;
+  readonly available: boolean;
   readonly error?: string;
 }
 
 let advapi: unknown | undefined;
 let shell32: unknown | undefined;
 
-async function ensureLibs(): Promise<{ advapi: unknown | undefined; shell32: unknown | undefined }> {
+async function ensureLibs(): Promise<{
+  advapi: unknown | undefined;
+  shell32: unknown | undefined;
+}> {
   const ffi = await loadFfiNapi();
   if (!ffi) {
     return { advapi: undefined, shell32: undefined };
@@ -30,7 +33,8 @@ async function ensureLibs(): Promise<{ advapi: unknown | undefined; shell32: unk
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       advapi = (ffi as any).Library('advapi32.dll', {
-        OpenProcessToken: ['bool', ['pointer', 'uint', 'pointer']],
+        // HANDLE ProcessHandle is a pseudo-handle value (-1), not a buffer: pass it as an integer.
+        OpenProcessToken: ['bool', ['int64', 'uint', 'pointer']],
         GetTokenInformation: ['bool', ['pointer', 'uint', 'pointer', 'uint', 'pointer']],
         CloseHandle: ['bool', ['pointer']],
       });
@@ -102,8 +106,8 @@ export async function readTokenElevation(): Promise<TokenElevation> {
     return { tokenIsElevated: false, available: false };
   }
   // TOKEN_QUERY = 0x0008; TokenElevation = 20
-  const currentProcess = 0xffffffff; // pseudo-handle
-  const tokenHandle = ref.alloc(types.pointer, 0);
+  const currentProcess = -1; // GetCurrentProcess() pseudo-handle
+  const tokenHandle = ref.alloc(types.pointer);
   const opened = openProcessToken(currentProcess, 0x0008, tokenHandle);
   if (!opened) {
     return { tokenIsElevated: false, available: true };
@@ -111,7 +115,7 @@ export async function readTokenElevation(): Promise<TokenElevation> {
   try {
     const size = ref.alloc(types.uint, 0);
     // First call to get required size.
-    getTokenInformation(tokenHandle.deref(), 20, 0, 0, size);
+    getTokenInformation(tokenHandle.deref(), 20, ref.NULL, 0, size);
     const bufSize = readUInt32Ptr(size.deref());
     const buf = Buffer.alloc(bufSize);
     const ok = getTokenInformation(tokenHandle.deref(), 20, buf, bufSize, size);
@@ -132,6 +136,8 @@ export async function readTokenElevation(): Promise<TokenElevation> {
 }
 
 function readUInt32Ptr(ptr: unknown): number {
+  // ref.alloc(types.uint, 0).deref() yields the decoded number, not a buffer.
+  if (typeof ptr === 'number') return ptr >>> 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buf: any = ptr;
   if (typeof buf.readUInt32LE === 'function') return buf.readUInt32LE(0);

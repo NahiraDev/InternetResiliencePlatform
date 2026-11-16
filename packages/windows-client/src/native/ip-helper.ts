@@ -40,7 +40,8 @@ export const IfOperStatusLowerLayerDown = 7;
 
 // Return codes
 export const ERROR_SUCCESS = 0;
-export const ERROR_BUFFER_OVERFLOW = 111;
+export const ERROR_BUFFER_OVERFLOW = 111; // GetAdaptersAddresses: buffer too small
+export const ERROR_INSUFFICIENT_BUFFER = 122; // GetIpForwardTable & friends: buffer too small
 export const ERROR_NO_DATA = 232;
 export const ERROR_INVALID_PARAMETER = 87;
 
@@ -118,8 +119,14 @@ export async function ensureIpHelperAvailable(): Promise<boolean> {
 /* Opaque buffer helpers                                              */
 /* ------------------------------------------------------------------ */
 
-/** Reads an unsigned 32-bit integer from a buffer at a byte offset. */
-function readUInt32(buffer: unknown, offset: number): number {
+/**
+ * Reads an unsigned 32-bit integer from a buffer at a byte offset.
+ *
+ * `ref.alloc(types.uint, 0).deref()` returns the already-decoded number, not a buffer,
+ * so a plain number is accepted as-is (regression: 'Buffer-like object has no readUInt32LE').
+ */
+export function readUInt32(buffer: unknown, offset: number): number {
+  if (typeof buffer === 'number') return buffer >>> 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buf: any = buffer;
   if (typeof buf.readUInt32LE === 'function') return buf.readUInt32LE(offset);
@@ -453,8 +460,8 @@ export async function discoverRoutes(): Promise<{
   const { ref, types, Buffer } = ffi;
 
   const outBufLen = ref.alloc(types.uint, 0);
-  const first = getIpForwardTable(0, outBufLen, 0);
-  if (first !== ERROR_BUFFER_OVERFLOW && first !== ERROR_SUCCESS) {
+  const first = getIpForwardTable(ref.NULL, outBufLen, 0);
+  if (first !== ERROR_INSUFFICIENT_BUFFER && first !== ERROR_SUCCESS) {
     return { routes: [], available: false, error: `GetIpForwardTable sizing failed (${first})` };
   }
   const size = readUInt32(outBufLen.deref(), 0);
