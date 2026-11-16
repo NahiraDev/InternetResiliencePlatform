@@ -17,7 +17,9 @@ import type { IdentityRepositories } from './identity/types.js';
  */
 const adminUrl = process.env.IRP_TEST_DATABASE_URL;
 if (!adminUrl && process.env.CI)
-  throw new Error('IRP_TEST_DATABASE_URL is required in CI for the subscription payment guard tests.');
+  throw new Error(
+    'IRP_TEST_DATABASE_URL is required in CI for the subscription payment guard tests.',
+  );
 const maybe = adminUrl ? describe : describe.skip;
 
 const PW = 'Production12345';
@@ -51,7 +53,7 @@ maybe('subscription payment provider guard (real database)', () => {
 
   const instance = async (envOverride: Record<string, string> = {}) => {
     const origEnv = { ...process.env };
-    Object.assign(process.env, envOverride);
+    Object.assign(process.env, { DATABASE_URL: url }, envOverride);
     const sql = createSqlClient(url, { max: 4 });
     const repos = createPostgresIdentityRepositories(sql);
     pools.push(sql);
@@ -87,11 +89,17 @@ maybe('subscription payment provider guard (real database)', () => {
   });
 
   afterAll(async () => {
-    await Promise.all(pools.map((p) => p.end()));
+    // app.close() may already have ended a pool; ending twice throws.
+    await Promise.all(pools.map((p) => p.end().catch(() => undefined)));
   });
 
   it('rejects paymentProvider=test for verify-payment in production', async () => {
-    const e = await instance({ NODE_ENV: 'production' });
+    const e = await instance({
+      NODE_ENV: 'production',
+      JWT_SECRET: 'j'.repeat(48),
+      REMOTE_CLIENT_CREDENTIAL_KEY: 'c'.repeat(48),
+      REMOTE_CLIENT_REFRESH_KEY: 'r'.repeat(48),
+    });
     try {
       const token = await registerAndVerifyUser(e, `guard-prod-${randomUUID()}@example.com`);
 
