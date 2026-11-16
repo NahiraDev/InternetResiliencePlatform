@@ -53,6 +53,22 @@ export function windowsError(code: number): WindowsError {
 /* FFI loader                                                         */
 /* ------------------------------------------------------------------ */
 
+/**
+ * ffi-napi signatures for the iphlpapi.dll functions used here. The argument count of
+ * every entry must match the Win32 prototype exactly: ffi-napi throws
+ * "Expected N arguments, got M" at call time when it does not.
+ */
+export const IPHLPAPI_SIGNATURES: Record<string, [string, string[]]> = {
+  // DWORD GetAdaptersAddresses(Family, Flags, Reserved, AdapterAddresses, SizePointer)
+  GetAdaptersAddresses: ['uint', ['uint', 'uint', 'pointer', 'pointer', 'pointer']],
+  GetIpForwardTable: ['uint', ['pointer', 'pointer', 'uint']],
+  GetIpAddrTable: ['uint', ['pointer', 'pointer', 'uint']],
+  GetBestInterface: ['uint', ['uint', 'pointer']],
+  CreateIpForwardEntry: ['uint', ['pointer']],
+  DeleteIpForwardEntry: ['uint', ['pointer']],
+  GetPerAdapterInfo: ['uint', ['uint', 'pointer', 'pointer']],
+};
+
 let iphlp: unknown | undefined;
 let iphlpError: unknown;
 
@@ -65,15 +81,7 @@ async function ensureIpHlp(): Promise<unknown | undefined> {
   }
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    iphlp = (ffi as any).Library('iphlpapi.dll', {
-      GetAdaptersAddresses: ['uint', ['uint', 'uint', 'pointer', 'pointer', 'pointer', 'uint']],
-      GetIpForwardTable: ['uint', ['pointer', 'pointer', 'uint']],
-      GetIpAddrTable: ['uint', ['pointer', 'pointer', 'uint']],
-      GetBestInterface: ['uint', ['uint', 'pointer']],
-      CreateIpForwardEntry: ['uint', ['pointer']],
-      DeleteIpForwardEntry: ['uint', ['pointer']],
-      GetPerAdapterInfo: ['uint', ['uint', 'pointer', 'pointer']],
-    });
+    iphlp = (ffi as any).Library('iphlpapi.dll', IPHLPAPI_SIGNATURES);
   } catch (error) {
     iphlp = undefined;
     iphlpError = error;
@@ -120,19 +128,24 @@ function readUInt32(buffer: unknown, offset: number): number {
 
 /** Converts a 32-bit IPv4 address integer to dotted-decimal string. */
 export function ipv4ToString(value: number): string {
-  return [
-    (value >>> 24) & 0xff,
-    (value >>> 16) & 0xff,
-    (value >>> 8) & 0xff,
-    value & 0xff,
-  ].join('.');
+  return [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff].join(
+    '.',
+  );
 }
 
 /** Reads a pointer-sized value from a buffer-like object at offset.
  * Returns a pointer view object that reads from `buffer` at the pointer's
  * target address, or null when the pointer value is zero.
  */
-function readPointer(buffer: unknown, offset: number): { readUInt32LE: (o?: number) => number; readUInt16LE: (o?: number) => number; readUInt8: (o?: number) => number; toNumber: () => number } | null {
+function readPointer(
+  buffer: unknown,
+  offset: number,
+): {
+  readUInt32LE: (o?: number) => number;
+  readUInt16LE: (o?: number) => number;
+  readUInt8: (o?: number) => number;
+  toNumber: () => number;
+} | null {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buf: any = buffer;
   if (typeof buf.readBigInt64LE === 'function') {
@@ -147,7 +160,15 @@ function readPointer(buffer: unknown, offset: number): { readUInt32LE: (o?: numb
 }
 
 /** Creates a pointer view that reads from `buf` starting at absolute address `addr`. */
-function makePtrView(buf: unknown, addr: number): { readUInt32LE: (o?: number) => number; readUInt16LE: (o?: number) => number; readUInt8: (o?: number) => number; toNumber: () => number } {
+function makePtrView(
+  buf: unknown,
+  addr: number,
+): {
+  readUInt32LE: (o?: number) => number;
+  readUInt16LE: (o?: number) => number;
+  readUInt8: (o?: number) => number;
+  toNumber: () => number;
+} {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const b: any = buf;
   return {
@@ -176,29 +197,29 @@ export interface WindowsInterface {
 }
 
 /** IP_ADAPTER_ADDRESSES_LH field offsets (32-bit and 64-bit layouts). */
-const IP_ADAPTER_ADDRESSES_LENGTH_OFFSET = 0;          // ULONG Length
-const IP_ADAPTER_ADDRESSES_IF_INDEX_OFFSET = 4;        // DWORD IfIndex
-const IP_ADAPTER_ADDRESSES_NEXT_OFFSET = 8;            // PIP_ADAPTER_ADDRESSES Next (pointer)
-const _IP_ADAPTER_ADDRESSES_ADAPTER_NAME_OFFSET = 16;   // PCHAR AdapterName (pointer)
-const _IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET = 24;    // PWSTR Description (pointer)
-const _IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET = 32;  // PWSTR FriendlyName (pointer)
-const IP_ADAPTER_ADDRESSES_OPER_STATUS_OFFSET = 136;   // NET_IFINDEX OperStatus
-const IP_ADAPTER_ADDRESSES_MTU_OFFSET = 152;           // DWORD Mtu
+const IP_ADAPTER_ADDRESSES_LENGTH_OFFSET = 0; // ULONG Length
+const IP_ADAPTER_ADDRESSES_IF_INDEX_OFFSET = 4; // DWORD IfIndex
+const IP_ADAPTER_ADDRESSES_NEXT_OFFSET = 8; // PIP_ADAPTER_ADDRESSES Next (pointer)
+const _IP_ADAPTER_ADDRESSES_ADAPTER_NAME_OFFSET = 16; // PCHAR AdapterName (pointer)
+const _IP_ADAPTER_ADDRESSES_DESCRIPTION_OFFSET = 24; // PWSTR Description (pointer)
+const _IP_ADAPTER_ADDRESSES_FRIENDLY_NAME_OFFSET = 32; // PWSTR FriendlyName (pointer)
+const IP_ADAPTER_ADDRESSES_OPER_STATUS_OFFSET = 136; // NET_IFINDEX OperStatus
+const IP_ADAPTER_ADDRESSES_MTU_OFFSET = 152; // DWORD Mtu
 const IP_ADAPTER_ADDRESSES_PHYS_ADDR_LENGTH_OFFSET = 160; // DWORD PhysicalAddressLength
-const IP_ADAPTER_ADDRESSES_PHYS_ADDR_OFFSET = 168;     // UCHAR PhysicalAddress[32]
-const _IP_ADAPTER_ADDRESSES_FLAGS_OFFSET = 208;         // DWORD Flags
+const IP_ADAPTER_ADDRESSES_PHYS_ADDR_OFFSET = 168; // UCHAR PhysicalAddress[32]
+const _IP_ADAPTER_ADDRESSES_FLAGS_OFFSET = 208; // DWORD Flags
 const IP_ADAPTER_ADDRESSES_FIRST_UNICAST_OFFSET = 216; // PIP_ADAPTER_UNICAST_ADDRESS FirstUnicastAddress (pointer)
 
 // IP_ADAPTER_UNICAST_ADDRESS field offsets
-const _IP_ADAPTER_UNICAST_ADDRESS_LENGTH_OFFSET = 0;    // ULONG Length
-const _IP_ADAPTER_UNICAST_ADDRESS_FLAGS_OFFSET = 4;     // DWORD Flags
-const _IP_ADAPTER_UNICAST_ADDRESS_NEXT_OFFSET = 8;      // PIP_ADAPTER_UNICAST_ADDRESS Next (pointer)
-const _IP_ADAPTER_UNICAST_ADDRESS_ADDR_OFFSET = 24;     // SOCKET_ADDRESS Address (SOCKADDR_IN: family at 0, addr at 4)
+const _IP_ADAPTER_UNICAST_ADDRESS_LENGTH_OFFSET = 0; // ULONG Length
+const _IP_ADAPTER_UNICAST_ADDRESS_FLAGS_OFFSET = 4; // DWORD Flags
+const _IP_ADAPTER_UNICAST_ADDRESS_NEXT_OFFSET = 8; // PIP_ADAPTER_UNICAST_ADDRESS Next (pointer)
+const _IP_ADAPTER_UNICAST_ADDRESS_ADDR_OFFSET = 24; // SOCKET_ADDRESS Address (SOCKADDR_IN: family at 0, addr at 4)
 const _IP_ADAPTER_UNICAST_ADDRESS_PREFIX_LEN_OFFSET = 64; // DWORD PrefixLength
 
 // SOCKET_ADDRESS / SOCKADDR_IN offsets
-const _SOCKADDR_FAMILY_OFFSET = 0;        // ADDRESS_FAMILY sin_family (USHORT)
-const _SOCKADDR_INET_ADDR_OFFSET = 4;     // IN_ADDR sin_addr (DWORD)
+const _SOCKADDR_FAMILY_OFFSET = 0; // ADDRESS_FAMILY sin_family (USHORT)
+const _SOCKADDR_INET_ADDR_OFFSET = 4; // IN_ADDR sin_addr (DWORD)
 
 /**
  * Parses an IP_ADAPTER_ADDRESSES buffer into typed interface records.
@@ -268,7 +289,9 @@ export function parseAdapterAddresses(buf: unknown): WindowsInterface[] {
  * Reads a null-terminated UTF-16 string from a pointer view.
  * Returns an empty string if the pointer is null.
  */
-export function readStringFromPtr(ptr: { readUInt16LE: (o?: number) => number } | null | undefined): string {
+export function readStringFromPtr(
+  ptr: { readUInt16LE: (o?: number) => number } | null | undefined,
+): string {
   if (!ptr) return '';
   let result = '';
   for (let i = 0; i < 512; i++) {
@@ -347,7 +370,7 @@ export async function discoverInterfaces(): Promise<{
     };
   }
 
-    const interfaces = parseAdapterAddresses(buf);
+  const interfaces = parseAdapterAddresses(buf);
   return { interfaces, available: true };
 }
 
@@ -364,16 +387,16 @@ export interface WindowsRoute {
 }
 
 // MIB_IPFORWARDROW field offsets (x64 layout).
-const MIB_IPFORWARDROW_DEST_OFFSET = 0;      // DWORD dwForwardDest
-const MIB_IPFORWARDROW_MASK_OFFSET = 4;      // DWORD dwForwardMask
-const _MIB_IPFORWARDROW_POLICY_OFFSET = 8;    // DWORD dwForwardPolicy
-const MIB_IPFORWARDROW_NEXTHOP_OFFSET = 12;  // DWORD dwForwardNextHop
+const MIB_IPFORWARDROW_DEST_OFFSET = 0; // DWORD dwForwardDest
+const MIB_IPFORWARDROW_MASK_OFFSET = 4; // DWORD dwForwardMask
+const _MIB_IPFORWARDROW_POLICY_OFFSET = 8; // DWORD dwForwardPolicy
+const MIB_IPFORWARDROW_NEXTHOP_OFFSET = 12; // DWORD dwForwardNextHop
 const MIB_IPFORWARDROW_IF_INDEX_OFFSET = 16; // DWORD dwForwardIfIndex
-const MIB_IPFORWARDROW_METRIC1_OFFSET = 20;  // DWORD dwForwardMetric1
-const _MIB_IPFORWARDROW_METRIC2_OFFSET = 24;  // DWORD dwForwardMetric2
-const _MIB_IPFORWARDROW_METRIC3_OFFSET = 28;  // DWORD dwForwardMetric3
-const _MIB_IPFORWARDROW_METRIC4_OFFSET = 32;  // DWORD dwForwardMetric4
-const _MIB_IPFORWARDROW_METRIC5_OFFSET = 36;  // DWORD dwForwardMetric5
+const MIB_IPFORWARDROW_METRIC1_OFFSET = 20; // DWORD dwForwardMetric1
+const _MIB_IPFORWARDROW_METRIC2_OFFSET = 24; // DWORD dwForwardMetric2
+const _MIB_IPFORWARDROW_METRIC3_OFFSET = 28; // DWORD dwForwardMetric3
+const _MIB_IPFORWARDROW_METRIC4_OFFSET = 32; // DWORD dwForwardMetric4
+const _MIB_IPFORWARDROW_METRIC5_OFFSET = 36; // DWORD dwForwardMetric5
 
 /**
  * Parses a MIB_IPFORWARDROW buffer into a WindowsRoute record.
@@ -445,7 +468,7 @@ export async function discoverRoutes(): Promise<{
   const ffiBuf: any = buf;
   const numEntries = readUInt32(ffiBuf, 0);
   const rowSize = 40; // MIB_IPFORWARDROW x64 fixed size
-  const offset = 4;   // Skip dwNumEntries DWORD
+  const offset = 4; // Skip dwNumEntries DWORD
   const routes: WindowsRoute[] = [];
 
   for (let i = 0; i < numEntries; i++) {
@@ -471,13 +494,23 @@ export async function discoverGateway(): Promise<{
 }> {
   const lib = await ensureIpHlp();
   if (!lib) {
-    return { gateway: null, interfaceIndex: null, available: false, error: String(ipHelperError()) };
+    return {
+      gateway: null,
+      interfaceIndex: null,
+      available: false,
+      error: String(ipHelperError()),
+    };
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getBestInterface: any = (lib as any).GetBestInterface;
   const ffi = await loadFfiNapi();
   if (!ffiAvailable(ffi)) {
-    return { gateway: null, interfaceIndex: null, available: false, error: 'FFI module unavailable' };
+    return {
+      gateway: null,
+      interfaceIndex: null,
+      available: false,
+      error: 'FFI module unavailable',
+    };
   }
   const { ref, types } = ffi;
 
@@ -485,7 +518,12 @@ export async function discoverGateway(): Promise<{
   // Destination 0.0.0.0 => best interface for the default route.
   const rc = getBestInterface(0, outIdx);
   if (rc !== ERROR_SUCCESS) {
-    return { gateway: null, interfaceIndex: null, available: false, error: `GetBestInterface failed (${rc})` };
+    return {
+      gateway: null,
+      interfaceIndex: null,
+      available: false,
+      error: `GetBestInterface failed (${rc})`,
+    };
   }
   const ifIndex = readUInt32(outIdx.deref(), 0);
 
@@ -514,15 +552,15 @@ export interface RouteMutationRequest {
 }
 
 // MIB_IPFORWARDROW field offsets for mutation (x64 layout).
-const MUTATE_DEST_OFFSET = 0;      // DWORD dwForwardDest
-const MUTATE_MASK_OFFSET = 4;      // DWORD dwForwardMask
-const MUTATE_NEXTHOP_OFFSET = 12;  // DWORD dwForwardNextHop
+const MUTATE_DEST_OFFSET = 0; // DWORD dwForwardDest
+const MUTATE_MASK_OFFSET = 4; // DWORD dwForwardMask
+const MUTATE_NEXTHOP_OFFSET = 12; // DWORD dwForwardNextHop
 const MUTATE_IF_INDEX_OFFSET = 16; // DWORD dwForwardIfIndex
-const MUTATE_METRIC1_OFFSET = 20;  // DWORD dwForwardMetric1
-const MUTATE_METRIC2_OFFSET = 24;  // DWORD dwForwardMetric2
-const MUTATE_METRIC3_OFFSET = 28;  // DWORD dwForwardMetric3
-const MUTATE_METRIC4_OFFSET = 32;  // DWORD dwForwardMetric4
-const MUTATE_METRIC5_OFFSET = 36;  // DWORD dwForwardMetric5
+const MUTATE_METRIC1_OFFSET = 20; // DWORD dwForwardMetric1
+const MUTATE_METRIC2_OFFSET = 24; // DWORD dwForwardMetric2
+const MUTATE_METRIC3_OFFSET = 28; // DWORD dwForwardMetric3
+const MUTATE_METRIC4_OFFSET = 32; // DWORD dwForwardMetric4
+const MUTATE_METRIC5_OFFSET = 36; // DWORD dwForwardMetric5
 
 /** MIB_IPFORWARDROW x64 fixed size. */
 const MIB_IPFORWARDROW_SIZE = 40;
@@ -557,15 +595,17 @@ export function buildIpForwardRow(request: RouteMutationRequest): Buffer {
   const gateway = parseIpv4(request.gateway);
 
   if (dest === undefined || mask === undefined || gateway === undefined) {
-    throw new Error(`Invalid IP address in route request: ${request.destination}/${request.mask} via ${request.gateway}`);
+    throw new Error(
+      `Invalid IP address in route request: ${request.destination}/${request.mask} via ${request.gateway}`,
+    );
   }
 
   row.writeUInt32LE(dest, MUTATE_DEST_OFFSET);
   row.writeUInt32LE(mask, MUTATE_MASK_OFFSET);
-  row.writeUInt32LE(0, MUTATE_POLICY_OFFSET);      // dwForwardPolicy
+  row.writeUInt32LE(0, MUTATE_POLICY_OFFSET); // dwForwardPolicy
   row.writeUInt32LE(gateway, MUTATE_NEXTHOP_OFFSET);
   row.writeUInt32LE(request.interfaceIndex, MUTATE_IF_INDEX_OFFSET);
-  row.writeUInt32LE(1, MUTATE_METRIC1_OFFSET);     // dwForwardMetric1
+  row.writeUInt32LE(1, MUTATE_METRIC1_OFFSET); // dwForwardMetric1
   row.writeUInt32LE(0, MUTATE_METRIC2_OFFSET);
   row.writeUInt32LE(0, MUTATE_METRIC3_OFFSET);
   row.writeUInt32LE(0, MUTATE_METRIC4_OFFSET);
@@ -598,7 +638,10 @@ export async function addRoute(request: RouteMutationRequest): Promise<{
   try {
     row = buildIpForwardRow(request);
   } catch (error) {
-    return { ok: false, error: `Invalid route request: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      ok: false,
+      error: `Invalid route request: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 
   const rc = createIpForwardEntry(row);
@@ -631,7 +674,10 @@ export async function deleteRoute(request: RouteMutationRequest): Promise<{
   try {
     row = buildIpForwardRow(request);
   } catch (error) {
-    return { ok: false, error: `Invalid route request: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      ok: false,
+      error: `Invalid route request: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 
   const rc = deleteIpForwardEntry(row);
