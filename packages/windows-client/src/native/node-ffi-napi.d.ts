@@ -34,7 +34,7 @@ declare module 'node-ffi-napi' {
       alloc: (size: number) => Buffer;
       from: (data: unknown, encoding?: string) => Buffer;
     };
-  }
+  };
 
   const ffi: FfiNapiModule;
   export = ffi;
