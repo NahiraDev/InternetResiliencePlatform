@@ -18,6 +18,8 @@ import {
   readStringFromPtr,
   IPHLPAPI_SIGNATURES,
   readUInt32,
+  ERROR_BUFFER_OVERFLOW,
+  ERROR_INSUFFICIENT_BUFFER,
 } from './ip-helper.js';
 
 describe('IP Helper API IPv4 parsing', () => {
@@ -223,5 +225,14 @@ describe('readUInt32', () => {
 
   it('rejects values that are neither buffer nor number', () => {
     expect(() => readUInt32({}, 0)).toThrow(/no readUInt32LE/);
+  });
+});
+
+describe('IP Helper sizing error codes', () => {
+  // Win32: GetAdaptersAddresses reports ERROR_BUFFER_OVERFLOW (111); GetIpForwardTable
+  // reports ERROR_INSUFFICIENT_BUFFER (122). Mixing them up made route discovery fail.
+  it('uses the documented Win32 values', () => {
+    expect(ERROR_BUFFER_OVERFLOW).toBe(111);
+    expect(ERROR_INSUFFICIENT_BUFFER).toBe(122);
   });
 });

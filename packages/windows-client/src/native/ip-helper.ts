@@ -40,7 +40,8 @@ export const IfOperStatusLowerLayerDown = 7;
 
 // Return codes
 export const ERROR_SUCCESS = 0;
-export const ERROR_BUFFER_OVERFLOW = 111;
+export const ERROR_BUFFER_OVERFLOW = 111; // GetAdaptersAddresses: buffer too small
+export const ERROR_INSUFFICIENT_BUFFER = 122; // GetIpForwardTable & friends: buffer too small
 export const ERROR_NO_DATA = 232;
 export const ERROR_INVALID_PARAMETER = 87;
 
@@ -460,7 +461,7 @@ export async function discoverRoutes(): Promise<{
 
   const outBufLen = ref.alloc(types.uint, 0);
   const first = getIpForwardTable(ref.NULL, outBufLen, 0);
-  if (first !== ERROR_BUFFER_OVERFLOW && first !== ERROR_SUCCESS) {
+  if (first !== ERROR_INSUFFICIENT_BUFFER && first !== ERROR_SUCCESS) {
     return { routes: [], available: false, error: `GetIpForwardTable sizing failed (${first})` };
   }
   const size = readUInt32(outBufLen.deref(), 0);
