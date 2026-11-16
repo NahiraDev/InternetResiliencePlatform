@@ -5,13 +5,13 @@ Canonical coordination record for parallel agents. This file is intentionally sh
 ## Current baseline
 
 - Current implementation baseline: **Phases 94–150 implemented locally** (branch `phase/94-150-implementation`, PARTIAL pending exact-SHA CI). Phase 93 and earlier unchanged. ResilienceRuntime remains the sole production mutation authority.
-- Current execution tracker: open issues **#254**, **#272**, **#284**, **#323**, **#410**, **#412**, **#413**, **#420**.
+- Current execution tracker: open issues **#272**, **#323**, **#410**, **#411**, **#463**.
 - Main branch: `main`
-- Current main commit reviewed: `4598ea75afcc5921fe2aaca3dd34e7cef0dad521`.
+- Current main commit reviewed: `3f6535aee9228764f93f35ee2d7371af0e4d1e2c`.
 - Phase 71 status: implementation/release contract work exists; external release certification remains open. Published GitHub Release v0.2.1 is developer-preview evidence only.
 - Release certification must not be inferred from source presence, local tests, or architecture checks alone.
 - Current work must close source → contract → consumer → entrypoint → execution → outcome gaps without creating a second control plane or declaring completion from source presence alone.
-- Open PRs: #497 (CodeQL/#420), #498 (auth/#412). Both have windows-client and swift Analyze failures pending resolution.
+- Open PRs: dependabot updates and state reconciliation PR (this).
 
 ## Active agent slots
 
