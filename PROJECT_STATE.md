@@ -16,7 +16,7 @@
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `4598ea75afcc5921fe2aaca3dd34e7cef0dad521`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `3f6535aee9228764f93f35ee2d7371af0e4d1e2c`; exact-SHA Release Gate evidence must be verified before any stronger release claim.
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
 - **Phase 93 status:** advanced route ranking, bounded compiled-intent routing preferences, fail-closed validation, and selection audit evidence are implemented in `packages/resilience-runtime/src/fabric.ts`, with regression coverage in `phase-93-advanced-routing.test.ts`. Disposition PARTIAL pending exact-SHA CI and external runtime evidence. No new runtime authority was introduced.
 - **Phases 94–150:** phase documents and corresponding modules exist on main under `packages/resilience-runtime/src/{traffic,telemetry-plane,control-security,fleet,intelligence,dataplane,control-api,governance,scale}` with tests. All modules are additive, pure or injected-clock, advisory, and reach the network only through `PrivilegedMutationBoundary`; data-plane enforcement requires a governed transaction id. Disposition PARTIAL pending exact-SHA CI, review and external runtime evidence; no new runtime authority was introduced and `ResilienceRuntime` remains the sole production mutation authority.
@@ -127,7 +127,7 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 ## Autonomous engineer checkpoint (2026-11-01)
 
-- Starting base SHA: 4598ea75afcc5921fe2aaca3dd34e7cef0dad521 (upstream/main)
+- Starting base SHA: 3f6535aee9228764f93f35ee2d7371af0e4d1e2c (upstream/main)
 - Ending base SHA: (pending this PR)
 - Completed this run: reconciled PROJECT_STATE.md with live main SHA 3a5ce2dd and confirmed phases 94-150 modules/docs present on main (PARTIAL pending exact-SHA CI and external evidence). No runtime authority changes.
 - Branches/PRs: chore/reconcile-project-state-current-main (this PR)
@@ -139,7 +139,7 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 
 ## Autonomous engineer checkpoint (2026-11-01 run 2)
 
-- Starting base SHA: 4598ea75afcc5921fe2aaca3dd34e7cef0dad521 (upstream/main)
+- Starting base SHA: 3f6535aee9228764f93f35ee2d7371af0e4d1e2c (upstream/main)
 - Ending base SHA: (pending this PR #442)
 - Completed this run: inspected live state; confirmed phases 94–150 modules and docs are on main; PR #442 is open reconciling PROJECT_STATE. CI on head 7c528b1b shows architecture enforcement failure (not reproduced locally on same content), CodeQL SARIF processing failure (related to #420 default-setup conflict), and Vercel authorization required. No code changes this update.
 - Branches/PRs: chore/reconcile-project-state-current-main (PR #442)
@@ -246,11 +246,11 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Blockers: exact-SHA full green; CodeQL neutral due to default-setup conflict (#420, requires repo settings); privileged netns e2e BLOCKED on hosted runners; native platform full runtime evidence external; auth production evidence (#412).
 - Next prioritized tasks: poll checks on e23346a; if netns/windows pass, consider merge readiness; address CodeQL if permissions allow; continue Phase 94-150 evidence gaps if any remain on main.
 
-## Autonomous engineer checkpoint (2026-11-11)
+## Autonomous engineer checkpoint (2026-11-16)
 
-- Starting base SHA: 4598ea75afcc5921fe2aaca3dd34e7cef0dad521 (upstream/main)
+- Starting base SHA: 3f6535aee9228764f93f35ee2d7371af0e4d1e2c (upstream/main)
 - Ending base SHA: (pending this PR)
-- Completed this run: reconciled PROJECT_STATE.md and ACTIVE_WORK.md with live main SHA 4598ea75afcc5921fe2aaca3dd34e7cef0dad521 (merge of #496). Confirmed phases 94–150 remain PARTIAL pending exact-SHA CI evidence. Open PRs #497 (#420 CodeQL) and #498 (#412 auth) noted; both have windows-client and swift Analyze failures. No runtime authority changes.
+- Completed this run: reconciled PROJECT_STATE.md and ACTIVE_WORK.md with live main SHA 3f6535aee9228764f93f35ee2d7371af0e4d1e2c (merge of #496). Confirmed phases 94–150 remain PARTIAL pending exact-SHA CI evidence. Open PRs #497 (#420 CodeQL) and #498 (#412 auth) noted; both have windows-client and swift Analyze failures. No runtime authority changes.
 - Branches/PRs: chore/reconcile-project-state-current-sha (this PR)
 - Actual CI: pending
 - Verified merges: #496 previously merged
