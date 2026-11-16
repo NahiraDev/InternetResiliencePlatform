@@ -12,7 +12,7 @@
  * to the operator instead of inventing results.
  */
 
-import type { Buffer } from 'node:buffer';
+import { Buffer } from 'node:buffer';
 
 export type FfiNapiModule = {
   Library: (library: string, methods: Record<string, [string, string[]]>) => unknown;
@@ -70,6 +70,8 @@ export async function loadFfiNapi(): Promise<FfiNapiModule | undefined> {
     const refModule = await import('ref-napi');
     loaded = {
       ...ffiModule,
+      // ffi-napi has no `Buffer` export; callers allocate with Node's Buffer.
+      Buffer,
       // ref-napi is CommonJS: only `default` carries every export (e.g. NULL is not a named ESM export).
       ref: (refModule as { default?: unknown }).default ?? refModule,
     } as unknown as FfiNapiModule;
