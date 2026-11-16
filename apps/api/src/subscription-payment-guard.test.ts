@@ -15,7 +15,7 @@ import type { IdentityRepositories } from './identity/types.js';
  * payment. These tests require a real PostgreSQL (IRP_TEST_DATABASE_URL) and
  * are skipped locally when no database is available, but run in CI.
  */
-const adminUrl = process.env.IRP_TEST_DATABASE_URL;
+const adminUrl = process.env.IRP_TEST_DATABASE_URL ?? '';
 if (!adminUrl && process.env.CI)
   throw new Error(
     'IRP_TEST_DATABASE_URL is required in CI for the subscription payment guard tests.',
