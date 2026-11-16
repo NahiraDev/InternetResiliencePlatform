@@ -4,6 +4,10 @@ This is the entry point for the architecture documentation.
 
 IRP separates observation, intelligence, decisioning, policy, action, verification, persistence, and telemetry so that network automation remains explainable and bounded.
 
+## Visual companion
+
+- [Architecture overview diagram](architecture-overview-diagram.md) — Mermaid visual summary of the platform layout, control loop, and boundaries.
+
 ## Major layers
 
 ```text
