@@ -15,7 +15,7 @@
     "@irp/config": "workspace:*",
     "@irp/core": "workspace:*",
     "@irp/logger": "workspace:*",
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "@irp/network": "workspace:*",
     "@irp/telemetry": "workspace:*",
     "@irp/dns": "workspace:*",
