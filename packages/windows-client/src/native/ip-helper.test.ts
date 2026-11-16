@@ -16,6 +16,7 @@ import {
   buildIpForwardRow,
   parseAdapterAddresses,
   readStringFromPtr,
+  IPHLPAPI_SIGNATURES,
 } from './ip-helper.js';
 
 describe('IP Helper API IPv4 parsing', () => {
@@ -73,12 +74,12 @@ describe('IP Helper API IPv4 parsing', () => {
 describe('IP Helper API structure parsing', () => {
   it('parses a MIB_IPFORWARDROW x64 buffer', () => {
     const buf = Buffer.alloc(40);
-    buf.writeUInt32LE(0x0a000000, 0);   // dest 10.0.0.0
-    buf.writeUInt32LE(0xffffff00, 4);   // mask 255.255.255.0
-    buf.writeUInt32LE(0, 8);            // policy
-    buf.writeUInt32LE(0x0a000001, 12);  // gateway 10.0.0.1
-    buf.writeUInt32LE(12, 16);          // ifIndex 12
-    buf.writeUInt32LE(10, 20);          // metric1 10
+    buf.writeUInt32LE(0x0a000000, 0); // dest 10.0.0.0
+    buf.writeUInt32LE(0xffffff00, 4); // mask 255.255.255.0
+    buf.writeUInt32LE(0, 8); // policy
+    buf.writeUInt32LE(0x0a000001, 12); // gateway 10.0.0.1
+    buf.writeUInt32LE(12, 16); // ifIndex 12
+    buf.writeUInt32LE(10, 20); // metric1 10
 
     const parsed = parseIpForwardRow(buf);
     expect(parsed).toBeDefined();
@@ -91,11 +92,11 @@ describe('IP Helper API structure parsing', () => {
 
   it('skips default routes with zero gateway in parseIpForwardRow', () => {
     const buf = Buffer.alloc(40);
-    buf.writeUInt32LE(0, 0);     // dest 0.0.0.0
-    buf.writeUInt32LE(0, 4);     // mask 0.0.0.0
-    buf.writeUInt32LE(0, 8);     // policy
-    buf.writeUInt32LE(0, 12);    // gateway 0.0.0.0
-    buf.writeUInt32LE(5, 16);    // ifIndex 5
+    buf.writeUInt32LE(0, 0); // dest 0.0.0.0
+    buf.writeUInt32LE(0, 4); // mask 0.0.0.0
+    buf.writeUInt32LE(0, 8); // policy
+    buf.writeUInt32LE(0, 12); // gateway 0.0.0.0
+    buf.writeUInt32LE(5, 16); // ifIndex 5
 
     const parsed = parseIpForwardRow(buf);
     expect(parsed).toBeUndefined();
@@ -142,17 +143,17 @@ describe('IP Helper API adapter address parsing', () => {
     const buf = Buffer.alloc(totalSize);
 
     // IP_ADAPTER_ADDRESSES header (x64 offsets)
-    buf.writeUInt32LE(totalSize, 0);                                    // Length
-    buf.writeUInt32LE(7, 4);                                            // IfIndex
-    buf.writeBigInt64LE(0n, 8);                                         // Next = null
-    buf.writeBigInt64LE(BigInt(descOffset), 24);                                // Description pointer
-    buf.writeBigInt64LE(BigInt(friendlyOffset), 32);                            // FriendlyName pointer
-    buf.writeUInt32LE(1, 136);                                          // OperStatus = Up
-    buf.writeUInt32LE(1500, 152);                                       // Mtu
-    buf.writeUInt32LE(6, 160);                                          // PhysicalAddressLength
-    buf.writeBigInt64LE(BigInt(macOffset), 168);                                // PhysicalAddress pointer
-    buf.writeUInt32LE(0, 208);                                          // Flags
-    buf.writeBigInt64LE(0n, 216);                                       // FirstUnicastAddress = null
+    buf.writeUInt32LE(totalSize, 0); // Length
+    buf.writeUInt32LE(7, 4); // IfIndex
+    buf.writeBigInt64LE(0n, 8); // Next = null
+    buf.writeBigInt64LE(BigInt(descOffset), 24); // Description pointer
+    buf.writeBigInt64LE(BigInt(friendlyOffset), 32); // FriendlyName pointer
+    buf.writeUInt32LE(1, 136); // OperStatus = Up
+    buf.writeUInt32LE(1500, 152); // Mtu
+    buf.writeUInt32LE(6, 160); // PhysicalAddressLength
+    buf.writeBigInt64LE(BigInt(macOffset), 168); // PhysicalAddress pointer
+    buf.writeUInt32LE(0, 208); // Flags
+    buf.writeBigInt64LE(0n, 216); // FirstUnicastAddress = null
 
     // Write strings and MAC after the header
     descBuf.copy(buf, descOffset);
@@ -175,13 +176,35 @@ describe('IP Helper API adapter address parsing', () => {
 
   it('stops at end of list when Next pointer is null', () => {
     const buf = Buffer.alloc(224);
-    buf.writeUInt32LE(224, 0);   // Length
-    buf.writeUInt32LE(3, 4);     // IfIndex 3
-    buf.writeBigInt64LE(0n, 8);  // Next = null
-    buf.writeUInt32LE(2, 136);   // OperStatus
+    buf.writeUInt32LE(224, 0); // Length
+    buf.writeUInt32LE(3, 4); // IfIndex 3
+    buf.writeBigInt64LE(0n, 8); // Next = null
+    buf.writeUInt32LE(2, 136); // OperStatus
 
     const entries = parseAdapterAddresses(buf);
     expect(entries.length).toBe(1);
     expect(entries[0]?.index).toBe(3);
+  });
+});
+
+describe('iphlpapi FFI signatures', () => {
+  // Parameter counts of the documented Win32 prototypes. A mismatch makes ffi-napi throw
+  // "Expected N arguments, got M" at call time (regression: GetAdaptersAddresses declared 6).
+  const win32Arity: Record<string, number> = {
+    GetAdaptersAddresses: 5,
+    GetIpForwardTable: 3,
+    GetIpAddrTable: 3,
+    GetBestInterface: 2,
+    CreateIpForwardEntry: 1,
+    DeleteIpForwardEntry: 1,
+    GetPerAdapterInfo: 3,
+  };
+
+  it.each(Object.entries(win32Arity))('%s declares %i parameters', (name, arity) => {
+    expect(IPHLPAPI_SIGNATURES[name]?.[1]).toHaveLength(arity);
+  });
+
+  it('declares no function without a known Win32 arity', () => {
+    expect(Object.keys(IPHLPAPI_SIGNATURES).sort()).toEqual(Object.keys(win32Arity).sort());
   });
 });
