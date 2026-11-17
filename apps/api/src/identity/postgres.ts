@@ -10,6 +10,8 @@ import {
   type PageQuery,
   type ProjectRecord,
   type RateLimitDecision,
+  type RetentionPolicy,
+  type RetentionResult,
   type RotationResult,
   type SessionRecord,
   type TenantScope,
@@ -520,6 +522,34 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
       },
       async reset(key) {
         await sql.query(`DELETE FROM "RateLimitBucket" WHERE "key"=$1`, [key]);
+      },
+    },
+    retention: {
+      async purgeExpired(policy: RetentionPolicy, now = new Date()): Promise<RetentionResult> {
+        // ISO strings, not Date objects: node-pg renders a Date in the process's local zone, which Postgres
+        // would then compare against UTC `timestamp` columns with the offset silently dropped.
+        const cutoff = new Date(now.getTime() - policy.graceMs).toISOString();
+        const count = async (text: string, params: unknown[]): Promise<number> => {
+          const rows = await sql.query<{ n: string }>(
+            `WITH d AS (${text} RETURNING 1) SELECT count(*)::text AS n FROM d`,
+            params,
+          );
+          return Number((rows[0] as { n: string }).n);
+        };
+        // Sessions are only removed once their refresh token could no longer be presented (expired + grace),
+        // so revoked-session reuse detection keeps working for the token's whole lifetime. Tokens cascade.
+        const sessions = await count(`DELETE FROM "Session" WHERE "expiresAt" < $1`, [cutoff]);
+        const tokens = await count(`DELETE FROM "Token" WHERE "expiresAt" < $1`, [cutoff]);
+        const rateLimitBuckets = await count(`DELETE FROM "RateLimitBucket" WHERE "resetAt" < $1`, [
+          now.toISOString(),
+        ]);
+        const auditLogs =
+          policy.auditRetentionMs == null
+            ? 0
+            : await count(`DELETE FROM "AuditLog" WHERE "createdAt" < $1`, [
+                new Date(now.getTime() - policy.auditRetentionMs).toISOString(),
+              ]);
+        return { sessions, tokens, rateLimitBuckets, auditLogs };
       },
     },
     async ping() {
