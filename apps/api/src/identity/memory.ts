@@ -267,6 +267,39 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
         buckets.delete(key);
       },
     },
+    retention: {
+      async purgeExpired(policy, now = new Date()) {
+        const cutoff = now.getTime() - policy.graceMs;
+        const sweep = <T>(m: Map<string, T>, expired: (v: T) => boolean): number => {
+          let n = 0;
+          for (const [k, v] of m)
+            if (expired(v)) {
+              m.delete(k);
+              n += 1;
+            }
+          return n;
+        };
+        const sessionCount = sweep(sessions, (s) => Date.parse(s.expiresAt) < cutoff);
+        const tokenCount = sweep(tokens, (t) => Date.parse(t.expiresAt) < cutoff);
+        const bucketCount = sweep(buckets, (b) => b.resetAt < now.getTime());
+        let auditCount = 0;
+        if (policy.auditRetentionMs != null) {
+          const auditCutoff = now.getTime() - policy.auditRetentionMs;
+          for (let i = audit.length - 1; i >= 0; i -= 1) {
+            if (Date.parse((audit[i] as { createdAt: string }).createdAt) < auditCutoff) {
+              audit.splice(i, 1);
+              auditCount += 1;
+            }
+          }
+        }
+        return {
+          sessions: sessionCount,
+          tokens: tokenCount,
+          rateLimitBuckets: bucketCount,
+          auditLogs: auditCount,
+        };
+      },
+    },
     async ping() {},
     async close() {},
   };

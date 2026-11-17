@@ -179,6 +179,22 @@ export interface RateLimitStore {
   peek(key: string): Promise<{ count: number; resetAt: number } | null>;
   reset(key: string): Promise<void>;
 }
+export interface RetentionPolicy {
+  /** Expired sessions/tokens are kept this long past expiry (refresh-token reuse detection, support). */
+  graceMs: number;
+  /** Audit rows older than this are deleted. `null` keeps audit logs forever (the default). */
+  auditRetentionMs: number | null;
+}
+export interface RetentionResult {
+  sessions: number;
+  tokens: number;
+  rateLimitBuckets: number;
+  auditLogs: number;
+}
+export interface RetentionStore {
+  /** Deletes expired identity data. Safe to run concurrently from several API instances. */
+  purgeExpired(policy: RetentionPolicy, now?: Date): Promise<RetentionResult>;
+}
 export interface IdentityRepositories {
   readonly kind: 'postgres' | 'development-memory';
   users: UserRepository;
@@ -189,6 +205,7 @@ export interface IdentityRepositories {
   projects: ProjectRepository;
   workspaces: WorkspaceRepository;
   rateLimits: RateLimitStore;
+  retention: RetentionStore;
   /** Throws when the backing store is unreachable. */
   ping(): Promise<void>;
   close(): Promise<void>;

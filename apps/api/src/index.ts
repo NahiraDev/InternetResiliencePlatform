@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
 import { registerUnifiedProductRoutes } from './unified-product-api.js';
+import { resolveRetention, startRetentionJob } from './identity/retention.js';
 import { resolveTrustProxy, toFastifyTrustProxy } from './security/trust-proxy.js';
 import { registerNotificationIncidentRoutes } from './notifications-api.js';
 import { registerHistoryRoutes } from './history-api.js';
@@ -1561,7 +1562,10 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   registerProbeFederationRoutes(app);
   registerNotificationIncidentRoutes(app);
 
+  const retentionJob = startRetentionJob(repos, resolveRetention());
+
   app.addHook('onClose', async () => {
+    retentionJob.stop();
     await db.$disconnect();
     await repos.close();
   });
