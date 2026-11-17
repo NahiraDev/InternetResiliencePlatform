@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { registerRemoteClientRoutes } from './remote-client-api.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
 import { registerUnifiedProductRoutes } from './unified-product-api.js';
+import { resolveTrustProxy, toFastifyTrustProxy } from './security/trust-proxy.js';
 import { registerNotificationIncidentRoutes } from './notifications-api.js';
 import { registerHistoryRoutes } from './history-api.js';
 import { dashboardCss, dashboardHtml, dashboardScript } from './dashboard.js';
@@ -244,6 +245,8 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
       : new NetworkMonitoringService();
   const app = Fastify({
     logger: false,
+    // Client IP for rate limits/lockouts: socket address unless IRP_TRUST_PROXY names the real proxies.
+    trustProxy: toFastifyTrustProxy(resolveTrustProxy()),
     genReqId: (request) => request.headers['x-request-id']?.toString() ?? crypto.randomUUID(),
   });
   const jwt = new JwtService(resolveJwtSecret(), 'irp');
