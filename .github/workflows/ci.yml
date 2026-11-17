@@ -284,6 +284,22 @@ jobs:
       - name: Install dependencies with frozen lockfile (exclude Windows/macOS clients)
         run: pnpm install --frozen-lockfile --filter=!@irp/windows-client --filter=!@irp/macos-client
 
+      - name: Apply Prisma migrations to a clean database and check for schema drift
+        env:
+          PGPASSWORD: irp_ci_postgres_password
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U irp -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE irp_migrate' -c 'CREATE DATABASE irp_shadow'
+          export DATABASE_URL=postgresql://irp:irp_ci_postgres_password@127.0.0.1:5432/irp_migrate
+          # 1. Every checked-in migration must apply cleanly, in order, to an empty database.
+          pnpm --filter @irp/database prisma:migrate:deploy
+          # 2. The migrations must produce exactly the schema declared in schema.prisma (exit code 2 = drift).
+          pnpm exec prisma migrate diff \
+            --from-migrations packages/database/prisma/migrations \
+            --to-schema-datamodel packages/database/prisma/schema.prisma \
+            --shadow-database-url postgresql://irp:irp_ci_postgres_password@127.0.0.1:5432/irp_shadow \
+            --exit-code
+
       - name: Validate repository integrity
         run: pnpm validate
 
