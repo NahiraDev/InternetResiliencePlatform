@@ -124,7 +124,10 @@ jobs:
 
   linux-netns-e2e:
     name: Linux network-namespace end-to-end chain (privileged, required)
-    runs-on: [self-hosted, linux, x64, privileged]
+    # GitHub-hosted runners give passwordless sudo (CAP_SYS_ADMIN/CAP_NET_ADMIN) and a real kernel, which is all the
+    # throwaway network-namespace lab needs. A self-hosted label with no registered runner left this required job
+    # queued forever, which blocked `validate` and therefore the whole CI gate.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       PNPM_IGNORE_TTY: "1"
@@ -133,39 +136,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Verify runner capabilities
+      - name: Verify namespace creation (root via sudo)
         run: |
-          # Verify this is a privileged self-hosted runner
-          if ! grep -q 'CapEff.*[0-9a-f]' /proc/self/status; then
-            echo "ERROR: Cannot read capability information from /proc/self/status"
-            exit 1
-          fi
-          # Verify CAP_SYS_ADMIN and CAP_NET_ADMIN are present
-          capsh --print 2>/dev/null | grep -q 'cap_sys_admin+ep' || {
-            echo "ERROR: CAP_SYS_ADMIN not available on this runner"
-            exit 1
-          }
-          capsh --print 2>/dev/null | grep -q 'cap_net_admin+ep' || {
-            echo "ERROR: CAP_NET_ADMIN not available on this runner"
-            exit 1
-          }
-          echo "Runner capabilities: OK"
-
-      - name: Verify network namespace creation
-        run: |
-          if ip netns add irp-test-ns 2>/dev/null; then
-            ip netns del irp-test-ns
-            echo "Network namespace creation: OK"
-          else
-            echo "ERROR: Cannot create network namespace"
-            exit 1
-          fi
+          sudo ip netns add irp-test-ns
+          sudo ip netns del irp-test-ns
+          echo "Network namespace creation: OK"
 
       - name: Install Linux namespace tools
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends iproute2
-          rm -rf /var/lib/apt/lists/*
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends iproute2
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -188,7 +168,8 @@ jobs:
 
       - name: Require real kernel network-namespace execution
         run: |
-          IRP_REQUIRE_NETNS_E2E=1 \
+          # Only the lab test runs as root; dependencies and the build above ran unprivileged.
+          sudo env "PATH=$PATH" "HOME=$HOME" IRP_REQUIRE_NETNS_E2E=1 \
             pnpm --filter @irp/linux-client exec vitest run src/linux-chain.e2e.test.ts
 
   architecture:
