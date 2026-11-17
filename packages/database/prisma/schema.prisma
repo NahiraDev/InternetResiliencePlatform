@@ -26,7 +26,7 @@ enum MembershipStatus {
 }
 
 model User {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email String @unique @db.Citext
   name String?
   passwordHash String
@@ -37,9 +37,11 @@ model User {
   lastLoginAt DateTime?
   deletedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   memberships Membership[]
   sessions Session[]
+  tokens Token[]
+  ownedOrganizations Organization[]
   auditLogs AuditLog[] @relation("ActorAuditLogs")
   subscriptions Subscription[]
   payments PaymentTransaction[]
@@ -49,35 +51,37 @@ model User {
   @@index([deletedAt])
 }
 model Organization {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
   slug String @unique
   ownerUserId String? @db.Uuid
   deletedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
   memberships Membership[]
   projects Project[]
   workspaces Workspace[]
   roles Role[]
+  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   @@index([deletedAt])
+  @@index([ownerUserId])
 }
 model Project {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String @db.Uuid
   name String
   slug String
   description String?
   deletedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @default(now()) @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   workspaces Workspace[]
   @@unique([organizationId, slug])
   @@index([organizationId, deletedAt])
 }
 model Workspace {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String @db.Uuid
   projectId String? @db.Uuid
   name String
@@ -85,41 +89,41 @@ model Workspace {
   environment String @default("production")
   deletedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  updatedAt DateTime @default(now()) @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   @@unique([organizationId, slug])
   @@index([organizationId, projectId, deletedAt])
 }
 model Membership {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @db.Uuid
   organizationId String @db.Uuid
   roleId String @db.Uuid
   status MembershipStatus @default(active)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  updatedAt DateTime @default(now()) @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@unique([userId, organizationId])
   @@index([organizationId, status])
 }
 model Role {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String? @db.Uuid
   name String
   slug String
   system Boolean @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @default(now()) @updatedAt
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   memberships Membership[]
   permissions RolePermission[]
   @@unique([organizationId, slug])
 }
 model Permission {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   action String @unique
   description String
   roles RolePermission[]
@@ -127,12 +131,12 @@ model Permission {
 model RolePermission {
   roleId String @db.Uuid
   permissionId String @db.Uuid
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   @@id([roleId, permissionId])
 }
 model Session {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @db.Uuid
   familyId String @db.Uuid
   refreshTokenHash String @unique
@@ -141,12 +145,13 @@ model Session {
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tokens Token[]
   @@index([userId, revokedAt, expiresAt])
+  @@index([familyId])
 }
 model Token {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId String? @db.Uuid
   userId String @db.Uuid
   type TokenType
@@ -154,11 +159,12 @@ model Token {
   expiresAt DateTime
   consumedAt DateTime?
   createdAt DateTime @default(now())
-  session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   @@index([userId, type, expiresAt])
 }
 model AuditLog {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   actorUserId String? @db.Uuid
   action String
   resource String
@@ -166,12 +172,13 @@ model AuditLog {
   metadata Json @default("{}")
   ipAddress String?
   createdAt DateTime @default(now())
-  actor User? @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actor User? @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   @@index([resource, resourceId])
   @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
 }
 model OutboxEvent {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type String
   aggregateId String
   payload Json
@@ -195,7 +202,7 @@ enum NetworkNodeStatus {
 }
 
 model NetworkMeasurement {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   timestamp DateTime @default(now())
   probeType String
   latency Float?
@@ -207,7 +214,7 @@ model NetworkMeasurement {
 }
 
 model NetworkNode {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
   location String?
   endpoint String
@@ -218,7 +225,7 @@ model NetworkNode {
 }
 
 model NetworkHealthScore {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   timestamp DateTime @default(now())
   score Float
   factors Json @default("{}")
@@ -356,7 +363,7 @@ enum EntitlementStatus {
 }
 
 model SubscriptionPlan {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug        String   @unique
   name        String
   description String?
@@ -367,13 +374,13 @@ model SubscriptionPlan {
   features    Json     @default("{}")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
   subscriptions Subscription[]
   @@index([isActive, slug])
 }
 
 model Subscription {
-  id                String           @id @default(uuid()) @db.Uuid
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String           @db.Uuid
   planId            String           @db.Uuid
   status            SubscriptionStatus @default(REGISTERED)
@@ -384,9 +391,9 @@ model Subscription {
   autoRenew         Boolean          @default(false)
   metadata          Json             @default("{}")
   createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan              SubscriptionPlan @relation(fields: [planId], references: [id])
+  updatedAt         DateTime         @default(now()) @updatedAt
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  plan              SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   payments          PaymentTransaction[]
   entitlements      Entitlement[]
   devices           Device[]
@@ -395,7 +402,7 @@ model Subscription {
 }
 
 model PaymentTransaction {
-  id             String      @id @default(uuid()) @db.Uuid
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   subscriptionId String      @db.Uuid
   userId         String      @db.Uuid
   amountUsd      Int         // cents
@@ -407,15 +414,14 @@ model PaymentTransaction {
   failureReason  String?
   metadata       Json        @default("{}")
   createdAt      DateTime    @default(now())
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   @@index([subscriptionId, status])
   @@index([userId, status])
-  @@index([providerRef])
 }
 
 model Device {
-  id             String      @id @default(uuid()) @db.Uuid
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId         String      @db.Uuid
   subscriptionId String?     @db.Uuid
   deviceId       String      @unique // client-generated device identifier
@@ -428,28 +434,28 @@ model Device {
   lastDisconnectedAt DateTime?
   metadata       Json        @default("{}")
   createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  updatedAt      DateTime    @default(now()) @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   connectionState ConnectionState[]
   @@index([userId, status])
   @@index([subscriptionId])
 }
 
 model ConnectionState {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   deviceId  String   @db.Uuid
   connected Boolean  @default(false)
   quality   String?  // e.g. 'good', 'degraded', 'poor'
   latencyMs Int?
   reason    String?
   recordedAt DateTime @default(now())
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   @@index([deviceId, recordedAt])
 }
 
 model Entitlement {
-  id            String        @id @default(uuid()) @db.Uuid
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   subscriptionId String       @db.Uuid
   userId        String        @db.Uuid
   feature       String        // e.g. 'connect', 'tunnel', 'dns', 'multi-device'
@@ -458,9 +464,9 @@ model Entitlement {
   expiresAt     DateTime?
   metadata      Json          @default("{}")
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt     DateTime      @default(now()) @updatedAt
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   @@index([userId, feature, status])
   @@index([subscriptionId, status])
 }
