@@ -286,7 +286,7 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
         if (policy.auditRetentionMs != null) {
           const auditCutoff = now.getTime() - policy.auditRetentionMs;
           for (let i = audit.length - 1; i >= 0; i -= 1) {
-            if (Date.parse((audit[i] as { createdAt: string }).createdAt) < auditCutoff) {
+            if (Date.parse(audit[i]!.createdAt) < auditCutoff) {
               audit.splice(i, 1);
               auditCount += 1;
             }

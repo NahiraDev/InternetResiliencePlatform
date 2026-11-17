@@ -537,7 +537,7 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
           return Number((rows[0] as { n: string }).n);
         };
         // Sessions are only removed once their refresh token could no longer be presented (expired + grace),
-        // so revoked-session reuse detection keeps working for the token's whole lifetime. Tokens cascade.
+        // so revoked-session reuse detection keeps working for the token's whole lifetime. Session-bound tokens cascade; one-time tokens have no session, so they are purged by their own expiry below.
         const sessions = await count(`DELETE FROM "Session" WHERE "expiresAt" < $1`, [cutoff]);
         const tokens = await count(`DELETE FROM "Token" WHERE "expiresAt" < $1`, [cutoff]);
         const rateLimitBuckets = await count(`DELETE FROM "RateLimitBucket" WHERE "resetAt" < $1`, [
