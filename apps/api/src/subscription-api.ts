@@ -26,6 +26,15 @@ import os from 'node:os';
 
 const isoNow = () => new Date().toISOString();
 
+/** First row, or throw the given error when the query matched nothing. */
+const firstOrThrow = <T>(rows: readonly T[], error: Error): T => {
+  const row = rows[0];
+  if (row === undefined) throw error;
+  return row;
+};
+/** Columns come back as `unknown`; dates arrive as Date (timestamptz) or ISO strings. */
+const asDate = (v: unknown): Date => new Date(v as string | number | Date);
+
 interface SubscriptionRoutesDeps {
   sql: SqlClient | undefined;
   rateLimitStore?: { hit: (key: string, max: number, windowMs: number) => Promise<{ allowed: boolean; limit: number; remaining: number; resetAt: number }> };
@@ -36,12 +45,12 @@ interface SubscriptionRoutesDeps {
 
 const requireAuthDep = async (request: FastifyRequest): Promise<Principal> => {
   const principal = await request.jwtAuth.authenticate({ headers: request.headers });
-  if (!principal) throw new Error('Authentication required') as any;
+  if (!principal) throw new Error('Authentication required');
   return principal;
 };
 
 const rateLimit = (deps: SubscriptionRoutesDeps, name: string) => {
-  if (!deps.rateLimitStore) return async (_: any, __: any) => {};
+  if (!deps.rateLimitStore) return async () => {};
   return sharedRateLimitPreHandler(deps.rateLimitStore, { name, max: 60, windowMs: 60_000 });
 };
 
@@ -76,7 +85,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        WHERE s."userId" = $1
        ORDER BY s."createdAt" DESC LIMIT 1`,
       [principal.id],
-    ) as any[];
+    );
     const sub = rows[0];
     if (!sub) {
       return okResp({ subscription: null, message: 'No subscription found. Register and select a plan to get started.' });
@@ -84,12 +93,12 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const entRows = await sql.query(
       `SELECT "feature","status","startedAt","expiresAt","metadata" FROM "Entitlement" WHERE "userId" = $1 AND "status" = 'ACTIVE'`,
       [principal.id],
-    ) as any[];
+    );
     const devRows = await sql.query(
       `SELECT "id","deviceId","label","platform","status","authorizedAt","revokedAt","lastConnectedAt","lastDisconnectedAt","metadata","subscriptionId"
        FROM "Device" WHERE "userId" = $1 AND "status" != 'REVOKED' ORDER BY "createdAt" DESC`,
       [principal.id],
-    ) as any[];
+    );
     return okResp({ subscription: sub, entitlements: entRows, devices: devRows });
   });
 
@@ -102,15 +111,14 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const planRows = await sql.query(
       `SELECT "id","slug","name","priceUsd","currency","durationDays","maxDevices","features" FROM "SubscriptionPlan" WHERE "slug" = $1 AND "isActive" = true`,
       [body.planSlug],
-    ) as any[];
-    if (planRows.length === 0) throw new NotFoundAppError('Plan not found or inactive');
-    const plan = planRows[0];
+    );
+    const plan = firstOrThrow(planRows, new NotFoundAppError('Plan not found or inactive'));
 
     const existing = await sql.query(
       `SELECT "id","status" FROM "Subscription" WHERE "userId" = $1 AND "status" IN ('REGISTERED','PAYMENT_PENDING','ACTIVE') ORDER BY "createdAt" DESC LIMIT 1`,
       [principal.id],
-    ) as any[];
-    if (existing.length > 0 && existing[0].status === 'ACTIVE') {
+    );
+    if (existing[0]?.status === 'ACTIVE') {
       throw new ConflictAppError('You already have an active subscription');
     }
 
@@ -155,14 +163,15 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const body = z.object({ paymentTransactionId: z.string().min(1), providerRef: z.string().optional() }).parse(request.body ?? {});
 
     const txRows = await sql.query(
-      `SELECT pt."id",pt."subscriptionId",pt."status",pt."provider",pt."amountUsd",pt."currency",s."userId",s."status" AS "subStatus",s."planId"
+      `SELECT pt."id",pt."subscriptionId",pt."status",pt."provider",pt."amountUsd",pt."currency",s."userId",s."status" AS "subStatus",s."planId",pt."metadata"
        FROM "PaymentTransaction" pt
        JOIN "Subscription" s ON pt."subscriptionId" = s."id"
        WHERE pt."id" = $1 AND pt."userId" = $2`,
       [body.paymentTransactionId, principal.id],
-    ) as any[];
-    if (txRows.length === 0) throw new NotFoundAppError('Payment transaction not found');
-    const tx = txRows[0];
+    );
+    const tx = firstOrThrow(txRows, new NotFoundAppError('Payment transaction not found'));
+    const paymentId = String(tx.id);
+    const subscriptionId = String(tx.subscriptionId);
     if (tx.status !== 'PENDING') throw new ConflictAppError(`Payment already ${tx.status}`);
     if (tx.subStatus !== 'REGISTERED' && tx.subStatus !== 'PAYMENT_PENDING') {
       throw new ConflictAppError('Subscription is not in a payable state');
@@ -173,7 +182,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     // production or staging — otherwise a client can activate an entitlement
     // with a fake payment and no server-side verification.
     const isTestEnv = ['development', 'test'].includes((process.env.NODE_ENV ?? '').toLowerCase());
-    let verified = false;
+    let verified: boolean;
     let providerRef = body.providerRef;
     if (tx.provider === 'test') {
       if (!isTestEnv) {
@@ -181,7 +190,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
           actorUserId: principal.id,
           action: 'payment.rejected_test_provider_in_production',
           resource: 'payment',
-          resourceId: tx.id,
+          resourceId: paymentId,
           metadata: { provider: tx.provider, reason: 'test_provider_not_allowed_in_production' },
           ipAddress: request.ip,
         });
@@ -196,14 +205,14 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
 
     if (!verified) {
       await sql.query(
-        `UPDATE "PaymentTransaction" SET "status"='FAILED',"failureReason"=$2,"updatedAt"=$3 WHERE "id"=$1`,
-        [tx.id, 'Payment verification failed', isoNow()],
+        `UPDATE "PaymentTransaction" SET "status"='FAILED',"failureReason"=$2 WHERE "id"=$1`,
+        [paymentId, 'Payment verification failed'],
       );
       await repos.audit.record({
         actorUserId: principal.id,
         action: 'payment.failed',
         resource: 'payment',
-        resourceId: tx.id,
+        resourceId: paymentId,
         metadata: { provider: tx.provider, reason: 'verification_failed' },
         ipAddress: request.ip,
       });
@@ -211,22 +220,27 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     }
 
     const now = isoNow();
-    const planRows = await sql.query(`SELECT "durationDays" FROM "SubscriptionPlan" WHERE "id" = $1`, [tx.planId]) as any[];
+    const planRows = await sql.query(`SELECT "durationDays" FROM "SubscriptionPlan" WHERE "id" = $1`, [tx.planId]);
     const durationDays = Number(planRows[0]?.durationDays ?? 30);
     
-    // Determine if this is a renewal (subscription already active)
-    const isRenewal = tx.subStatus === 'ACTIVE';
-    const currentExpires = await sql.query(`SELECT "expiresAt" FROM "Subscription" WHERE "id" = $1`, [tx.subscriptionId]) as any[];
+    // A renewal is identified by the server-written transaction metadata (`renew` sets
+    // { renewal: true } and parks the subscription in PAYMENT_PENDING). The subscription
+    // status cannot identify it: by this point it is never ACTIVE, so checking for ACTIVE
+    // treated every paid renewal as a new purchase and discarded the remaining paid time.
+    const txMeta = (typeof tx.metadata === 'object' && tx.metadata !== null ? tx.metadata : {}) as Record<string, unknown>;
+    const isRenewal = txMeta.renewal === true;
+    // AT TIME ZONE 'UTC' turns the stored UTC wall-clock into a real instant regardless of the server's zone.
+    const currentExpires = await sql.query(`SELECT "expiresAt" AT TIME ZONE 'UTC' AS "expiresAt" FROM "Subscription" WHERE "id" = $1`, [subscriptionId]);
     const currentExpiresAt = currentExpires[0]?.expiresAt;
-    const baseDate = isRenewal && currentExpiresAt && new Date(currentExpiresAt) > new Date(now)
-      ? currentExpiresAt
+    const baseDate = isRenewal && currentExpiresAt && asDate(currentExpiresAt) > new Date(now)
+      ? asDate(currentExpiresAt)
       : now;
     const startedAt = isRenewal ? null : now;
     const expiresAt = new Date(new Date(baseDate).getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
-    await sql.transaction(async (txClient: any) => {
+    await sql.transaction(async (txClient) => {
       const setClauses: string[] = [`"status" = 'ACTIVE'`, `"updatedAt" = $2`];
-      const setValues: unknown[] = [tx.subscriptionId, now];
+      const setValues: unknown[] = [subscriptionId, now];
       let valIdx = 3;
       if (startedAt) {
         setClauses.push(`"startedAt" = $${valIdx}`);
@@ -246,15 +260,21 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
         setValues,
       );
       await txClient.query(
-        `UPDATE "PaymentTransaction" SET "status" = 'SUCCEEDED', "providerRef" = $2, "paidAt" = $3, "updatedAt" = $4 WHERE "id" = $1`,
-        [tx.id, providerRef, now, now],
+        `UPDATE "PaymentTransaction" SET "status" = 'SUCCEEDED', "providerRef" = $2, "paidAt" = $3 WHERE "id" = $1`,
+        [paymentId, providerRef, now],
+      );
+      // Entitlements that already exist must follow the new expiry, otherwise the renewal would
+      // extend the subscription while access still lapsed at the old date.
+      await txClient.query(
+        `UPDATE "Entitlement" SET "expiresAt" = $2, "updatedAt" = $3 WHERE "subscriptionId" = $1 AND "status" = 'ACTIVE'`,
+        [subscriptionId, expiresAt, now],
       );
     });
 
-    const featRows = await sql.query(`SELECT "features" FROM "SubscriptionPlan" WHERE "id" = $1`, [tx.planId]) as any[];
+    const featRows = await sql.query(`SELECT "features" FROM "SubscriptionPlan" WHERE "id" = $1`, [tx.planId]);
     const features = ((featRows[0]?.features as Record<string, unknown>) ?? {});
-    const entRows = await sql.query(`SELECT "feature" FROM "Entitlement" WHERE "subscriptionId" = $1 AND "status" = 'ACTIVE'`, [tx.subscriptionId]) as any[];
-    const existingFeatures = new Set(entRows.map((r: any) => r.feature));
+    const entRows = await sql.query(`SELECT "feature" FROM "Entitlement" WHERE "subscriptionId" = $1 AND "status" = 'ACTIVE'`, [subscriptionId]);
+    const existingFeatures = new Set(entRows.map((r) => r.feature));
     const entInserts: string[] = [];
     const entValues: unknown[] = [];
     let entIdx = 1;
@@ -262,7 +282,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       if (enabled === true && !existingFeatures.has(feature)) {
         const entId = crypto.randomUUID();
         entInserts.push(`($${entIdx++},$${entIdx++},$${entIdx++},$${entIdx++},'ACTIVE',$${entIdx++},$${entIdx++},$${entIdx++},$${entIdx++},$${entIdx++})`);
-        entValues.push(entId, tx.subscriptionId, principal.id, feature, startedAt, expiresAt, JSON.stringify({}), now, now);
+        entValues.push(entId, subscriptionId, principal.id, feature, startedAt ?? now, expiresAt, JSON.stringify({}), now, now);
       }
     }
     if (entInserts.length > 0) {
@@ -276,13 +296,13 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       actorUserId: principal.id,
       action: 'subscription.activated',
       resource: 'subscription',
-      resourceId: tx.subscriptionId,
-      metadata: { paymentTransactionId: tx.id, providerRef, expiresAt },
+      resourceId: subscriptionId,
+      metadata: { paymentTransactionId: paymentId, providerRef, expiresAt },
       ipAddress: request.ip,
     });
 
     return okResp({
-      subscriptionId: tx.subscriptionId,
+      subscriptionId,
       status: 'ACTIVE',
       startedAt,
       expiresAt,
@@ -299,13 +319,11 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const subRows = await sql.query(
       `SELECT s."id",s."status",s."expiresAt",s."planId" FROM "Subscription" s WHERE s."userId" = $1 AND s."status" = 'ACTIVE' ORDER BY s."createdAt" DESC LIMIT 1`,
       [principal.id],
-    ) as any[];
-    if (subRows.length === 0) throw new NotFoundAppError('No active subscription to renew');
-    const sub = subRows[0];
+    );
+    const sub = firstOrThrow(subRows, new NotFoundAppError('No active subscription to renew'));
 
-    const planRows = await sql.query(`SELECT "id","slug","name","priceUsd","currency","durationDays","features" FROM "SubscriptionPlan" WHERE "id" = $1`, [sub.planId]) as any[];
-    if (planRows.length === 0) throw new NotFoundAppError('Plan not found');
-    const plan = planRows[0];
+    const planRows = await sql.query(`SELECT "id","slug","name","priceUsd","currency","durationDays","features" FROM "SubscriptionPlan" WHERE "id" = $1`, [sub.planId]);
+    const plan = firstOrThrow(planRows, new NotFoundAppError('Plan not found'));
 
     const t = isoNow();
     const txId = crypto.randomUUID();
@@ -326,7 +344,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       actorUserId: principal.id,
       action: 'subscription.renewal.requested',
       resource: 'subscription',
-      resourceId: sub.id,
+      resourceId: String(sub.id),
       metadata: { planSlug: plan.slug, amountUsd: plan.priceUsd, provider: body.paymentProvider },
       ipAddress: request.ip,
     });
@@ -349,28 +367,28 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const subRows = await sql.query(
       `SELECT "id","status" FROM "Subscription" WHERE "userId" = $1 AND "status" = 'ACTIVE' ORDER BY "createdAt" DESC LIMIT 1`,
       [principal.id],
-    ) as any[];
-    if (subRows.length === 0) throw new NotFoundAppError('No active subscription to cancel');
+    );
+    const activeSub = firstOrThrow(subRows, new NotFoundAppError('No active subscription to cancel'));
 
     await sql.query(
       `UPDATE "Subscription" SET "status"='CANCELLED',"canceledAt"=$2,"updatedAt"=$3 WHERE "id"=$1`,
-      [subRows[0].id, now, now],
+      [activeSub.id, now, now],
     );
     await sql.query(
       `UPDATE "Device" SET "status"='SUSPENDED',"revokedAt"=$2 WHERE "userId" = $1 AND "subscriptionId" = $3`,
-      [principal.id, now, subRows[0].id],
+      [principal.id, now, activeSub.id],
     );
 
     await repos.audit.record({
       actorUserId: principal.id,
       action: 'subscription.cancelled',
       resource: 'subscription',
-      resourceId: subRows[0].id,
+      resourceId: String(activeSub.id),
       metadata: { canceledAt: now },
       ipAddress: request.ip,
     });
 
-    return okResp({ subscriptionId: subRows[0].id, status: 'CANCELLED', canceledAt: now });
+    return okResp({ subscriptionId: activeSub.id, status: 'CANCELLED', canceledAt: now });
   });
 
   // ── Payment history ───────────────────────────────────────────────────
@@ -384,7 +402,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        WHERE pt."userId" = $1
        ORDER BY pt."createdAt" DESC`,
       [principal.id],
-    ) as any[];
+    );
     return okResp({ payments: rows });
   });
 
@@ -400,7 +418,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        WHERE d."userId" = $1 AND d."status" != 'REVOKED'
        ORDER BY d."createdAt" DESC`,
       [principal.id],
-    ) as any[];
+    );
     return okResp({ devices: rows });
   });
 
@@ -412,7 +430,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const entRows = await sql.query(
       `SELECT e."id",e."expiresAt" FROM "Entitlement" e WHERE e."userId" = $1 AND e."feature" = 'connect' AND e."status" = 'ACTIVE' AND (e."expiresAt" IS NULL OR e."expiresAt" > $2) LIMIT 1`,
       [principal.id, isoNow()],
-    ) as any[];
+    );
     if (entRows.length === 0) {
       throw new ForbiddenAppError('No active connect entitlement. Purchase and activate a subscription first.');
     }
@@ -420,14 +438,15 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const subRows = await sql.query(
       `SELECT s."id",p."maxDevices" FROM "Subscription" s JOIN "SubscriptionPlan" p ON s."planId" = p."id" WHERE s."userId" = $1 AND s."status" = 'ACTIVE' LIMIT 1`,
       [principal.id],
-    ) as any[];
-    const maxDevices = subRows.length > 0 ? Number(subRows[0].maxDevices) : 1;
-    const devCount = await sql.query(`SELECT COUNT(*)::int AS n FROM "Device" WHERE "userId" = $1 AND "status" != 'REVOKED'`, [principal.id]) as any[];
-    if (Number(devCount[0].n) >= maxDevices) {
+    );
+    const activeSub = subRows[0];
+    const maxDevices = activeSub ? Number(activeSub.maxDevices) : 1;
+    const devCount = await sql.query(`SELECT COUNT(*)::int AS n FROM "Device" WHERE "userId" = $1 AND "status" != 'REVOKED'`, [principal.id]);
+    if (Number(devCount[0]?.n ?? 0) >= maxDevices) {
       throw new ConflictAppError(`Device limit reached (max ${maxDevices} devices)`);
     }
 
-    const existing = await sql.query(`SELECT "id" FROM "Device" WHERE "deviceId" = $1 AND "userId" = $2 AND "status" != 'REVOKED'`, [body.deviceId, principal.id]) as any[];
+    const existing = await sql.query(`SELECT "id" FROM "Device" WHERE "deviceId" = $1 AND "userId" = $2 AND "status" != 'REVOKED'`, [body.deviceId, principal.id]);
     if (existing.length > 0) throw new ConflictAppError('Device already enrolled');
 
     const t = isoNow();
@@ -435,7 +454,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     await sql.query(
       `INSERT INTO "Device" ("id","userId","subscriptionId","deviceId","label","platform","status","authorizedAt","createdAt","updatedAt")
        VALUES ($1,$2,$3,$4,$5,$6,'ENROLLED',$7,$8,$9)`,
-      [devId, principal.id, subRows.length > 0 ? subRows[0].id : null, body.deviceId, body.label ?? null, body.platform ?? null, t, t, t],
+      [devId, principal.id, activeSub ? activeSub.id : null, body.deviceId, body.label ?? null, body.platform ?? null, t, t, t],
     );
 
     await repos.audit.record({
@@ -458,7 +477,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const r = await sql.query(
       `UPDATE "Device" SET "status"='REVOKED',"revokedAt"=$2,"updatedAt"=$3 WHERE "deviceId" = $1 AND "userId" = $4 AND "status" != 'REVOKED' RETURNING "id"`,
       [deviceId, now, now, principal.id],
-    ) as any[];
+    );
     if (r.length === 0) throw new NotFoundAppError('Device not found');
     await repos.audit.record({
       actorUserId: principal.id,
@@ -484,12 +503,11 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        LEFT JOIN "Entitlement" e ON e."userId" = d."userId" AND e."feature" = 'connect' AND e."status" = 'ACTIVE'
        WHERE d."deviceId" = $1 AND d."userId" = $2 AND d."status" != 'REVOKED'`,
       [deviceId, principal.id],
-    ) as any[];
-    if (rows.length === 0) throw new NotFoundAppError('Device not found');
-    const dev = rows[0];
+    );
+    const dev = firstOrThrow(rows, new NotFoundAppError('Device not found'));
     const now = new Date();
-    const subActive = dev.subStatus === 'ACTIVE' && (!dev.subExpiresAt || new Date(dev.subExpiresAt) > now);
-    const entActive = dev.entStatus === 'ACTIVE' && (!dev.entExpiresAt || new Date(dev.entExpiresAt) > now);
+    const subActive = dev.subStatus === 'ACTIVE' && (!dev.subExpiresAt || asDate(dev.subExpiresAt) > now);
+    const entActive = dev.entStatus === 'ACTIVE' && (!dev.entExpiresAt || asDate(dev.entExpiresAt) > now);
     const authorized = subActive && entActive;
     return okResp({
       deviceId: dev.deviceId,
@@ -514,12 +532,11 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        LEFT JOIN "Entitlement" e ON e."userId" = d."userId" AND e."feature" = 'connect' AND e."status" = 'ACTIVE'
        WHERE d."deviceId" = $1 AND d."userId" = $2 AND d."status" != 'REVOKED'`,
       [deviceId, principal.id],
-    ) as any[];
-    if (authz.length === 0) throw new NotFoundAppError('Device not found');
-    const a = authz[0];
+    );
+    const a = firstOrThrow(authz, new NotFoundAppError('Device not found'));
     const now = new Date();
-    const subActive = a.subStatus === 'ACTIVE' && (!a.subExpiresAt || new Date(a.subExpiresAt) > now);
-    const entActive = a.entStatus === 'ACTIVE' && (!a.entExpiresAt || new Date(a.entExpiresAt) > now);
+    const subActive = a.subStatus === 'ACTIVE' && (!a.subExpiresAt || asDate(a.subExpiresAt) > now);
+    const entActive = a.entStatus === 'ACTIVE' && (!a.entExpiresAt || asDate(a.entExpiresAt) > now);
     if (!subActive || !entActive) throw new ForbiddenAppError('Device not authorized for connect. Active subscription with connect entitlement required.');
     const t = now.toISOString();
 
@@ -578,7 +595,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
     const { deviceId } = z.object({ deviceId: z.string().min(1) }).parse(request.params);
     const now = new Date();
     const t = now.toISOString();
-    const r = await sql.query(`UPDATE "Device" SET "status"='ENROLLED',"lastDisconnectedAt"=$1,"updatedAt"=$2 WHERE "deviceId" = $3 AND "userId" = $4 RETURNING "id"`, [now, now, deviceId, principal.id]) as any[];
+    const r = await sql.query(`UPDATE "Device" SET "status"='ENROLLED',"lastDisconnectedAt"=$1,"updatedAt"=$2 WHERE "deviceId" = $3 AND "userId" = $4 RETURNING "id"`, [now, now, deviceId, principal.id]);
     if (r.length === 0) throw new NotFoundAppError('Device not found');
 
     // Disconnect through the daemon's canonical connectivity lifecycle.
@@ -606,7 +623,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
       });
     }
 
-    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,$2,'good',$3)`, [r[0].id, !daemonDisconnected, now]);
+    await sql.query(`INSERT INTO "ConnectionState" ("deviceId","connected","quality","recordedAt") VALUES ($1,$2,'good',$3)`, [r[0]?.id, !daemonDisconnected, now]);
     await repos.audit.record({
       actorUserId: principal.id,
       action: 'device.disconnect',
@@ -632,7 +649,7 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
        JOIN "User" u ON s."userId" = u."id"
        JOIN "SubscriptionPlan" p ON s."planId" = p."id"
        ORDER BY s."createdAt" DESC`,
-    ) as any[];
+    );
     return okResp({ subscriptions: rows });
   });
 
@@ -646,9 +663,9 @@ export const registerSubscriptionRoutes = (app: FastifyInstance, deps: Subscript
               p."slug" AS planSlug,p."name" AS planName,p."priceUsd",p."maxDevices"
        FROM "Subscription" s JOIN "SubscriptionPlan" p ON s."planId" = p."id" WHERE s."userId" = $1 ORDER BY s."createdAt" DESC LIMIT 1`,
       [userId],
-    ) as any[];
-    const devRows = await sql.query(`SELECT d."deviceId",d."label",d."platform",d."status",d."authorizedAt",d."lastConnectedAt" FROM "Device" d WHERE d."userId" = $1 AND d."status" != 'REVOKED' ORDER BY d."createdAt" DESC`, [userId]) as any[];
-    const payRows = await sql.query(`SELECT pt."amountUsd",pt."currency",pt."status",pt."provider",pt."paidAt",pt."createdAt" FROM "PaymentTransaction" pt WHERE pt."userId" = $1 ORDER BY pt."createdAt" DESC`, [userId]) as any[];
+    );
+    const devRows = await sql.query(`SELECT d."deviceId",d."label",d."platform",d."status",d."authorizedAt",d."lastConnectedAt" FROM "Device" d WHERE d."userId" = $1 AND d."status" != 'REVOKED' ORDER BY d."createdAt" DESC`, [userId]);
+    const payRows = await sql.query(`SELECT pt."amountUsd",pt."currency",pt."status",pt."provider",pt."paidAt",pt."createdAt" FROM "PaymentTransaction" pt WHERE pt."userId" = $1 ORDER BY pt."createdAt" DESC`, [userId]);
     return okResp({ subscription: subRows[0] ?? null, devices: devRows, payments: payRows });
   });
 };

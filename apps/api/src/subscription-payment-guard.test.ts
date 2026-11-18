@@ -7,7 +7,6 @@ import { createSqlClient } from '@irp/database';
 import { buildServer } from './index.js';
 import { CapturingEmailSender } from './identity/mailer.js';
 import { createPostgresIdentityRepositories } from './identity/postgres.js';
-import type { IdentityRepositories } from './identity/types.js';
 
 /**
  * Regression tests for issue #412: the `test` payment provider must be rejected
@@ -157,6 +156,86 @@ maybe('subscription payment provider guard (real database)', () => {
       // No paymentProvider provided -> Zod validation error (no default('test') anymore).
       // Database may not be configured in test env, so expect 400 (validation) or 500 (no DB).
       expect(res.statusCode).toBe(400);
+    } finally {
+      e.restore();
+      await e.app.close();
+    }
+  });
+
+  it('paid renewal extends from the current expiry, keeps startedAt and extends entitlements', async () => {
+    const e = await instance({ NODE_ENV: 'development' });
+    try {
+      // Earlier tests in this file already consumed the per-IP auth rate-limit budget.
+      await e.sql.query(`DELETE FROM "RateLimitBucket"`);
+      const token = await registerAndVerifyUser(e, `renew-${randomUUID()}@example.com`);
+      const auth = { authorization: `Bearer ${token}` };
+      const plan = { slug: `renew-plan-${randomUUID().slice(0, 8)}`, durationDays: 30 };
+      await e.sql.query(
+        `INSERT INTO "SubscriptionPlan" ("slug","name","priceUsd","durationDays","maxDevices","features") VALUES ($1,'Renewal test',500,$2,1,$3)`,
+        [plan.slug, plan.durationDays, JSON.stringify({ remote_access: true })],
+      );
+      const durationMs = Number(plan.durationDays) * 86_400_000;
+
+      const purchase = await e.app.inject({
+        method: 'POST',
+        url: '/api/v1/subscriptions/purchase',
+        headers: auth,
+        payload: { planSlug: plan.slug, paymentProvider: 'test' },
+      });
+      expect(purchase.statusCode).toBe(200);
+      const { subscriptionId, paymentTransactionId } = purchase.json().data;
+      const activate = await e.app.inject({
+        method: 'POST',
+        url: '/api/v1/subscriptions/verify-payment',
+        headers: auth,
+        payload: { paymentTransactionId },
+      });
+      expect(activate.statusCode).toBe(200);
+
+      const read = async () =>
+        (
+          await e.sql.query(
+            `SELECT "startedAt" AT TIME ZONE 'UTC' AS "startedAt", "expiresAt" AT TIME ZONE 'UTC' AS "expiresAt", "renewedAt" FROM "Subscription" WHERE "id" = $1`,
+            [subscriptionId],
+          )
+        )[0]!;
+      const before = await read();
+      const beforeExpiry = new Date(before.expiresAt as string).getTime();
+      const entBefore = await e.sql.query(
+        `SELECT "expiresAt" AT TIME ZONE 'UTC' AS "expiresAt" FROM "Entitlement" WHERE "subscriptionId" = $1 AND "status" = 'ACTIVE'`,
+        [subscriptionId],
+      );
+
+      const renew = await e.app.inject({
+        method: 'POST',
+        url: '/api/v1/subscriptions/renew',
+        headers: auth,
+        payload: { paymentProvider: 'test' },
+      });
+      expect(renew.statusCode).toBe(200);
+      const verify = await e.app.inject({
+        method: 'POST',
+        url: '/api/v1/subscriptions/verify-payment',
+        headers: auth,
+        payload: { paymentTransactionId: renew.json().data.paymentTransactionId },
+      });
+      expect(verify.statusCode).toBe(200);
+
+      const after = await read();
+      // Remaining paid time is preserved: new expiry = old expiry + one full period (not now + period).
+      expect(new Date(after.expiresAt as string).getTime()).toBe(beforeExpiry + durationMs);
+      expect(new Date(after.startedAt as string).getTime()).toBe(
+        new Date(before.startedAt as string).getTime(),
+      );
+      expect(after.renewedAt).not.toBeNull();
+      const entAfter = await e.sql.query(
+        `SELECT "expiresAt" AT TIME ZONE 'UTC' AS "expiresAt" FROM "Entitlement" WHERE "subscriptionId" = $1 AND "status" = 'ACTIVE'`,
+        [subscriptionId],
+      );
+      expect(entAfter.length).toBe(entBefore.length);
+      for (const row of entAfter) {
+        expect(new Date(row.expiresAt as string).getTime()).toBe(beforeExpiry + durationMs);
+      }
     } finally {
       e.restore();
       await e.app.close();
