@@ -195,7 +195,6 @@ describe('Phase 42 remote client API', () => {
     const createUserApp = async () => {
       const app = Fastify({ logger: false });
       const jwt = new JwtService(jwtSecret, 'irp');
-      const rbac = new RbacAuthorization();
       app.setErrorHandler((error, _request, reply) => {
         const errorRecord =
           typeof error === 'object' && error !== null

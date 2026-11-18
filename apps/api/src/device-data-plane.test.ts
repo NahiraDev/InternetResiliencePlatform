@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildServer } from './index.js';
 import { CapturingEmailSender } from './identity/mailer.js';
-import { JwtService } from '@irp/auth';
 
 const mailer = new CapturingEmailSender();
 
@@ -102,7 +101,7 @@ describe('device data plane API', () => {
     const app = await buildServer({ mailer });
     const adminToken = await bootstrapAdminToken(app);
     const device = await enrollDevice(app, adminToken, 'android', 'device-android-2');
-    const issued = await exchangeCredential(app, device.credentialId, device.secret);
+    await exchangeCredential(app, device.credentialId, device.secret);
 
     // No auth header at all
     const snapshot = await app.inject({
@@ -139,7 +138,7 @@ describe('device data plane API', () => {
 
     // Enroll two devices under the same admin
     const deviceA = await enrollDevice(app, adminToken, 'android', 'device-owner-a');
-    const deviceB = await enrollDevice(app, adminToken, 'ios', 'device-owner-b');
+    await enrollDevice(app, adminToken, 'ios', 'device-owner-b');
 
     // Client A gets its own token
     const issuedA = await exchangeCredential(app, deviceA.credentialId, deviceA.secret);

@@ -46,7 +46,6 @@ import {
   traceContextFromHeaders,
 } from '@irp/telemetry';
 import { NetworkMonitoringService, type NetworkProbe } from '@irp/network';
-import { isZeroCostResource } from '@irp/connectivity';
 import {
   JwtAuthenticationProvider,
   JwtService,
@@ -86,7 +85,6 @@ type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: st
 type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
 type NetworkMeasurement = NetworkSnapshot['measurements'][number];
 
-const ZERO_COST_MODE_KEY = 'zero-cost-personal-mode';
 const now = () => new Date().toISOString();
 const slugify = (v: string) =>
   v
@@ -745,7 +743,8 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
       const cost = m.metadata?.cost as
         | { readonly tier: 'free' | 'paid' | 'unknown'; readonly monthlyUsd?: number; readonly requiresSubscription?: boolean }
         | undefined;
-      const eligible = cost ? isZeroCostResource({ cost } as any) : false;
+      // Same rule as @irp/connectivity isZeroCostResource: free tier and no subscription requirement.
+      const eligible = cost ? cost.tier === 'free' && cost.requiresSubscription !== true : false;
       return {
         id: String(m.metadata?.providerName ?? m.id),
         type: String(m.metadata?.providerType ?? 'unknown'),
@@ -793,7 +792,7 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
     });
   });
 
-  app.post('/api/v1/platform/zero-cost/toggle', async (request, reply) => {
+  app.post('/api/v1/platform/zero-cost/toggle', async (request) => {
     await requirePermission(request, 'runtime.execute');
     const body = z.object({ enabled: z.boolean() }).parse(request.body ?? {});
     await setZeroCostMode(body.enabled);
@@ -815,7 +814,6 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
     const rawQuery = (request.query ?? {}) as Readonly<Record<string, unknown>>;
     const lastEventId = String(rawQuery['lastEventId'] ?? '');
     const heartbeatMs = 15000;
-    const maxEvents = 500;
 
     reply.raw.writeHead(200, {
       'content-type': 'text/event-stream',
@@ -835,17 +833,16 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
 
     sendEvent('heartbeat', { source: 'LIVE', timestamp: new Date().toISOString() }, '0');
 
-    let heartbeatTimer: NodeJS.Timeout | undefined;
     let clientClosed = false;
+
+    const heartbeatTimer: NodeJS.Timeout = setInterval(() => {
+      if (!clientClosed) sendEvent('heartbeat', { source: 'LIVE', timestamp: new Date().toISOString() });
+    }, heartbeatMs);
 
     reply.raw.on('close', () => {
       clientClosed = true;
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      clearInterval(heartbeatTimer);
     });
-
-    heartbeatTimer = setInterval(() => {
-      if (!clientClosed) sendEvent('heartbeat', { source: 'LIVE', timestamp: new Date().toISOString() });
-    }, heartbeatMs);
 
     // Poll the daemon control socket for new events. This is the local-host
     // source of truth; the API does not maintain a separate event buffer.
@@ -1429,9 +1426,8 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   });
   app.get<{ Params: { deviceId: string } }>(
     '/api/v1/remote/devices/:deviceId/snapshot',
-    { preHandler: [deviceSnapshotRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
-    async (request, reply) => {
-      const req = request as RemoteClientRequest;
+    { preHandler: [deviceSnapshotRateLimit, (req) => requireRemoteClient(req as RemoteClientRequest)] },
+    async () => {
       const snapshot = await getNetworkSnapshot();
       const latestDns = snapshot.measurements.find((m: NetworkMeasurement) => m.probeType === 'dns');
       const latestInterfaces = snapshot.measurements.filter((m: NetworkMeasurement) => m.probeType === 'ip');
@@ -1456,8 +1452,8 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   });
   app.get<{ Params: { deviceId: string } }>(
     '/api/v1/remote/devices/:deviceId/analytics',
-    { preHandler: [deviceAnalyticsRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
-    async (request, reply) => {
+    { preHandler: [deviceAnalyticsRateLimit, (req) => requireRemoteClient(req as RemoteClientRequest)] },
+    async () => {
       const snapshot = await getNetworkSnapshot();
       const successful = snapshot.measurements.filter((m) => m.success);
       const latencies = successful
@@ -1483,9 +1479,8 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   });
   app.get<{ Params: { deviceId: string } }>(
     '/api/v1/remote/devices/:deviceId/policy',
-    { preHandler: [devicePolicyRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
-    async (request, reply) => {
-      const req = request as RemoteClientRequest;
+    { preHandler: [devicePolicyRateLimit, (req) => requireRemoteClient(req as RemoteClientRequest)] },
+    async () => {
       const snapshot = await resilienceRuntime.getRuntimeSnapshot();
       return ok({
         autonomousMode: snapshot.mode === 'live',
@@ -1495,8 +1490,8 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
 
   app.post<{ Params: { deviceId: string }; Body: { autonomousMode: boolean } }>(
     '/api/v1/remote/devices/:deviceId/policy',
-    { preHandler: [devicePolicyRateLimit, (req, reply) => requireRemoteClient(req as RemoteClientRequest)] },
-    async (request, reply) => {
+    { preHandler: [devicePolicyRateLimit, (req) => requireRemoteClient(req as RemoteClientRequest)] },
+    async (request) => {
       const req = request as RemoteClientRequest;
       const { autonomousMode } = z.object({ autonomousMode: z.boolean() }).parse(request.body);
       const mode = autonomousMode ? 'live' as const : 'safe' as const;
