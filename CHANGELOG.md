@@ -4,22 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning once releases begin.
 
-## [0.2.4] - 2026-11-19 (prerelease / developer-preview)
+## [0.3.1-prerelease] - 2026-11-19
 
-Linux-first prerelease preparation. Still developer-preview only; not production-certified.
+Linux-first **prerelease / developer-preview** preparation. Not production-certified.
 
-### Notes
+### Verified on Linux (Debian-oriented path)
 
-- Linux (Debian 13) is the release-critical gate. systemd unit runs as User=irp with CAP_NET_ADMIN.
-- Host authorization is fail-closed. Route mutation possible only with operator opt-in + CAP_NET_ADMIN + ip.
-- DNS write remains disabled under User=irp (requires root for systemd-resolved). Reported as blocker.
-- All mutation stays inside PrivilegedMutationBoundary / @irp/resilience-runtime.
-- Exact-SHA CI, Linux soak, and Postgres production evidence remain open.
+- systemd units (`infra/systemd/irp-daemon.service`, `packages/linux-client/systemd/irp-linux-client.service`) run as `User=irp` / `Group=irp` with `CapabilityBoundingSet=CAP_NET_ADMIN` and `AmbientCapabilities=CAP_NET_ADMIN`.
+- Host trust is fail-closed: live route mutation requires operator opt-in (`IRP_RUNTIME_MODE=live` **and** `IRP_ENABLE_LIVE_ROUTE_MUTATION=true`), Linux, CAP_NET_ADMIN in the process CapEff, and `ip` on PATH.
+- Single mutation authority remains `@irp/resilience-runtime` + `PrivilegedMutationBoundary`. No competing mutation path.
+- Observe-only / safe mode is the default; live mode is never implied by packaging.
 
-### Changed / Documented
+### Known limitations (explicit)
 
-- PROJECT_STATE.md updated to main SHA 3041339c426ad51d3dbb206f0d27bb00f51f907d with honest Linux status.
-- DNS write status under non-root User=irp documented clearly.
+- **DNS write is disabled under `User=irp`.** `dns.write` additionally requires root and `resolvectl`. The daemon correctly withholds the capability and reports a blocker. Operators must not expect systemd-resolved switching from the shipped service account.
+- Linux runtime soak and external validation evidence (#323) remain open.
+- Production PostgreSQL evidence (#410/#411) remain open.
+- Exact-SHA CI evidence for phases 94–150 remain open.
+- Releases stay developer-preview / prerelease until those gates close.
+
+### Documentation
+
+- PROJECT_STATE.md updated to main SHA `3041339c426ad51d3dbb206f0d27bb00f51f907d` with honest Linux-first prerelease status and DNS write note under `User=irp`.
 
 ## [Unreleased]
 
@@ -44,42 +50,4 @@ Linux-first prerelease preparation. Still developer-preview only; not production
 - Runtime ids restarted at 1 in every process, so a restarted daemon overwrote persisted decisions. Ids now carry a per-process epoch.
 - Overlapping cycle requests return 409 instead of 500 and no longer count as scheduler failures; shutdown waits for a running cycle.
 - CLI exits 3 when the daemon is unreachable, and `doctor`/`status`/`runtime decisions` distinguish blocked, degraded, unknown and healthy.
-
 - Linux route executor: invalid `ip -f ipv4` family argument, rollback that left the applied route behind when metrics differed, and verification that accepted any route for the prefix.
-
-### Security
-
-- WP2.2a (PR #10): vitest and @vitest/coverage-v8 3.2.7 → 4.1.11, resolving GHSA-82fw-gwwq-j7x9 (vitest/@vitest/mocker) and GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr (tinypool, no longer in the dependency graph). `pnpm audit` reports no vulnerabilities for the full and production graphs.
-- WP2.2b (PR #10): the runtime image ships a fresh production-only dependency closure (`--frozen-lockfile --prod --offline`); vitest, vite, esbuild, eslint, turbo, prettier and husky are no longer in the image.
-
-### Fixed
-
-- Runtime: the container no longer runs `pnpm install --production` at startup. Migrations invoke the Prisma CLI directly instead of going through `pnpm run`, whose dependency status check reinstalled packages against the pruned tree (and failed on a read-only root filesystem).
-- Runtime: a PostgreSQL restart no longer crashes the API. Both `pg` pools register idle-client `error` listeners, so readiness reports 503 during an outage and recovers afterwards.
-- Build: packages that use Node.js APIs declare `types: ["node"]`; under TypeScript 6 they previously compiled only because Vitest 3 declarations pulled in Node types transitively.
-- CI: Dependency Review works on the fork (dependency graph enabled).
-
-- Release pipeline (PR #2, published as v0.2.1): the Windows bundle job no longer fails on `$env:RELEASE_TAG` being expanded by bash; Windows zips use forward-slash entry names; the iOS source zip no longer contains SwiftPM `.build/` products; the Linux bundle is now a self-contained installable pnpm mini-workspace with a fail-closed smoke test (`pnpm install` + `GET /health`); compiled test files are pruned from platform bundles; every platform packaging step has fail-closed content guards.
-- v0.2.0 is marked prerelease: its Linux bundle was not runnable outside the monorepo (workspace symlinks), its iOS zip shipped ~6,400 generated files and its Windows zip used backslash entry names.
-
-- Release gate: restored the `IRP Release` workflow with a fail-closed check that the tagged commit has a passing Release Gate.
-- Release gate: iOS Full Client now builds against the generic iOS Simulator destination instead of a simulator runtime that is not installed on the runner.
-- Release gate: Public Runtime Lab soak retries transport-level errors from the Quick Tunnel in a bounded way while still failing on persistent errors and non-200 readiness.
-- Integration baseline: API and daemon runtime reports now record verified workspace integrations, so `pnpm integration:baseline` passes.
-- Security: raised the `@fastify/static` override to 10.1.5 (authorization bypass via non-canonical paths).
-- Docs: download page matches the Phase 71 asset names and documents `SHA256SUMS.txt` verification.
-
-### Added
-
-- `docs/release/RELEASE_GATE_ROADMAP.md`: ordered path from current `main` to Phase 71 certification, production certification and the post-v1 roadmap.
-
-- Phase 45 Network Identity & Destination Policy Assurance with explicit egress and destination evidence contracts.
-- Strict identity evidence validation for IPv4/IPv6, declared address family, resolved destination addresses, timestamps, ASN metadata and destination ports.
-- Deterministic compliant, non-compliant and insufficient-data assurance outcomes with bounded freshness and independent egress-source enforcement.
-- Boundary tests for normalization, malformed evidence, stale/future evidence, insufficient confidence and policy mismatches.
-- Phase 45 project-state and verification documentation.
-
-## Phase 16 — Intelligent Auto Failover & Recovery Engine
-
-- Added `@irp/failover` as the Phase 16 resilience orchestrator with normalized failure, recovery plan, state machine, budget, circuit breaker, simulation, explainability, metrics, event, and audit models.
-- Documented Phase 16 architecture, subsystem boundaries, policy/security behavior, validation, rollback, degraded mode, plugin extension points, and future AI-ready recovery history.

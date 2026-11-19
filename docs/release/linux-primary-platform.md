@@ -57,8 +57,14 @@ macOS, Windows, iOS, and Android remain supported development targets according 
 
 The first IRP device release is complete only when a real Debian-compatible artifact can be installed, the systemd unit is valid, the daemon starts under the dedicated service account, the local health surface responds, and the package can be removed without leaving an active IRP service behind.
 
-## DNS write under systemd User=irp
+## Host authorization and DNS write (prerelease)
 
-The packaged systemd unit runs as the non-root `irp` user with only `CAP_NET_ADMIN`.
+Host trust is fail-closed. The shipped systemd units run as `User=irp` and grant only `CAP_NET_ADMIN`.
 
-DNS write (`dns.write` / `dns_switch`) is gated on euid === 0 in host authorization because systemd-resolved D-Bus authorization is identity-based. Consequently DNS mutation is fail-closed and effectively disabled in the standard Linux client service. Route mutation remains available when the operator explicitly opts in and CAP_NET_ADMIN is held. No alternative mutation path exists outside PrivilegedMutationBoundary.
+| Capability | Requirements |
+| --- | --- |
+| `network.observe` | always |
+| `route.write`, `connectivity.failover` | operator live opt-in + Linux + CAP_NET_ADMIN + `ip` |
+| `dns.write` | all of the above **plus root and `resolvectl`** |
+
+Under the shipped `User=irp` unit, **DNS write is not granted**. The daemon reports the blocker and remains observe-only for DNS. This is intentional for the Linux-first prerelease; a least-privilege DNS path is future work. Do not claim production certification from this document.
