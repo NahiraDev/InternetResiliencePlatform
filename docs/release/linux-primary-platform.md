@@ -56,3 +56,13 @@ macOS, Windows, iOS, and Android remain supported development targets according 
 ## Release definition
 
 The first IRP device release is complete only when a real Debian-compatible artifact can be installed, the systemd unit is valid, the daemon starts under the dedicated service account, the local health surface responds, and the package can be removed without leaving an active IRP service behind.
+
+## Host trust and DNS under User=irp
+
+The reference systemd units run the daemon and Linux full client as `User=irp` with only `CAP_NET_ADMIN` ambient.
+
+- **Route mutation** is authorized only when the process is on Linux, holds CAP_NET_ADMIN, has the `ip` binary, and the operator has explicitly opted into live mode.
+- **DNS write** currently requires root (`euid === 0`) and `resolvectl` (systemd-resolved). Under `User=irp`, `dns.write` is **not granted** and is reported as a host-authorization blocker. This is intentional fail-closed behaviour for the prerelease; operators must not assume DNS switching works when the service runs as the dedicated non-root account.
+- All live network mutation still flows only through `@irp/resilience-runtime` and `PrivilegedMutationBoundary`.
+
+This posture keeps the Linux-first prerelease honest: observation and (when opted-in) route changes are in scope; DNS mutation under the service account is out of scope until a non-root policy (for example polkit) is designed and evidenced.
