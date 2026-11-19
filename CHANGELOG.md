@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning once releases begin.
 
+## [0.2.4] - 2026-11-19 (prerelease / developer-preview)
+
+Linux-first prerelease preparation. Still developer-preview only; not production-certified.
+
+### Notes
+
+- Linux (Debian 13) is the release-critical gate. systemd unit runs as User=irp with CAP_NET_ADMIN.
+- Host authorization is fail-closed. Route mutation possible only with operator opt-in + CAP_NET_ADMIN + ip.
+- DNS write remains disabled under User=irp (requires root for systemd-resolved). Reported as blocker.
+- All mutation stays inside PrivilegedMutationBoundary / @irp/resilience-runtime.
+- Exact-SHA CI, Linux soak, and Postgres production evidence remain open.
+
+### Changed / Documented
+
+- PROJECT_STATE.md updated to main SHA 3041339c426ad51d3dbb206f0d27bb00f51f907d with honest Linux status.
+- DNS write status under non-root User=irp documented clearly.
+
 ## [Unreleased]
 
 ### Added
