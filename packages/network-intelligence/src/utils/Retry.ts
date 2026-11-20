@@ -1,8 +1,12 @@
-import { throwIfAborted } from './Timeout.js';
 export interface RetryOptions {
   attempts: number;
   delayMs: number;
 }
+
+const throwIfAborted = (signal?: AbortSignal): void => {
+  if (signal?.aborted) throw new DOMException('Operation aborted', 'AbortError');
+};
+
 export const retry = async <T>(
   operation: () => Promise<T>,
   options: RetryOptions,
