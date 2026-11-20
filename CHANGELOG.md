@@ -6,13 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Added
-
-- (none yet)
-
 ### Changed
 
-- (none yet)
+- Reconciled PROJECT_STATE.md to current main SHA `0f0a1615e490aabbb810de38de29f29c2fac321e` (post-#525). Linux-first prerelease posture unchanged and honest.
+
+### Notes
+
+- DNS write remains intentionally disabled under `User=irp` (requires root + resolvectl). Documented as fail-closed blocker.
+- Still prerelease / developer-preview only. No production certification claimed.
 
 ## [0.2.4] - 2026-11-19 (prerelease)
 
