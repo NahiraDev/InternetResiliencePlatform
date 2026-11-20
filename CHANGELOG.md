@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Reconciled PROJECT_STATE.md to current main SHA `0f0a1615e490aabbb810de38de29f29c2fac321e` (post-#525). Linux-first prerelease posture unchanged and honest.
+- Reconciled PROJECT_STATE.md to current main SHA `517628e446a70605174f3703b483f7e0b2e5ef5a` (post-#526). Linux-first prerelease posture unchanged and honest.
 
 ### Notes
 
