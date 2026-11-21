@@ -62,6 +62,16 @@ A capability is not considered production-ready merely because source code exist
 
 See [`ROADMAP.md`](ROADMAP.md) for the concise roadmap and [`docs/roadmap/MASTER_ROADMAP_V2.md`](docs/roadmap/MASTER_ROADMAP_V2.md) for the current Phase 72–150 planning authority. The former distribution document is explicitly archived and must not be used as current phase numbering.
 
+## Linux end-user path (Debian 13)
+
+For a careful operator who wants to install and run the daemon on Debian 13:
+
+- Read [`docs/operations/linux-enduser-guide.md`](docs/operations/linux-enduser-guide.md) first.
+- The reference install is `sudo scripts/install-linux.sh` after `pnpm build`.
+- Status is honest: live vs safe, and every host-authorization blocker is listed.
+- **DNS write is disabled under `User=irp`.** This is intentional and fail-closed.
+- This is still a **prerelease / developer-preview**. No production certification is claimed.
+
 ## Downloads
 
 Published client artifacts are distributed through **[GitHub Releases](https://github.com/NahiraDev/InternetResiliencePlatform/releases)**. The canonical platform-specific guide is [`docs/downloads.md`](docs/downloads.md). Linux is the first production device artifact; iOS remains a source/developer bundle until signing and provisioning are configured.
