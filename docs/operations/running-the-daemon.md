@@ -10,8 +10,8 @@ Requirements: Linux (Debian 13 is the release-critical gate), Node.js >= 24, pnp
 ### Debian package (end-user path)
 
 ```bash
-sha256sum -c irp-daemon_0.2.5_amd64.deb.sha256
-sudo dpkg -i irp-daemon_0.2.5_amd64.deb
+sha256sum -c irp-daemon_0.2.6_amd64.deb.sha256
+sudo dpkg -i irp-daemon_0.2.6_amd64.deb
 sudo systemctl start irp-daemon
 sudo irp status
 ```

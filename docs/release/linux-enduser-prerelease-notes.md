@@ -1,7 +1,7 @@
-# Linux End-User Prerelease Notes (v0.2.5)
+# Linux End-User Prerelease Notes (v0.2.6)
 
 **Date:** 2026-11-21  
-**Base SHA:** `432c89cadacc06e45e6d7aabfff230a28afee812`  
+**Base SHA:** `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e`  
 **Status:** prerelease / developer-preview only. **Not production-certified.**
 
 ## What an end user can do today on Debian 13
@@ -31,7 +31,7 @@
 
 ## Release assets
 
-- `irp-daemon_0.2.5_amd64.deb` + matching `.sha256` (built by `scripts/build-linux-daemon-deb.sh`).
+- `irp-daemon_0.2.6_amd64.deb` + matching `.sha256` (built by `scripts/build-linux-daemon-deb.sh`).
 - Prerelease flag is explicit in the package description, CHANGELOG, PROJECT_STATE, and these notes.
 
 Do not promote this tree to a stable release until the remaining evidence gates are closed.

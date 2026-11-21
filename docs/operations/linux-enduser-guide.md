@@ -6,7 +6,7 @@
 
 ## What you can do today
 
-1. Install the daemon and CLI via the Debian package (`irp-daemon_0.2.5_amd64.deb`) or from a built source checkout.
+1. Install the daemon and CLI via the Debian package (`irp-daemon_0.2.6_amd64.deb`) or from a built source checkout.
 2. Start and stop the service via systemd as the dedicated non-root `irp` user.
 3. Read honest status that distinguishes live vs safe mode and lists every blocker.
 4. Observe network conditions.
@@ -25,8 +25,8 @@
 
 ```bash
 # After obtaining the release artifact and its .sha256
-sha256sum -c irp-daemon_0.2.5_amd64.deb.sha256
-sudo dpkg -i irp-daemon_0.2.5_amd64.deb
+sha256sum -c irp-daemon_0.2.6_amd64.deb.sha256
+sudo dpkg -i irp-daemon_0.2.6_amd64.deb
 sudo systemctl start irp-daemon
 sudo irp status
 ```
