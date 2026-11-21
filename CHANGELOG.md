@@ -6,15 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Changed
-
-- Reconciled PROJECT_STATE.md to current main SHA `517628e446a70605174f3703b483f7e0b2e5ef5a` (post-#526). Linux-first prerelease posture unchanged and honest.
-
 ### Notes
 
-- DNS write remains intentionally disabled under `User=irp` (requires root + resolvectl). Documented as fail-closed blocker.
-- Still prerelease / developer-preview only. No production certification claimed.
+- Next prerelease target after v0.2.5 remains developer-preview only.
 
+## [0.2.5] - 2026-11-21 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Added
+
+- `scripts/build-linux-daemon-deb.sh` — builds an installable `irp-daemon` Debian package (systemd unit as `User=irp` with `CAP_NET_ADMIN` only, safe-default `/etc/irp/irp.env`, checksum).
+- `docs/release/linux-enduser-prerelease-notes.md` — honest prerelease notes for end users.
+- `docs/operations/linux-enduser-guide.md` — operator install / start / status / limitations guide (Debian package and source paths).
+
+### Changed
+
+- Reconciled PROJECT_STATE.md and release docs to current main SHA `432c89cadacc06e45e6d7aabfff230a28afee812` (post-#527).
+- Aligned Linux Debian package version default to 0.2.5 in `scripts/build-linux-deb.sh`.
+- Clarified end-user install, status, and limitation documentation so a careful operator on Debian 13 can install, start the daemon via systemd, and read honest status without false production claims.
+
+### Verified on Linux (contract / code level)
+
+- Debian 13 is the only release-critical gate; other platforms do not block this prerelease.
+- systemd units (`infra/systemd/irp-daemon.service`, `packages/linux-client/systemd/irp-linux-client.service`) run as `User=irp` / `Group=irp` with `CapabilityBoundingSet=CAP_NET_ADMIN` and `AmbientCapabilities=CAP_NET_ADMIN` only.
+- Host trust is fail-closed: live route mutation requires Linux + CAP_NET_ADMIN + `ip` + operator opt-in (`IRP_RUNTIME_MODE=live` and `IRP_ENABLE_LIVE_ROUTE_MUTATION=true`).
+- **DNS write status under User=irp:** `dns.write` additionally requires `euid === 0` and `resolvectl`. Under the dedicated non-root service account, DNS write is **not granted** and is reported as a blocker. This is intentional fail-closed behaviour, not a silent success.
+- Single mutation authority remains `@irp/resilience-runtime` + `PrivilegedMutationBoundary`. No parallel mutation paths.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 ## [0.2.4] - 2026-11-19 (prerelease)
 
 > **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**

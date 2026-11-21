@@ -5,8 +5,20 @@ mutation. The `irp` CLI is a client of that running daemon: it never builds its 
 
 ## Install
 
-Requirements: Linux, Node.js, pnpm, iproute2 (`ip`). `systemd-resolved` (`resolvectl`) is needed only
-for live DNS switching.
+Requirements: Linux (Debian 13 is the release-critical gate), Node.js >= 24, pnpm (for source builds), iproute2 (`ip`). `systemd-resolved` (`resolvectl`) is needed only for live DNS switching (disabled under the shipped unit).
+
+### Debian package (end-user path)
+
+```bash
+sha256sum -c irp-daemon_0.2.5_amd64.deb.sha256
+sudo dpkg -i irp-daemon_0.2.5_amd64.deb
+sudo systemctl start irp-daemon
+sudo irp status
+```
+
+See `docs/operations/linux-enduser-guide.md` for the full operator walkthrough.
+
+### From a source checkout
 
 ```bash
 pnpm install --frozen-lockfile && pnpm build
