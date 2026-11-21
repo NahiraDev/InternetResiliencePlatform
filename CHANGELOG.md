@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 > **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
 
+### Added
+
+- `scripts/build-linux-daemon-deb.sh` — builds an installable `irp-daemon` Debian package (systemd unit as `User=irp` with `CAP_NET_ADMIN` only, safe-default `/etc/irp/irp.env`, checksum).
+- `docs/release/linux-enduser-prerelease-notes.md` — honest prerelease notes for end users.
+- `docs/operations/linux-enduser-guide.md` — operator install / start / status / limitations guide (Debian package and source paths).
+
 ### Changed
 
 - Reconciled PROJECT_STATE.md and release docs to current main SHA `432c89cadacc06e45e6d7aabfff230a28afee812` (post-#527).
@@ -35,7 +41,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - exact-SHA CI / Release Gate on the tagged commit.
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
-
 ## [0.2.4] - 2026-11-19 (prerelease)
 
 > **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**

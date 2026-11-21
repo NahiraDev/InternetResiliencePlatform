@@ -6,7 +6,7 @@
 
 ## What you can do today
 
-1. Install the daemon and CLI from a built checkout (or a future Debian package).
+1. Install the daemon and CLI via the Debian package (`irp-daemon_0.2.5_amd64.deb`) or from a built source checkout.
 2. Start and stop the service via systemd as the dedicated non-root `irp` user.
 3. Read honest status that distinguishes live vs safe mode and lists every blocker.
 4. Observe network conditions.
@@ -19,7 +19,21 @@
 - **DNS write is disabled under `User=irp`.** The capability additionally requires root (`euid === 0`) and `resolvectl`. The daemon reports this as a blocker and does not pretend the capability exists.
 - There is no second control plane. All mutation goes through `@irp/resilience-runtime` and `PrivilegedMutationBoundary`.
 
-## Install (from source checkout)
+## Install
+
+### Option A — Debian package (recommended for end users)
+
+```bash
+# After obtaining the release artifact and its .sha256
+sha256sum -c irp-daemon_0.2.5_amd64.deb.sha256
+sudo dpkg -i irp-daemon_0.2.5_amd64.deb
+sudo systemctl start irp-daemon
+sudo irp status
+```
+
+The package creates the `irp` user/group, installs `/etc/irp/irp.env` from the example (safe defaults), and enables the unit. Build it yourself with `scripts/build-linux-daemon-deb.sh` (requires Node.js >= 24, pnpm, and a prior `pnpm install --frozen-lockfile`).
+
+### Option B — From a source checkout
 
 Requirements: Debian 13, Node.js >= 24, pnpm, `iproute2`, and (optional) `systemd-resolved` if you later want DNS experiments as root.
 
@@ -33,59 +47,60 @@ sudo systemctl enable --now irp-daemon
 sudo irp status
 ```
 
-The install script creates the `irp` system user, installs the unit to `/etc/systemd/system/irp-daemon.service`, and places an example environment at `/etc/irp/irp.env` if one does not already exist.
+Without systemd: `IRP_STATE_DIR=$HOME/.irp IRP_CONTROL_SOCKET=$HOME/.irp/irp.sock node apps/daemon/dist/index.js`.
 
 ## Start / stop / status
 
 ```bash
+sudo systemctl status irp-daemon
 sudo systemctl start irp-daemon
 sudo systemctl stop irp-daemon
-sudo systemctl status irp-daemon
-sudo irp status          # or: irp doctor
-sudo irp runtime snapshot
-sudo irp runtime decisions
+sudo systemctl restart irp-daemon
+sudo irp status
+sudo irp doctor
 ```
 
-`irp status` exits non-zero when the daemon is unreachable, degraded, or blocked. Look at `authorization.blockers` for the exact reasons live mode is not active.
+`irp status` and `irp doctor` exit non-zero when the daemon is unreachable or when evidence is incomplete.
 
-## Modes
+## Configuration (`/etc/irp/irp.env`)
 
-| Variable | Default | Effect |
-|----------|---------|--------|
-| `IRP_RUNTIME_MODE` | `safe` | `safe` = observe only; `live` = may mutate if host also allows |
-| `IRP_ENABLE_LIVE_ROUTE_MUTATION` | unset | Must be `true` together with live mode |
-| `IRP_RUNTIME_ENABLED` | `1` | Periodic 30 s cycle; otherwise cycles only on request |
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `IRP_RUNTIME_MODE` | `safe` | `safe` / `simulation` / `live`. Live is refused unless the next variable is also set. |
+| `IRP_ENABLE_LIVE_ROUTE_MUTATION` | unset | Must be exactly `true` for live route mutation. |
+| `IRP_RUNTIME_ENABLED` | `1` | Run the periodic 30 s cycle. |
 
-Edit `/etc/irp/irp.env` and restart the service after any change. Live mode cannot be requested over the control socket.
+After editing, `sudo systemctl restart irp-daemon`.
 
-## Current limitations (honest)
+## What the system will and will not do
 
-- **DNS write under the service account is off.** Documented fail-closed behaviour. Do not assume DNS switching works when running as `User=irp`.
-- No production soak evidence yet (see issue #323).
-- PostgreSQL durable stores exist in code but production deployment evidence is still incomplete (#410/#411).
-- Exact-SHA CI / Release Gate on the tagged commit is still required before any stronger claim.
-- Mobile and desktop clients are secondary; Linux is the release gate.
+| Capability | Granted when |
+| --- | --- |
+| `network.observe` | Always |
+| `route.write`, `connectivity.failover` | Linux + `CAP_NET_ADMIN` + `ip` on PATH + both live opt-ins above |
+| `dns.write` | All of the above **plus** root (`euid === 0`) and `resolvectl` |
 
-## Package build (for maintainers)
+Under the shipped unit (`User=irp`), DNS write is never granted and appears in `authorization.blockers`.
 
-```bash
-pnpm linux:package          # produces dist/linux/irp-linux-client_0.2.5_amd64.deb + .sha256
-```
+Mutation authority is exclusively `@irp/resilience-runtime` + `PrivilegedMutationBoundary`. The CLI and control socket can only request safe/simulation cycles; live mutation cannot be enabled from the socket.
 
-The package is still a prerelease artifact. Verify checksums before distributing.
+## Current limitations (do not ignore)
 
-## Recovery and safety
+- DNS write under `User=irp` is disabled by design.
+- No production soak evidence yet (Linux runtime soak #323).
+- PostgreSQL stores exist but production deployment evidence is incomplete (#410/#411).
+- exact-SHA CI / release-gate evidence is still pending for phases 94–150.
+- This is a prerelease. Do not treat it as production-certified.
 
-On startup the daemon rolls back any route change that was issued but never verified. On shutdown it restores any resolvers it had replaced. All live mutations are journaled and verified.
-
-If anything looks wrong, stop the service:
+## Uninstall
 
 ```bash
 sudo systemctl stop irp-daemon
+sudo dpkg -r irp-daemon
+# or, for a source install:
+sudo systemctl disable --now irp-daemon
+sudo rm -rf /opt/irp /etc/irp /usr/local/bin/irp
+sudo userdel irp  # if you created it
 ```
 
-The unit uses `ProtectSystem=strict`, `NoNewPrivileges=true`, and only `CAP_NET_ADMIN`.
-
----
-
-For the full operational contract see `docs/operations/running-the-daemon.md` and `docs/release/linux-primary-platform.md`.
+State under `/var/lib/irp` is left in place unless you remove it explicitly.
