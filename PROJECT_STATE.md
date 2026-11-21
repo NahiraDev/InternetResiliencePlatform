@@ -81,6 +81,15 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can safely run observe-only; live route mutation is possible only with explicit opt-in and CAP_NET_ADMIN + `ip`. DNS switching is not available under the shipped `User=irp` unit.
 - Next: land this prep; obtain Linux soak; keep DNS write disabled or design least-privilege alternative; continue exact-SHA evidence collection.
 
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (current main)
+
+- Starting base SHA: `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e` (origin/main, post-merge of #528)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Confirmed Linux packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain coherent. DNS write remains disabled under `User=irp`. PrivilegedMutationBoundary remains the single mutation authority. No code changes to control plane.
+- Verified: build script, systemd unit, host-authorization.ts (route.write needs CAP_NET_ADMIN+ip+opt-in; dns.write needs root), end-user guide and prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+
 ## Autonomous engineer checkpoint (2026-11-21) — Linux-first prerelease prep (current main SHA)
 
 - Starting base SHA: `517628e446a70605174f3703b483f7e0b2e5ef5a` (origin/main, post-#526)
