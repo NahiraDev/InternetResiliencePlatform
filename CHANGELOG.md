@@ -8,7 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Notes
 
-- Next prerelease target after v0.2.5 remains developer-preview only.
+- Next prerelease target after v0.2.6 remains developer-preview only.
+
+## [0.2.6] - 2026-11-21 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Changed
+
+- Rebased Linux end-user ready checkpoint onto main SHA `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e` (post-#528).
+- Bumped Debian package default version to 0.2.6 in `scripts/build-linux-daemon-deb.sh`.
+- Build script now rejects Node.js < 24 with a clear error before any workspace build.
+- Updated operator docs and PROJECT_STATE with the exact base SHA and honest limitations.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
 ## [0.2.5] - 2026-11-21 (prerelease)
 

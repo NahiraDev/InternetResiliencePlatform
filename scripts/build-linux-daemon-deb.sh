@@ -5,8 +5,16 @@
 # Output: dist/linux/irp-daemon_<version>_<arch>.deb + .sha256
 set -euo pipefail
 
+# Fail closed on insufficient Node (package requires >= 24).
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if [ "$NODE_MAJOR" -lt 24 ]; then
+  echo "error: Node.js >= 24 is required (found $(node -v 2>/dev/null || echo 'none'))." >&2
+  echo "Install Node 24+ before building the Debian package." >&2
+  exit 1
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${IRP_DAEMON_VERSION:-0.2.5}"
+VERSION="${IRP_DAEMON_VERSION:-0.2.6}"
 ARCH="${IRP_LINUX_ARCH:-amd64}"
 OUT_DIR="${IRP_LINUX_OUT_DIR:-$ROOT_DIR/dist/linux}"
 PKG_ROOT="$OUT_DIR/daemon-package"
