@@ -2,10 +2,28 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (current main SHA 164125a)
+
+- Starting base SHA: `164125a549b5484f0da5f0a5587b0527f67498c8` (origin/main)
+- Branch: `release/linux-enduser-ready-v3`
+- Completed this run: Confirmed Linux packaging path (`scripts/build-linux-daemon-deb.sh`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed (route.write needs CAP_NET_ADMIN + ip + opt-in; dns.write needs root + resolvectl and is therefore not granted under User=irp), and operator docs remain coherent. Updated PROJECT_STATE, CHANGELOG, and prerelease notes to this exact SHA. PrivilegedMutationBoundary remains the single mutation authority. No control-plane changes.
+- Verified: build script, systemd unit, host-authorization.ts (daemon), end-user guide and prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
+- Next: land this reconciliation; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
+
 ## Current implementation gate
 
 - **Current implementation baseline:** Phases 94–150 implemented locally on branch `phase/94-150-implementation` (authorized by the repository owner's explicit request); each phase is PARTIAL pending exact-SHA CI evidence. Phase 93 and earlier baselines are unchanged.
-- **Linux end-user ready prerelease checkpoint (2026-11-21):** Branch `release/linux-enduser-ready` from main SHA `432c89cadacc06e45e6d7aabfff230a28afee812` (merged as #528). Added `scripts/build-linux-daemon-deb.sh` producing `irp-daemon_0.2.5_amd64.deb` (+ checksum) with systemd unit (`User=irp`, `CAP_NET_ADMIN` only), safe-default `/etc/irp/irp.env`, and honest package description. Operator docs (`docs/operations/linux-enduser-guide.md`, `docs/release/linux-enduser-prerelease-notes.md`) state what works today and what does not. DNS write remains disabled under `User=irp`. Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
+- **Linux end-user ready prerelease checkpoint (2026-11-23, v0.2.7):** Branch `release/linux-enduser-ready` at SHA `69b5e99bbbd84d564e57052a39348eace5da8dde` (base main `1272e738aa9a5579c7b1656cd002352378e34375`). Packaging reliability: `scripts/build-linux-daemon-deb.sh` and `scripts/install-linux.sh` are non-interactive (`CI=true`) and fail-closed on missing dist. systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, operator docs honest. DNS write remains disabled under `User=irp`. Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
+
+- **Linux end-user ready prerelease checkpoint (2026-11-22, v0.2.7):** Branch `release/linux-enduser-ready` from main SHA `1272e738aa9a5579c7b1656cd002352378e34375` (post-merge of #532). Confirmed Debian packaging path (`scripts/build-linux-daemon-deb.sh` → `irp-daemon_0.2.7_amd64.deb`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, and operator docs. DNS write remains disabled under `User=irp` (requires root + `resolvectl`). Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
+
+- **Linux end-user ready prerelease checkpoint (2026-11-22, v0.2.7):** Branch `release/linux-enduser-ready` from main SHA `164125a549b5484f0da5f0a5587b0527f67498c8` (post-merge of #530). Confirmed Debian packaging path (`scripts/build-linux-daemon-deb.sh` → `irp-daemon_0.2.7_amd64.deb`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, and operator docs. DNS write remains disabled under `User=irp` (requires root + `resolvectl`). Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
+
+- **Linux end-user ready prerelease checkpoint (2026-11-22):** Branch `release/linux-enduser-ready` from main SHA `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` (post-merge of #529). Confirmed Debian packaging path (`scripts/build-linux-daemon-deb.sh`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, and operator docs. DNS write remains disabled under `User=irp`. Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
+
+- **Linux end-user ready prerelease checkpoint (2026-11-21):** Branch `release/linux-enduser-ready` from main SHA `432c89cadacc06e45e6d7aabfff230a28afee812`. Added `scripts/build-linux-daemon-deb.sh` producing `irp-daemon_0.2.5_amd64.deb` (+ checksum) with systemd unit (`User=irp`, `CAP_NET_ADMIN` only), safe-default `/etc/irp/irp.env`, and honest package description. Operator docs (`docs/operations/linux-enduser-guide.md`, `docs/release/linux-enduser-prerelease-notes.md`) state what works today and what does not. DNS write remains disabled under `User=irp`. Single mutation authority unchanged. **Prerelease / developer-preview only — not production-certified.**
 
 - **Issue #12 progress:** The Phase 1–38 evidence register is incomplete: Phases 1–15 are mapped; Phases 16–38 still need evidence reconstruction. Historical paths and test-count records for Phases 39–78 do not establish phase acceptance on the current SHA. Those phases remain PARTIAL unless a separately documented external blocker applies, pending phase-specific acceptance verification and fresh exact-SHA CI evidence.
 - **Current open issues (authoritative tracker):** #272 (EPIC: Autonomous Network Superplatform — Full-System Reconstruction & Completion), #323 (Final External Validation Gate — Remote CI, Linux Runtime Soak & Release Evidence), #410/#411 (durable stores / PostgreSQL — implementation present but issue remains open pending production evidence), #463 (Autonomous bandwidth/egress provisioning). #254 and #420 closed as completed.
@@ -17,7 +35,7 @@
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e` (post-merge of #528); exact-SHA Release Gate evidence must be verified before any stronger release claim. Releases remain developer-preview / prerelease only. Next intended prerelease is v0.2.5 (Linux end-user ready, still not production-certified).
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `164125a549b5484f0da5f0a5587b0527f67498c8`; exact-SHA Release Gate evidence must be verified before any stronger release claim. Releases remain developer-preview / prerelease only. Next intended prerelease is v0.2.7 (Linux end-user ready follow-up, still not production-certified).
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
 - **Phase 93 status:** advanced route ranking, bounded compiled-intent routing preferences, fail-closed validation, and selection audit evidence are implemented in `packages/resilience-runtime/src/fabric.ts`, with regression coverage in `phase-93-advanced-routing.test.ts`. Disposition PARTIAL pending exact-SHA CI and external runtime evidence. No new runtime authority was introduced.
 - **Phases 94–150:** phase documents and corresponding modules exist on main under `packages/resilience-runtime/src/{traffic,telemetry-plane,control-security,fleet,intelligence,dataplane,control-api,governance,scale}` with tests. All modules are additive, pure or injected-clock, advisory, and reach the network only through `PrivilegedMutationBoundary`; data-plane enforcement requires a governed transaction id. Disposition PARTIAL pending exact-SHA CI, review and external runtime evidence; no new runtime authority was introduced and `ResilienceRuntime` remains the sole production mutation authority.
@@ -59,6 +77,16 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Current releases (including this prerelease preparation) are developer-preview only. No production certification is claimed.
 - Remaining open: Linux runtime soak evidence (#323), Postgres production evidence (#410/#411), exact-SHA CI on the release gate, DNS policy decision (keep disabled or add controlled least-privilege path).
 
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (latest main)
+
+- Starting base SHA: `1272e738aa9a5579c7b1656cd002352378e34375` (origin/main, post-merge of #532)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Confirmed Linux packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain coherent and honest after main advanced. DNS write remains disabled under `User=irp`. PrivilegedMutationBoundary remains the single mutation authority. No code changes to control plane.
+- Verified: build script, systemd unit, end-user guide and prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
+- Next: land this reconciliation; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
+
 ## Autonomous engineer checkpoint (2026-11-19) — Linux-first prerelease prep
 
 - Starting base SHA: `9e5f846205c068b301c3ec3bdf7c007fd9a5b9ab` (origin/main)
@@ -81,6 +109,15 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can safely run observe-only; live route mutation is possible only with explicit opt-in and CAP_NET_ADMIN + `ip`. DNS switching is not available under the shipped `User=irp` unit.
 - Next: land this prep; obtain Linux soak; keep DNS write disabled or design least-privilege alternative; continue exact-SHA evidence collection.
 
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (current main)
+
+- Starting base SHA: `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e` (origin/main, post-merge of #528)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Confirmed Linux packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain coherent. DNS write remains disabled under `User=irp`. PrivilegedMutationBoundary remains the single mutation authority. No code changes to control plane.
+- Verified: build script, systemd unit, host-authorization.ts (route.write needs CAP_NET_ADMIN+ip+opt-in; dns.write needs root), end-user guide and prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+
 ## Autonomous engineer checkpoint (2026-11-21) — Linux-first prerelease prep (current main SHA)
 
 - Starting base SHA: `517628e446a70605174f3703b483f7e0b2e5ef5a` (origin/main, post-#526)
@@ -101,12 +138,12 @@ IRP's long-term objective is a safe, observable and policy-governed Internet con
 - Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
 - Next: land PR #528; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
 
-## Autonomous engineer checkpoint (2026-11-21) — post-merge SHA reconciliation
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (post-#529)
 
-- Starting / current main SHA: `5500cb1b343dcc0e1b06b379220316fa7a5c4a8e` (merge of #528)
-- Branch: `release/linux-enduser-ready-v2`
-- Completed this run: Reconciled PROJECT_STATE.md to the post-merge main SHA. Confirmed the Linux end-user path remains installable and honest. systemd units run as `User=irp` with only `CAP_NET_ADMIN`. Host-authorization remains fail-closed. DNS write under `User=irp` is correctly disabled and documented. No runtime authority changes. PrivilegedMutationBoundary remains the single mutation path.
-- Verified: docs (`linux-enduser-guide.md`, prerelease notes), package build script, systemd contracts, and CHANGELOG 0.2.5 entry are present on main.
+- Starting base SHA: `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` (origin/main, post-merge of #529)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Confirmed Linux packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain coherent and honest. DNS write remains disabled under `User=irp`. PrivilegedMutationBoundary remains the single mutation authority. No code changes to control plane. Updated PROJECT_STATE to exact current SHA.
+- Verified: build script, systemd unit, end-user guide and prerelease notes.
 - Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
 - Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
-- Next: obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
+- Next: land this reconciliation; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.

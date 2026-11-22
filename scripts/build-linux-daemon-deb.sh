@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${IRP_DAEMON_VERSION:-0.2.5}"
+VERSION="${IRP_DAEMON_VERSION:-0.2.7}"
 ARCH="${IRP_LINUX_ARCH:-amd64}"
 OUT_DIR="${IRP_LINUX_OUT_DIR:-$ROOT_DIR/dist/linux}"
 PKG_ROOT="$OUT_DIR/daemon-package"
@@ -27,8 +27,19 @@ pnpm --dir "$ROOT_DIR" --filter @irp/daemon... --filter @irp/cli... build
 
 echo "==> Deploying production trees"
 # pnpm deploy produces a self-contained tree with production deps.
+# CI=true avoids interactive purge confirmation in non-TTY (CI/agent) environments.
+export CI=true
 pnpm --dir "$ROOT_DIR" --filter @irp/daemon deploy --prod --legacy "$DAEMON_ROOT"
 pnpm --dir "$ROOT_DIR" --filter @irp/cli deploy --prod --legacy "$CLI_ROOT"
+
+if [ ! -f "$DAEMON_ROOT/dist/index.js" ]; then
+  echo "ERROR: daemon dist/index.js missing after deploy" >&2
+  exit 1
+fi
+if [ ! -f "$CLI_ROOT/dist/index.js" ]; then
+  echo "ERROR: cli dist/index.js missing after deploy" >&2
+  exit 1
+fi
 
 # Wrapper so `irp` is on PATH.
 cat > "$PKG_ROOT/usr/bin/irp" <<'EOF'

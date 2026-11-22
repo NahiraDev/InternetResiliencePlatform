@@ -6,9 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `scripts/build-linux-daemon-deb.sh` and `scripts/install-linux.sh`: set `CI=true` so `pnpm deploy` does not abort on non-TTY (agent/CI) environments; fail closed if daemon/CLI `dist/index.js` is missing after deploy.
+
 ### Notes
 
-- Next prerelease target after v0.2.5 remains developer-preview only.
+- Next prerelease target after v0.2.7 remains developer-preview only. SHA reconciliation to `164125a549b5484f0da5f0a5587b0527f67498c8` performed on 2026-11-22.
+
+## [0.2.7] - 2026-11-22 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Changed
+
+- Reconciled PROJECT_STATE.md, prerelease notes, and Linux package version default to current main SHA `164125a549b5484f0da5f0a5587b0527f67498c8`.
+- Confirmed Linux end-user packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain honest and usable for basic install + observe + bounded route path.
+- DNS write remains intentionally disabled under the non-root `User=irp` service account.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
+
+
+## [0.2.6] - 2026-11-22 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Changed
+
+- Reconciled PROJECT_STATE.md to current main SHA `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` (post-#529).
+- Confirmed Linux end-user packaging, systemd unit, and docs remain honest and usable for basic install + observe + bounded route path.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
 ## [0.2.5] - 2026-11-21 (prerelease)
 
@@ -41,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - exact-SHA CI / Release Gate on the tagged commit.
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
+
 ## [0.2.4] - 2026-11-19 (prerelease)
 
 > **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
