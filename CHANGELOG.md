@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Notes
 
-- Next prerelease after v0.2.7 remains developer-preview only. Base for the packaging reliability pass is main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
+- Linux end-user path remains prerelease / developer-preview only (v0.2.7). Packaging reliability and honest status/docs confirmed on branch SHA `6ae002fb621cc8ccbf6bd942badc96f6822945b5`. Base main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
