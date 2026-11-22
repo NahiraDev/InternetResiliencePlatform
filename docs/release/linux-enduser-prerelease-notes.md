@@ -1,7 +1,7 @@
 # Linux End-User Prerelease Notes (v0.2.7)
 
 **Date:** 2026-11-22  
-**Base SHA:** `1272e738aa9a5579c7b1656cd002352378e34375` (main after #532; packaging reliability fix on top)  
+**Base SHA:** `1272e738aa9a5579c7b1656cd002352378e34375` (main after #532; packaging reliability fix on top; branch HEAD `69b5e99bbbd84d564e57052a39348eace5da8dde`)  
 **Status:** prerelease / developer-preview only. **Not production-certified.**
 
 ## What an end user can do today on Debian 13

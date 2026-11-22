@@ -12,8 +12,8 @@ for d in apps/daemon apps/cli; do [ -f "$ROOT/$d/dist/index.js" ] || { echo "mis
 command -v node >/dev/null || { echo "node is required" >&2; exit 1; }
 
 rm -rf "$PREFIX.new"; mkdir -p "$PREFIX.new"
-( cd "$ROOT" && pnpm --filter @irp/daemon deploy --prod --legacy "$PREFIX.new/daemon" \
-  && pnpm --filter @irp/cli deploy --prod --legacy "$PREFIX.new/cli" )
+( cd "$ROOT" && CI=true pnpm --filter @irp/daemon deploy --prod --legacy "$PREFIX.new/daemon" \
+  && CI=true pnpm --filter @irp/cli deploy --prod --legacy "$PREFIX.new/cli" )
 rm -rf "$PREFIX.old"; [ -d "$PREFIX" ] && mv "$PREFIX" "$PREFIX.old"
 mv "$PREFIX.new" "$PREFIX"; rm -rf "$PREFIX.old"
 

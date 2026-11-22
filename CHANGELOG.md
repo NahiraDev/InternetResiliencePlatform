@@ -8,11 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- `scripts/build-linux-daemon-deb.sh`: set `CI=true` so `pnpm deploy` does not abort on non-TTY (agent/CI) environments; fail closed if daemon/CLI `dist/index.js` is missing after deploy.
+- `scripts/build-linux-daemon-deb.sh` and `scripts/install-linux.sh`: set `CI=true` so `pnpm deploy` does not abort on non-TTY (agent/CI) environments; fail closed if daemon/CLI `dist/index.js` is missing after deploy.
 
 ### Notes
 
-- Linux end-user path remains prerelease / developer-preview only (v0.2.7). Packaging reliability and honest status/docs confirmed on branch SHA `6ae002fb621cc8ccbf6bd942badc96f6822945b5`. Base main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
+- Linux end-user path remains prerelease / developer-preview only (v0.2.7). Packaging reliability and honest status/docs confirmed on branch SHA `69b5e99bbbd84d564e57052a39348eace5da8dde`. Base main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
