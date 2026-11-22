@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Notes
 
-- Linux end-user path remains prerelease / developer-preview only (v0.2.7). Packaging reliability and honest status/docs confirmed on branch SHA `69b5e99bbbd84d564e57052a39348eace5da8dde`. Base main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
+- Next prerelease target after v0.2.7 remains developer-preview only. SHA reconciliation to `164125a549b5484f0da5f0a5587b0527f67498c8` performed on 2026-11-22.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
@@ -20,10 +20,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Reconciled PROJECT_STATE.md and release docs to current main SHA `164125a549b5484f0da5f0a5587b0527f67498c8` (post-merge of #530).
-- Bumped Debian package default version to 0.2.7 in build scripts.
-- Confirmed Linux end-user packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, and operator docs remain honest and usable for basic install + observe + bounded route path.
-- DNS write remains disabled under `User=irp` (requires root + `resolvectl`); documented clearly as intentional fail-closed.
+- Reconciled PROJECT_STATE.md, prerelease notes, and Linux package version default to current main SHA `164125a549b5484f0da5f0a5587b0527f67498c8`.
+- Confirmed Linux end-user packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain honest and usable for basic install + observe + bounded route path.
+- DNS write remains intentionally disabled under the non-root `User=irp` service account.
 
 ### Still open (do not treat as certified)
 
@@ -32,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - exact-SHA CI / Release Gate on the tagged commit.
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
+
 
 ## [0.2.6] - 2026-11-22 (prerelease)
 
