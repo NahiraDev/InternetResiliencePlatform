@@ -2,6 +2,16 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-22) — Linux end-user ready (current main SHA 164125a)
+
+- Starting base SHA: `164125a549b5484f0da5f0a5587b0527f67498c8` (origin/main)
+- Branch: `release/linux-enduser-ready-v3`
+- Completed this run: Confirmed Linux packaging path (`scripts/build-linux-daemon-deb.sh`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed (route.write needs CAP_NET_ADMIN + ip + opt-in; dns.write needs root + resolvectl and is therefore not granted under User=irp), and operator docs remain coherent. Updated PROJECT_STATE, CHANGELOG, and prerelease notes to this exact SHA. PrivilegedMutationBoundary remains the single mutation authority. No control-plane changes.
+- Verified: build script, systemd unit, host-authorization.ts (daemon), end-user guide and prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
+- Next: land this reconciliation; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
+
 ## Current implementation gate
 
 - **Current implementation baseline:** Phases 94–150 implemented locally on branch `phase/94-150-implementation` (authorized by the repository owner's explicit request); each phase is PARTIAL pending exact-SHA CI evidence. Phase 93 and earlier baselines are unchanged.
@@ -19,7 +29,7 @@
 - **Phase 82 status:** Intent-scoped Policy Decision & Enforcement is implemented on `main` via `packages/resilience-runtime/src/intent/governance.ts` and autonomy gates in arbitration. Admission decisions, stale rejection, mode-gated mutationAllowed. Tests present. Broader declarative policy language remains later roadmap work.
 - **Phase 83 status:** Policy Conflict Resolution implementation present in `arbitration.ts` (arbitrateIntents, InMemoryIntentStore, PostgresIntentStore). Dedicated unit tests added covering no-conflict, priority supersession, version supersession, stale exclusion and store recording. Scopes overlap now requires matching key+value. Disposition PARTIAL pending CI evidence on current SHA.
 - **Phase 92 status:** regression evidence for fabric health/freshness signals, observe-only intent drift detection, and re-selection through existing fabric.select boundary merged via PR #415. Disposition PARTIAL pending exact-SHA CI on owning package tests and full continuous assurance.
-- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5`; exact-SHA Release Gate evidence must be verified before any stronger release claim. Releases remain developer-preview / prerelease only. Next intended prerelease is v0.2.6 (Linux end-user ready follow-up, still not production-certified).
+- **Release state:** GitHub Releases `v0.2.0` and `v0.2.1` are developer-preview/prerelease evidence, not production certification. Production certification remains open. Current main SHA is `164125a549b5484f0da5f0a5587b0527f67498c8`; exact-SHA Release Gate evidence must be verified before any stronger release claim. Releases remain developer-preview / prerelease only. Next intended prerelease is v0.2.7 (Linux end-user ready follow-up, still not production-certified).
 - **Phase 71 is a separate release-evidence gate:** it does not block architecture implementation in Phases 72–92, but it must not be represented as certified until its evidence exists.
 - **Phase 93 status:** advanced route ranking, bounded compiled-intent routing preferences, fail-closed validation, and selection audit evidence are implemented in `packages/resilience-runtime/src/fabric.ts`, with regression coverage in `phase-93-advanced-routing.test.ts`. Disposition PARTIAL pending exact-SHA CI and external runtime evidence. No new runtime authority was introduced.
 - **Phases 94–150:** phase documents and corresponding modules exist on main under `packages/resilience-runtime/src/{traffic,telemetry-plane,control-security,fleet,intelligence,dataplane,control-api,governance,scale}` with tests. All modules are additive, pure or injected-clock, advisory, and reach the network only through `PrivilegedMutationBoundary`; data-plane enforcement requires a governed transaction id. Disposition PARTIAL pending exact-SHA CI, review and external runtime evidence; no new runtime authority was introduced and `ResilienceRuntime` remains the sole production mutation authority.
