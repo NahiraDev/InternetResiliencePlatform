@@ -6,9 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `scripts/build-linux-daemon-deb.sh`: set `CI=true` so `pnpm deploy` does not abort on non-TTY (agent/CI) environments; fail closed if daemon/CLI `dist/index.js` is missing after deploy.
+
 ### Notes
 
-- Next prerelease after v0.2.7 remains developer-preview only.
+- Next prerelease after v0.2.7 remains developer-preview only. Base for the packaging reliability pass is main SHA `1272e738aa9a5579c7b1656cd002352378e34375`.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
@@ -77,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - exact-SHA CI / Release Gate on the tagged commit.
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
+
 ## [0.2.4] - 2026-11-19 (prerelease)
 
 > **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
