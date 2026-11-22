@@ -8,7 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Notes
 
-- Next prerelease target after v0.2.5 remains developer-preview only.
+- Next prerelease target after v0.2.5 remains developer-preview only. SHA reconciliation to `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` performed on 2026-11-22.
+
+## [0.2.6] - 2026-11-22 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Changed
+
+- Reconciled PROJECT_STATE.md to current main SHA `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` (post-#529).
+- Confirmed Linux end-user packaging, systemd unit, and docs remain honest and usable for basic install + observe + bounded route path.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
 ## [0.2.5] - 2026-11-21 (prerelease)
 
