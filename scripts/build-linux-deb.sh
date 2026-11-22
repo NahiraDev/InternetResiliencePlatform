@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLIENT_DIR="$ROOT_DIR/packages/linux-client"
-VERSION="${IRP_LINUX_VERSION:-0.2.6}"
+VERSION="${IRP_LINUX_VERSION:-0.2.7}"
 ARCH="${IRP_LINUX_ARCH:-amd64}"
 OUT_DIR="${IRP_LINUX_OUT_DIR:-$ROOT_DIR/dist/linux}"
 PKG_ROOT="$OUT_DIR/package"

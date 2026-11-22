@@ -8,7 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Notes
 
-- Next prerelease target after v0.2.5 remains developer-preview only. SHA reconciliation to `ded8260954f6a6a6c36ace0f18cb7a7ab57b17e5` performed on 2026-11-22.
+- Next prerelease after v0.2.7 remains developer-preview only.
+
+## [0.2.7] - 2026-11-22 (prerelease)
+
+> **Status:** Linux-first developer-preview / prerelease. **Not production-certified.**
+
+### Changed
+
+- Reconciled PROJECT_STATE.md and release docs to current main SHA `164125a549b5484f0da5f0a5587b0527f67498c8` (post-merge of #530).
+- Bumped Debian package default version to 0.2.7 in build scripts.
+- Confirmed Linux end-user packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed, and operator docs remain honest and usable for basic install + observe + bounded route path.
+- DNS write remains disabled under `User=irp` (requires root + `resolvectl`); documented clearly as intentional fail-closed.
+
+### Still open (do not treat as certified)
+
+- Linux runtime soak and external validation evidence (#323).
+- PostgreSQL production deployment evidence (#410/#411 implementation present; production evidence pending).
+- exact-SHA CI / Release Gate on the tagged commit.
+- DNS write policy under non-root `User=irp` (currently correctly disabled).
+- Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
 ## [0.2.6] - 2026-11-22 (prerelease)
 
