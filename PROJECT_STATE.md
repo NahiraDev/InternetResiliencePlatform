@@ -2,6 +2,22 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-24 independent) — Linux end-user path re-verified; PR #538 ready for owner approval
+
+- Starting base SHA: `eabecdf143003228b5ddd49153864b5c8e69313a` (HEAD of release/linux-enduser-ready)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Independent re-verification of the Linux-first prerelease path against current code and docs. Confirmed:
+  - `scripts/install-linux.sh` and `scripts/build-linux-daemon-deb.sh` are non-interactive (`CI=true`) and fail-closed if dist artifacts are missing.
+  - systemd unit (`infra/systemd/irp-daemon.service`) runs as `User=irp` / `Group=irp` with `CapabilityBoundingSet=CAP_NET_ADMIN` and `AmbientCapabilities=CAP_NET_ADMIN` only; NoNewPrivileges, ProtectSystem=strict, etc.
+  - Host authorization (`apps/daemon/src/host-authorization.ts` `authorizeHost`) is fail-closed: live route requires Linux + CAP_NET_ADMIN (from CapEff) + `ip` on PATH + explicit opt-in (`IRP_RUNTIME_MODE=live` + `IRP_ENABLE_LIVE_ROUTE_MUTATION=true`); DNS write additionally requires `euid === 0` + `resolvectl` and is never granted under the shipped non-root unit (blocker is reported).
+  - Status surfaces honestly report live vs safe mode + explicit blockers.
+  - All live mutations go exclusively through `PrivilegedMutationBoundary` (`packages/resilience-runtime/src/transactions/privileged-boundary.ts`): full phase machine prepare → snapshot → validate → policy → security → safety → apply → verify → commit; failure path rollback → verifyRollback → recover. No second control plane.
+  - apply → verify → rollback path is real for bounded route changes when opted in and host facts allow.
+  - Operator docs (`docs/operations/linux-enduser-guide.md`) and `docs/release/linux-enduser-prerelease-notes.md` match the code. Release is explicitly marked prerelease / developer-preview.
+- Remaining blockers (explicit, not hidden): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write under non-root User=irp (intentionally disabled by design); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, observe safely, and (with explicit opt-in) apply bounded verified route changes that go through apply → verify → rollback. DNS switching is not available under the shipped unit.
+- Next: Branch is pushed. Pull Request #538 is open into main for repository owner review and approval. Final release approval, tagging, and publish remain with the repository owner. Do not treat as production-certified.
+
 ## Autonomous engineer checkpoint (2026-11-24 continuous) — Linux end-user path confirmed ready; PR #538 open for owner approval
 
 - Starting base SHA: `b6d43c07c3f0b0f37ff904d35e9ffc8ea25dfe87` (HEAD of release/linux-enduser-ready)
