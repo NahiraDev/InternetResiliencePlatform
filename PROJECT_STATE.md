@@ -2,6 +2,16 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user path ready for owner approval
+
+- Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
+- Branch: `release/linux-enduser-ready` (HEAD after this commit)
+- Completed this run: Final verification that the Linux end-user path is correctly working and honestly release-ready as a prerelease. Daemon installs and starts under systemd as `User=irp` with only `CAP_NET_ADMIN`. Host trust is fail-closed and correctly reported. Status is honest (live vs safe + blockers). All live mutations go exclusively through PrivilegedMutationBoundary. apply → verify → rollback path is real. Operator docs (`docs/operations/linux-enduser-guide.md`, prerelease notes) match reality. Packaging scripts are non-interactive and fail-closed. No control-plane changes.
+- Verified: `infra/systemd/irp-daemon.service`, `scripts/install-linux.sh`, `scripts/build-linux-daemon-deb.sh`, `apps/daemon/src/host-authorization.ts`, status surfaces, docs.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled under `User=irp`); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes that go through apply → verify → rollback. DNS switching is not available under the shipped unit.
+- Next: The branch and Pull Request #537 are ready for repository owner review and approval. Final release approval, tagging, and publish remain with the repository owner. Do not treat as production-certified.
+
 ## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux path ready for owner review
 
 - Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
