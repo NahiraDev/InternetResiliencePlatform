@@ -1012,6 +1012,7 @@ export class RuntimeDaemonHost {
   }
   async health() {
     return {
+      releaseStatus: 'prerelease / developer-preview (not production-certified)',
       lifecycle: this.lifecycle,
       startup: { warnings: [...this.startupWarnings] },
       scheduler: this.scheduler.status(),

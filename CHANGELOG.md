@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
+- Status surfaces now include an explicit `releaseStatus` field ("prerelease / developer-preview (not production-certified)") in the daemon health response and CLI `irp status` summary, so operators cannot mistake the Linux end-user path for a production release.
+- Fresh continuous engineer verification of Linux-first prerelease path (systemd User=irp + CAP_NET_ADMIN only, fail-closed host trust, PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest docs). Explicit blockers listed. Final approval left to repository owner.
+
+
+### Changed
 - Independent re-verification of Linux end-user prerelease path (PR #538): packaging non-interactive and fail-closed, systemd User=irp with CAP_NET_ADMIN only, host authorization fail-closed (dns.write blocked under non-root), PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest status and docs. Explicit blockers listed. Prerelease / developer-preview only.
 - Updated PROJECT_STATE.md with additional continuous engineer verification checkpoint for open PR #538. Confirmed Linux end-user path (systemd User=irp + CAP_NET_ADMIN only, fail-closed host trust, PrivilegedMutationBoundary sole mutation path, honest status) remains accurate and release-ready as prerelease / developer-preview.
 - Explicit remaining blockers listed; final approval left to repository owner.

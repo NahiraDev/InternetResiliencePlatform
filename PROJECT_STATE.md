@@ -2,6 +2,22 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+# InternetResiliencePlatform — Canonical Project State
+
+> Authoritative handoff point for continuing development from any account, agent, or future session.
+
+## Autonomous engineer checkpoint (2026-11-23) — Linux end-user path hardened with explicit prerelease marker in status
+
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Added explicit `releaseStatus: 'prerelease / developer-preview (not production-certified)'` field to the daemon `health()` response so `irp status` and operator surfaces cannot be misread as production-ready. Surfaced the same field in the CLI assessment summary. Re-verified:
+  - systemd unit runs as User=irp with CAP_NET_ADMIN only (Ambient + Bounding).
+  - Host authorization remains fail-closed (live route requires Linux + CapEff CAP_NET_ADMIN + ip + both opt-ins; DNS write requires euid===0 and is blocked under the shipped unit).
+  - All live mutations still exclusive to PrivilegedMutationBoundary (prepare→…→apply→verify→commit; rollback path real).
+  - Install scripts non-interactive and fail-closed on missing dist.
+  - Operator docs and prerelease notes remain accurate.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write under non-root User=irp (by design); full production certification open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Ready for owner review of the Linux end-user path.
+
 ## Autonomous engineer checkpoint (2026-11-24 independent) — Linux end-user path re-verified; PR #538 ready for owner approval
 
 - Starting base SHA: `eabecdf143003228b5ddd49153864b5c8e69313a` (HEAD of release/linux-enduser-ready)
