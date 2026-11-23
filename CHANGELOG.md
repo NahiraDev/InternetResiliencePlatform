@@ -7,10 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
-- Reconciled PROJECT_STATE.md and Linux end-user prerelease notes to current main SHA `260c67915a7755d533c925a68cc1ce3e81a94298` on branch `release/linux-enduser-ready`.
+- Reconciled PROJECT_STATE.md and Linux end-user prerelease notes to current main SHA `bac51aea6afd8ada57d40c877cad81fb5cb9005e` on branch `release/linux-enduser-ready` (after merging #536).
 - Confirmed packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain honest for the Linux-first prerelease.
 - Explicit remaining blockers listed; release marked prerelease / developer-preview only. Final approval remains with the repository owner.
-- Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, and honest status surfaces; PR #535 open for owner review.
+- Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, and honest status surfaces after fast-forward to current main.
 
 ### Fixed
 
