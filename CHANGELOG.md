@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Confirmed packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, honest status surfaces (including blockers), and operator docs remain accurate for the Linux-first prerelease.
 - Explicit remaining blockers listed; release marked prerelease / developer-preview only. Final approval remains with the repository owner.
 - Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, PrivilegedMutationBoundary as sole mutation path, and apply → verify → rollback honesty.
+- Aligned CI workflow package version expectations (linux-primary-device.yml and ci.yml) from 0.2.5 to 0.2.7 to match `scripts/build-linux-deb.sh` default, unblocking Debian package acceptance steps.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
