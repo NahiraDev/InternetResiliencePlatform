@@ -2,6 +2,16 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-23 continuous) — CI package version aligned
+
+- Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
+- Branch: `release/linux-enduser-ready` (HEAD after CI fix commits)
+- Completed this run: Fixed Linux primary device CI by aligning expected Debian package version from 0.2.5 to 0.2.7 in both `.github/workflows/linux-primary-device.yml` and `.github/workflows/ci.yml` to match `scripts/build-linux-deb.sh` default. This unblocks the package build and acceptance steps for the Linux client path. Daemon packaging (`build-linux-daemon-deb.sh`), systemd unit (`User=irp`, `CAP_NET_ADMIN` only), fail-closed host-authorization, honest status surfaces, and PrivilegedMutationBoundary sole mutation path remain unchanged and correct. Operator docs accurate.
+- Verified: workflows now expect `irp-linux-client_0.2.7_amd64.deb`; daemon path still honest.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate (now expected to improve after this fix); DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes that go through apply → verify → rollback. DNS switching is not available under the shipped `User=irp` unit.
+- Next: monitor updated PR #537 checks; if further failures, fix root cause on same branch. Final approval remains with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-23 07:11 +0330) — PR #537 checks in progress
 
 - Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
