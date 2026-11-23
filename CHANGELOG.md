@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
+- Independent re-verification of Linux end-user prerelease path (PR #538): packaging non-interactive and fail-closed, systemd User=irp with CAP_NET_ADMIN only, host authorization fail-closed (dns.write blocked under non-root), PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest status and docs. Explicit blockers listed. Prerelease / developer-preview only.
 - Updated PROJECT_STATE.md with additional continuous engineer verification checkpoint for open PR #538. Confirmed Linux end-user path (systemd User=irp + CAP_NET_ADMIN only, fail-closed host trust, PrivilegedMutationBoundary sole mutation path, honest status) remains accurate and release-ready as prerelease / developer-preview.
 - Explicit remaining blockers listed; final approval left to repository owner.
 
