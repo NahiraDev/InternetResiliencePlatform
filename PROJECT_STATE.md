@@ -2,6 +2,16 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user ready PR open
+
+- Starting base SHA: `260c67915a7755d533c925a68cc1ce3e81a94298` (origin/main)
+- Branch: `release/linux-enduser-ready` (HEAD `8c76d4f2`)
+- Completed this run: Verified packaging scripts are non-interactive and fail-closed, systemd unit grants only CAP_NET_ADMIN to User=irp, host authorization is fail-closed for DNS write (requires euid=0 + resolvectl), status surfaces are honest, and operator docs match reality. No control-plane changes. Pull Request #535 is open for owner approval.
+- Verified: build-linux-daemon-deb.sh, install-linux.sh, irp-daemon.service, host-authorization.ts (daemon + linux-client), linux-enduser-guide.md, prerelease notes.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes that go through apply → verify → rollback. DNS switching is not available under the shipped `User=irp` unit.
+- Next: owner review and approval of PR #535; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
+
 ## Autonomous engineer checkpoint (2026-11-23) — Linux end-user ready (current branch)
 
 - Starting base SHA: `260c67915a7755d533c925a68cc1ce3e81a94298` (origin/main)
