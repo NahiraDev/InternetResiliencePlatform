@@ -2,6 +2,17 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user ready prerelease prepared
+
+- Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Continued from previous reconciliation. Verified packaging scripts (`scripts/build-linux-daemon-deb.sh`, `scripts/install-linux.sh`) remain non-interactive and fail-closed. systemd unit (`infra/systemd/irp-daemon.service`) runs as `User=irp` with only `CAP_NET_ADMIN`. Host-authorization (`apps/daemon/src/host-authorization.ts`) is fail-closed: route.write requires live opt-in + CAP_NET_ADMIN + `ip`; dns.write requires euid=0 + resolvectl and is therefore never granted under the shipped unit. Status surfaces (`/v1/health`, `irp status`, `irp doctor`) are honest and report blockers. Operator docs and prerelease notes match reality. No control-plane changes. All live mutations continue to go exclusively through PrivilegedMutationBoundary.
+- Verified: build-linux-daemon-deb.sh, install-linux.sh, irp-daemon.service, host-authorization.ts, control-server health reporting, linux-enduser-guide.md, linux-enduser-prerelease-notes.md.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes that go through apply → verify → rollback. DNS switching is not available under the shipped `User=irp` unit.
+- Next: push branch and open Pull Request for owner approval.
+
+
 ## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user ready PR open
 ## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user ready (current main)
 
