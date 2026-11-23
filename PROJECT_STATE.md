@@ -24,7 +24,13 @@
 
 (Full historical checkpoints preserved below from prior reconciliations.)
 
-## Current implementation gate
+- Starting base SHA: `432c89cadacc06e45e6d7aabfff230a28afee812` (origin/main, post-merge of #527)
+- Branch: `release/linux-enduser-ready` (PR #528, merged)
+- Completed this run: Confirmed and documented the Linux end-user path. systemd units remain `User=irp` with only `CAP_NET_ADMIN`. Host-authorization is fail-closed (route mutation needs live opt-in + CAP_NET_ADMIN + `ip`; DNS write needs root + `resolvectl` and is therefore not granted under the service account). Added/confirmed `docs/operations/linux-enduser-guide.md` so an operator can install, start via systemd, read honest status, and understand limitations. Aligned package version default to 0.2.5. No changes to mutation authority. PrivilegedMutationBoundary remains the single mutation path.
+- Verified: host-authorization source + tests; systemd unit contracts; DNS status under User=irp correctly disabled and documented in PROJECT_STATE, CHANGELOG, README, and the end-user guide.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate; DNS write policy under non-root (intentionally disabled); full production certification remains open.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Operators can install on Debian 13, run observe-only safely, and (with explicit opt-in) apply bounded verified route changes. DNS switching is not available under the shipped `User=irp` unit.
+- Next: land PR #528; obtain Linux soak evidence; keep DNS write disabled or design a least-privilege alternative; continue exact-SHA evidence collection.
 
 - Linux end-user packaging, systemd unit, and docs are coherent on main. This branch reconciles state for owner review of the prerelease.
 - **Prerelease / developer-preview only — not production-certified.**
