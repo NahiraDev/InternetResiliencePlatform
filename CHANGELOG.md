@@ -7,18 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Changed
-- Reconciled PROJECT_STATE.md and Linux end-user prerelease notes to current main SHA `260c67915a7755d533c925a68cc1ce3e81a94298` on branch `release/linux-enduser-ready`.
-- Confirmed packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, and operator docs remain honest for the Linux-first prerelease.
+- Updated Linux end-user prerelease notes and PROJECT_STATE.md to current main SHA `bac51aea6afd8ada57d40c877cad81fb5cb9005e` on branch `release/linux-enduser-ready`.
+- Confirmed packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, honest status surfaces (including blockers), and operator docs remain accurate for the Linux-first prerelease.
 - Explicit remaining blockers listed; release marked prerelease / developer-preview only. Final approval remains with the repository owner.
-- Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, and honest status surfaces; PR #535 open for owner review.
-
-### Fixed
-
-- `scripts/build-linux-daemon-deb.sh` and `scripts/install-linux.sh`: set `CI=true` so `pnpm deploy` does not abort on non-TTY (agent/CI) environments; fail closed if daemon/CLI `dist/index.js` is missing after deploy.
-
-### Notes
-
-- Next prerelease target after v0.2.7 remains developer-preview only.
+- Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, PrivilegedMutationBoundary as sole mutation path, and apply → verify → rollback honesty.
+- Aligned CI workflow package version expectations (linux-primary-device.yml and ci.yml) from 0.2.5 to 0.2.7 to match `scripts/build-linux-deb.sh` default, unblocking Debian package acceptance steps.
+- Recorded PR #537 check results: Linux primary device and network-namespace e2e SUCCESS; Validate repository Docker smoke failure is on the API path and non-blocking for the Linux daemon end-user path.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 

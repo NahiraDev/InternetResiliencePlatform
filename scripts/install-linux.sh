@@ -25,6 +25,7 @@ chmod 0755 "$BIN_DIR/irp"
 
 if [ -z "${NO_SYSTEMD:-}" ] && command -v systemctl >/dev/null; then
   id irp >/dev/null 2>&1 || useradd --system --home-dir /var/lib/irp --shell /usr/sbin/nologin irp
+  install -d -o irp -g irp -m 0750 /var/lib/irp
   install -d -m 0755 /etc/irp
   [ -f /etc/irp/irp.env ] || install -m 0640 -g irp "$ROOT/infra/systemd/irp.env.example" /etc/irp/irp.env
   sed "s#/opt/irp/daemon#$PREFIX/daemon#" "$ROOT/infra/systemd/irp-daemon.service" > /etc/systemd/system/irp-daemon.service
