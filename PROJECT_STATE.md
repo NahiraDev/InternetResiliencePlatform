@@ -2,6 +2,16 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-24) — PR #538 status inspection
+
+- Starting base SHA: `62dc84727a11ee711e8c771fcd7a15f42007c808` (origin/main)
+- Current open PR: #538 (release/linux-enduser-ready @ `02df410a84a2397fa86836698bf291ba84988416`)
+- Completed this run: Inspected live GitHub state for PR #538. Linux primary device (Debian 13) SUCCESS. Linux network-namespace end-to-end SUCCESS. Architecture contract SUCCESS. Dependency Review SUCCESS. Validate repository FAILURE (production Docker runtime smoke test on API service path). Analyze (swift) FAILURE (non-blocking for Linux-first). Other checks SUCCESS or cancelled. Mergeable state: unstable due to failed required checks.
+- Verified: Linux end-user path remains coherent and honest as previously documented. No control-plane changes in this PR.
+- Remaining blockers (explicit): Linux runtime soak evidence (#323); Postgres production evidence (#410/#411); exact-SHA CI on the release gate (Docker smoke failure); DNS write policy under non-root (intentionally disabled); full production certification remains open. Phases 94–150 remain PARTIAL pending exact-SHA CI and external verification.
+- Honest status: **prerelease / developer-preview only**. Not production-certified. PR #538 is open pending check resolution and owner approval.
+- Next: Resolve Docker smoke test root cause if reproducible, or continue independent tasks. Final release approval remains with the repository owner. Do not treat as production-certified.
+
 ## Autonomous engineer checkpoint (2026-11-23 continuous) — Linux end-user path ready for owner approval
 
 - Starting base SHA: `bac51aea6afd8ada57d40c877cad81fb5cb9005e` (origin/main)
