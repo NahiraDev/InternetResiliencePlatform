@@ -1,3 +1,25 @@
+## Autonomous engineer checkpoint (2026-11-24 22:15 +0330) — post-merge verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `bd9ac5b44f668c3e8c9c0f267b94816ccb06158e` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Previous PR #539 merged. This checkpoint prepares a fresh PR for owner approval.
+- Completed this run: Confirmed the Linux-first prerelease path remains correctly working and honestly documented.
+  - systemd unit: User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict.
+  - host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback.
+  - Status surfaces include explicit releaseStatus: "prerelease / developer-preview (not production-certified)".
+  - Operator docs and packaging scripts match reality and are non-interactive/fail-closed.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. Open PR into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-24 21:22 +0330) — continuous verification; Linux end-user path ready for owner approval (PR #539 open)
 
 - Starting base SHA: `bb0382e3fe71967480d2c386477361d838cd67ab` (current HEAD of release/linux-enduser-ready)
@@ -77,25 +99,6 @@
   - Full production certification remains open
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
 
-## Autonomous engineer checkpoint (2026-11-24 17:20 +0330) — Linux acceptance tests made robust to missing iproute2; path remains prerelease-ready (PR #539 open)
-
-- Completed this run: Improved test reliability for environments without the `ip` binary.
-  - `apps/daemon/src/linux-acceptance.test.ts`: privilegedDescribe now also requires `ip` on common paths.
-  - `packages/linux-client/src/linux-route-mutation.integration.test.ts`: privileged suite skips when `ip` is absent.
-- Verified: daemon tests 70 passed / 1 skipped; linux-client 169 passed / 16 skipped; resilience-runtime 972 passed.
-- systemd unit: User=irp + CAP_NET_ADMIN only
-- host-authorization fail-closed (dns.write blocked under non-root)
-- PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
-- honest status surfaces (`releaseStatus`, liveActive, blockers)
-- operator docs and packaging scripts match reality
-- Remaining blockers (explicit, not hidden):
-  - DNS write under User=irp requires root or polkit (currently blocked, reported honestly)
-  - PostgreSQL production deployment evidence (#410/#411)
-  - Linux runtime soak evidence (#323)
-  - exact-SHA CI evidence for phases 94–150
-  - Full production certification remains open
-- Honest status: **prerelease / developer-preview only**. Not production-certified.
-
 ## Autonomous engineer checkpoint (2026-11-24 16:09 +0330) — continuous verification; Linux end-user path remains prerelease-ready (PR #539 open)
 
 - Starting base SHA: `ece603c66cac23081b388de7fd5787a079006b02` (current HEAD of release/linux-enduser-ready)
@@ -117,7 +120,6 @@
   - Full production certification remains open
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
 - Next: Branch remains pushed. PR #539 open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
-
 
 ## Autonomous engineer checkpoint (2026-11-24 20:15 +0330) — final independent verification; Linux end-user path ready for owner approval (PR #539 open)
 
