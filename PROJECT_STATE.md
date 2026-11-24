@@ -2,6 +2,31 @@
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
 
+## Autonomous engineer checkpoint (2026-11-24 11:11 +0330) — PR #538 Validate failure confirmed on Docker smoke (API path)
+
+- Starting base SHA: `f60acfab48a03ba1a20fef4458f6e64110334802` (release/linux-enduser-ready tip)
+- Base (main) SHA: `62dc84727a11ee711e8c771fcd7a15f42007c808`
+- Branch: `release/linux-enduser-ready`
+- PR: #538 (open, mergeable_state: unstable)
+- Completed this run: Live re-inspection of PR #538 checks.
+  - Linux primary device (Debian 13): SUCCESS
+  - Linux network-namespace end-to-end: SUCCESS
+  - Architecture contract: SUCCESS
+  - Debian 13 primary device acceptance: SUCCESS
+  - Validate repository: FAILURE — production Docker runtime smoke test (scripts/docker-smoke.sh, API service path)
+  - Analyze (swift): FAILURE (non-blocking for Linux-first)
+  - ios-client: FAILURE (non-blocking)
+  - Other checks: success or cancelled/neutral
+- Confirmed Linux end-user path remains correctly working and honestly documented as prerelease / developer-preview only. systemd User=irp + CAP_NET_ADMIN only; fail-closed host-authorization; PrivilegedMutationBoundary sole mutation path; honest status with releaseStatus; operator docs and packaging match reality. No control-plane changes.
+- Remaining blockers (explicit):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke on API path is the current Validate blocker)
+  - DNS write under non-root User=irp (intentionally disabled by design)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified. Phases 94–150 modules and phase documents are present on main (PARTIAL pending exact-SHA CI).
+- Next: PR #538 remains open for repository owner review and approval. Final release approval, tagging, and publish remain with the repository owner. Do not treat as production-certified. Highest priority remaining local work is root-cause fix of the production Docker runtime smoke test (API path) so that Validate repository can pass on the release branch without weakening any assertions.
+
 ## Autonomous engineer checkpoint (2026-11-24 10:11 +0330) — PR #538 status re-verified; Linux path remains prerelease-ready
 
 - Starting base SHA: `ab78a932653c2d354811e0a74abd7a43d7b176f8` (current HEAD of release/linux-enduser-ready)
