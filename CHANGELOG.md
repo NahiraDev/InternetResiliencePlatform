@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 11:10 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `f60acfab`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+
 ### Verified (2026-11-24 09:09 +0330 continuous engineer)
 - Continuous verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD after prior commit):
   - systemd unit: User=irp + CAP_NET_ADMIN only
