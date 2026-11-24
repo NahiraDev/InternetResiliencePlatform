@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 21:22 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `bb0382e3`):
+  - systemd User=irp + CAP_NET_ADMIN only; fail-closed host-authorization (dns.write requires euid===0); PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback; honest status with releaseStatus; operator docs and packaging match reality.
+  - Remaining blockers explicitly listed. PR #539 open for owner approval. Prerelease / developer-preview only. Not production-certified.
+
+
 ### Verified (2026-11-24 20:15 +0330 continuous engineer)
 - Final independent code verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `5a81b884`):
   - systemd User=irp + CAP_NET_ADMIN only; fail-closed host-authorization (dns.write requires euid===0); PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback; honest status with releaseStatus; operator docs and packaging match reality.

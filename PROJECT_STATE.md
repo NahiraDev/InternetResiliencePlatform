@@ -1,3 +1,20 @@
+## Autonomous engineer checkpoint (2026-11-24 21:22 +0330) — continuous verification; Linux end-user path ready for owner approval (PR #539 open)
+
+- Starting base SHA: `bb0382e3fe71967480d2c386477361d838cd67ab` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
+- Branch: `release/linux-enduser-ready`
+- PR: #539 (open into main) — https://github.com/NahiraDev/InternetResiliencePlatform/pull/539
+- Completed this run: Independent verification confirming systemd unit (User=irp, CAP_NET_ADMIN only), fail-closed host-authorization (dns.write requires euid===0), PrivilegedMutationBoundary sole path with real apply→verify→rollback, honest status surfaces including releaseStatus, operator docs, and non-interactive packaging scripts all match the documented prerelease reality.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR #539 open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-24 19:15 +0330) — continuous verification; Linux end-user path ready for owner approval (PR #539 open)
 
 - Starting base SHA: `607cb8c5b99895a4ed5e46a91756463dcc358403` (current HEAD of release/linux-enduser-ready)
