@@ -17,7 +17,7 @@
 
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -56,8 +56,10 @@ const hasNetAdmin = (() => {
   }
 })();
 
-// Tests that require CAP_NET_ADMIN are skipped (not passed) when unavailable.
-const privileged = hasNetAdmin ? describe : describe.skip;
+const hasIpBinary = existsSync('/usr/bin/ip') || existsSync('/bin/ip') || existsSync('/usr/sbin/ip') || existsSync('/sbin/ip');
+
+// Tests that require CAP_NET_ADMIN and the ip binary are skipped (not passed) when unavailable.
+const privileged = hasNetAdmin && hasIpBinary ? describe : describe.skip;
 
 /** Peer end of the veth fallback; lives in the host namespace and is removed with the pair. */
 const VETH_PEER = 'irp-test-peer';
