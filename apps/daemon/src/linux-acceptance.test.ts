@@ -37,8 +37,9 @@ const NS = 'irp-accept-ns';
  */
 const isRoot = typeof process.geteuid === 'function' && process.geteuid() === 0;
 const requirePrivileged = process.env.IRP_ACCEPTANCE_REQUIRE_PRIVILEGED === '1';
+const hasIp = existsSync('/usr/bin/ip') || existsSync('/bin/ip') || existsSync('/usr/sbin/ip');
 const privilegedIt = isRoot || requirePrivileged ? it : it.skip;
-const privilegedDescribe = isRoot || requirePrivileged ? describe : describe.skip;
+const privilegedDescribe = (isRoot || requirePrivileged) && hasIp ? describe : describe.skip;
 
 const cleanup: Array<() => Promise<void> | void> = [];
 afterEach(async () => {

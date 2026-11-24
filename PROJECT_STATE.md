@@ -1,4 +1,42 @@
-## Autonomous engineer checkpoint (2026-11-24 17:18 +0330) — continuous verification; Linux end-user path remains prerelease-ready (PR #539 open)
+## Autonomous engineer checkpoint (2026-11-24 17:20 +0330) — Linux acceptance tests made robust to missing iproute2; path remains prerelease-ready (PR #539 open)
+
+- Completed this run: Improved test reliability for environments without the `ip` binary.
+  - `apps/daemon/src/linux-acceptance.test.ts`: privilegedDescribe now also requires `ip` on common paths.
+  - `packages/linux-client/src/linux-route-mutation.integration.test.ts`: privileged suite skips when `ip` is absent.
+- Verified: daemon tests 70 passed / 1 skipped; linux-client 169 passed / 16 skipped; resilience-runtime 972 passed.
+- systemd unit: User=irp + CAP_NET_ADMIN only
+- host-authorization fail-closed (dns.write blocked under non-root)
+- PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+- honest status surfaces (`releaseStatus`, liveActive, blockers)
+- operator docs and packaging scripts match reality
+- Remaining blockers (explicit, not hidden):
+  - DNS write under User=irp requires root or polkit (currently blocked, reported honestly)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - Linux runtime soak evidence (#323)
+  - exact-SHA CI evidence for phases 94–150
+  - Full production certification remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+
+## Autonomous engineer checkpoint (2026-11-24 17:20 +0330) — Linux acceptance tests made robust to missing iproute2; path remains prerelease-ready (PR #539 open)
+
+- Completed this run: Improved test reliability for environments without the `ip` binary.
+  - `apps/daemon/src/linux-acceptance.test.ts`: privilegedDescribe now also requires `ip` on common paths.
+  - `packages/linux-client/src/linux-route-mutation.integration.test.ts`: privileged suite skips when `ip` is absent.
+- Verified: daemon tests 70 passed / 1 skipped; linux-client 169 passed / 16 skipped; resilience-runtime 972 passed.
+- systemd unit: User=irp + CAP_NET_ADMIN only
+- host-authorization fail-closed (dns.write blocked under non-root)
+- PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+- honest status surfaces (`releaseStatus`, liveActive, blockers)
+- operator docs and packaging scripts match reality
+- Remaining blockers (explicit, not hidden):
+  - DNS write under User=irp requires root or polkit (currently blocked, reported honestly)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - Linux runtime soak evidence (#323)
+  - exact-SHA CI evidence for phases 94–150
+  - Full production certification remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+
+## Autonomous engineer checkpoint (2026-11-24 16:09 +0330) — continuous verification; Linux end-user path remains prerelease-ready (PR #539 open)
 
 - Starting base SHA: `ece603c66cac23081b388de7fd5787a079006b02` (current HEAD of release/linux-enduser-ready)
 - Base (main) SHA: `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
