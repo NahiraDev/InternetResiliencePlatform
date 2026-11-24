@@ -2,7 +2,7 @@
 
 - Current HEAD (main): `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
 - Merge: PR #538 (`release/linux-enduser-ready`) was merged into main at 2026-11-24 12:19 +0200 by repository owner.
-- Branch: `release/linux-enduser-ready` (reset to origin/main for continued honest tracking)
+- Branch: `release/linux-enduser-ready-postmerge` (tracking post-merge verification)
 - Completed this run: Fresh independent verification against post-merge main tip.
   - `infra/systemd/irp-daemon.service`: User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, ProtectHome=true, RestrictAddressFamilies includes AF_NETLINK.
   - `apps/daemon/src/host-authorization.ts`: fail-closed; route.write only when Linux + CapEff has CAP_NET_ADMIN + `ip` on PATH + dual opt-in (IRP_RUNTIME_MODE=live AND IRP_ENABLE_LIVE_ROUTE_MUTATION=true); dns.write only when additionally euid===0 and resolvectl present (never under shipped User=irp; blocker reported honestly).
@@ -25,3 +25,4 @@
 - Honest status: **prerelease / developer-preview only**. Not production-certified. PR #538 is merged; the Linux end-user path is on main. Final tagging, promotion, and production certification remain exclusively with the repository owner.
 - Next: Keep PROJECT_STATE and CHANGELOG accurate. Do not claim production readiness. Continue only on explicit remaining blockers or owner-directed work.
 
+(Full historical checkpoints from prior continuous-engineer runs are preserved in git history on main and prior release/linux-enduser-ready commits.)
