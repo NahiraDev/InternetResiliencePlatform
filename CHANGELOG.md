@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning once releases begin.
 
 ## [Unreleased]
+### Verified (2026-11-24 15:10 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `58a7d58a`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. New PR open for confirmation.
+
 
 ### Verified (2026-11-24 14:09 +0330 continuous engineer, post-#538 merge)
 - Continuous independent verification of Linux end-user prerelease path after merge of #538 into main (HEAD `d7b50e1d`):
