@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 13:30 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD after prior commit):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13), Debian 13 acceptance, and network-namespace e2e **success**; Validate repository Docker smoke failure is on the API path and non-blocking for Linux daemon.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
 ### Verified (2026-11-24 12:09 +0330 continuous engineer)
 - Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`:
   - systemd unit: User=irp + CAP_NET_ADMIN only
