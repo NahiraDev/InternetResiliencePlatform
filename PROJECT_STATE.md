@@ -1,3 +1,25 @@
+## Autonomous engineer checkpoint (2026-11-24 18:22 +0330) — final continuous verification; Linux end-user path ready for owner approval (PR #539 open)
+
+- Starting base SHA: `f61d189ddb5b7444829496c60b70f96520f63559` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
+- Branch: `release/linux-enduser-ready`
+- PR: #539 (open into main) — https://github.com/NahiraDev/InternetResiliencePlatform/pull/539
+- Completed this run: Independent verification that the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit: User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict.
+  - host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback.
+  - Status surfaces include explicit releaseStatus: "prerelease / developer-preview (not production-certified)".
+  - Operator docs and packaging scripts match reality and are non-interactive/fail-closed.
+  - Privileged tests skip cleanly when ip is absent.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke on API path non-blocking for Linux daemon)
+  - DNS write under non-root User=irp (intentionally disabled by design; requires root or polkit)
+  - Full production certification remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR #539 open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-24 17:20 +0330) — Linux acceptance tests made robust to missing iproute2; path remains prerelease-ready (PR #539 open)
 
 - Completed this run: Improved test reliability for environments without the `ip` binary.

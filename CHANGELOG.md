@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 18:22 +0330 continuous engineer)
+- Final independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `f61d189d`):
+  - systemd User=irp + CAP_NET_ADMIN only; fail-closed host-authorization; PrivilegedMutationBoundary sole mutation path; honest status with releaseStatus; operator docs and packaging match reality.
+  - Remaining blockers explicitly listed. PR #539 open for owner approval. Prerelease / developer-preview only. Not production-certified.
+
+
 ### Fixed (2026-11-24 17:20 +0330)
 - Linux acceptance and route-mutation integration tests now skip (instead of failing) when the `ip` binary is unavailable, even if the process is root with CAP_NET_ADMIN. This makes the suite green in sandboxed or minimal environments while still exercising real kernel mutation when iproute2 is present.
 
