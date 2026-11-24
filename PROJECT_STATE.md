@@ -1,6 +1,6 @@
-## Autonomous engineer checkpoint (2026-11-24 11:10 +0330) — continuous verification; Linux end-user path remains prerelease-ready for owner approval
+## Autonomous engineer checkpoint (2026-11-24 12:09 +0330) — continuous verification; Linux end-user path remains prerelease-ready for owner approval
 
-- Starting base SHA: `f60acfab48a03ba1a20fef4458f6e64110334802` (current HEAD of release/linux-enduser-ready)
+- Starting base SHA: current HEAD of release/linux-enduser-ready (post prior checkpoints)
 - Base (main) SHA: `62dc84727a11ee711e8c771fcd7a15f42007c808`
 - Branch: `release/linux-enduser-ready`
 - PR: #538 (open)
@@ -22,6 +22,27 @@
 # InternetResiliencePlatform — Canonical Project State
 
 > Authoritative handoff point for continuing development from any account, agent, or future session.
+
+## Autonomous engineer checkpoint (2026-11-24 11:10 +0330) — continuous verification; Linux end-user path remains prerelease-ready for owner approval
+
+- Starting base SHA: `f60acfab48a03ba1a20fef4458f6e64110334802` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `62dc84727a11ee711e8c771fcd7a15f42007c808`
+- Branch: `release/linux-enduser-ready`
+- PR: #538 (open)
+- Completed this run: Fresh independent verification of Linux-first prerelease path against current branch tip.
+  - systemd unit confirmed: User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict.
+  - host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback.
+  - Status surfaces include explicit releaseStatus field.
+  - Operator docs and packaging scripts match reality and are non-interactive/fail-closed.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke on API path non-blocking for Linux daemon)
+  - DNS write under non-root User=irp (intentionally disabled by design)
+  - Full production certification remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR #538 open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
 
 ## Autonomous engineer checkpoint (2026-11-24 10:11 +0330) — PR #538 status re-verified; Linux path remains prerelease-ready
 
