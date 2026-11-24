@@ -1,3 +1,24 @@
+## Autonomous engineer checkpoint (2026-11-25 00:09 +0330) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `3c9741900b03bf3172e641c2c91b851f37174825` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Independent verification of the Linux-first prerelease path.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - host-authorization.ts: fail-closed by construction; route.write granted only on Linux + CAP_NET_ADMIN present + `ip` on PATH + dual opt-in (`IRP_RUNTIME_MODE=live` AND `IRP_ENABLE_LIVE_ROUTE_MUTATION=true`); dns.write additionally requires euid===0 + resolvectl (intentionally never granted under shipped User=irp).
+  - PrivilegedMutationBoundary (`packages/resilience-runtime/src/transactions/privileged-boundary.ts`) is the sole mutation path; enforces prepare→snapshot→validate→policy→security→safety→apply→verify→commit with real rollback→verifyRollback→recover on failure.
+  - Status surfaces (daemon health, CLI) include explicit `releaseStatus: "prerelease / developer-preview (not production-certified)"` and report liveActive + blockers honestly.
+  - Operator docs (`docs/operations/linux-enduser-guide.md`, `docs/release/linux-enduser-prerelease-notes.md`) and packaging (`scripts/install-linux.sh`, `scripts/build-linux-daemon-deb.sh`) match reality, are non-interactive, and fail-closed.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke on API path non-blocking for Linux daemon)
+  - DNS write under non-root User=irp (intentionally disabled by design; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. Open PR into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-24 23:09 +0330) — continuous verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `06a5dc4202a23494aa236e75998101806dd564bc` (current HEAD of release/linux-enduser-ready)
