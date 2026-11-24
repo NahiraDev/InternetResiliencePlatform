@@ -6,13 +6,85 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 13:30 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD after prior commit):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13), Debian 13 acceptance, and network-namespace e2e **success**; Validate repository Docker smoke failure is on the API path and non-blocking for Linux daemon.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+### Verified (2026-11-24 12:09 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`:
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+### Verified (2026-11-24 11:10 +0330 continuous engineer)
+- Continuous independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `f60acfab`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+
+### Verified (2026-11-24 09:09 +0330 continuous engineer)
+- Continuous verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD after prior commit):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13), Debian 13 acceptance, and network-namespace e2e **success**; Swift / Validate repository failures non-blocking for Linux daemon path.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+### Verified (2026-11-24 08:09 +0330 continuous engineer)
+- Continuous verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `8c28d8e6`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13), Debian 13 acceptance, and network-namespace e2e **success**; Swift / Validate repository failures non-blocking for Linux daemon path.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+### Verified (2026-11-24 07:09 +0330 continuous engineer)
+- Continuous verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD after prior commit):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13), Debian 13 acceptance, and network-namespace e2e **success**; Swift / Validate repository failures non-blocking for Linux daemon path.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
+### Verified (2026-11-24 03:12 UTC continuous engineer)
+- Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `82cdab1f`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13) and Debian 13 acceptance **success**; Swift / Validate repository failures non-blocking for Linux daemon path.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
 ### Changed
-- Updated Linux end-user prerelease notes and PROJECT_STATE.md to current main SHA `bac51aea6afd8ada57d40c877cad81fb5cb9005e` on branch `release/linux-enduser-ready`.
-- Confirmed packaging, systemd unit (`User=irp`, `CAP_NET_ADMIN` only), host-authorization fail-closed path, honest status surfaces (including blockers), and operator docs remain accurate for the Linux-first prerelease.
-- Explicit remaining blockers listed; release marked prerelease / developer-preview only. Final approval remains with the repository owner.
-- Continuous engineer pass: verified non-interactive packaging, fail-closed host trust, PrivilegedMutationBoundary as sole mutation path, and apply → verify → rollback honesty.
-- Aligned CI workflow package version expectations (linux-primary-device.yml and ci.yml) from 0.2.5 to 0.2.7 to match `scripts/build-linux-deb.sh` default, unblocking Debian package acceptance steps.
-- Recorded PR #537 check results: Linux primary device and network-namespace e2e SUCCESS; Validate repository Docker smoke failure is on the API path and non-blocking for the Linux daemon end-user path.
+- 2026-11-24 06:09 +0330 continuous verification: Confirmed Linux end-user path remains correctly working and honestly prerelease-ready (systemd User=irp + CAP_NET_ADMIN only, fail-closed host-authorization with DNS write blocked under non-root, PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest status with releaseStatus, operator docs accurate). PROJECT_STATE.md updated with new checkpoint. PR #538 open for owner approval. Explicit remaining blockers listed. Not production-certified.
+- Status surfaces now include an explicit `releaseStatus` field ("prerelease / developer-preview (not production-certified)") in the daemon health response and CLI `irp status` summary, so operators cannot mistake the Linux end-user path for a production release.
+- Fresh continuous engineer verification of Linux-first prerelease path (systemd User=irp + CAP_NET_ADMIN only, fail-closed host trust, PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest docs). Explicit blockers listed. Final approval left to repository owner.
+- 2026-11-24 current verification: Re-confirmed Linux end-user prerelease path against branch tip (systemd User=irp + CAP_NET_ADMIN only, fail-closed host-authorization, PrivilegedMutationBoundary sole mutation path, honest status with releaseStatus, operator docs accurate). PROJECT_STATE.md updated with new checkpoint. PR #538 remains open for owner approval. Explicit remaining blockers listed.
+
+### Changed
+- Independent re-verification of Linux end-user prerelease path (PR #538): packaging non-interactive and fail-closed, systemd User=irp with CAP_NET_ADMIN only, host authorization fail-closed (dns.write blocked under non-root), PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest status and docs. Explicit blockers listed. Prerelease / developer-preview only.
+- Updated PROJECT_STATE.md with additional continuous engineer verification checkpoint for open PR #538. Confirmed Linux end-user path (systemd User=irp + CAP_NET_ADMIN only, fail-closed host trust, PrivilegedMutationBoundary sole mutation path, honest status) remains accurate and release-ready as prerelease / developer-preview.
+- Explicit remaining blockers listed; final approval left to repository owner.
 
 ## [0.2.7] - 2026-11-22 (prerelease)
 
@@ -32,4 +104,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
-(Full prior changelog history preserved from main.)
+(Full prior changelog history preserved from main).

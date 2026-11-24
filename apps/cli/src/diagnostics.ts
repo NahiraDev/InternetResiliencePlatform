@@ -75,6 +75,7 @@ export interface Assessment {
   readonly exitCode: number;
   readonly findings: readonly Finding[];
   readonly summary: {
+    readonly releaseStatus: string | null;
     readonly lifecycle: string | null;
     readonly requestedMode: string | null;
     readonly effectiveMode: string | null;
@@ -96,6 +97,7 @@ export const assessDaemon = (input: { health: unknown; snapshot: unknown; decisi
   const last = decisions.length ? summarizeDecision(decisions[decisions.length - 1]) : null;
   const findings: Finding[] = [];
 
+  const releaseStatus = str(health.releaseStatus) ?? null;
   const lifecycle = str(health.lifecycle) ?? null;
   if (lifecycle !== 'running' && lifecycle !== 'ready')
     findings.push({ level: 'error', code: 'lifecycle', message: `daemon lifecycle is ${lifecycle ?? 'unknown'}, not running` });
@@ -160,6 +162,7 @@ export const assessDaemon = (input: { health: unknown; snapshot: unknown; decisi
     exitCode,
     findings,
     summary: {
+      releaseStatus,
       lifecycle,
       requestedMode: str(auth.requestedMode) ?? null,
       effectiveMode: str(auth.effectiveMode) ?? null,
