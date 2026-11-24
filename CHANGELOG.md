@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified (2026-11-24 03:12 UTC continuous engineer)
+- Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready` (HEAD `82cdab1f`):
+  - systemd unit: User=irp + CAP_NET_ADMIN only
+  - host-authorization fail-closed (dns.write blocked under non-root)
+  - PrivilegedMutationBoundary sole mutation path with real apply → verify → rollback
+  - honest status surfaces (`releaseStatus`, liveActive, blockers)
+  - operator docs and packaging scripts match reality
+- CI: Linux primary device (Debian 13) and Debian 13 acceptance **success**; Swift / Validate repository failures non-blocking for Linux daemon path.
+- Explicit remaining blockers listed in PROJECT_STATE.md. **Prerelease / developer-preview only.** Final approval left to repository owner. PR #538 open.
+
 ### Changed
 - 2026-11-24 06:09 +0330 continuous verification: Confirmed Linux end-user path remains correctly working and honestly prerelease-ready (systemd User=irp + CAP_NET_ADMIN only, fail-closed host-authorization with DNS write blocked under non-root, PrivilegedMutationBoundary sole mutation path with real apply→verify→rollback, honest status with releaseStatus, operator docs accurate). PROJECT_STATE.md updated with new checkpoint. PR #538 open for owner approval. Explicit remaining blockers listed. Not production-certified.
 - Status surfaces now include an explicit `releaseStatus` field ("prerelease / developer-preview (not production-certified)") in the daemon health response and CLI `irp status` summary, so operators cannot mistake the Linux end-user path for a production release.
@@ -35,4 +45,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - DNS write policy under non-root `User=irp` (currently correctly disabled).
 - Native full-runtime evidence on Windows / macOS / iOS / Android (non-blocking for Linux-first prerelease).
 
-(Full prior changelog history preserved from main.)
+(Full prior changelog history preserved from main).
