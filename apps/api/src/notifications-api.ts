@@ -6,6 +6,7 @@ import {
   ValidationAppError,
 } from '@irp/core';
 import { createPrismaClient } from '@irp/database';
+import { requireDurableOrDevelopment } from './durability.js';
 import {
   NotificationIncidentCenter,
   notificationsStatusSchema,
@@ -40,6 +41,8 @@ const routeId = (request: FastifyRequest): string => {
 };
 
 export const registerNotificationIncidentRoutes = (app: FastifyInstance) => {
+  // Incidents and notifications are only durable with PostgreSQL; refuse the memory client in production.
+  requireDurableOrDevelopment('incidents and notifications', Boolean(process.env.DATABASE_URL));
   const db = createPrismaClient(process.env.DATABASE_URL);
   const center = new NotificationIncidentCenter(db);
 

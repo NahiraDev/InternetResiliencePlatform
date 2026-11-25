@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UnauthorizedAppError } from '@irp/core';
 import type { Principal } from '@irp/auth';
+import { requireDurableOrDevelopment } from './durability.js';
 import { SharedRateLimitStore, InMemoryRateLimiter, rateLimitPreHandler, sharedRateLimitPreHandler } from './security/rate-limit.js';
 
 export const PRODUCT_API_VERSION = '1' as const;
@@ -363,6 +364,7 @@ export const registerUnifiedProductRoutes = (app: FastifyInstance, options: Unif
     data: PRODUCT_API_MANIFEST,
   }));
 
+  requireDurableOrDevelopment('product-context rate limiter', Boolean(options.rateLimitStore));
   const contextRateLimit = options.rateLimitStore
     ? sharedRateLimitPreHandler(options.rateLimitStore, { name: 'product-context', max: 60, windowMs: 60_000 })
     : rateLimitPreHandler(new InMemoryRateLimiter({ max: 60, windowMs: 60_000 }));

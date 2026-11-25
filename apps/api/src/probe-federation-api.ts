@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
 import { ProbeFederation, type SignedProbeEvidence } from '@irp/resilience-runtime';
+import { isProductionRuntime } from './durability.js';
 
 const registration = z.object({
   probeId: z.string().regex(/^[a-zA-Z0-9._:-]{1,128}$/),
@@ -59,10 +60,43 @@ export interface ProbeFederationApiHandle {
   federation: ProbeFederation;
 }
 
+export interface ProbeFederationApiOptions {
+  env?: NodeJS.ProcessEnv;
+}
+
+/**
+ * ProbeFederation keeps registered probes and signed evidence in process memory and has no PostgreSQL
+ * repository yet. Production/staging therefore answer 503 DURABLE_STORE_UNAVAILABLE on every federation
+ * route (no silent per-instance state) unless a federation backed by a durable store is injected.
+ */
 export const registerProbeFederationRoutes = (
   app: FastifyInstance,
-  federation = new ProbeFederation(),
+  injectedFederation?: ProbeFederation,
+  options: ProbeFederationApiOptions = {},
 ): ProbeFederationApiHandle => {
+  const federation = injectedFederation ?? new ProbeFederation();
+  const blocked = injectedFederation === undefined && isProductionRuntime(options.env ?? process.env);
+  if (blocked) {
+    const unavailable = async (_request: FastifyRequest, reply: import('fastify').FastifyReply) =>
+      reply.code(503).send({
+        success: false,
+        error: {
+          code: 'DURABLE_STORE_UNAVAILABLE',
+          message: 'Probe federation has no durable store in this deployment.',
+        },
+      });
+    for (const [method, path] of [
+      ['post', '/api/v1/federation/probes'],
+      ['get', '/api/v1/federation/probes'],
+      ['post', '/api/v1/federation/probes/:probeId/revoke'],
+      ['post', '/api/v1/federation/evidence'],
+      ['get', '/api/v1/federation/evidence'],
+      ['get', '/api/v1/federation/compare/:destination'],
+      ['get', '/api/v1/federation/stats'],
+    ] as const)
+      app[method](path, unavailable);
+    return { federation };
+  }
   app.post('/api/v1/federation/probes', async (request, reply) => {
     await authz(request, 'runtime.admin');
     const probe = federation.registerProbe(registration.parse(request.body ?? {}));

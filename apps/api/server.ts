@@ -6,19 +6,10 @@
  * containers and VMs.
  */
 import { buildServer } from './src/index.js';
-import { registerRemoteClientRoutes } from './src/remote-client-api.js';
-import { registerProbeFederationRoutes } from './src/probe-federation-api.js';
-import { registerUnifiedProductRoutes } from './src/unified-product-api.js';
-import { registerNotificationIncidentRoutes } from './src/notifications-api.js';
-import { registerHistoryRoutes } from './src/history-api.js';
 
+// buildServer() already registers every route group (including the durable-store-backed ones);
+// registering them again throws FST_ERR_DUPLICATED_ROUTE at startup.
 const app = await buildServer();
-
-registerUnifiedProductRoutes(app);
-registerRemoteClientRoutes(app);
-registerProbeFederationRoutes(app);
-registerNotificationIncidentRoutes(app);
-registerHistoryRoutes(app);
 
 // Fastify's Vercel integration instruments listen() to expose the app as a
 // serverless function. Do not replace this with a raw Node request handler.

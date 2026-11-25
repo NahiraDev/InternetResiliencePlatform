@@ -7,6 +7,9 @@ import { createSqlClient } from '@irp/database';
 import { buildServer } from './index.js';
 import { CapturingEmailSender } from './identity/mailer.js';
 import { createPostgresIdentityRepositories } from './identity/postgres.js';
+import { createPostgresSettingsStore } from './durability.js';
+import { resolveRemoteClientKeys } from './remote-client-api.js';
+import { createPostgresRemoteClientStore } from './remote-client-store.js';
 
 /**
  * Regression tests for issue #412: the `test` payment provider must be rejected
@@ -57,7 +60,13 @@ maybe('subscription payment provider guard (real database)', () => {
     const repos = createPostgresIdentityRepositories(sql);
     pools.push(sql);
     const mailer = new CapturingEmailSender();
-    const app = await buildServer({ identity: repos, mailer });
+    // Production/staging refuse process-memory stores, so every durable store is injected explicitly.
+    const app = await buildServer({
+      identity: repos,
+      mailer,
+      remoteClientStore: createPostgresRemoteClientStore(sql, resolveRemoteClientKeys()),
+      settings: createPostgresSettingsStore(sql),
+    });
     return { repos, mailer, app, sql, restore: () => (process.env = origEnv) };
   };
 
@@ -98,6 +107,7 @@ maybe('subscription payment provider guard (real database)', () => {
       JWT_SECRET: 'j'.repeat(48),
       REMOTE_CLIENT_CREDENTIAL_KEY: 'c'.repeat(48),
       REMOTE_CLIENT_REFRESH_KEY: 'r'.repeat(48),
+      IRP_PUBLIC_BASE_URL: 'https://irp.example',
     });
     try {
       const token = await registerAndVerifyUser(e, `guard-prod-${randomUUID()}@example.com`);

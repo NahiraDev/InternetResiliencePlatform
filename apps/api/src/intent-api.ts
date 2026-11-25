@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { requireDurableOrDevelopment } from './durability.js';
 import {
   ConflictAppError,
   ForbiddenAppError,
@@ -538,6 +539,7 @@ const ownership = (principal: Principal): IntentOwnership => ({
 });
 
 export const registerIntentRoutes = (app: FastifyInstance, options: IntentApiOptions = {}) => {
+  requireDurableOrDevelopment('network intents', Boolean(options.store ?? options.database));
   const store =
     options.store ??
     (options.database ? new DatabaseIntentStore(options.database) : new InMemoryIntentStore());
