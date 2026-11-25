@@ -8,7 +8,9 @@
 
 Current main SHA at time of this note: `9436c1651c4a2caac9c89de02197b127cf3b3859`
 
-Branch: `release/linux-enduser-ready`
+Branch used for continuous tracking: `release/linux-enduser-ready` (aligned to main after merge)
+
+PR #538 ("release: Linux end-user ready prerelease") was merged into main on 2026-11-24.
 
 ## What works correctly today on Linux (Debian 13)
 
@@ -18,7 +20,7 @@ Branch: `release/linux-enduser-ready`
 - Status is honest (live vs safe + explicit blockers + `releaseStatus: "prerelease / developer-preview (not production-certified)"` in `/v1/health` and `irp status` / `irp doctor`).
 - All live mutations go only through `PrivilegedMutationBoundary` (prepare → snapshot → validate → policy → security → safety → apply → verify → commit; failure path: rollback → verifyRollback → recover).
 - apply → verify → rollback path is real for bounded route changes (when opted in and host facts allow).
-- Operator docs (`docs/operations/linux-enduser-guide.md`) explain install, start, read status, and what the system will/won’t do.
+- Operator docs (`docs/operations/linux-enduser-guide.md`) explain install, start, read status, and what the system will/won't do.
 - Packaging scripts are non-interactive (`CI=true`) and fail-closed if dist artifacts are missing.
 
 ## What is still not production-certified
@@ -38,4 +40,4 @@ Branch: `release/linux-enduser-ready`
 - DNS write policy under non-root (by design disabled under the shipped unit).
 - Full production certification remains open.
 
-**Prerelease / developer-preview only.** Do not promote to stable until remaining gates close. Final release approval is left to the repository owner.
+**Prerelease / developer-preview only.** Do not promote to stable until remaining gates close. Final release approval, tagging, and publish remain exclusively with the repository owner.
