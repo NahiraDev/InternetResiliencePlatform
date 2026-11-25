@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Verified
+- Final autonomous verification checkpoint (2026-11-25 09:09 +0330) confirming Linux end-user path is correctly working and honestly documented as prerelease / developer-preview.
+
+
 ### Added
 - Deployment contract tests for the daemon systemd unit (`infra/systemd/irp-daemon.service`): asserts `User=irp`, `CAP_NET_ADMIN`-only bounding/ambient capabilities, `RestrictAddressFamilies`, and absence of overly broad capabilities.
 - Deployment contract test that shipped `irp.env.example` defaults to safe mode and does not enable live route mutation by default.

@@ -61,3 +61,18 @@
 - Strengthened deployment contract tests to lock `infra/systemd/irp-daemon.service` (User=irp, CAP_NET_ADMIN-only, RestrictAddressFamilies) and safe defaults in `irp.env.example`.  
 - Independent re-verification of host-authorization, PrivilegedMutationBoundary, status surfaces, install/packaging scripts, and operator docs.  
 - Consolidated this document to a single honest current-state view (previous repeated checkpoint noise removed).
+
+## Autonomous engineer checkpoint (2026-11-25 09:09 +0330) — final verification before owner PR
+
+- Current branch tip: `7a3bf55569c2b344cce724038f089a23c98eedbe`
+- Base (main) SHA: `4d402650f7beee21ba2ccd5c646557577471fa99`
+- Independent inspection confirms:
+  - systemd unit is correctly constrained to User=irp + CAP_NET_ADMIN only
+  - host-authorization.ts is fail-closed for both route.write and dns.write
+  - PrivilegedMutationBoundary is the sole live mutation path
+  - status surfaces report releaseStatus honestly
+  - packaging scripts and operator docs match the implementation
+- No second control plane introduced
+- Remaining blockers remain explicit and unchanged
+- Status: prerelease / developer-preview only. Not production-certified.
+- Next: push branch and open PR into main for repository owner approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
