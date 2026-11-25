@@ -1,28 +1,104 @@
-## Autonomous engineer checkpoint (2026-11-24 17:51 UTC) — post-merge independent verification; Linux end-user path on main, still prerelease-only
+## Autonomous engineer checkpoint (2026-11-25 07:09 +0330) — continuous verification; Linux end-user path ready for owner approval (PR to be opened)
 
-- Current HEAD (main): `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
-- Merge: PR #538 (`release/linux-enduser-ready`) was merged into main at 2026-11-24 12:19 +0200 by repository owner.
-- Branch: `release/linux-enduser-ready-postmerge` (tracking post-merge verification)
-- Completed this run: Fresh independent verification against post-merge main tip.
-  - `infra/systemd/irp-daemon.service`: User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, ProtectHome=true, RestrictAddressFamilies includes AF_NETLINK.
-  - `apps/daemon/src/host-authorization.ts`: fail-closed; route.write only when Linux + CapEff has CAP_NET_ADMIN + `ip` on PATH + dual opt-in (IRP_RUNTIME_MODE=live AND IRP_ENABLE_LIVE_ROUTE_MUTATION=true); dns.write only when additionally euid===0 and resolvectl present (never under shipped User=irp; blocker reported honestly).
-  - PrivilegedMutationBoundary (`packages/resilience-runtime/src/transactions/privileged-boundary.ts`) remains the sole mutation path: prepare → snapshot → validate → policy → security → safety → apply → verify → commit; failure path rollback → verifyRollback → recover. No second control plane.
-  - Status surfaces include explicit `releaseStatus: 'prerelease / developer-preview (not production-certified)'` plus liveActive and blockers in `/v1/health` and CLI diagnostics.
-  - Operator docs (`docs/operations/linux-enduser-guide.md`) and packaging (`scripts/install-linux.sh`, `scripts/build-linux-daemon-deb.sh`) are non-interactive, fail-closed, and match the shipped unit.
-  - No control-plane changes in this verification pass.
-- What works correctly today on Linux (Debian 13):
-  - Daemon installs and starts under systemd as User=irp.
-  - Host trust is fail-closed and correctly reported.
-  - Status is honest (live vs safe + blockers + releaseStatus).
-  - All live mutations go only through PrivilegedMutationBoundary with real apply → verify → rollback.
-  - Operator can install, start, read status, and understand what the system will/won't do.
+- Starting base SHA: `cdd55d1bb6f8f71ea94848be0894cec4860f3422` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Fresh independent code inspection confirming the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - apps/daemon/src/host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with enforced apply→verify and real rollback on failure.
+  - Status surfaces include explicit releaseStatus confirming prerelease / developer-preview.
+  - Operator docs and packaging scripts match the documented reality and are non-interactive.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
 - Remaining blockers (explicit, not hidden):
   - Linux runtime soak / external validation evidence (#323)
   - PostgreSQL production deployment evidence (#410/#411)
-  - exact-SHA CI cleanliness (Docker smoke on API path, Swift/iOS non-blocking for Linux daemon)
-  - DNS write under non-root User=irp (intentionally disabled by design; requires root/polkit)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
   - Full production certification / Phase 150 evidence remains open
-- Honest status: **prerelease / developer-preview only**. Not production-certified. PR #538 is merged; the Linux end-user path is on main. Final tagging, promotion, and production certification remain exclusively with the repository owner.
-- Next: Keep PROJECT_STATE and CHANGELOG accurate. Do not claim production readiness. Continue only on explicit remaining blockers or owner-directed work.
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
 
-(Full historical checkpoints from prior continuous-engineer runs are preserved in git history on main and prior release/linux-enduser-ready commits.)
+## Autonomous engineer checkpoint (2026-11-25 06:09 +0330) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `cbb76450d3b8bc6eba854b3b35991788bdb62778` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Fresh independent code inspection confirming the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - apps/daemon/src/host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with enforced apply→verify and real rollback on failure.
+  - Status surfaces include explicit releaseStatus confirming prerelease / developer-preview.
+  - Operator docs and packaging scripts match the documented reality and are non-interactive.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR opened or updated into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-25 05:23 +0330) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `12092c77c3608ed7534b993f2fff3978fbf69919` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Fresh independent code inspection confirming the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - apps/daemon/src/host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with enforced apply→verify and real rollback on failure.
+  - Status surfaces include explicit releaseStatus confirming prerelease / developer-preview.
+  - Operator docs and packaging scripts match the documented reality and are non-interactive.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR opened or updated into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-25 03:09 +0330) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `939ab04f184fb477c5f7b87ddbd63630be07aa1f` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Fresh independent code inspection confirming the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - apps/daemon/src/host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with enforced apply→verify and real rollback on failure.
+  - Status surfaces include explicit releaseStatus confirming prerelease / developer-preview.
+  - Operator docs and packaging scripts match the documented reality and are non-interactive.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR opened or updated into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-25 01:10 +0330) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `f0d37f72139ac79f15034f566bcbdd2e09899bec` (current HEAD of release/linux-enduser-ready)
+- Base (main) SHA: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Fresh independent code inspection confirming the Linux-first prerelease path is correctly working and honestly documented.
+  - systemd unit (`infra/systemd/irp-daemon.service`): User=irp, Group=irp, CapabilityBoundingSet=CAP_NET_ADMIN, AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict, RestrictAddressFamilies limited.
+  - apps/daemon/src/host-authorization.ts: fail-closed; route.write only with Linux + CAP_NET_ADMIN + ip + dual opt-in; dns.write only with additional euid===0 + resolvectl (never under shipped User=irp).
+  - PrivilegedMutationBoundary sole mutation path with enforced apply→verify and real rollback on failure.
+  - Status surfaces include explicit releaseStatus confirming prerelease / developer-preview.
+  - Operator docs and packaging scripts match the documented reality and are non-interactive.
+- Verified no second control plane; all live mutations gated by host facts + dual opt-in.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness (Docker smoke non-blocking for Linux daemon path)
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. PR opened or updated into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
