@@ -66,3 +66,23 @@ export const resolveEmailSender = (env: NodeJS.ProcessEnv = process.env): EmailS
     );
   return new CapturingEmailSender();
 };
+
+/**
+ * Verification and reset emails must carry a clickable link to the real site. Production/staging without a
+ * valid https IRP_PUBLIC_BASE_URL refuses to start instead of mailing token-only messages (issue #412).
+ */
+export const resolvePublicBaseUrl = (env: NodeJS.ProcessEnv = process.env): string | undefined => {
+  const raw = env.IRP_PUBLIC_BASE_URL?.trim();
+  if (!isProduction(env)) return raw || undefined;
+  if (!raw)
+    throw new Error('IRP_PUBLIC_BASE_URL is required for production or staging: emails need a real link target.');
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error('IRP_PUBLIC_BASE_URL must be an absolute https:// URL in production or staging.');
+  }
+  if (parsed.protocol !== 'https:' || parsed.search || parsed.hash)
+    throw new Error('IRP_PUBLIC_BASE_URL must be an absolute https:// URL in production or staging.');
+  return raw;
+};

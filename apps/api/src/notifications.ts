@@ -280,12 +280,12 @@ export class NotificationIncidentCenter {
     }
     const rows = (unreadOnly
       ? await this.db.$queryRaw`
-          SELECT id::text AS "id", "incidentId"::text AS "incidentId", type, severity,
+          SELECT id::text AS "id", "incidentId"::text AS "incidentId", replace(type::text, '_', '-') AS "type", severity,
                  title, message, actionable, "readAt", "createdAt"
           FROM "Notification" WHERE "readAt" IS NULL ORDER BY "createdAt" DESC LIMIT ${bounded}
         `
       : await this.db.$queryRaw`
-          SELECT id::text AS "id", "incidentId"::text AS "incidentId", type, severity,
+          SELECT id::text AS "id", "incidentId"::text AS "incidentId", replace(type::text, '_', '-') AS "type", severity,
                  title, message, actionable, "readAt", "createdAt"
           FROM "Notification" ORDER BY "createdAt" DESC LIMIT ${bounded}
         `) as unknown as NotificationDbRow[];
@@ -303,15 +303,19 @@ export class NotificationIncidentCenter {
     }
     const rows = (await this.db.$queryRaw`
       UPDATE "Notification" SET "readAt" = COALESCE("readAt", NOW()) WHERE id = CAST(${id} AS uuid)
-      RETURNING id::text AS "id", "incidentId"::text AS "incidentId", type, severity,
+      RETURNING id::text AS "id", "incidentId"::text AS "incidentId", replace(type::text, '_', '-') AS "type", severity,
                 title, message, actionable, "readAt", "createdAt"
     `) as unknown as NotificationDbRow[];
     return rows[0] ? mapNotification(rows[0]) : null;
   }
 
   private async persistIncident(incident: IncidentRecord) {
-    this.memoryIncidents.set(incident.id, incident);
-    if (!this.db) return;
+    // Process memory is only the store when no database client is configured (development/tests); with a
+    // database it would be an unbounded, per-instance shadow copy that diverges from PostgreSQL.
+    if (!this.db) {
+      this.memoryIncidents.set(incident.id, incident);
+      return;
+    }
     await this.db.$queryRaw`
       INSERT INTO "Incident" (id, fingerprint, title, severity, status, source, classification,
         "rootCause", "affectedComponents", evidence, "correlationReason", confidence, "occurrenceCount",
@@ -328,7 +332,7 @@ export class NotificationIncidentCenter {
         "affectedComponents" = EXCLUDED."affectedComponents", evidence = EXCLUDED.evidence,
         "correlationReason" = EXCLUDED."correlationReason", confidence = EXCLUDED.confidence,
         "occurrenceCount" = EXCLUDED."occurrenceCount", "lastSeenAt" = EXCLUDED."lastSeenAt",
-        "acknowledgedAt" = EXCLUDED."acknowledgedAt", "resolvedAt" = EXCLUDED."resolvedAt", updatedAt = NOW()
+        "acknowledgedAt" = EXCLUDED."acknowledgedAt", "resolvedAt" = EXCLUDED."resolvedAt", "updatedAt" = NOW()
     `;
   }
 
@@ -347,11 +351,13 @@ export class NotificationIncidentCenter {
       readAt: null,
       createdAt: now(),
     };
-    this.memoryNotifications.set(notification.id, notification);
-    if (!this.db) return;
+    if (!this.db) {
+      this.memoryNotifications.set(notification.id, notification);
+      return;
+    }
     await this.db.$queryRaw`
       INSERT INTO "Notification" (id, "incidentId", type, severity, title, message, actionable, "readAt", "createdAt")
-      VALUES (${notification.id}::uuid, ${notification.incidentId}::uuid, ${notification.type}, ${notification.severity},
+      VALUES (${notification.id}::uuid, ${notification.incidentId}::uuid, ${notification.type.replace(/-/g, '_')}::"NotificationType", ${notification.severity},
               ${notification.title}, ${notification.message}, ${notification.actionable}, NULL, NOW())
     `;
   }

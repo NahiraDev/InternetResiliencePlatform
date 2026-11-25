@@ -1,18 +1,18 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
   DEFAULT_REMOTE_CLIENT_SCOPES,
-  DeviceCredentialService,
-  RotatingRefreshTokenStore,
-  SecurityAuditLog,
   validateRemoteClientScopes,
-  type RemoteClientPlatform,
-  type RemoteClientScope,
   JwtService,
   RbacAuthorization,
 } from '@irp/auth';
 import { ForbiddenAppError, NotFoundAppError, UnauthorizedAppError } from '@irp/core';
+import { requireDurableOrDevelopment } from './durability.js';
+import {
+  createMemoryRemoteClientStore,
+  type RemoteClientKeys,
+  type RemoteClientStore,
+} from './remote-client-store.js';
 
 const devicePlatform = z.enum(['android', 'ios', 'linux', 'macos', 'windows', 'unknown']);
 const scopesSchema = z.array(z.string()).max(DEFAULT_REMOTE_CLIENT_SCOPES.length);
@@ -36,20 +36,6 @@ const enrollmentRequestSchema = z.object({
 });
 
 const requestIdParams = z.object({ requestId: z.string().uuid() });
-
-interface EnrollmentRequestRecord {
-  id: string;
-  userId: string;
-  platform: RemoteClientPlatform;
-  label?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  decidedAt?: string;
-  decidedBy?: string;
-  credentialId?: string;
-  deviceId?: string;
-  secret?: string; // Only present at approval time, never stored durably
-}
 
 const tokenSchema = z.object({
   credentialId: z.string().uuid(),
@@ -84,54 +70,62 @@ export interface RemoteClientApiOptions {
   credentialKey?: string;
   refreshKey?: string;
   jwtIssuer?: string;
+  /**
+   * Durable store for device credentials, refresh tokens, enrollment requests and audit events.
+   * Production/staging require it (PostgreSQL); without one the routes fall back to an in-memory
+   * development store outside production and refuse to register inside it.
+   */
+  store?: RemoteClientStore;
 }
 
-interface RemoteClientMetadata {
-  credentialId: string;
-  deviceId: string;
-  platform: RemoteClientPlatform;
-  label?: string;
-  scopes: readonly RemoteClientScope[];
-  createdAt: string;
-  expiresAt: string;
-  revokedAt?: string;
-}
+/** Resolves the signing secret and the two HMAC keys exactly as the routes do (single source of truth). */
+export const resolveRemoteClientKeys = (
+  options: Pick<RemoteClientApiOptions, 'jwtSecret' | 'credentialKey' | 'refreshKey'> = {},
+): RemoteClientKeys & { jwtSecret: string } => {
+  const jwtSecret =
+    options.jwtSecret ?? resolveKey('JWT_SECRET', 'development-secret-development-secret-32');
+  return {
+    jwtSecret,
+    credentialKey:
+      options.credentialKey ??
+      resolveKey('REMOTE_CLIENT_CREDENTIAL_KEY', `${jwtSecret}:remote-client-credential`),
+    refreshKey:
+      options.refreshKey ??
+      resolveKey('REMOTE_CLIENT_REFRESH_KEY', `${jwtSecret}:remote-client-refresh`),
+  };
+};
 
 export interface RemoteClientApiHandle {
-  credentials: DeviceCredentialService;
-  refreshTokens: RotatingRefreshTokenStore;
-  audit: SecurityAuditLog;
+  store: RemoteClientStore;
 }
 
 export const registerRemoteClientRoutes = (
   app: FastifyInstance,
   options: RemoteClientApiOptions = {},
 ): RemoteClientApiHandle => {
-  const jwtSecret =
-    options.jwtSecret ?? resolveKey('JWT_SECRET', 'development-secret-development-secret-32');
-  const credentialKey =
-    options.credentialKey ??
-    resolveKey('REMOTE_CLIENT_CREDENTIAL_KEY', `${jwtSecret}:remote-client-credential`);
-  const refreshKey =
-    options.refreshKey ??
-    resolveKey('REMOTE_CLIENT_REFRESH_KEY', `${jwtSecret}:remote-client-refresh`);
-  const jwt = new JwtService(jwtSecret, options.jwtIssuer ?? 'irp');
+  const keys = resolveRemoteClientKeys(options);
+  const jwt = new JwtService(keys.jwtSecret, options.jwtIssuer ?? 'irp');
   const rbac = new RbacAuthorization();
-  const credentials = new DeviceCredentialService(credentialKey);
-  const refreshTokens = new RotatingRefreshTokenStore(refreshKey);
-  const audit = new SecurityAuditLog();
-  const devices = new Map<string, RemoteClientMetadata>();
-  const enrollmentRequests = new Map<string, EnrollmentRequestRecord>();
+  let store = options.store;
+  if (!store) {
+    requireDurableOrDevelopment('remote-client credentials, refresh tokens and enrollment requests', false);
+    store = createMemoryRemoteClientStore(keys);
+  }
+  const clients = store;
 
-  const requireAdmin = async (request: FastifyRequest): Promise<void> => {
+  const verifyAccess = (request: FastifyRequest) => {
     const token = authorizationToken(request);
     if (!token) throw new UnauthorizedAppError();
-    let claims;
     try {
-      claims = jwt.verify(token, 'access');
+      return jwt.verify(token, 'access');
     } catch {
       throw new UnauthorizedAppError();
     }
+  };
+
+  /** Returns the admin's subject so decisions can be attributed. */
+  const requireAdmin = async (request: FastifyRequest): Promise<string> => {
+    const claims = verifyAccess(request);
     const allowed = await rbac.authorize({
       principal: {
         id: claims.sub,
@@ -145,18 +139,15 @@ export const registerRemoteClientRoutes = (
       requiredPermissions: ['runtime.admin'],
     });
     if (!allowed) throw new ForbiddenAppError();
+    return claims.sub;
   };
 
-  const requireUser = async (request: FastifyRequest): Promise<{ id: string; roles: string[]; scopes: string[] }> => {
-    const token = authorizationToken(request);
-    if (!token) throw new UnauthorizedAppError();
-    let claims;
-    try {
-      claims = jwt.verify(token, 'access');
-    } catch {
-      throw new UnauthorizedAppError();
-    }
-    if (claims.roles.includes('remote_client')) throw new ForbiddenAppError('remote clients cannot request enrollment');
+  const requireUser = async (
+    request: FastifyRequest,
+  ): Promise<{ id: string; roles: string[]; scopes: string[] }> => {
+    const claims = verifyAccess(request);
+    if (claims.roles.includes('remote_client'))
+      throw new ForbiddenAppError('remote clients cannot request enrollment');
     const allowed = await rbac.authorize({
       principal: {
         id: claims.sub,
@@ -187,23 +178,14 @@ export const registerRemoteClientRoutes = (
     await requireAdmin(request);
     const input = enrollmentSchema.parse(request.body ?? {});
     const scopes = validateRemoteClientScopes(input.scopes ?? [...DEFAULT_REMOTE_CLIENT_SCOPES]);
-    const issued = credentials.issue({
+    const { issued } = await clients.issueCredential({
       platform: input.platform,
       ...(input.deviceId !== undefined ? { deviceId: input.deviceId } : {}),
       ...(input.label !== undefined ? { label: input.label } : {}),
       ...(input.ttlSeconds !== undefined ? { ttlSeconds: input.ttlSeconds } : {}),
-    });
-    const metadata: RemoteClientMetadata = {
-      credentialId: issued.credentialId,
-      deviceId: issued.deviceId,
-      platform: input.platform,
-      ...(input.label ? { label: input.label } : {}),
       scopes,
-      createdAt: new Date().toISOString(),
-      expiresAt: issued.expiresAt,
-    };
-    devices.set(issued.credentialId, metadata);
-    audit.record({
+    });
+    await clients.recordAudit({
       action: 'client.enrolled',
       success: true,
       subjectId: issued.deviceId,
@@ -225,70 +207,46 @@ export const registerRemoteClientRoutes = (
 
   // ── User-initiated device enrollment request flow ────────────────────────
   // An authenticated user requests to enroll a device. An admin must approve
-  // the request before device credentials are issued. This replaces the
-  // admin-only pre-provisioning flow with a user-initiated, approval-gated
-  // enrollment that does not require an admin to manually create credentials.
+  // the request before device credentials are issued. Requests, decisions and
+  // issued credentials are durable (shared across instances and restarts); the
+  // secret is returned once at approval time and never stored.
 
   app.post('/api/v1/auth/remote/devices/request', async (request, reply) => {
     const user = await requireUser(request);
     const input = enrollmentRequestSchema.parse(request.body ?? {});
-    const id = randomUUID();
-    const record: EnrollmentRequestRecord = {
-      id,
+    const record = await clients.createEnrollmentRequest({
       userId: user.id,
       platform: input.platform,
       ...(input.label ? { label: input.label } : {}),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-    enrollmentRequests.set(id, record);
-    audit.record({
+    });
+    await clients.recordAudit({
       action: 'client.enrolled',
       success: true,
       subjectId: user.id,
-      metadata: { platform: input.platform, label: input.label, requestId: id },
+      metadata: { platform: input.platform, label: input.label, requestId: record.id },
     });
-    return reply.code(201).send({ success: true, data: { requestId: id, status: 'pending' } });
+    return reply.code(201).send({ success: true, data: { requestId: record.id, status: 'pending' } });
   });
 
   app.get('/api/v1/auth/remote/devices/requests', async (request) => {
     await requireAdmin(request);
-    const pending = [...enrollmentRequests.values()]
-      .filter((r) => r.status === 'pending')
-      .map(({ id, userId, platform, label, createdAt }) => ({ id, userId, platform, label, createdAt }));
+    const pending = (await clients.listPendingEnrollmentRequests()).map(
+      ({ id, userId, platform, label, createdAt }) => ({ id, userId, platform, label, createdAt }),
+    );
     return { success: true, data: pending };
   });
 
   app.post<{ Params: { requestId: string } }>(
     '/api/v1/auth/remote/devices/requests/:requestId/approve',
     async (request, reply) => {
-      await requireAdmin(request);
+      const adminId = await requireAdmin(request);
       const { requestId } = requestIdParams.parse(request.params);
-      const record = enrollmentRequests.get(requestId);
-      if (!record || record.status !== 'pending')
-        throw new NotFoundAppError('enrollment request not found or already decided');
-      // Issue device credentials for the approved request.
-      const issued = credentials.issue({
-        platform: record.platform,
-        ...(record.label ? { label: record.label } : {}),
-      });
-      const metadata: RemoteClientMetadata = {
-        credentialId: issued.credentialId,
-        deviceId: issued.deviceId,
-        platform: record.platform,
-        ...(record.label ? { label: record.label } : {}),
-        scopes: [...DEFAULT_REMOTE_CLIENT_SCOPES],
-        createdAt: new Date().toISOString(),
-        expiresAt: issued.expiresAt,
-      };
-      devices.set(issued.credentialId, metadata);
-      record.status = 'approved';
-      record.decidedAt = new Date().toISOString();
-      record.decidedBy = 'admin'; // Could be enriched with the admin's userId from requireAdmin
-      record.credentialId = issued.credentialId;
-      record.deviceId = issued.deviceId;
-      enrollmentRequests.set(requestId, record);
-      audit.record({
+      const approved = await clients.approveEnrollmentRequest(requestId, adminId, [
+        ...DEFAULT_REMOTE_CLIENT_SCOPES,
+      ]);
+      if (!approved) throw new NotFoundAppError('enrollment request not found or already decided');
+      const { request: record, issued, device } = approved;
+      await clients.recordAudit({
         action: 'client.enrolled',
         success: true,
         subjectId: record.userId,
@@ -305,7 +263,7 @@ export const registerRemoteClientRoutes = (
           deviceId: issued.deviceId,
           secret: issued.secret,
           expiresAt: issued.expiresAt,
-          scopes: metadata.scopes,
+          scopes: device.scopes,
         },
       });
     },
@@ -314,15 +272,11 @@ export const registerRemoteClientRoutes = (
   app.post<{ Params: { requestId: string } }>(
     '/api/v1/auth/remote/devices/requests/:requestId/reject',
     async (request, reply) => {
-      await requireAdmin(request);
+      const adminId = await requireAdmin(request);
       const { requestId } = requestIdParams.parse(request.params);
-      const record = enrollmentRequests.get(requestId);
-      if (!record || record.status !== 'pending')
-        throw new NotFoundAppError('enrollment request not found or already decided');
-      record.status = 'rejected';
-      record.decidedAt = new Date().toISOString();
-      enrollmentRequests.set(requestId, record);
-      audit.record({
+      const record = await clients.rejectEnrollmentRequest(requestId, adminId);
+      if (!record) throw new NotFoundAppError('enrollment request not found or already decided');
+      await clients.recordAudit({
         action: 'client.enrolled',
         success: false,
         subjectId: record.userId,
@@ -334,15 +288,14 @@ export const registerRemoteClientRoutes = (
 
   app.get('/api/v1/auth/remote/devices', async (request) => {
     await requireAdmin(request);
-    return { success: true, data: [...devices.values()].map((device) => ({ ...device })) };
+    return { success: true, data: await clients.listDevices() };
   });
 
   app.post('/api/v1/auth/remote/token', async (request) => {
     const input = tokenSchema.parse(request.body ?? {});
-    const authenticated = credentials.authenticate(input.credentialId, input.secret);
-    const metadata = devices.get(input.credentialId);
-    if (!authenticated || !metadata || metadata.revokedAt) {
-      audit.record({
+    const result = await clients.authenticateCredential(input.credentialId, input.secret);
+    if (!result) {
+      await clients.recordAudit({
         action: 'client.authenticated',
         success: false,
         credentialId: input.credentialId,
@@ -350,19 +303,16 @@ export const registerRemoteClientRoutes = (
       });
       throw new UnauthorizedAppError();
     }
-    const accessToken = issueAccessToken(
-      authenticated.deviceId,
-      metadata.scopes,
-      authenticated.credentialId,
-    );
-    const refresh = refreshTokens.issue(authenticated.credentialId, metadata.scopes);
-    audit.record({
+    const { auth: authenticated, device } = result;
+    const accessToken = issueAccessToken(authenticated.deviceId, device.scopes, authenticated.credentialId);
+    const refresh = await clients.issueRefreshToken(authenticated.credentialId, device.scopes);
+    await clients.recordAudit({
       action: 'client.authenticated',
       success: true,
       subjectId: authenticated.deviceId,
       deviceId: authenticated.deviceId,
       credentialId: authenticated.credentialId,
-      metadata: { scopes: metadata.scopes },
+      metadata: { scopes: device.scopes },
     });
     return {
       success: true,
@@ -372,7 +322,7 @@ export const registerRemoteClientRoutes = (
         tokenType: 'Bearer',
         expiresIn: 900,
         refreshExpiresAt: refresh.expiresAt,
-        scopes: metadata.scopes,
+        scopes: device.scopes,
         device: {
           credentialId: authenticated.credentialId,
           deviceId: authenticated.deviceId,
@@ -385,19 +335,19 @@ export const registerRemoteClientRoutes = (
 
   app.post('/api/v1/auth/remote/refresh', async (request) => {
     const input = refreshSchema.parse(request.body ?? {});
-    const rotated = refreshTokens.rotate(input.refreshToken);
+    const rotated = await clients.rotateRefreshToken(input.refreshToken);
     if (!rotated) {
-      audit.record({
+      await clients.recordAudit({
         action: 'refresh.rejected',
         success: false,
         metadata: { reason: 'invalid-or-replayed-refresh' },
       });
       throw new UnauthorizedAppError();
     }
-    const metadata = devices.get(rotated.subject);
-    if (!metadata || metadata.revokedAt) {
-      refreshTokens.revoke(rotated.tokenId);
-      audit.record({
+    const device = await clients.getDevice(rotated.subject);
+    if (!device || device.revokedAt) {
+      await clients.revokeRefreshToken(rotated.tokenId);
+      await clients.recordAudit({
         action: 'refresh.rejected',
         success: false,
         subjectId: rotated.subject,
@@ -405,13 +355,13 @@ export const registerRemoteClientRoutes = (
       });
       throw new UnauthorizedAppError();
     }
-    const accessToken = issueAccessToken(metadata.deviceId, rotated.scopes, metadata.credentialId);
-    audit.record({
+    const accessToken = issueAccessToken(device.deviceId, rotated.scopes, device.credentialId);
+    await clients.recordAudit({
       action: 'refresh.rotated',
       success: true,
-      subjectId: metadata.deviceId,
-      deviceId: metadata.deviceId,
-      credentialId: metadata.credentialId,
+      subjectId: device.deviceId,
+      deviceId: device.deviceId,
+      credentialId: device.credentialId,
       metadata: { scopes: rotated.scopes },
     });
     return {
@@ -429,10 +379,10 @@ export const registerRemoteClientRoutes = (
 
   app.post('/api/v1/auth/remote/logout', async (request) => {
     const input = refreshSchema.parse(request.body ?? {});
-    const rotated = refreshTokens.rotate(input.refreshToken);
+    const rotated = await clients.rotateRefreshToken(input.refreshToken);
     if (!rotated) throw new UnauthorizedAppError();
-    refreshTokens.revoke(rotated.tokenId);
-    audit.record({
+    await clients.revokeRefreshToken(rotated.tokenId);
+    await clients.recordAudit({
       action: 'refresh.rotated',
       success: true,
       subjectId: rotated.subject,
@@ -444,27 +394,21 @@ export const registerRemoteClientRoutes = (
   app.post('/api/v1/auth/remote/devices/:credentialId/revoke', async (request) => {
     await requireAdmin(request);
     const { credentialId } = revokeParams.parse(request.params);
-    const metadata = devices.get(credentialId);
-    const revoked = credentials.revoke(credentialId);
-    refreshTokens.revokeSubject(credentialId);
-    if (metadata) {
-      metadata.revokedAt = new Date().toISOString();
-      devices.set(credentialId, metadata);
-    }
-    audit.record({
+    const { revoked, device } = await clients.revokeCredential(credentialId);
+    await clients.recordAudit({
       action: 'client.revoked',
-      success: revoked || Boolean(metadata?.revokedAt),
+      success: revoked,
       credentialId,
-      ...(metadata ? { deviceId: metadata.deviceId, subjectId: metadata.deviceId } : {}),
+      ...(device ? { deviceId: device.deviceId, subjectId: device.deviceId } : {}),
       metadata: { revoked },
     });
-    return { success: true, data: { revoked: revoked || Boolean(metadata?.revokedAt) } };
+    return { success: true, data: { revoked } };
   });
 
   app.get('/api/v1/auth/remote/audit', async (request) => {
     await requireAdmin(request);
-    return { success: true, data: audit.list() };
+    return { success: true, data: await clients.listAudit() };
   });
 
-  return { credentials, refreshTokens, audit };
+  return { store: clients };
 };

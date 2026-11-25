@@ -3,7 +3,17 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import os from 'node:os';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
-import { registerRemoteClientRoutes } from './remote-client-api.js';
+import { registerRemoteClientRoutes, resolveRemoteClientKeys } from './remote-client-api.js';
+import {
+  createMemoryRemoteClientStore,
+  type RemoteClientStore,
+} from './remote-client-store.js';
+import {
+  createMemorySettingsStore,
+  requireDurableOrDevelopment,
+  resolveDurableStores,
+  type SettingsStore,
+} from './durability.js';
 import { registerProbeFederationRoutes } from './probe-federation-api.js';
 import { registerUnifiedProductRoutes } from './unified-product-api.js';
 import { resolveRetention, startRetentionJob } from './identity/retention.js';
@@ -53,12 +63,10 @@ import {
   type Principal,
 } from '@irp/auth';
 import { InMemoryEventBus } from '@irp/events';
-import { MemoryQueue } from '@irp/queue';
 import { checkDatabaseHealth, createPrismaClient, createSqlClient } from '@irp/database';
 import { PostgresHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { AuthService } from './identity/auth-service.js';
-import { resolveEmailSender, type EmailSender } from './identity/mailer.js';
-import { resolveIdentityRepositories } from './identity/resolve.js';
+import { resolveEmailSender, resolvePublicBaseUrl, type EmailSender } from './identity/mailer.js';
 import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
@@ -203,6 +211,10 @@ export interface BuildServerOptions {
   identity?: IdentityRepositories;
   /** Inject an email sender (tests). Production requires IRP_EMAIL_WEBHOOK_URL. */
   mailer?: EmailSender;
+  /** Inject the remote-client store (tests). Production resolves PostgreSQL and fails closed without it. */
+  remoteClientStore?: RemoteClientStore;
+  /** Inject the platform settings store (tests). Production resolves PostgreSQL and fails closed without it. */
+  settings?: SettingsStore;
 }
 export const buildServer = async (options: BuildServerOptions = {}): Promise<FastifyInstance> => {
   const config = loadConfig();
@@ -254,8 +266,25 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
     const value = Array.isArray(raw) ? raw[0] : raw;
     return value?.startsWith('Bearer ') ? value.slice(7) : null;
   };
-  const repos = options.identity ?? resolveIdentityRepositories();
+  // One connection pool backs identity, remote-client and settings state. When a test injects only the
+  // identity repositories the other stores must be injected too, or fall back to development memory
+  // (never in production/staging: requireDurableOrDevelopment throws there).
+  const remoteKeys = resolveRemoteClientKeys();
+  const durable = options.identity ? undefined : resolveDurableStores(remoteKeys);
+  const repos = options.identity ?? durable!.identity;
+  const developmentRemoteClientStore = (): RemoteClientStore => {
+    requireDurableOrDevelopment('remote-client store', false);
+    return createMemoryRemoteClientStore(remoteKeys);
+  };
+  const developmentSettingsStore = (): SettingsStore => {
+    requireDurableOrDevelopment('platform settings store', false);
+    return createMemorySettingsStore();
+  };
+  const remoteClientStore =
+    options.remoteClientStore ?? durable?.remoteClient ?? developmentRemoteClientStore();
+  const settings = options.settings ?? durable?.settings ?? developmentSettingsStore();
   const mailer = options.mailer ?? resolveEmailSender();
+  const publicBaseUrl = resolvePublicBaseUrl();
   const baseJwtAuth = new JwtAuthenticationProvider(jwt);
   // Access tokens are only honoured while their session is live, so logout/reset/reuse-detection
   // revoke access immediately instead of after the 15-minute token lifetime.
@@ -269,11 +298,13 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
     },
   });
   const auth = new AuthService({
-    repos, mailer, jwt, bootstrapAdminEmails, adminPermissions: permissions, publicBaseUrl: process.env.IRP_PUBLIC_BASE_URL,
+    repos, mailer, jwt, bootstrapAdminEmails, adminPermissions: permissions, publicBaseUrl,
   });
   const rbac = new RbacAuthorization();
+  // Intentionally in-process (docs/architecture/api-state-durability.md): the bus has no subscribers and
+  // only fans out `user.registered`, which is also written durably to AuditLog by the auth service.
+  // There is deliberately no queue: nothing enqueues work, so none is created or reported as healthy.
   const events = new InMemoryEventBus();
-  const queue = new MemoryQueue();
   const db = createPrismaClient(process.env.DATABASE_URL);
   app.decorateRequest('jwtAuth', undefined as unknown as JwtAuthenticationProvider);
   app.decorateRequest('rbac', undefined as unknown as RbacAuthorization);
@@ -416,7 +447,6 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
       {
         api: 'healthy',
         database,
-        queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
       },
       {
         service: serviceName,
@@ -707,7 +737,6 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
       ...status,
       dependencies: {
         database,
-        queue: queue.size() >= 0 ? 'healthy' : 'unhealthy',
       },
       diagnostics: {
         ...(dbLatencyMs !== undefined ? { databaseLatencyMs: dbLatencyMs } : {}),
@@ -719,17 +748,18 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   // Personal mode operates without mandatory paid providers. Providers with
   // cost tier 'free' and no subscription requirement are eligible; providers
   // with tier 'paid' or 'unknown' are rejected. Unknown pricing is never
-  // treated as free. The mode is persisted through the Prisma CacheEntry
-  // table so it survives restarts.
+  // treated as free. The mode is persisted in the PlatformSetting table
+  // (SettingsStore), so it survives restarts and is
+  // identical on every instance. Production/staging refuse a memory-backed store.
 
-  let zeroCostMode = false;
+  const ZERO_COST_SETTING = 'zeroCostMode';
 
   async function getZeroCostMode(): Promise<boolean> {
-    return zeroCostMode;
+    return (await settings.get<boolean>(ZERO_COST_SETTING)) === true;
   }
 
   async function setZeroCostMode(enabled: boolean): Promise<void> {
-    zeroCostMode = enabled;
+    await settings.set(ZERO_COST_SETTING, enabled);
   }
 
   app.get('/api/v1/platform/zero-cost', async () => {
@@ -1553,7 +1583,7 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   } else {
     registerHistoryRoutes(app);
   }
-  registerRemoteClientRoutes(app);
+  registerRemoteClientRoutes(app, { store: remoteClientStore });
   registerProbeFederationRoutes(app);
   registerNotificationIncidentRoutes(app);
 
