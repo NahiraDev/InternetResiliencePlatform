@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { ForbiddenAppError, UnauthorizedAppError } from '@irp/core';
+import { requireDurableOrDevelopment } from './durability.js';
 import {
   InMemoryHistoricalMeasurementStore,
   createHistoricalReport,
@@ -34,8 +35,11 @@ export interface HistoryApiHandle {
 
 export const registerHistoryRoutes = (
   app: FastifyInstance,
-  store: HistoricalMeasurementStore = new InMemoryHistoricalMeasurementStore(),
+  injectedStore?: HistoricalMeasurementStore,
 ): HistoryApiHandle => {
+  // Without an injected (PostgreSQL-backed) store history would live in process memory: refused in production.
+  requireDurableOrDevelopment('history measurements', injectedStore !== undefined);
+  const store = injectedStore ?? new InMemoryHistoricalMeasurementStore();
   app.get('/api/v1/history/report', async (request, reply) => {
     await authz(request, 'runtime.inspect');
     const query = querySchema.parse(request.query);

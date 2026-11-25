@@ -470,3 +470,59 @@ model Entitlement {
   @@index([userId, feature, status])
   @@index([subscriptionId, status])
 }
+model RemoteClientCredential {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deviceId String
+  platform String
+  label String?
+  scopes String[] @default([])
+  secretDigest String
+  expiresAt DateTime
+  revokedAt DateTime?
+  lastUsedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  refreshTokens RemoteClientRefreshToken[]
+  @@index([deviceId])
+}
+model RemoteClientRefreshToken {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  credentialId String @db.Uuid
+  tokenDigest String @unique
+  scopes String[] @default([])
+  issuedAt DateTime @default(now())
+  expiresAt DateTime
+  usedAt DateTime?
+  revokedAt DateTime?
+  credential RemoteClientCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  @@index([credentialId, revokedAt])
+}
+model RemoteClientEnrollmentRequest {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String
+  platform String
+  label String?
+  status String @default("pending")
+  decidedAt DateTime?
+  decidedBy String?
+  credentialId String? @db.Uuid
+  deviceId String?
+  createdAt DateTime @default(now())
+  @@index([status, createdAt])
+}
+model RemoteClientAuditEvent {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  at DateTime @default(now())
+  action String
+  subjectId String?
+  deviceId String?
+  credentialId String?
+  success Boolean
+  metadata Json @default("{}")
+  @@index([at])
+}
+model PlatformSetting {
+  key String @id
+  value Json
+  updatedAt DateTime @default(now())
+}
