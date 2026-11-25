@@ -1,8 +1,14 @@
 # Changelog
 
+# Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning once releases begin.
+
+
+### Added (2026-11-25 22:09 +0330 continuous engineer)
+- `scripts/verify-linux-prerelease.sh`: non-destructive check that the Linux end-user contracts (User=irp + CAP_NET_ADMIN only, fail-closed dns.write, PrivilegedMutationBoundary, honest releaseStatus, safe default) are present in the tree. Documented in the operator guide. Does not certify production readiness.
 
 ## [Unreleased]
 ### Verified (2026-11-25 21:09 +0330 continuous engineer)

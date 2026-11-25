@@ -1,3 +1,21 @@
+## Autonomous engineer checkpoint (2026-11-25 22:09 +0330) — added verify-linux-prerelease.sh; Linux end-user path ready for owner approval
+
+- Starting base SHA: `2b4291866454943c736f0aabf1c8ad2d3ce6fadc`
+- Branch: `release/linux-enduser-ready`
+- Completed this run: Added `scripts/verify-linux-prerelease.sh` — a non-destructive operator/CI check that confirms the expected Linux contracts (User=irp + CAP_NET_ADMIN only, fail-closed dns.write requiring euid===0, PrivilegedMutationBoundary sole mutation path, honest releaseStatus, safe default) are present. Documented in `docs/operations/linux-enduser-guide.md`. Independent re-verification of the existing path remains green.
+  - systemd unit still User=irp with CAP_NET_ADMIN only.
+  - host-authorization.ts still fail-closed (dns.write never under shipped User=irp).
+  - PrivilegedMutationBoundary remains the only live mutation path with apply→verify→rollback.
+  - Status continues to report releaseStatus: "prerelease / developer-preview (not production-certified)".
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. PR updated into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-25 21:09 +0330) — continuous verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `2b4291866454943c736f0aabf1c8ad2d3ce6fadc` (current HEAD of main after prior merge of this branch)
