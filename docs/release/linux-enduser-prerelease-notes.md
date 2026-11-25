@@ -6,7 +6,7 @@
 
 ## Base
 
-Current main SHA at time of this note: `62dc84727a11ee711e8c771fcd7a15f42007c808`
+Current main SHA at time of this note: `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
 
 Branch: `release/linux-enduser-ready`
 
@@ -15,7 +15,7 @@ Branch: `release/linux-enduser-ready`
 - Daemon installs via Debian package (`irp-daemon_0.2.7_amd64.deb`) or `scripts/install-linux.sh`.
 - Starts under systemd as `User=irp` / `Group=irp` with `CapabilityBoundingSet=CAP_NET_ADMIN` and `AmbientCapabilities=CAP_NET_ADMIN` only.
 - Host trust is fail-closed and correctly reported (probeHostFacts + authorizeHost).
-- Status is honest (live vs safe + explicit blockers in `/v1/health` and `irp status` / `irp doctor`).
+- Status is honest (live vs safe + explicit blockers + `releaseStatus: "prerelease / developer-preview (not production-certified)"` in `/v1/health` and `irp status` / `irp doctor`).
 - All live mutations go only through `PrivilegedMutationBoundary` (prepare → snapshot → validate → policy → security → safety → apply → verify → commit; failure path: rollback → verifyRollback → recover).
 - apply → verify → rollback path is real for bounded route changes (when opted in and host facts allow).
 - Operator docs (`docs/operations/linux-enduser-guide.md`) explain install, start, read status, and what the system will/won’t do.
