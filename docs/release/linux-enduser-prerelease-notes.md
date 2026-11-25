@@ -6,7 +6,7 @@
 
 ## Base
 
-Current main SHA at time of this note: `9436c1651c4a2caac9c89de02197b127cf3b3859`
+Current main SHA at time of this note: `4d402650f7beee21ba2ccd5c646557577471fa99`
 
 Branch used for continuous tracking: `release/linux-enduser-ready` (aligned to main after merge)
 
