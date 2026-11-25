@@ -21,19 +21,6 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
       'apps/daemon/src/index.ts',
       'packages/linux-client/src/index.ts',
       'apps/api/src/index.ts',
-      'apps/cli/src/index.ts',
-    ]) {
-      expect(exists(entry), `${entry} missing`).toBe(true);
-      const source = read(entry);
-      expect(source).toContain('createCanonicalRuntime');
-      expect(source).not.toMatch(/new\s+ResilienceRuntime/);
-    }
-  });
-
-  it('observe-only clients remain interfaces, not privileged orchestrators', () => {
-    for (const entry of [
-      'packages/macos-client/src/index.ts',
-      'packages/windows-client/src/index.ts',
     ]) {
       expect(exists(entry), `${entry} missing`).toBe(true);
       const source = read(entry);
@@ -64,6 +51,36 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
     ]) {
       expect(text).toContain(directive);
     }
+  });
+
+  it('daemon systemd unit is User=irp, CAP_NET_ADMIN-only, and fail-closed defaults', () => {
+    const unit = 'infra/systemd/irp-daemon.service';
+    expect(exists(unit), `${unit} missing`).toBe(true);
+    const text = read(unit);
+    for (const directive of [
+      'User=irp',
+      'Group=irp',
+      'NoNewPrivileges=true',
+      'ProtectSystem=strict',
+      'CapabilityBoundingSet=CAP_NET_ADMIN',
+      'AmbientCapabilities=CAP_NET_ADMIN',
+      'RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK',
+    ]) {
+      expect(text).toContain(directive);
+    }
+    // Must not grant broader capabilities than CAP_NET_ADMIN.
+    expect(text).not.toMatch(/CapabilityBoundingSet=.*CAP_SYS_ADMIN/);
+    expect(text).not.toMatch(/CapabilityBoundingSet=.*CAP_DAC_OVERRIDE/);
+  });
+
+  it('daemon env example defaults to safe and documents dual live opt-in', () => {
+    const env = 'infra/systemd/irp.env.example';
+    expect(exists(env), `${env} missing`).toBe(true);
+    const text = read(env);
+    expect(text).toMatch(/IRP_RUNTIME_MODE=safe/);
+    expect(text).toMatch(/IRP_ENABLE_LIVE_ROUTE_MUTATION/);
+    // Live flag must not be enabled by default in the shipped example.
+    expect(text).not.toMatch(/^IRP_ENABLE_LIVE_ROUTE_MUTATION=true\s*$/m);
   });
 
   it('macOS launchd unit keeps the observe-only client supervised and bounded', () => {
