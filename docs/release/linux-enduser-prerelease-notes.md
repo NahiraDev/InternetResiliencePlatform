@@ -8,9 +8,9 @@
 
 Current main SHA at time of this note: `4d402650f7beee21ba2ccd5c646557577471fa99`
 
-Branch used for continuous tracking: `release/linux-enduser-ready` (aligned to main after merge)
+Branch used for continuous tracking: `release/linux-enduser-ready`
 
-PR #538 ("release: Linux end-user ready prerelease") was merged into main on 2026-11-24.
+Latest continuous verification: 2026-11-25 13:09 +0330 (HEAD after docs updates).
 
 ## What works correctly today on Linux (Debian 13)
 
