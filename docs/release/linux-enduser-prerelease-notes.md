@@ -10,7 +10,8 @@ Current main SHA at time of this note: `2b4291866454943c736f0aabf1c8ad2d3ce6fadc
 
 Branch used for continuous tracking: `release/linux-enduser-ready`
 
-Latest continuous verification: 2026-11-25 15:09 +0330 (HEAD after docs updates).
+Latest continuous verification: 2026-11-25 17:17 +0330 (HEAD after docs updates).
+
 
 ## What works correctly today on Linux (Debian 13)
 
