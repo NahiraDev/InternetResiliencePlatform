@@ -104,3 +104,13 @@ sudo userdel irp  # if you created it
 ```
 
 State under `/var/lib/irp` is left in place unless you remove it explicitly.
+
+## Quick readiness check (from source)
+
+Before installing, you can confirm the expected contracts are present in the tree:
+
+```bash
+bash scripts/verify-linux-prerelease.sh
+```
+
+The script is non-destructive. A successful exit means the systemd unit, host-authorization fail-closed logic, PrivilegedMutationBoundary, and status reporting contracts exist. It does **not** mean the system is production-certified.
