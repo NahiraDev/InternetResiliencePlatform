@@ -6,7 +6,7 @@
 
 ## Base
 
-Current main SHA at time of this note: `d7b50e1d1b06ea04f0eed1ce4681af626ff55cf1`
+Current main SHA at time of this note: `9436c1651c4a2caac9c89de02197b127cf3b3859`
 
 Branch: `release/linux-enduser-ready`
 
