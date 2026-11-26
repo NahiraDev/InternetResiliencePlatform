@@ -323,6 +323,9 @@ jobs:
         run: pnpm examples:smoke
 
       - name: Run production Docker runtime smoke test
+        env:
+          # The job-level PostgreSQL service already owns host port 5432.
+          POSTGRES_HOST_PORT: '5433'
         run: bash scripts/docker-smoke.sh
 
       - name: Show Docker Compose logs
