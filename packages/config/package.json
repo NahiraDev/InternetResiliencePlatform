@@ -4,6 +4,17 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./secure": {
+      "types": "./dist/secure/index.d.ts",
+      "default": "./dist/secure/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
@@ -19,6 +30,7 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "@irp/security": "workspace:*",
     "yaml": "^2.9.1",
     "zod": "^4.6.6"
   }

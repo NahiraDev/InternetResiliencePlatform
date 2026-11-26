@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev:local": "node scripts/dev-local.mjs",
+    "config:portal": "pnpm --filter \"@irp/api...\" run build && node apps/api/dist/config-portal/cli.js",
+    "start:secure": "pnpm --filter \"@irp/api...\" run build && node apps/api/dist/secure-entrypoint.js",
     "dev": "docker-compose -f compose.dev.yaml up --build",
     "dev:down": "docker-compose -f compose.dev.yaml down",
     "dev:logs": "docker-compose -f compose.dev.yaml logs -f --tail=100",

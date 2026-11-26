@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { validateProductionApiEnvironment } from '../../../scripts/validate-production-api-env.mjs';
 
@@ -33,24 +34,29 @@ describe('Vercel production API environment preflight', () => {
     expect(validateProductionApiEnvironment(productionEnv)).toEqual([]);
   });
 
-  it('reports every missing production dependency together', () => {
-    expect(() => validateProductionApiEnvironment({
+  it('reports every missing production dependency together without exposing credentials', () => {
+    const databasePassword = 'db-password-must-not-leak-9f4d2a';
+    const databaseUrl = `postgresql://postgres:${databasePassword}@127.0.0.1:5432/postgres`;
+    const env = {
       VERCEL: '1',
       VERCEL_ENV: 'production',
-      DATABASE_URL: 'postgresql://postgres:secret@127.0.0.1:5432/postgres',
-    })).toThrow(/JWT_SECRET is required/);
+      DATABASE_URL: databaseUrl,
+    };
+
+    expect(() => validateProductionApiEnvironment(env)).toThrow(/JWT_SECRET is required/);
+
+    let message = '';
     try {
-      validateProductionApiEnvironment({
-        VERCEL: '1',
-        VERCEL_ENV: 'production',
-        DATABASE_URL: 'postgresql://postgres:secret@127.0.0.1:5432/postgres',
-      });
+      validateProductionApiEnvironment(env);
     } catch (error) {
-      expect(error.message).toContain('IRP_EMAIL_WEBHOOK_URL is required');
-      expect(error.message).toContain('IRP_PUBLIC_BASE_URL is required');
-      expect(error.message).toContain('managed database');
-      expect(error.message).not.toContain('secret');
+      message = error instanceof Error ? error.message : String(error);
     }
+
+    expect(message).toContain('IRP_EMAIL_WEBHOOK_URL is required');
+    expect(message).toContain('IRP_PUBLIC_BASE_URL is required');
+    expect(message).toContain('managed database');
+    expect(message).not.toContain(databasePassword);
+    expect(message).not.toContain(databaseUrl);
   });
 
   it('rejects non-runtime roles, unverified TLS and missing CA references', () => {

@@ -293,6 +293,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@irp/security':
+        specifier: workspace:*
+        version: link:../security
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
