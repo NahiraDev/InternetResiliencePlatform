@@ -155,7 +155,7 @@ async function main() {
 
   // ── Step 1: Build workspace dependencies ──────────────────────────
   info('Building workspace dependencies...');
-  const buildPackages = ['@irp/config', '@irp/core', '@irp/logger', '@irp/auth', '@irp/events', '@irp/database', '@irp/telemetry', '@irp/network', '@irp/connectivity', '@irp/resilience-runtime', '@irp/daemon', '@irp/api'];
+  const buildPackages = ['@irp/shared', '@irp/auth', '@irp/security', '@irp/config', '@irp/core', '@irp/logger', '@irp/events', '@irp/database', '@irp/telemetry', '@irp/network', '@irp/connectivity', '@irp/resilience-runtime', '@irp/daemon', '@irp/api'];
   for (const pkg of buildPackages) {
     info('Building ' + pkg + '...');
     const b = run('pnpm', ['--filter', pkg, 'run', 'build'], { stdio: 'pipe' });
