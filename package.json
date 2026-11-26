@@ -13,7 +13,7 @@
     "dev:down": "docker-compose -f compose.dev.yaml down",
     "dev:logs": "docker-compose -f compose.dev.yaml logs -f --tail=100",
     "dev:ps": "docker-compose -f compose.dev.yaml ps",
-    "build": "turbo run build",
+    "build": "node scripts/validate-production-api-env.mjs && turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write .",
@@ -71,7 +71,7 @@
     "vitest": "4.1.11"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,json,md,yml,yaml}": [
+    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
       "prettier --write"
     ]
   },
