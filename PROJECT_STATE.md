@@ -1,11 +1,17 @@
-## Autonomous engineer checkpoint (2026-11-26 07:10 +0330) — synced with main, linux-client unit contracts added; Linux end-user path ready for owner approval
+## Autonomous engineer checkpoint (2026-11-26 09:19 +0330) — Linux end-user path independently re-verified and ready for owner approval
 
-- Starting base SHA: `1afc337de686f6f65c5796bd3fa0f4e76309976a` (origin/main at merge)
+- Starting base SHA: `1afc337de686f6f65c5796bd3fa0f4e76309976a` (origin/main)
+- Branch HEAD: `47ec390ce9b2c10c01bbab8e20399722c3097dc5` (prior to this checkpoint)
 - Branch: `release/linux-enduser-ready`
 - Completed this run:
-  - Merged origin/main (includes production API preflight / Supabase pooler enforcement and DB runbook work).
-  - Extended `scripts/verify-linux-prerelease.sh` with linux-client systemd unit consistency checks (User=irp, CAP_NET_ADMIN only, AmbientCapabilities, NoNewPrivileges, ProtectSystem=strict).
-  - Independent re-run of the checker: all contracts green (including new linux-client section).
+  - Independent re-run of `scripts/verify-linux-prerelease.sh`: all contracts green
+    - systemd (infra + linux-client): User=irp, Group=irp, CAP_NET_ADMIN only, AmbientCapabilities, NoNewPrivileges, ProtectSystem=strict
+    - host-authorization fail-closed (dns.write only when euid===0 + resolvectl)
+    - dual opt-in for live (IRP_RUNTIME_MODE + IRP_ENABLE_LIVE_ROUTE_MUTATION=true); example env stays safe
+    - control-server rejects live cycle over the socket
+    - PrivilegedMutationBoundary sole path with apply → verify → rollback → verifyRollback
+    - honest status: releaseStatus, blockers, liveActive
+    - operator guide, install script, daemon deb builder present
   - Confirmed no second control plane; live mutation remains host-gated and dual-opt-in.
 - Remaining blockers (explicit, not hidden):
   - Linux runtime soak / external validation evidence (#323)
@@ -14,4 +20,4 @@
   - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
   - Full production certification / Phase 150 evidence remains open
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
-- Next: Branch pushed. PR opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+- Next: Branch pushed. Pull Request opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.

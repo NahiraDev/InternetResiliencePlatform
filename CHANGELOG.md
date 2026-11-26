@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning once releases begin.
 
+### Verified (2026-11-26 09:19 +0330 continuous engineer)
+- Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - `scripts/verify-linux-prerelease.sh` all contracts green (systemd User=irp + CAP_NET_ADMIN only for both infra and linux-client units, fail-closed dns.write requiring euid===0, PrivilegedMutationBoundary apply→verify→rollback→verifyRollback, dual opt-in, honest releaseStatus/blockers/liveActive).
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 
 ### Verified (2026-11-26 04:30 +0330 continuous engineer)
 - Strengthened `scripts/verify-linux-prerelease.sh` with consistency checks for the `infra/systemd/irp-daemon.service` unit used by the source install path (User=irp, CAP_NET_ADMIN only, AmbientCapabilities, NoNewPrivileges, ProtectSystem=strict).
