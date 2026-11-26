@@ -1,3 +1,15 @@
+### Verified (2026-11-26 15:00 UTC continuous engineer)
+- Final independent confirmation of the Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - `scripts/verify-linux-prerelease.sh` all contracts green after latest main sync.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only) for both infra and linux-client units.
+  - Host trust fail-closed (dns.write only when euid===0 + resolvectl).
+  - Dual opt-in required for live mode; example env stays safe.
+  - All live mutations exclusively through PrivilegedMutationBoundary (apply → verify → rollback → verifyRollback).
+  - Honest status surfaces (releaseStatus, blockers, liveActive).
+  - Operator guide updated with explicit remaining blockers list.
+  - No second control plane introduced.
+- Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-26 12:40 UTC continuous engineer)
 - Post-merge re-verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to origin/main (post PR #551).
   - `scripts/verify-linux-prerelease.sh` all contracts green.
