@@ -1,4 +1,31 @@
+## Autonomous engineer checkpoint (2026-11-26 08:49 UTC) — independent re-verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1afc337de686f6f65c5796bd3fa0f4e76309976a` (origin/main)
+- Branch HEAD: `d98cc915076a5ba244fccfa2c83cba335f1ca5d9`
+- Branch: `release/linux-enduser-ready`
+- Completed this run:
+  - Independent re-run of `scripts/verify-linux-prerelease.sh` on the current tree: all contracts green
+    - systemd (infra + linux-client): User=irp, Group=irp, CAP_NET_ADMIN only, AmbientCapabilities, NoNewPrivileges, ProtectSystem=strict
+    - host-authorization fail-closed (dns.write only when euid===0 + resolvectl)
+    - dual opt-in for live (IRP_RUNTIME_MODE + IRP_ENABLE_LIVE_ROUTE_MUTATION=true); example env stays safe
+    - control-server rejects live cycle over the socket
+    - PrivilegedMutationBoundary sole path with apply → verify → rollback → verifyRollback
+    - honest status: releaseStatus, blockers, liveActive
+    - operator guide, install script, daemon deb builder present
+  - Confirmed no second control plane; live mutation remains host-gated and dual-opt-in.
+  - Operator guide at docs/operations/linux-enduser-guide.md is accurate and explicit about limitations.
+  - Updated PR #550 body to reflect current HEAD SHA for owner accuracy.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. Pull Request #550 remains open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-26 07:43 UTC) — independent re-verification complete; Linux end-user path ready for owner approval
+
 
 - Starting base SHA: `1afc337de686f6f65c5796bd3fa0f4e76309976a` (origin/main)
 - Branch: `release/linux-enduser-ready`
