@@ -49,6 +49,13 @@ describe('Vercel production API environment preflight', () => {
     })).toThrow(/least-privilege irp_runtime role/);
   });
 
+  it('requires the Supabase transaction pooler endpoint', () => {
+    expect(() => validateProductionApiEnvironment({
+      ...productionEnv,
+      DATABASE_URL: 'postgresql://irp_runtime.project:secret@db.project.supabase.co:5432/postgres?sslmode=verify-full&sslrootcert=%2Fvar%2Ftask%2Froot.crt',
+    })).toThrow(/Supabase transaction pooler/);
+  });
+
   it('rejects insecure email and public URLs', () => {
     expect(() => validateProductionApiEnvironment({
       ...productionEnv,
