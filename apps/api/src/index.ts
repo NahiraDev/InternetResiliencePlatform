@@ -1613,6 +1613,8 @@ const requiredProductionEnvironment = [
   'REMOTE_CLIENT_CREDENTIAL_KEY',
   'REMOTE_CLIENT_REFRESH_KEY',
   'DATABASE_URL',
+  'IRP_EMAIL_WEBHOOK_URL',
+  'IRP_PUBLIC_BASE_URL',
 ] as const;
 
 let vercelAppPromise: Promise<FastifyInstance> | undefined;
