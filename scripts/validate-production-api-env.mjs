@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { pathToFileURL } from 'node:url';
+
 /**
  * Fail the Vercel production build before publishing an API deployment that
  * cannot start safely. Preview/local builds remain usable without production
@@ -68,7 +70,8 @@ export function validateProductionApiEnvironment(env = process.env) {
   return [];
 }
 
-if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly && process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
   validateProductionApiEnvironment();
   process.stdout.write('[irp-api] Production environment preflight: PASS (values redacted).\n');
 }
