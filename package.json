@@ -71,7 +71,7 @@
     "vitest": "4.1.11"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
+    "*.{ts,tsx,js,json,md,yml,yaml}": [
       "prettier --write"
     ]
   },
