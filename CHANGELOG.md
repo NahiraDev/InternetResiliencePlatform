@@ -1,3 +1,9 @@
+### Verified (2026-11-26 12:40 UTC continuous engineer)
+- Post-merge re-verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to origin/main (post PR #551).
+  - `scripts/verify-linux-prerelease.sh` all contracts green.
+  - systemd least-privilege, fail-closed dns.write, dual opt-in, PrivilegedMutationBoundary sole path, honest status surfaces confirmed.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-26 09:40 UTC continuous engineer)
 - Final confirmation of Linux end-user prerelease path on `release/linux-enduser-ready`.
   - All contracts in `scripts/verify-linux-prerelease.sh` remain green.
