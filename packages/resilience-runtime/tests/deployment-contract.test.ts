@@ -22,7 +22,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
       'packages/linux-client/src/index.ts',
       'apps/api/src/index.ts',
     ]) {
-      expect(exists(entry), \`\${entry} missing\`).toBe(true);
+      expect(exists(entry), `${entry} missing`).toBe(true);
       const source = read(entry);
       expect(source).not.toMatch(/new\s+ResilienceRuntime/);
       expect(source).not.toMatch(/new\s+DeterministicPlanner/);
@@ -40,7 +40,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
 
   it('linux systemd unit enforces least-privilege service identity', () => {
     const unit = 'packages/linux-client/systemd/irp-linux-client.service';
-    expect(exists(unit), \`\${unit} missing\`).toBe(true);
+    expect(exists(unit), `${unit} missing`).toBe(true);
     const text = read(unit);
     for (const directive of [
       'User=irp',
@@ -54,7 +54,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
 
   it('daemon systemd unit is User=irp, CAP_NET_ADMIN-only, and fail-closed defaults', () => {
     const unit = 'infra/systemd/irp-daemon.service';
-    expect(exists(unit), \`\${unit} missing\`).toBe(true);
+    expect(exists(unit), `${unit} missing`).toBe(true);
     const text = read(unit);
     for (const directive of [
       'User=irp',
@@ -74,7 +74,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
 
   it('daemon env example defaults to safe and documents dual live opt-in', () => {
     const env = 'infra/systemd/irp.env.example';
-    expect(exists(env), \`\${env} missing\`).toBe(true);
+    expect(exists(env), `${env} missing`).toBe(true);
     const text = read(env);
     expect(text).toMatch(/IRP_RUNTIME_MODE=safe/);
     expect(text).toMatch(/IRP_ENABLE_LIVE_ROUTE_MUTATION/);
@@ -84,7 +84,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
 
   it('macOS launchd unit keeps the observe-only client supervised and bounded', () => {
     const unit = 'packages/macos-client/launchd/com.nahiradev.irp.macos-client.plist';
-    expect(exists(unit), \`\${unit} missing\`).toBe(true);
+    expect(exists(unit), `${unit} missing`).toBe(true);
     const text = read(unit);
     for (const directive of [
       '<string>com.nahiradev.irp.macos-client</string>',
@@ -110,7 +110,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
         scripts?: Record<string, string>;
       };
       for (const script of ['build', 'lint', 'test', 'typecheck']) {
-        expect(pkg.scripts?.[script], \`\${pkg.name ?? manifest} missing \${script} script\`).toBeTruthy();
+        expect(pkg.scripts?.[script], `${pkg.name ?? manifest} missing ${script} script`).toBeTruthy();
       }
     }
   });
