@@ -61,7 +61,7 @@ export function validateProductionApiEnvironment(env = process.env) {
 
   if (errors.length) {
     throw new Error(
-      `[irp-api] Production environment preflight failed:\\n- ${errors.join('\\n- ')}\\nConfigure the Vercel Production environment; secret values are never printed.`,
+      `[irp-api] Production environment preflight failed:\n- ${errors.join('\n- ')}\nConfigure the Vercel Production environment; secret values are never printed.`,
     );
   }
 
@@ -70,5 +70,5 @@ export function validateProductionApiEnvironment(env = process.env) {
 
 if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
   validateProductionApiEnvironment();
-  process.stdout.write('[irp-api] Production environment preflight: PASS (values redacted).\\n');
+  process.stdout.write('[irp-api] Production environment preflight: PASS (values redacted).\n');
 }
