@@ -93,6 +93,16 @@ check "daemon deb builder present" "test -f scripts/build-linux-daemon-deb.sh"
 check "PROJECT_STATE.md present" "test -f PROJECT_STATE.md"
 check "CHANGELOG.md present" "test -f CHANGELOG.md"
 
+
+echo
+echo "== linux-client systemd unit (package consistency)"
+check "linux-client unit present" "test -f packages/linux-client/systemd/irp-linux-client.service"
+check "linux-client User=irp" "grep -q '^User=irp$' packages/linux-client/systemd/irp-linux-client.service"
+check "linux-client CapabilityBoundingSet=CAP_NET_ADMIN" "grep -q 'CapabilityBoundingSet=CAP_NET_ADMIN' packages/linux-client/systemd/irp-linux-client.service"
+check "linux-client AmbientCapabilities=CAP_NET_ADMIN" "grep -q 'AmbientCapabilities=CAP_NET_ADMIN' packages/linux-client/systemd/irp-linux-client.service"
+check "linux-client NoNewPrivileges=true" "grep -q 'NoNewPrivileges=true' packages/linux-client/systemd/irp-linux-client.service"
+check "linux-client ProtectSystem=strict" "grep -q 'ProtectSystem=strict' packages/linux-client/systemd/irp-linux-client.service"
+
 echo
 if [ "$fail" -eq 0 ]; then
   echo "All expected Linux prerelease contracts are present in the tree."

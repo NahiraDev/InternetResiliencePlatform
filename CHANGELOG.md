@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `scripts/verify-linux-prerelease.sh`: non-destructive check that the Linux end-user contracts (User=irp + CAP_NET_ADMIN only, fail-closed dns.write, PrivilegedMutationBoundary, honest releaseStatus, safe default) are present in the tree. Documented in the operator guide. Does not certify production readiness.
 
 ## [Unreleased]
+### Changed (2026-11-26 07:10 +0330 continuous engineer)
+- Merged origin/main into `release/linux-enduser-ready`.
+- Extended `scripts/verify-linux-prerelease.sh` with linux-client systemd unit consistency checks. All contracts green. Status remains prerelease / developer-preview only (not production-certified).
+
 ### Verified (2026-11-26 02:15 +0330 continuous engineer)
 - Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
   - `scripts/verify-linux-prerelease.sh` all contracts green.
