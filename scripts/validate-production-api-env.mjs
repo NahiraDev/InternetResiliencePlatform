@@ -30,8 +30,15 @@ export function validateProductionApiEnvironment(env = process.env) {
       if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
         errors.push('DATABASE_URL must use PostgreSQL');
       }
-      if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(databaseUrl.hostname.toLowerCase())) {
+      const databaseHost = databaseUrl.hostname.toLowerCase();
+      if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(databaseHost)) {
         errors.push('DATABASE_URL must point to the managed database, not a loopback host');
+      }
+      if (!databaseHost.endsWith('.pooler.supabase.com')) {
+        errors.push('DATABASE_URL must use the Supabase transaction pooler');
+      }
+      if (databaseUrl.port !== '6543') {
+        errors.push('DATABASE_URL must use the Supabase transaction pooler port 6543');
       }
       if (!decodeURIComponent(databaseUrl.username).startsWith('irp_runtime.')) {
         errors.push('DATABASE_URL must authenticate as the least-privilege irp_runtime role');
