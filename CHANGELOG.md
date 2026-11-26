@@ -1,3 +1,9 @@
+### Verified (2026-11-26 06:40 UTC continuous engineer)
+- Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - `scripts/verify-linux-prerelease.sh` all contracts green.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
