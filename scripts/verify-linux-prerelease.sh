@@ -75,6 +75,15 @@ check "authorization blockers exposed in status" "grep -q 'blockers: this.author
 check "liveActive exposed in status" "grep -q 'liveActive: this.authorization.liveActive' apps/daemon/src/index.ts"
 
 echo
+echo "== infra systemd unit (install path consistency)"
+check "infra unit present" "test -f infra/systemd/irp-daemon.service"
+check "infra unit User=irp" "grep -q '^User=irp$' infra/systemd/irp-daemon.service"
+check "infra unit CapabilityBoundingSet=CAP_NET_ADMIN" "grep -q 'CapabilityBoundingSet=CAP_NET_ADMIN' infra/systemd/irp-daemon.service"
+check "infra unit AmbientCapabilities=CAP_NET_ADMIN" "grep -q 'AmbientCapabilities=CAP_NET_ADMIN' infra/systemd/irp-daemon.service"
+check "infra unit NoNewPrivileges=true" "grep -q 'NoNewPrivileges=true' infra/systemd/irp-daemon.service"
+check "infra unit ProtectSystem=strict" "grep -q 'ProtectSystem=strict' infra/systemd/irp-daemon.service"
+
+echo
 echo "== operator packaging and docs"
 check "operator guide exists" "test -f docs/operations/linux-enduser-guide.md"
 check "guide states not production-certified" \
