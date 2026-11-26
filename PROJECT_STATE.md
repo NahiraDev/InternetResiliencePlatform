@@ -1,10 +1,9 @@
-## Autonomous engineer checkpoint (2026-11-26 06:40 UTC) — independent re-verification complete; Linux end-user path ready for owner approval
+## Autonomous engineer checkpoint (2026-11-26 07:43 UTC) — independent re-verification complete; Linux end-user path ready for owner approval
 
 - Starting base SHA: `1afc337de686f6f65c5796bd3fa0f4e76309976a` (origin/main)
-- Branch HEAD before this commit: `adcd8635c92e5d3a37c7ae139c021b9912c72f1b`
 - Branch: `release/linux-enduser-ready`
 - Completed this run:
-  - Independent re-run of `scripts/verify-linux-prerelease.sh` on a clean clone: all contracts green
+  - Independent re-run of `scripts/verify-linux-prerelease.sh` on a clean shallow clone: all contracts green
     - systemd (infra + linux-client): User=irp, Group=irp, CAP_NET_ADMIN only, AmbientCapabilities, NoNewPrivileges, ProtectSystem=strict
     - host-authorization fail-closed (dns.write only when euid===0 + resolvectl)
     - dual opt-in for live (IRP_RUNTIME_MODE + IRP_ENABLE_LIVE_ROUTE_MUTATION=true); example env stays safe
