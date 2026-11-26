@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { validateProductionApiEnvironment } from '../../../scripts/validate-production-api-env.mjs';
 
@@ -13,6 +14,16 @@ const productionEnv = {
 };
 
 describe('Vercel production API environment preflight', () => {
+  it('runs from the root build command before Turbo can restore a cached task', () => {
+    const rootPackage = JSON.parse(
+      readFileSync(new URL('../../../package.json', import.meta.url), 'utf8'),
+    );
+
+    expect(rootPackage.scripts.build).toBe(
+      'node scripts/validate-production-api-env.mjs && turbo run build',
+    );
+  });
+
   it('does not block local or preview builds', () => {
     expect(validateProductionApiEnvironment({ NODE_ENV: 'production' })).toEqual([]);
     expect(validateProductionApiEnvironment({ VERCEL: '1', VERCEL_ENV: 'preview' })).toEqual([]);

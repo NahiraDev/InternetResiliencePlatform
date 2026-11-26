@@ -5,7 +5,24 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "../../tsconfig.base.json"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "passThroughEnv": [
+        "APP_NAME",
+        "APP_VERSION",
+        "API_HOST",
+        "API_PORT",
+        "LOG_LEVEL",
+        "TELEMETRY_ENABLED",
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "REMOTE_CLIENT_CREDENTIAL_KEY",
+        "REMOTE_CLIENT_REFRESH_KEY",
+        "IRP_EMAIL_WEBHOOK_URL",
+        "IRP_EMAIL_WEBHOOK_TOKEN",
+        "IRP_PUBLIC_BASE_URL",
+        "VERCEL",
+        "VERCEL_ENV"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"],
