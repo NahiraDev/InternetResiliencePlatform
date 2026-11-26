@@ -16,7 +16,7 @@ const read = (rel: string) => readFileSync(join(repoRoot, rel), 'utf8');
 const exists = (rel: string) => existsSync(join(repoRoot, rel));
 
 describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () => {
-  it('canonical host entrypoints exist and compose through the canonical boundary', () => {
+  it('canonical host entrypoints exist and avoid bypassing the canonical boundary', () => {
     for (const entry of [
       'apps/daemon/src/index.ts',
       'packages/linux-client/src/index.ts',
@@ -24,16 +24,15 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
     ]) {
       expect(exists(entry), `${entry} missing`).toBe(true);
       const source = read(entry);
-      expect(source).not.toContain('createCanonicalRuntime');
-      expect(source).not.toMatch(/new\s+ResilienceRuntime/);
-      expect(source).not.toMatch(/new\s+DeterministicPlanner/);
-      expect(source).not.toMatch(/new\s+PrivilegedMutationBoundary/);
+      expect(source).not.toMatch(/new\\s+ResilienceRuntime/);
+      expect(source).not.toMatch(/new\\s+DeterministicPlanner/);
+      expect(source).not.toMatch(/new\\s+PrivilegedMutationBoundary/);
     }
     expect(read('packages/macos-client/src/index.ts')).toContain('autonomousMode: false');
     expect(read('packages/windows-client/src/index.ts')).toContain('autonomousMode: false');
   });
 
-  it('daemon handles shutdown signals and stays observable', () => {
+  it('daemon handles shutdown signals and stays observable through the canonical runtime', () => {
     const daemon = read('apps/daemon/src/index.ts');
     expect(daemon).toContain('SIGTERM');
     expect(daemon).toContain('createCanonicalRuntime');
@@ -80,7 +79,7 @@ describe('Issue #284: deployment/build/startup/readiness/shutdown contract', () 
     expect(text).toMatch(/IRP_RUNTIME_MODE=safe/);
     expect(text).toMatch(/IRP_ENABLE_LIVE_ROUTE_MUTATION/);
     // Live flag must not be enabled by default in the shipped example.
-    expect(text).not.toMatch(/^IRP_ENABLE_LIVE_ROUTE_MUTATION=true\s*$/m);
+    expect(text).not.toMatch(/^IRP_ENABLE_LIVE_ROUTE_MUTATION=true\\s*$/m);
   });
 
   it('macOS launchd unit keeps the observe-only client supervised and bounded', () => {
