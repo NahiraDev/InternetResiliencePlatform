@@ -1013,6 +1013,13 @@ export class RuntimeDaemonHost {
   async health() {
     return {
       releaseStatus: 'prerelease / developer-preview (not production-certified)',
+      prereleaseBlockers: [
+        'Linux runtime soak / external validation evidence remains open (#323)',
+        'PostgreSQL production deployment evidence remains open (#410/#411)',
+        'exact-SHA CI cleanliness for the full release gate is still pending',
+        'DNS write intentionally disabled under non-root User=irp (requires root or explicit polkit, not shipped)',
+        'Full production certification / Phase 150 evidence is open',
+      ],
       lifecycle: this.lifecycle,
       startup: { warnings: [...this.startupWarnings] },
       scheduler: this.scheduler.status(),

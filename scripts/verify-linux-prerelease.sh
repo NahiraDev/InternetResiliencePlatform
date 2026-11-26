@@ -71,6 +71,8 @@ echo
 echo "== honest status surface"
 check "releaseStatus reported as prerelease / developer-preview" \
   "grep -q \"releaseStatus: 'prerelease / developer-preview (not production-certified)'\" apps/daemon/src/index.ts"
+check "prereleaseBlockers listed in status" \
+  "grep -q 'prereleaseBlockers:' apps/daemon/src/index.ts"
 check "authorization blockers exposed in status" "grep -q 'blockers: this.authorization.blockers' apps/daemon/src/index.ts"
 check "liveActive exposed in status" "grep -q 'liveActive: this.authorization.liveActive' apps/daemon/src/index.ts"
 

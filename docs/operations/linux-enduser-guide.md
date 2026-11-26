@@ -60,7 +60,7 @@ sudo irp status
 sudo irp doctor
 ```
 
-`irp status` and `irp doctor` exit non-zero when the daemon is unreachable or when evidence is incomplete. The status payload includes an explicit `releaseStatus` field confirming this is a prerelease / developer-preview (not production-certified).
+`irp status` and `irp doctor` exit non-zero when the daemon is unreachable or when evidence is incomplete. The status payload includes an explicit `releaseStatus` field confirming this is a prerelease / developer-preview (not production-certified), plus a `prereleaseBlockers` array listing the remaining open items so operators do not need to consult external docs for the current limitations.
 
 ## Configuration (`/etc/irp/irp.env`)
 
