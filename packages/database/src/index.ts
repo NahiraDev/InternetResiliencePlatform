@@ -37,7 +37,19 @@ export const reportIdleClientError: IdleClientErrorHandler = (error) => {
 export interface DatabaseClientOptions {
   onIdleClientError?: IdleClientErrorHandler;
   max?: number;
+  /** How long a caller waits for a free pooled connection before failing (default 5s; never waits forever). */
+  connectionTimeoutMs?: number;
+  statementTimeoutMs?: number;
 }
+
+/**
+ * Statement timeout for pooled connections. IRP_DB_STATEMENT_TIMEOUT_MS=0 omits the startup parameter, for
+ * transaction-mode poolers that reject it; set the timeout on the role instead (ALTER ROLE ... SET statement_timeout).
+ */
+const resolveStatementTimeout = (explicit?: number): number | undefined => {
+  const raw = explicit ?? Number(process.env.IRP_DB_STATEMENT_TIMEOUT_MS ?? 15_000);
+  return Number.isFinite(raw) && raw > 0 ? raw : undefined;
+};
 
 export const createPrismaClient = (
   databaseUrl = process.env.DATABASE_URL,
@@ -51,7 +63,13 @@ export const createPrismaClient = (
     }
     return createMemoryDatabaseClient();
   }
-  const pool = new Pool({ connectionString: databaseUrl, max: options.max ?? 5 });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: options.max ?? 5,
+    // pg's default is to wait forever for a free connection, which turns pool exhaustion into a hung request.
+    connectionTimeoutMillis: options.connectionTimeoutMs ?? 5_000,
+    statement_timeout: resolveStatementTimeout(options.statementTimeoutMs),
+  });
   pool.on('error', options.onIdleClientError ?? reportIdleClientError);
   return {
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown> {
@@ -85,9 +103,7 @@ export interface SqlClient extends SqlExecutor {
   end(): Promise<void>;
 }
 export interface SqlClientOptions extends DatabaseClientOptions {
-  connectionTimeoutMs?: number;
   idleTimeoutMs?: number;
-  statementTimeoutMs?: number;
 }
 export const createSqlClient = (databaseUrl: string, options: SqlClientOptions = {}): SqlClient => {
   if (!databaseUrl) throw new Error('createSqlClient requires a DATABASE_URL.');
@@ -96,7 +112,7 @@ export const createSqlClient = (databaseUrl: string, options: SqlClientOptions =
     max: options.max ?? 5,
     connectionTimeoutMillis: options.connectionTimeoutMs ?? 5_000,
     idleTimeoutMillis: options.idleTimeoutMs ?? 10_000,
-    statement_timeout: options.statementTimeoutMs ?? 15_000,
+    statement_timeout: resolveStatementTimeout(options.statementTimeoutMs),
   });
   pool.on('error', options.onIdleClientError ?? reportIdleClientError);
   return {
