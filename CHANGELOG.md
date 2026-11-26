@@ -1,3 +1,9 @@
+### Verified (2026-11-26 15:51 UTC continuous engineer)
+- Independent re-verification on clean clone of `release/linux-enduser-ready`.
+  - `scripts/verify-linux-prerelease.sh` all contracts green.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
+
 ### Verified (2026-11-26 15:00 UTC continuous engineer)
 - Final independent confirmation of the Linux end-user prerelease path on `release/linux-enduser-ready`.
   - `scripts/verify-linux-prerelease.sh` all contracts green after latest main sync.
