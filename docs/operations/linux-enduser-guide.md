@@ -114,3 +114,15 @@ bash scripts/verify-linux-prerelease.sh
 ```
 
 The script is non-destructive. A successful exit means the systemd unit, host-authorization fail-closed logic, PrivilegedMutationBoundary, and status reporting contracts exist. It does **not** mean the system is production-certified.
+
+## Explicit remaining blockers for this prerelease
+
+These are listed so an operator is not surprised:
+
+- Linux runtime soak / external validation evidence remains open (#323).
+- PostgreSQL production deployment evidence remains open (#410 / #411).
+- exact-SHA CI cleanliness for the full release gate is still pending.
+- DNS write remains intentionally disabled under the non-root `User=irp` unit (requires root or an explicit polkit path that is not shipped).
+- Full production certification / Phase 150 evidence is open.
+
+This package is a **prerelease / developer-preview only**. Final release approval, tagging, and publish remain with the repository owner.
