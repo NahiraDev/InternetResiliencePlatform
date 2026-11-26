@@ -1,3 +1,26 @@
+## Autonomous engineer checkpoint (2026-11-26 18:45 UTC) — independent verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `90893d773b3fb310fa426df2ce1142ccd65295dc` (origin/main)
+- Branch HEAD (pre-this-commit): `8e0914b23162902a918cdf5fa6452cc87e13e020`
+- Branch: `release/linux-enduser-ready`
+- Completed this run:
+  - Independent confirmation of contracts on current tree of `release/linux-enduser-ready`.
+  - systemd least-privilege confirmed (User=irp + CAP_NET_ADMIN only) for infra and linux-client units.
+  - Host trust fail-closed: dns.write requires euid===0 + resolvectl; correctly blocked under User=irp.
+  - Dual live opt-in enforced; example env remains safe.
+  - PrivilegedMutationBoundary is the sole live mutation path (apply → verify → rollback → verifyRollback).
+  - Honest status (releaseStatus=prerelease/developer-preview, blockers, liveActive).
+  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
+  - No second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Pull Request #553 is open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-26 15:51 UTC) — independent verification complete; Linux end-user path ready for owner approval
 
 - Starting base SHA: `90893d773b3fb310fa426df2ce1142ccd65295dc` (origin/main)
