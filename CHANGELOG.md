@@ -1,3 +1,10 @@
+### Verified (2026-11-27 03:40 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust (dns.write requires euid===0), dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status surfaces (including prereleaseBlockers).
+  - Debian package versioning remains honest (0.3.0-prerelease).
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-27 06:15 UTC continuous engineer)
 - Version honesty for Linux prerelease packaging.
   - Default daemon deb version set to `0.3.0-prerelease` in `scripts/build-linux-daemon-deb.sh`.
