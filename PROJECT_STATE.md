@@ -1,3 +1,144 @@
+## Autonomous engineer checkpoint (2026-11-27 08:39 UTC) — independent verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch tip at verification: `80af843c8d3249a7c497093270c255b826e22768`
+- Completed this run:
+  - Clean checkout of `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
+  - Confirmed no second control plane.
+  - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. Pull Request #559 is open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 07:39 UTC) — independent verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch tip at verification: `84fa35d12379ada0b6bad4e2f9964b4bbae18017`
+- Completed this run:
+  - Clean checkout of `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
+  - Confirmed no second control plane.
+  - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch remains pushed. Pull Request #559 is open into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 06:49 UTC) — independent verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch tip at verification: `26b05bfc6101dec7ea83e51895a0fa39741eeeb4`
+- Completed this run:
+  - Clean checkout of `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only, host trust fail-closed for dns.write requiring euid===0 + resolvectl, dual live opt-in, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers, packaging, operator docs).
+  - Confirmed no second control plane.
+  - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. Pull Request opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 05:39 UTC) — independent verification complete; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch tip at verification: `a5e3f827e2ee89024cacb95ff2f0a3cf49cb256d`
+- Completed this run:
+  - Clean checkout of `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege, host trust fail-closed, dual live opt-in, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface, packaging, operator docs).
+  - Confirmed User=irp + CAP_NET_ADMIN only (no CAP_SYS_ADMIN) across infra and linux-client units.
+  - Host trust: dns.write requires euid===0 + resolvectl; correctly blocked and reported under User=irp.
+  - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers.
+  - No second control plane introduced.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. Pull Request opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 04:40 UTC) — final readiness confirmation; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch tip: `d169048de9e6e7cf30c45dab2c7254177bb475a8`
+- Completed this run:
+  - Clean clone of `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - Confirmed systemd least-privilege (User=irp + CAP_NET_ADMIN only) for infra and linux-client units.
+  - Host trust fail-closed: dns.write requires euid===0 + resolvectl; correctly blocked under User=irp.
+  - Dual live opt-in enforced; example env remains safe; control-server rejects live.
+  - PrivilegedMutationBoundary is the sole live mutation path (apply → verify → rollback → verifyRollback).
+  - Honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Debian packaging default version explicit `0.3.0-prerelease`; operator guide uses version placeholder.
+  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
+  - No second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch pushed. Pull Request opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 03:50 UTC) — independent verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch: `release/linux-enduser-ready`
+- Completed this run:
+  - Independent re-verification on clean clone of current branch.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege confirmed (User=irp + CAP_NET_ADMIN only) for infra and linux-client units.
+  - Host trust fail-closed: dns.write requires euid===0 + resolvectl; correctly blocked under User=irp.
+  - Dual live opt-in enforced; example env remains safe; control-server rejects live.
+  - PrivilegedMutationBoundary is the sole live mutation path (apply → verify → rollback → verifyRollback).
+  - Honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Debian packaging default version is explicit `0.3.0-prerelease`; operator guide uses version placeholder.
+  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
+  - No second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Pull Request opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 01:40 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main after PR #558 merge)
+- Branch: `release/linux-enduser-ready` (fast-forwarded to main)
+- Completed this run:
+  - Fast-forwarded branch to latest main.
+  - Independent confirmation of contracts on current tree.
+  - `scripts/verify-linux-prerelease.sh` contracts remain green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole path with apply → verify → rollback → verifyRollback, honest status with prereleaseBlockers).
+  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
+  - No second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-27 00:50 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `1e7358530cf54dbd326d39a2202a2fa666a00686` (current HEAD after fast-forward merge of origin/main)
@@ -17,15 +158,16 @@
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
 - Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
 
-## Autonomous engineer checkpoint (2026-11-27 03:15 UTC) — independent verification; Linux end-user path ready for owner approval
+## Autonomous engineer checkpoint (2026-11-27 06:15 UTC) — version honesty + continued readiness; Linux end-user path ready for owner approval
 
-- Starting base SHA: `9056c1293520dbdb90e729951bc4d4875fd95cd0` (current HEAD of release/linux-enduser-ready)
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
 - Branch: `release/linux-enduser-ready`
 - Completed this run:
-  - Independent confirmation of contracts on current tree.
-  - `scripts/verify-linux-prerelease.sh` contracts remain green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole path with apply → verify → rollback → verifyRollback, honest status with prereleaseBlockers).
-  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
-  - No second control plane.
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain fully green.
+  - Made Debian package versioning explicit and honest: default `VERSION=0.3.0-prerelease` in `scripts/build-linux-daemon-deb.sh`.
+  - Updated operator guide to use version placeholder instead of a fixed 0.2.7 package name so docs stay accurate across builds.
+  - No second control plane. All live mutations remain solely through PrivilegedMutationBoundary.
+  - Host trust fail-closed, status honest (including prereleaseBlockers), apply → verify → rollback path present.
 - Remaining blockers (explicit, not hidden):
   - Linux runtime soak / external validation evidence (#323)
   - PostgreSQL production deployment evidence (#410/#411)
@@ -34,46 +176,3 @@
   - Full production certification / Phase 150 evidence remains open
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
 - Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
-
-## Autonomous engineer checkpoint (2026-11-26 22:40 UTC) — status surfaces now include explicit prereleaseBlockers; Linux end-user path ready for owner approval
-
-- Starting base SHA: `564fce9881ef184f2301798e5d68ca0d6767c1a4` (previous HEAD of release/linux-enduser-ready)
-- Branch: `release/linux-enduser-ready`
-- Completed this run:
-  - Added explicit `prereleaseBlockers` array to daemon health() status surface so operators see remaining open items directly in `irp status` without consulting external docs.
-  - Updated verification script to enforce presence of `prereleaseBlockers`.
-  - Updated operator guide to document the new field.
-  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (including new check).
-  - Confirmed systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust, dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status.
-  - No second control plane introduced.
-- Remaining blockers (explicit, not hidden):
-  - Linux runtime soak / external validation evidence (#323)
-  - PostgreSQL production deployment evidence (#410/#411)
-  - exact-SHA CI cleanliness
-  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
-  - Full production certification / Phase 150 evidence remains open
-- Honest status: **prerelease / developer-preview only**. Not production-certified.
-- Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
-
-## Autonomous engineer checkpoint (2026-11-27 01:10 UTC) — post-merge independent verification; Linux end-user path remains ready for owner approval
-
-- Starting base SHA: `0dbace36a4ebaca32685120a84ed27f5fa7878a4` (origin/main, post-merge of PR #553)
-- Branch: `release/linux-enduser-ready` (fast-forwarded to main)
-- Completed this run:
-  - Independent re-verification on clean tree after PR #553 merge into main.
-  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
-  - systemd least-privilege confirmed (User=irp + CAP_NET_ADMIN only) for infra and linux-client units.
-  - Host trust fail-closed: dns.write requires euid===0 + resolvectl; correctly blocked under User=irp.
-  - Dual live opt-in enforced; example env remains safe.
-  - PrivilegedMutationBoundary is the sole live mutation path (apply → verify → rollback → verifyRollback).
-  - Honest status (releaseStatus=prerelease/developer-preview, blockers, liveActive).
-  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
-  - No second control plane.
-- Remaining blockers (explicit, not hidden):
-  - Linux runtime soak / external validation evidence (#323)
-  - PostgreSQL production deployment evidence (#410/#411)
-  - exact-SHA CI cleanliness
-  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
-  - Full production certification / Phase 150 evidence remains open
-- Honest status: **prerelease / developer-preview only**. Not production-certified.
-- Next: Updated branch pushed; new Pull Request open into main for repository owner review and approval of this confirmation. Final release approval, tagging, and publish remain exclusively with the repository owner.

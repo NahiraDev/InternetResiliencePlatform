@@ -1,3 +1,64 @@
+### Verified (2026-11-27 08:39 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean checkout: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via Pull Request #559.
+
+### Verified (2026-11-27 07:39 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean checkout: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via Pull Request #559.
+
+### Verified (2026-11-27 06:49 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean checkout: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via Pull Request.
+
+### Verified (2026-11-27 05:39 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean checkout: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via Pull Request.
+
+### Verified (2026-11-27 04:40 UTC continuous engineer)
+- Final readiness confirmation of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean clone: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust, dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status (including prereleaseBlockers).
+  - Packaging version honesty (`0.3.0-prerelease`) and operator guide accuracy confirmed.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via Pull Request.
+
+### Verified (2026-11-27 03:50 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh` on clean clone: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust, dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status (including prereleaseBlockers).
+  - Packaging version honesty (`0.3.0-prerelease`) and operator guide accuracy confirmed.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
+### Verified (2026-11-27 06:15 UTC continuous engineer)
+- Version honesty for Linux prerelease packaging.
+  - Default daemon deb version set to `0.3.0-prerelease` in `scripts/build-linux-daemon-deb.sh`.
+  - Operator guide updated to use version placeholder so it remains accurate.
+  - Independent confirmation that `scripts/verify-linux-prerelease.sh` contracts remain green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust, dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status (including prereleaseBlockers) unchanged and correct.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
+### Verified (2026-11-27 01:40 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to latest main (post PR #558).
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust (dns.write requires euid===0), dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status surfaces (including prereleaseBlockers).
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-27 00:50 UTC continuous engineer)
 - Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to latest main.
   - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.
