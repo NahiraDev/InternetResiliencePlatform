@@ -80,6 +80,8 @@ jobs:
       - name: Verify Debian package metadata
         run: |
           dpkg-deb --info dist/linux/irp-linux-client_0.3.0~prerelease_amd64.deb
+          dpkg-deb --field dist/linux/irp-linux-client_0.3.0~prerelease_amd64.deb Version | grep -Fx '0.3.0~prerelease'
+          dpkg --compare-versions '0.3.0~prerelease' lt '0.3.0'
           dpkg-deb --contents dist/linux/irp-linux-client_0.3.0~prerelease_amd64.deb
           dpkg-deb --field dist/linux/irp-linux-client_0.3.0~prerelease_amd64.deb Package | grep -Fx 'irp-linux-client'
           dpkg-deb --field dist/linux/irp-linux-client_0.3.0~prerelease_amd64.deb Architecture | grep -Fx 'amd64'
