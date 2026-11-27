@@ -1,3 +1,22 @@
+## Autonomous engineer checkpoint (2026-11-27 ~06:15 UTC) — live inspection of current main
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (current HEAD of main)
+- Branch: `chore/checkpoint-2026-11-27-live-inspection`
+- Completed this run:
+  - Inspected live upstream main, open issues, branches, phase docs, durability layer, and Linux prerelease verification script.
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts are present in tree (systemd least-privilege User=irp + CAP_NET_ADMIN only, fail-closed dns.write, dual live opt-in, PrivilegedMutationBoundary sole path, honest status with prereleaseBlockers).
+  - Durable store resolution in `apps/api/src/durability.ts` fails closed in production/staging without DATABASE_URL; in-memory only for development.
+  - Phase 150 certification module exists and explicitly remains PARTIAL until exact-SHA CI evidence.
+  - No second control plane introduced or restored.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness on latest main
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: This PR records the inspection. Final release approval, tagging, and publish remain exclusively with the repository owner. Continue highest-priority open items (durable evidence, soak, CI).
+
 ## Autonomous engineer checkpoint (2026-11-27 00:50 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `1e7358530cf54dbd326d39a2202a2fa666a00686` (current HEAD after fast-forward merge of origin/main)
