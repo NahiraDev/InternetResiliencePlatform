@@ -200,6 +200,10 @@ describe('Phase 119 — tenant isolation', () => {
     expect(store.delete(a, 'k2')).toBe(true);
     expect(store.count(a)).toBe(1);
   });
+  it('rejects a quota that would not limit anything', () => {
+    for (const maxRecords of [0, -1, Number.NaN])
+      expect(() => new TenantPartitionedStore<string>({ maxRecords })).toThrow(/at least one/);
+  });
   it('requires a tenant context', () => {
     const store = new TenantPartitionedStore<string>();
     expect(() => store.get({ tenantId: ' ', principal: 'p' }, 'k')).toThrow(/tenant context is required/);

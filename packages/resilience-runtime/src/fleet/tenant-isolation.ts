@@ -37,7 +37,8 @@ export class TenantPartitionedStore<T> {
   private readonly partitions = new Map<string, Map<string, T>>();
   private readonly violations: IsolationViolation[] = [];
   constructor(private readonly quota: TenantQuota = { maxRecords: 10_000 }, private readonly clock: () => number = () => Date.now()) {
-    if (quota.maxRecords < 1) throw new Error('quota must allow at least one record');
+    // Written this way so NaN is rejected instead of silently disabling the quota.
+    if (!(quota.maxRecords >= 1)) throw new Error('quota must allow at least one record');
   }
 
   private part(ctx: TenantContext): Map<string, T> {

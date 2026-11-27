@@ -1,8 +1,14 @@
 import { type SqlClient, type SqlExecutor } from '@irp/database';
 import {
+  AccessDeniedError,
   DuplicateError,
+  MEMBER_ROLES,
+  hasRole,
   MissingParentError,
+  QuotaExceededError,
   StaleWriteError,
+  tenantQuotasFromEnv,
+  type TenantQuotas,
   type MemberRole,
   type MembershipRecord,
   type OrganizationRole,
@@ -123,7 +129,8 @@ const list = async <T>(
 ): Promise<Page<T>> => {
   const where: string[] = ['"deletedAt" IS NULL'];
   const values: unknown[] = [];
-  if (scope && spec.tenant) {
+  if (spec.tenant) {
+    if (!scope) throw new Error(`A tenant scope is required to list ${spec.table}`);
     const t = spec.tenant(scope, values.length + 1);
     if (t.sql) where.push(t.sql);
     values.push(...t.values);
@@ -155,18 +162,32 @@ const list = async <T>(
     pageSize: q.pageSize,
   };
 };
+const KNOWN_ROLES = MEMBER_ROLES.map((r) => `'${r}'`).join(',');
 // `$n` is the caller's user id: organizations they own or actively belong to.
 const accessibleOrgs = (idx: number) =>
   `SELECT o."id" FROM "Organization" o WHERE o."deletedAt" IS NULL AND (o."ownerUserId" = $${idx} OR EXISTS (
-     SELECT 1 FROM "Membership" m WHERE m."organizationId" = o."id" AND m."userId" = $${idx} AND m."status" = 'active'))`;
+     SELECT 1 FROM "Membership" m JOIN "Role" r ON r."id" = m."roleId"
+     WHERE m."organizationId" = o."id" AND m."userId" = $${idx} AND m."status" = 'active' AND r."slug" IN (${KNOWN_ROLES})))`;
 const orgTenant = (scope: TenantScope, idx: number) =>
   scope.kind === 'all'
     ? { sql: '', values: [] }
     : { sql: `"id" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
+// Children of an archived organization stay hidden from everyone, platform admins included.
 const viaOrgTenant = (scope: TenantScope, idx: number) =>
   scope.kind === 'all'
-    ? { sql: '', values: [] }
+    ? {
+        sql: `"organizationId" IN (SELECT o."id" FROM "Organization" o WHERE o."deletedAt" IS NULL)`,
+        values: [],
+      }
     : { sql: `"organizationId" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
+// A workspace is also hidden once its project is archived.
+const workspaceTenant = (scope: TenantScope, idx: number) => {
+  const org = viaOrgTenant(scope, idx);
+  return {
+    sql: `${org.sql} AND ("projectId" IS NULL OR EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "Workspace"."projectId" AND p."deletedAt" IS NULL))`,
+    values: org.values,
+  };
+};
 
 /** Applies a partial update; only the provided columns change, so unrelated concurrent edits survive. */
 const patchRow = async <T>(
@@ -209,12 +230,67 @@ const patchRow = async <T>(
   return null;
 };
 
+const roleIn = async (
+  db: SqlExecutor,
+  organizationId: string,
+  userId: string,
+): Promise<OrganizationRole | null> => {
+  const rows = await db.query<{ role: string | null }>(
+    `SELECT CASE WHEN o."ownerUserId" = $2 THEN 'owner' ELSE (
+       SELECT r."slug" FROM "Membership" m JOIN "Role" r ON r."id" = m."roleId"
+       WHERE m."organizationId" = o."id" AND m."userId" = $2 AND m."status" = 'active' AND r."slug" IN (${KNOWN_ROLES})) END AS "role"
+     FROM "Organization" o WHERE o."id" = $1 AND o."deletedAt" IS NULL`,
+    [organizationId, userId],
+  );
+  return (rows[0]?.role as OrganizationRole | undefined) ?? null;
+};
+/** Call while holding the organization lock, so the answer holds until commit. */
+const assertRole = async (
+  tx: SqlExecutor,
+  organizationId: string,
+  actor: TenantScope,
+  minimum: OrganizationRole,
+): Promise<void> => {
+  if (actor.kind === 'all') return;
+  const role = await roleIn(tx, organizationId, actor.userId);
+  if (!role) throw new AccessDeniedError(organizationId, 'not_a_member');
+  if (!hasRole(role, minimum)) throw new AccessDeniedError(organizationId, 'insufficient_role');
+};
+/**
+ * Locks the organization of a live project or workspace and rechecks the actor. False when the record or
+ * its organization is gone. `organizationId` never changes, so reading it before the lock is safe.
+ */
+const lockOwnerOf = async (
+  tx: SqlExecutor,
+  table: 'Project' | 'Workspace',
+  id: string,
+  actor: TenantScope,
+  minimum: OrganizationRole,
+): Promise<string | null> => {
+  const rows = await tx.query<{ organizationId: string }>(
+    `SELECT t."organizationId" FROM "${table}" t JOIN "Organization" o ON o."id" = t."organizationId" AND o."deletedAt" IS NULL
+     WHERE t."id" = $1 AND t."deletedAt" IS NULL`,
+    [id],
+  );
+  const organizationId = rows[0]?.organizationId;
+  if (!organizationId) return null;
+  await lockOrganization(tx, organizationId);
+  await assertRole(tx, organizationId, actor, minimum);
+  return organizationId;
+};
+
 // Parent rows are share-locked while a child is written, and archiving updates the parent first, so a
 // child can never be created under (or moved into) a parent that is being archived. Lock order is
 // always organization, then project, then workspace.
-const lockOrganization = async (tx: SqlExecutor, id: string): Promise<{ ownerUserId: string | null }> => {
+// Every tenancy write of one organization queues on this lock, so quota counts cannot be raced and role
+// rechecks hold until commit. Do not weaken it to FOR SHARE: new share lockers overtake a waiting
+// revocation, which continuous writes can then postpone indefinitely.
+const lockOrganization = async (
+  tx: SqlExecutor,
+  id: string,
+): Promise<{ ownerUserId: string | null }> => {
   const rows = await tx.query<{ ownerUserId: string | null }>(
-    `SELECT "ownerUserId" FROM "Organization" WHERE "id" = $1 AND "deletedAt" IS NULL FOR SHARE`,
+    `SELECT "ownerUserId" FROM "Organization" WHERE "id" = $1 AND "deletedAt" IS NULL FOR NO KEY UPDATE`,
     [id],
   );
   if (!rows[0]) throw new MissingParentError('organization');
@@ -276,10 +352,31 @@ const upsertMember = async (
   );
   return rows.length > 0;
 };
+/** Call only while holding the organization lock. */
+const enforceQuota = async (
+  tx: SqlExecutor,
+  resource: 'project' | 'workspace' | 'member',
+  organizationId: string,
+  limit: number,
+): Promise<void> => {
+  const from = {
+    project: `"Project" WHERE "organizationId" = $1 AND "deletedAt" IS NULL`,
+    // Rows hidden under an archived project (older data) cannot be managed, so they do not count.
+    workspace: `"Workspace" WHERE "organizationId" = $1 AND "deletedAt" IS NULL AND ("projectId" IS NULL OR EXISTS (SELECT 1 FROM "Project" p WHERE p."id" = "Workspace"."projectId" AND p."deletedAt" IS NULL))`,
+    member: `"Membership" WHERE "organizationId" = $1 AND "status" IN ('active','suspended')`,
+  }[resource];
+  const rows = await tx.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${from}`, [
+    organizationId,
+  ]);
+  if (Number(rows[0]?.n ?? 0) >= limit) throw new QuotaExceededError(resource, limit);
+};
 const parentWhere = (parent?: ParentFilter) =>
   Object.entries(parent ?? {}).filter(([, v]) => v !== undefined) as Array<[string, string]>;
 
-export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepositories => {
+export const createPostgresIdentityRepositories = (
+  sql: SqlClient,
+  quotas: TenantQuotas = tenantQuotasFromEnv(),
+): IdentityRepositories => {
   const one = async <T>(text: string, values: unknown[], map: (r: Row) => T): Promise<T | null> => {
     const rows = await sql.query<Row>(text, values);
     return rows[0] ? map(rows[0]) : null;
@@ -303,7 +400,7 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
     cols: WORKSPACE_COLS,
     map: toWorkspace,
     searchCols: ['name'],
-    tenant: viaOrgTenant,
+    tenant: workspaceTenant,
   };
 
   return {
@@ -545,10 +642,24 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         );
       },
       list: (q, scope) => list(sql, orgSpec, q, scope),
-      update: (id, patch, options) =>
-        patchRow(sql, 'Organization', ORG_COLS, toOrg, id, { ...patch }, options),
-      archive: (id, at) =>
+      update: (id, patch, options, actor) =>
         sql.transaction(async (tx) => {
+          const live = await tx.query(
+            `SELECT 1 FROM "Organization" WHERE "id"=$1 AND "deletedAt" IS NULL FOR NO KEY UPDATE`,
+            [id],
+          );
+          if (!live.length) return null;
+          await assertRole(tx, id, actor, 'admin');
+          return patchRow(tx, 'Organization', ORG_COLS, toOrg, id, { ...patch }, options);
+        }),
+      archive: (id, at, actor) =>
+        sql.transaction(async (tx) => {
+          const live = await tx.query(
+            `SELECT 1 FROM "Organization" WHERE "id"=$1 AND "deletedAt" IS NULL FOR UPDATE`,
+            [id],
+          );
+          if (!live.length) return false;
+          await assertRole(tx, id, actor, 'owner');
           const r = await tx.query(
             `UPDATE "Organization" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
             [id, at],
@@ -561,23 +672,15 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
             );
           return true;
         }),
-      async roleOf(id, userId) {
-        const rows = await sql.query<{ role: string | null }>(
-          `SELECT CASE WHEN o."ownerUserId" = $2 THEN 'owner' ELSE (
-             SELECT r."slug" FROM "Membership" m JOIN "Role" r ON r."id" = m."roleId"
-             WHERE m."organizationId" = o."id" AND m."userId" = $2 AND m."status" = 'active') END AS "role"
-           FROM "Organization" o WHERE o."id" = $1 AND o."deletedAt" IS NULL`,
-          [id, userId],
-        );
-        return (rows[0]?.role as OrganizationRole | undefined) ?? null;
-      },
-      transferOwnership: (id, newOwnerUserId, at) =>
+      roleOf: (id, userId) => roleIn(sql, id, userId),
+      transferOwnership: (id, newOwnerUserId, at, expectedOwnerUserId) =>
         sql.transaction(async (tx) => {
           const current = await tx.query<{ ownerUserId: string | null }>(
             `SELECT "ownerUserId" FROM "Organization" WHERE "id"=$1 AND "deletedAt" IS NULL FOR UPDATE`,
             [id],
           );
           if (!current[0]) return null;
+          if (current[0].ownerUserId !== expectedOwnerUserId) throw new StaleWriteError();
           const member = await findMember(tx, id, newOwnerUserId);
           if (member?.status !== 'active') return null;
           await tx.query(
@@ -609,39 +712,55 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         return { items: rows.map(toMembership), total: Number(total[0]?.n ?? 0), page: q.page, pageSize: q.pageSize };
       },
       find: (organizationId, userId) => findMember(sql, organizationId, userId),
-      add: (organizationId, userId, role, at) =>
+      add: (organizationId, userId, role, at, actor) =>
         sql.transaction(async (tx) => {
           const org = await lockOrganization(tx, organizationId);
+          await assertRole(tx, organizationId, actor, 'admin');
           if (org.ownerUserId === userId) throw new DuplicateError('member');
+          const existing = await findMember(tx, organizationId, userId);
+          if (existing) throw new DuplicateError('member');
+          await enforceQuota(tx, 'member', organizationId, quotas.maxMembers);
           if (!(await upsertMember(tx, organizationId, userId, role, at, false)))
             throw new DuplicateError('member');
           return (await findMember(tx, organizationId, userId)) as MembershipRecord;
         }),
-      update: (organizationId, userId, patch, at) =>
+      update: (organizationId, userId, patch, { at, expectedUpdatedAt }, actor) =>
         sql.transaction(async (tx) => {
           await lockOrganization(tx, organizationId);
-          if (!(await findMember(tx, organizationId, userId))) return null;
+          await assertRole(tx, organizationId, actor, 'admin');
+          const current = await findMember(tx, organizationId, userId);
+          if (!current) return null;
+          if (expectedUpdatedAt && Date.parse(expectedUpdatedAt) !== Date.parse(current.updatedAt))
+            throw new StaleWriteError();
           const roleId = patch.role ? await ensureRole(tx, organizationId, patch.role, at) : null;
           await tx.query(
-            `UPDATE "Membership" SET "roleId" = COALESCE($3, "roleId"), "status" = COALESCE($4::"MembershipStatus", "status"), "updatedAt" = $5
+            `UPDATE "Membership" SET "roleId" = COALESCE($3, "roleId"), "status" = COALESCE($4::"MembershipStatus", "status"),
+             "updatedAt" = GREATEST($5::timestamp(3), "updatedAt" + interval '1 millisecond')
              WHERE "organizationId" = $1 AND "userId" = $2 AND "status" IN ('active','suspended')`,
             [organizationId, userId, roleId, patch.status ?? null, at],
           );
           return findMember(tx, organizationId, userId);
         }),
-      async remove(organizationId, userId, at) {
-        const r = await sql.query(
-          `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2 AND "status" <> 'removed' RETURNING "id"`,
-          [organizationId, userId, at],
-        );
-        return r.length > 0;
-      },
+      remove: (organizationId, userId, at, actor) =>
+        sql.transaction(async (tx) => {
+          // Waits for writes the member has in flight, and for any ownership transfer.
+          await lockOrganization(tx, organizationId);
+          const self = actor.kind === 'user' && actor.userId === userId;
+          await assertRole(tx, organizationId, actor, self ? 'viewer' : 'admin');
+          const r = await tx.query(
+            `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2 AND "status" <> 'removed' RETURNING "id"`,
+            [organizationId, userId, at],
+          );
+          return r.length > 0;
+        }),
     },
     projects: {
-      async create(p) {
+      async create(p, actor) {
         try {
           return await sql.transaction(async (tx) => {
             await lockOrganization(tx, p.organizationId);
+            await assertRole(tx, p.organizationId, actor, 'member');
+            await enforceQuota(tx, 'project', p.organizationId, quotas.maxProjects);
             const rows = await tx.query<Row>(
             `INSERT INTO "Project" ("id","organizationId","name","slug","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${PROJECT_COLS}`,
             [
@@ -670,10 +789,14 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         );
       },
       list: (q, scope, parent) => list(sql, projectSpec, q, scope, parent),
-      update: (id, patch, options) =>
-        patchRow(sql, 'Project', PROJECT_COLS, toProject, id, { ...patch }, options),
-      archive: (id, at) =>
+      update: (id, patch, options, actor) =>
         sql.transaction(async (tx) => {
+          if (!(await lockOwnerOf(tx, 'Project', id, actor, 'member'))) return null;
+          return patchRow(tx, 'Project', PROJECT_COLS, toProject, id, { ...patch }, options);
+        }),
+      archive: (id, at, actor) =>
+        sql.transaction(async (tx) => {
+          if (!(await lockOwnerOf(tx, 'Project', id, actor, 'admin'))) return false;
           const r = await tx.query(
             `UPDATE "Project" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
             [id, at],
@@ -687,10 +810,12 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         }),
     },
     workspaces: {
-      async create(w) {
+      async create(w, actor) {
         try {
           return await sql.transaction(async (tx) => {
             await lockOrganization(tx, w.organizationId);
+            await assertRole(tx, w.organizationId, actor, 'member');
+            await enforceQuota(tx, 'workspace', w.organizationId, quotas.maxWorkspaces);
             if (w.projectId) await lockProject(tx, w.projectId, w.organizationId);
             const rows = await tx.query<Row>(
             `INSERT INTO "Workspace" ("id","organizationId","projectId","name","slug","environment","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${WORKSPACE_COLS}`,
@@ -713,7 +838,7 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         }
       },
       async findById(id, scope) {
-        const t = viaOrgTenant(scope, 2);
+        const t = workspaceTenant(scope, 2);
         return one(
           `SELECT ${WORKSPACE_COLS} FROM "Workspace" WHERE "id"=$1 AND "deletedAt" IS NULL${t.sql ? ` AND ${t.sql}` : ''}`,
           [id, ...t.values],
@@ -721,26 +846,22 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         );
       },
       list: (q, scope, parent) => list(sql, workspaceSpec, q, scope, parent),
-      update: (id, patch, options) =>
+      update: (id, patch, options, actor) =>
         sql.transaction(async (tx) => {
-          if (patch.projectId) {
-            const current = await tx.query<{ organizationId: string }>(
-              `SELECT "organizationId" FROM "Workspace" WHERE "id"=$1 AND "deletedAt" IS NULL`,
-              [id],
-            );
-            if (!current[0]) return null;
-            await lockOrganization(tx, current[0].organizationId);
-            await lockProject(tx, patch.projectId, current[0].organizationId);
-          }
+          const organizationId = await lockOwnerOf(tx, 'Workspace', id, actor, 'member');
+          if (!organizationId) return null;
+          if (patch.projectId) await lockProject(tx, patch.projectId, organizationId);
           return patchRow(tx, 'Workspace', WORKSPACE_COLS, toWorkspace, id, { ...patch }, options);
         }),
-      async archive(id, at) {
-        const r = await sql.query(
-          `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
-          [id, at],
-        );
-        return r.length > 0;
-      },
+      archive: (id, at, actor) =>
+        sql.transaction(async (tx) => {
+          if (!(await lockOwnerOf(tx, 'Workspace', id, actor, 'admin'))) return false;
+          const r = await tx.query(
+            `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
+            [id, at],
+          );
+          return r.length > 0;
+        }),
     },
     rateLimits: {
       async hit(key, max, windowMs): Promise<RateLimitDecision> {

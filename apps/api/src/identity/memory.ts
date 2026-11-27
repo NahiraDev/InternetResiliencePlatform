@@ -1,8 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import {
+  AccessDeniedError,
   DuplicateError,
+  hasRole,
   MissingParentError,
+  QuotaExceededError,
   StaleWriteError,
+  tenantQuotasFromEnv,
+  type TenantQuotas,
   type MemberRole,
   type MembershipRecord,
   type MembershipStatus,
@@ -17,6 +22,7 @@ import {
   type RateLimitDecision,
   type RotationResult,
   type SessionRecord,
+  type OrganizationRole,
   type TenantScope,
   type UserRecord,
   type WorkspaceRecord,
@@ -49,7 +55,9 @@ const paginate = <T extends object>(
 const matches = (needle: string | undefined, ...fields: Array<string | undefined>) =>
   !needle || fields.some((f) => (f ?? '').toLowerCase().includes(needle.toLowerCase()));
 
-export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+export const createMemoryIdentityRepositories = (
+  quotas: TenantQuotas = tenantQuotasFromEnv(),
+): IdentityRepositories => {
   const users = new Map<string, UserRecord>();
   const orgs = new Map<string, OrganizationRecord>();
   const projects = new Map<string, ProjectRecord>();
@@ -67,6 +75,34 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
   const visibleOrgId = (orgId: string, s: TenantScope) => {
     const o = orgs.get(orgId);
     return !!o && !o.deletedAt && visibleOrg(o, s);
+  };
+  const visibleWorkspace = (w: WorkspaceRecord, s: TenantScope) =>
+    visibleOrgId(w.organizationId, s) && (!w.projectId || !projects.get(w.projectId)?.deletedAt);
+  const enforceQuota = (resource: 'project' | 'workspace' | 'member', used: number, limit: number) => {
+    if (used >= limit) throw new QuotaExceededError(resource, limit);
+  };
+  const roleIn = (organizationId: string, userId: string): OrganizationRole | null => {
+    const o = orgs.get(organizationId);
+    if (!o || o.deletedAt) return null;
+    if (o.ownerUserId === userId) return 'owner';
+    const m = members.get(`${organizationId}:${userId}`);
+    return m?.status === 'active' ? m.role : null;
+  };
+  const assertRole = (organizationId: string, actor: TenantScope, minimum: OrganizationRole) => {
+    if (actor.kind === 'all') return;
+    const role = roleIn(organizationId, actor.userId);
+    if (!role) throw new AccessDeniedError(organizationId, 'not_a_member');
+    if (!hasRole(role, minimum)) throw new AccessDeniedError(organizationId, 'insufficient_role');
+  };
+  /** False when the record or its organization is gone; throws when the actor may not write. */
+  const writable = (
+    row: { organizationId: string; deletedAt: string | null } | undefined,
+    actor: TenantScope,
+    minimum: OrganizationRole,
+  ) => {
+    if (!row || row.deletedAt || orgs.get(row.organizationId)?.deletedAt) return false;
+    assertRole(row.organizationId, actor, minimum);
+    return true;
   };
   const liveOrg = (id: string) => {
     const o = orgs.get(id);
@@ -244,24 +280,25 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
           ['createdAt', 'updatedAt', 'name', 'slug'],
         );
       },
-      async update(id, patch, options) {
+      async update(id, patch, options, actor) {
+        if (!liveOrg(id)) return null;
+        assertRole(id, actor, 'admin');
         return patchEntity(orgs, id, patch, options, (x) => x.slug === patch.slug);
       },
-      async archive(id, at) {
+      async archive(id, at, actor) {
+        if (!liveOrg(id)) return false;
+        assertRole(id, actor, 'owner');
         if (!archiveRow(orgs.get(id), at)) return false;
         for (const child of [...projects.values(), ...workspaces.values()])
           if (child.organizationId === id) archiveRow(child, at);
         return true;
       },
       async roleOf(id, userId) {
-        const o = liveOrg(id);
-        if (!o) return null;
-        if (o.ownerUserId === userId) return 'owner';
-        const m = members.get(`${id}:${userId}`);
-        return m?.status === 'active' ? m.role : null;
+        return roleIn(id, userId);
       },
-      async transferOwnership(id, newOwnerUserId, at) {
+      async transferOwnership(id, newOwnerUserId, at, expectedOwnerUserId) {
         const o = liveOrg(id);
+        if (o && o.ownerUserId !== expectedOwnerUserId) throw new StaleWriteError();
         const next = members.get(`${id}:${newOwnerUserId}`);
         if (!o || next?.status !== 'active') return null;
         const previous = o.ownerUserId;
@@ -282,23 +319,35 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
       async find(organizationId, userId) {
         return memberRecord(organizationId, userId);
       },
-      async add(organizationId, userId, role, at) {
+      async add(organizationId, userId, role, at, actor) {
         const o = requireOrg(organizationId);
+        assertRole(organizationId, actor, 'admin');
         const key = `${organizationId}:${userId}`;
         const existing = members.get(key);
         if (o.ownerUserId === userId || (existing && existing.status !== 'removed'))
           throw new DuplicateError('member');
+        const used = [...members].filter(
+          ([k, m]) => k.startsWith(`${organizationId}:`) && m.status !== 'removed',
+        ).length;
+        enforceQuota('member', used, quotas.maxMembers);
         members.set(key, { role, status: 'active', createdAt: existing?.createdAt ?? at, updatedAt: at });
         return memberRecord(organizationId, userId) as MembershipRecord;
       },
-      async update(organizationId, userId, patch, at) {
+      async update(organizationId, userId, patch, { at, expectedUpdatedAt }, actor) {
         requireOrg(organizationId);
+        assertRole(organizationId, actor, 'admin');
         const m = members.get(`${organizationId}:${userId}`);
         if (!m || m.status === 'removed') return null;
-        Object.assign(m, { ...(patch.role ? { role: patch.role } : {}), ...(patch.status ? { status: patch.status } : {}), updatedAt: at });
+        if (expectedUpdatedAt && Date.parse(expectedUpdatedAt) !== Date.parse(m.updatedAt))
+          throw new StaleWriteError();
+        const next = new Date(Math.max(Date.parse(at), Date.parse(m.updatedAt) + 1)).toISOString();
+        Object.assign(m, { ...(patch.role ? { role: patch.role } : {}), ...(patch.status ? { status: patch.status } : {}), updatedAt: next });
         return memberRecord(organizationId, userId);
       },
-      async remove(organizationId, userId, at) {
+      async remove(organizationId, userId, at, actor) {
+        requireOrg(organizationId);
+        const self = actor.kind === 'user' && actor.userId === userId;
+        assertRole(organizationId, actor, self ? 'viewer' : 'admin');
         const m = members.get(`${organizationId}:${userId}`);
         if (!m || m.status === 'removed') return false;
         Object.assign(m, { status: 'removed', updatedAt: at });
@@ -306,8 +355,14 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
       },
     },
     projects: {
-      async create(p) {
+      async create(p, actor) {
         requireOrg(p.organizationId);
+        assertRole(p.organizationId, actor, 'member');
+        enforceQuota(
+          'project',
+          live(projects).filter((x) => x.organizationId === p.organizationId).length,
+          quotas.maxProjects,
+        );
         if ([...projects.values()].some((x) => x.organizationId === p.organizationId && x.slug === p.slug))
           throw new DuplicateError('slug');
         projects.set(p.id, { ...p });
@@ -327,19 +382,29 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
           ['createdAt', 'updatedAt', 'name', 'slug'],
         );
       },
-      async update(id, patch, options) {
+      async update(id, patch, options, actor) {
         const current = projects.get(id);
+        if (!writable(current, actor, 'member')) return null;
         return patchEntity<ProjectRecord>(projects, id, patch, options, (x) => x.organizationId === current?.organizationId && x.slug === patch.slug);
       },
-      async archive(id, at) {
+      async archive(id, at, actor) {
+        if (!writable(projects.get(id), actor, 'admin')) return false;
         if (!archiveRow(projects.get(id), at)) return false;
         for (const w of workspaces.values()) if (w.projectId === id) archiveRow(w, at);
         return true;
       },
     },
     workspaces: {
-      async create(w) {
+      async create(w, actor) {
         requireOrg(w.organizationId);
+        assertRole(w.organizationId, actor, 'member');
+        enforceQuota(
+          'workspace',
+          live(workspaces).filter(
+            (x) => x.organizationId === w.organizationId && visibleWorkspace(x, { kind: 'all' }),
+          ).length,
+          quotas.maxWorkspaces,
+        );
         if (w.projectId) requireProject(w.projectId, w.organizationId);
         if ([...workspaces.values()].some((x) => x.organizationId === w.organizationId && x.slug === w.slug))
           throw new DuplicateError('slug');
@@ -348,12 +413,12 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
       },
       async findById(id, scope) {
         const w = workspaces.get(id);
-        return w && !w.deletedAt && visibleOrgId(w.organizationId, scope) ? { ...w } : null;
+        return w && !w.deletedAt && visibleWorkspace(w, scope) ? { ...w } : null;
       },
       async list(q, scope, parent) {
         return paginate(
           live(workspaces).filter(
-            (w) => visibleOrgId(w.organizationId, scope) && matches(q.search, w.name) &&
+            (w) => visibleWorkspace(w, scope) && matches(q.search, w.name) &&
               (!parent?.organizationId || w.organizationId === parent.organizationId) &&
               (!parent?.projectId || w.projectId === parent.projectId),
           ),
@@ -361,16 +426,17 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
           ['createdAt', 'updatedAt', 'name', 'slug'],
         );
       },
-      async update(id, patch, options) {
+      async update(id, patch, options, actor) {
         const current = workspaces.get(id);
-        if (!current || current.deletedAt) return null;
+        if (!current || !writable(current, actor, 'member')) return null;
         if (patch.projectId) {
           requireOrg(current.organizationId);
           requireProject(patch.projectId, current.organizationId);
         }
         return patchEntity(workspaces, id, patch, options, (x) => x.organizationId === current.organizationId && x.slug === patch.slug);
       },
-      async archive(id, at) {
+      async archive(id, at, actor) {
+        if (!writable(workspaces.get(id), actor, 'admin')) return false;
         return archiveRow(workspaces.get(id), at);
       },
     },
