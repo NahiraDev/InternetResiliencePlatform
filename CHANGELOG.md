@@ -1,3 +1,11 @@
+### Verified (2026-11-27 06:15 UTC continuous engineer)
+- Version honesty for Linux prerelease packaging.
+  - Default daemon deb version set to `0.3.0-prerelease` in `scripts/build-linux-daemon-deb.sh`.
+  - Operator guide updated to use version placeholder so it remains accurate.
+  - Independent confirmation that `scripts/verify-linux-prerelease.sh` contracts remain green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust, dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status (including prereleaseBlockers) unchanged and correct.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-27 01:40 UTC continuous engineer)
 - Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to latest main (post PR #558).
   - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.

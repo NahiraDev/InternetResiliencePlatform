@@ -96,3 +96,22 @@
   - Full production certification / Phase 150 evidence remains open
 - Honest status: **prerelease / developer-preview only**. Not production-certified.
 - Next: Updated branch pushed; new Pull Request open into main for repository owner review and approval of this confirmation. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
+## Autonomous engineer checkpoint (2026-11-27 06:15 UTC) — version honesty + continued readiness; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Branch: `release/linux-enduser-ready`
+- Completed this run:
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain fully green.
+  - Made Debian package versioning explicit and honest: default `VERSION=0.3.0-prerelease` in `scripts/build-linux-daemon-deb.sh`.
+  - Updated operator guide to use version placeholder instead of a fixed 0.2.7 package name so docs stay accurate across builds.
+  - No second control plane. All live mutations remain solely through PrivilegedMutationBoundary.
+  - Host trust fail-closed, status honest (including prereleaseBlockers), apply → verify → rollback path present.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
