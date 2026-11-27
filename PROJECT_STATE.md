@@ -1,3 +1,11 @@
+## Phase 119 tenant isolation (2026-11-27) — PARTIAL, PR pending CI and owner review
+
+- Follow-up branch `phase/119-tenant-isolation` carries the Phase 119 API/runtime hardening after PR #557 merged.
+- Adds write-time role rechecks, denial auditing, per-organization quotas, required update versions, concurrency protections and archived-parent isolation.
+- The supplied patch records local API 245/245 on PostgreSQL 16.15; build, lint, typecheck and validation passing; full test run 87/88 (one `@irp/gateway-registry` sandbox-network failure). This report has not been independently rerun on the follow-up commit.
+- Exact-head GitHub CI and owner approval remain outstanding. The breaking `PATCH` requirement and quota defaults need client/owner review; no live or production-environment validation is claimed.
+- Phase 120 has not been started. Details: `docs/phases/phase-119.md`.
+
 ## Autonomous engineer checkpoint (2026-11-27 15:57 UTC) — independent verification complete; Linux end-user path ready for owner approval
 
 - Starting base SHA: `f3dbcf07e2f58679266194b17816c44294a67866` (origin/main, post PR #559 merge)
