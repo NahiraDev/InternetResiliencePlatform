@@ -29,11 +29,11 @@
 
 
 
-- Starting base SHA: \`3f30d79109e489e10328ddc4f1e8a9809f6a20e9\` (origin/main)
-- Branch tip at verification: \`e8ca968d005cbb20f3d1b2b1b38dbfff3ca2919e\` (pre-this-commit)
+- Starting base SHA: `3f30d79109e489e10328ddc4f1e8a9809f6a20e9` (origin/main)
+- Branch tip at verification: `e8ca968d005cbb20f3d1b2b1b38dbfff3ca2919e` (pre-this-commit)
 - Completed this run:
-  - Clean checkout of \`release/linux-enduser-ready\` (already tracking origin).
-  - Ran \`scripts/verify-linux-prerelease.sh\`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
+  - Clean checkout of `release/linux-enduser-ready` (already tracking origin).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
   - Manually confirmed control-server rejects any cycle mode other than simulation/safe.
   - Confirmed no second control plane; all live mutations only through PrivilegedMutationBoundary.
   - Operator guide, install path, Debian packaging, and status surface accurately describe prerelease limitations and remaining blockers.
@@ -48,11 +48,11 @@
 
 ## Autonomous engineer checkpoint (2026-11-27 20:55 UTC) — synced with latest main; Linux end-user path ready for owner approval
 
-- Starting base SHA: \`3f30d79109e489e10328ddc4f1e8a9809f6a20e9\` (origin/main after dependabot merge #561)
+- Starting base SHA: `3f30d79109e489e10328ddc4f1e8a9809f6a20e9` (origin/main after dependabot merge #561)
 - Branch tip at verification: current HEAD (pre-this-commit)
 - Completed this run:
-  - Merged latest \`origin/main\` (dependabot cosign-installer 4.1.4) into \`release/linux-enduser-ready\`.
-  - Ran \`scripts/verify-linux-prerelease.sh\`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
+  - Merged latest `origin/main` (dependabot cosign-installer 4.1.4) into `release/linux-enduser-ready`.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed host trust for dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path with apply→verify→rollback→verifyRollback, honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs).
   - Confirmed no second control plane.
   - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers.
 - Remaining blockers (explicit, not hidden):
