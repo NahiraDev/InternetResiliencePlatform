@@ -1,0 +1,2231 @@
+From 8f49e5d68a1a34c026bbeaccbeeb085eb2028267 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 27 Nov 2026 03:23:15 +0330
+Subject: [PATCH] feat(api): persistent organization, project and workspace
+ management (#410)
+
+Completes organization, project and workspace management on the existing
+PostgreSQL schema; no migrations.
+
+- update/archive for all three, parent-scoped lists, optimistic concurrency
+- organization membership and ownership transfer on Membership/Role
+- access inside an organization comes from ownership or active membership
+- archive cascades; parent rows are locked so no child can be created under
+  an archived parent
+- non-Latin names no longer derive an empty slug
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WM6UaH6FCtj2sNETYKrUtc
+---
+ apps/api/src/identity/memory.ts               | 159 ++++-
+ apps/api/src/identity/postgres.ts             | 283 +++++++-
+ apps/api/src/identity/types.ts                |  93 ++-
+ apps/api/src/index.ts                         | 113 +--
+ .../src/tenancy-postgres.integration.test.ts  | 672 ++++++++++++++++++
+ apps/api/src/tenancy/routes.ts                | 529 ++++++++++++++
+ docs/api/README.md                            |   4 +
+ docs/api/organizations.md                     |  53 ++
+ docs/architecture/api-state-durability.md     |   1 +
+ 9 files changed, 1767 insertions(+), 140 deletions(-)
+ create mode 100644 apps/api/src/tenancy-postgres.integration.test.ts
+ create mode 100644 apps/api/src/tenancy/routes.ts
+ create mode 100644 docs/api/organizations.md
+
+diff --git a/apps/api/src/identity/memory.ts b/apps/api/src/identity/memory.ts
+index 5147950d..31af57f3 100644
+--- a/apps/api/src/identity/memory.ts
++++ b/apps/api/src/identity/memory.ts
+@@ -1,6 +1,12 @@
+ import { randomUUID } from 'node:crypto';
+ import {
+   DuplicateError,
++  MissingParentError,
++  StaleWriteError,
++  type MemberRole,
++  type MembershipRecord,
++  type MembershipStatus,
++  type UpdateOptions,
+   type AuditEntry,
+   type IdentityRepositories,
+   type OneTimeTokenRecord,
+@@ -54,12 +60,58 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+   const buckets = new Map<string, { count: number; resetAt: number }>();
+   const live = <T extends { deletedAt: string | null }>(m: Map<string, T>) =>
+     [...m.values()].filter((r) => !r.deletedAt);
++  type Member = { role: MemberRole; status: MembershipStatus | 'removed'; createdAt: string; updatedAt: string };
++  const members = new Map<string, Member>(); // key: `${organizationId}:${userId}`
+   const visibleOrg = (o: OrganizationRecord, s: TenantScope) =>
+-    s.kind === 'all' || o.ownerUserId === s.userId;
++    s.kind === 'all' || o.ownerUserId === s.userId || members.get(`${o.id}:${s.userId}`)?.status === 'active';
+   const visibleOrgId = (orgId: string, s: TenantScope) => {
+     const o = orgs.get(orgId);
+     return !!o && !o.deletedAt && visibleOrg(o, s);
+   };
++  const liveOrg = (id: string) => {
++    const o = orgs.get(id);
++    return o && !o.deletedAt ? o : null;
++  };
++  const requireOrg = (id: string) => {
++    const o = liveOrg(id);
++    if (!o) throw new MissingParentError('organization');
++    return o;
++  };
++  const requireProject = (id: string, organizationId: string) => {
++    const p = projects.get(id);
++    if (!p || p.deletedAt || p.organizationId !== organizationId) throw new MissingParentError('project');
++  };
++  const patchEntity = <T extends { id: string; updatedAt: string; deletedAt: string | null }>(
++    store: Map<string, T>,
++    id: string,
++    patch: object,
++    options: UpdateOptions,
++    clashes: (row: T) => boolean,
++  ): T | null => {
++    const row = store.get(id);
++    if (!row || row.deletedAt) return null;
++    if (options.expectedUpdatedAt && Date.parse(options.expectedUpdatedAt) !== Date.parse(row.updatedAt))
++      throw new StaleWriteError();
++    // Slugs stay reserved by archived rows, matching the database unique constraints.
++    if ([...store.values()].some((x) => x.id !== id && clashes(x))) throw new DuplicateError('slug');
++    const defined = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
++    const next = new Date(Math.max(Date.parse(options.at), Date.parse(row.updatedAt) + 1)).toISOString();
++    Object.assign(row, defined, { updatedAt: next });
++    if ((row as { description?: string | null }).description === null)
++      delete (row as { description?: string | null }).description;
++    return { ...row };
++  };
++  const archiveRow = <T extends { deletedAt: string | null; updatedAt: string }>(row: T | undefined, at: string) => {
++    if (!row || row.deletedAt) return false;
++    Object.assign(row, { deletedAt: at, updatedAt: at });
++    return true;
++  };
++  const memberRecord = (organizationId: string, userId: string): MembershipRecord | null => {
++    const m = members.get(`${organizationId}:${userId}`);
++    const u = users.get(userId);
++    if (!m || m.status === 'removed' || !u || u.deletedAt) return null;
++    return { organizationId, userId, email: u.email, name: u.name, role: m.role, status: m.status, createdAt: m.createdAt, updatedAt: m.updatedAt };
++  };
+ 
+   return {
+     kind: 'development-memory',
+@@ -177,7 +229,7 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+     },
+     organizations: {
+       async create(o) {
+-        if (live(orgs).some((x) => x.slug === o.slug)) throw new DuplicateError('slug');
++        if ([...orgs.values()].some((x) => x.slug === o.slug)) throw new DuplicateError('slug');
+         orgs.set(o.id, { ...o });
+         return { ...o };
+       },
+@@ -192,16 +244,71 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+           ['createdAt', 'updatedAt', 'name', 'slug'],
+         );
+       },
+-      async softDelete(id, scope, at) {
+-        const o = orgs.get(id);
+-        if (!o || o.deletedAt || !visibleOrg(o, scope)) return false;
+-        Object.assign(o, { deletedAt: at, updatedAt: at });
++      async update(id, patch, options) {
++        return patchEntity(orgs, id, patch, options, (x) => x.slug === patch.slug);
++      },
++      async archive(id, at) {
++        if (!archiveRow(orgs.get(id), at)) return false;
++        for (const child of [...projects.values(), ...workspaces.values()])
++          if (child.organizationId === id) archiveRow(child, at);
++        return true;
++      },
++      async roleOf(id, userId) {
++        const o = liveOrg(id);
++        if (!o) return null;
++        if (o.ownerUserId === userId) return 'owner';
++        const m = members.get(`${id}:${userId}`);
++        return m?.status === 'active' ? m.role : null;
++      },
++      async transferOwnership(id, newOwnerUserId, at) {
++        const o = liveOrg(id);
++        const next = members.get(`${id}:${newOwnerUserId}`);
++        if (!o || next?.status !== 'active') return null;
++        const previous = o.ownerUserId;
++        Object.assign(next, { status: 'removed', updatedAt: at });
++        if (previous)
++          members.set(`${id}:${previous}`, { role: 'admin', status: 'active', createdAt: at, updatedAt: at });
++        return patchEntity(orgs, id, { ownerUserId: newOwnerUserId }, { at }, () => false);
++      },
++    },
++    memberships: {
++      async list(organizationId, q) {
++        const rows = [...members.keys()]
++          .filter((k) => k.startsWith(`${organizationId}:`))
++          .map((k) => memberRecord(organizationId, k.slice(organizationId.length + 1)))
++          .filter((m): m is MembershipRecord => !!m && matches(q.search, m.email, m.name));
++        return paginate(rows, q, ['createdAt', 'name', 'email']);
++      },
++      async find(organizationId, userId) {
++        return memberRecord(organizationId, userId);
++      },
++      async add(organizationId, userId, role, at) {
++        const o = requireOrg(organizationId);
++        const key = `${organizationId}:${userId}`;
++        const existing = members.get(key);
++        if (o.ownerUserId === userId || (existing && existing.status !== 'removed'))
++          throw new DuplicateError('member');
++        members.set(key, { role, status: 'active', createdAt: existing?.createdAt ?? at, updatedAt: at });
++        return memberRecord(organizationId, userId) as MembershipRecord;
++      },
++      async update(organizationId, userId, patch, at) {
++        requireOrg(organizationId);
++        const m = members.get(`${organizationId}:${userId}`);
++        if (!m || m.status === 'removed') return null;
++        Object.assign(m, { ...(patch.role ? { role: patch.role } : {}), ...(patch.status ? { status: patch.status } : {}), updatedAt: at });
++        return memberRecord(organizationId, userId);
++      },
++      async remove(organizationId, userId, at) {
++        const m = members.get(`${organizationId}:${userId}`);
++        if (!m || m.status === 'removed') return false;
++        Object.assign(m, { status: 'removed', updatedAt: at });
+         return true;
+       },
+     },
+     projects: {
+       async create(p) {
+-        if (live(projects).some((x) => x.organizationId === p.organizationId && x.slug === p.slug))
++        requireOrg(p.organizationId);
++        if ([...projects.values()].some((x) => x.organizationId === p.organizationId && x.slug === p.slug))
+           throw new DuplicateError('slug');
+         projects.set(p.id, { ...p });
+         return { ...p };
+@@ -210,21 +317,31 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+         const p = projects.get(id);
+         return p && !p.deletedAt && visibleOrgId(p.organizationId, scope) ? { ...p } : null;
+       },
+-      async list(q, scope) {
++      async list(q, scope, parent) {
+         return paginate(
+           live(projects).filter(
+-            (p) => visibleOrgId(p.organizationId, scope) && matches(q.search, p.name),
++            (p) => visibleOrgId(p.organizationId, scope) && matches(q.search, p.name) &&
++              (!parent?.organizationId || p.organizationId === parent.organizationId),
+           ),
+           q,
+           ['createdAt', 'updatedAt', 'name', 'slug'],
+         );
+       },
++      async update(id, patch, options) {
++        const current = projects.get(id);
++        return patchEntity<ProjectRecord>(projects, id, patch, options, (x) => x.organizationId === current?.organizationId && x.slug === patch.slug);
++      },
++      async archive(id, at) {
++        if (!archiveRow(projects.get(id), at)) return false;
++        for (const w of workspaces.values()) if (w.projectId === id) archiveRow(w, at);
++        return true;
++      },
+     },
+     workspaces: {
+       async create(w) {
+-        if (
+-          live(workspaces).some((x) => x.organizationId === w.organizationId && x.slug === w.slug)
+-        )
++        requireOrg(w.organizationId);
++        if (w.projectId) requireProject(w.projectId, w.organizationId);
++        if ([...workspaces.values()].some((x) => x.organizationId === w.organizationId && x.slug === w.slug))
+           throw new DuplicateError('slug');
+         workspaces.set(w.id, { ...w });
+         return { ...w };
+@@ -233,15 +350,29 @@ export const createMemoryIdentityRepositories = (): IdentityRepositories => {
+         const w = workspaces.get(id);
+         return w && !w.deletedAt && visibleOrgId(w.organizationId, scope) ? { ...w } : null;
+       },
+-      async list(q, scope) {
++      async list(q, scope, parent) {
+         return paginate(
+           live(workspaces).filter(
+-            (w) => visibleOrgId(w.organizationId, scope) && matches(q.search, w.name),
++            (w) => visibleOrgId(w.organizationId, scope) && matches(q.search, w.name) &&
++              (!parent?.organizationId || w.organizationId === parent.organizationId) &&
++              (!parent?.projectId || w.projectId === parent.projectId),
+           ),
+           q,
+           ['createdAt', 'updatedAt', 'name', 'slug'],
+         );
+       },
++      async update(id, patch, options) {
++        const current = workspaces.get(id);
++        if (!current || current.deletedAt) return null;
++        if (patch.projectId) {
++          requireOrg(current.organizationId);
++          requireProject(patch.projectId, current.organizationId);
++        }
++        return patchEntity(workspaces, id, patch, options, (x) => x.organizationId === current.organizationId && x.slug === patch.slug);
++      },
++      async archive(id, at) {
++        return archiveRow(workspaces.get(id), at);
++      },
+     },
+     rateLimits: {
+       async hit(key, max, windowMs): Promise<RateLimitDecision> {
+diff --git a/apps/api/src/identity/postgres.ts b/apps/api/src/identity/postgres.ts
+index a25815cc..b8b9f22a 100644
+--- a/apps/api/src/identity/postgres.ts
++++ b/apps/api/src/identity/postgres.ts
+@@ -1,6 +1,13 @@
+ import { type SqlClient, type SqlExecutor } from '@irp/database';
+ import {
+   DuplicateError,
++  MissingParentError,
++  StaleWriteError,
++  type MemberRole,
++  type MembershipRecord,
++  type OrganizationRole,
++  type ParentFilter,
++  type UpdateOptions,
+   type AuditEntry,
+   type IdentityRepositories,
+   type OneTimeTokenRecord,
+@@ -112,6 +119,7 @@ const list = async <T>(
+   spec: ListSpec<T>,
+   q: PageQuery,
+   scope?: TenantScope,
++  parent?: ParentFilter,
+ ): Promise<Page<T>> => {
+   const where: string[] = ['"deletedAt" IS NULL'];
+   const values: unknown[] = [];
+@@ -120,6 +128,10 @@ const list = async <T>(
+     if (t.sql) where.push(t.sql);
+     values.push(...t.values);
+   }
++  for (const [column, value] of parentWhere(parent)) {
++    values.push(value);
++    where.push(`"${column}" = $${values.length}`);
++  }
+   if (q.search) {
+     values.push(like(q.search));
+     where.push(
+@@ -143,17 +155,129 @@ const list = async <T>(
+     pageSize: q.pageSize,
+   };
+ };
++// `$n` is the caller's user id: organizations they own or actively belong to.
++const accessibleOrgs = (idx: number) =>
++  `SELECT o."id" FROM "Organization" o WHERE o."deletedAt" IS NULL AND (o."ownerUserId" = $${idx} OR EXISTS (
++     SELECT 1 FROM "Membership" m WHERE m."organizationId" = o."id" AND m."userId" = $${idx} AND m."status" = 'active'))`;
+ const orgTenant = (scope: TenantScope, idx: number) =>
+   scope.kind === 'all'
+     ? { sql: '', values: [] }
+-    : { sql: `"ownerUserId" = $${idx}`, values: [scope.userId] };
++    : { sql: `"id" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
+ const viaOrgTenant = (scope: TenantScope, idx: number) =>
+   scope.kind === 'all'
+     ? { sql: '', values: [] }
+-    : {
+-        sql: `"organizationId" IN (SELECT "id" FROM "Organization" WHERE "deletedAt" IS NULL AND "ownerUserId" = $${idx})`,
+-        values: [scope.userId],
+-      };
++    : { sql: `"organizationId" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
++
++/** Applies a partial update; only the provided columns change, so unrelated concurrent edits survive. */
++const patchRow = async <T>(
++  db: SqlExecutor,
++  table: 'Organization' | 'Project' | 'Workspace',
++  cols: string,
++  map: (r: Row) => T,
++  id: string,
++  patch: Record<string, unknown>,
++  options: UpdateOptions,
++): Promise<T | null> => {
++  const values: unknown[] = [id, options.at];
++  // Column names come from the typed patch objects, never from request input.
++  const sets = Object.entries(patch)
++    .filter(([, v]) => v !== undefined)
++    .map(([column, v]) => {
++      values.push(v);
++      return `"${column}" = $${values.length}`;
++    });
++  // updatedAt always advances, so it can serve as the row version.
++  sets.push(`"updatedAt" = GREATEST($2::timestamp(3), "updatedAt" + interval '1 millisecond')`);
++  let guard = '';
++  if (options.expectedUpdatedAt) {
++    values.push(options.expectedUpdatedAt);
++    guard = ` AND "updatedAt" = $${values.length}::timestamp(3)`;
++  }
++  try {
++    const rows = await db.query<Row>(
++      `UPDATE "${table}" SET ${sets.join(', ')} WHERE "id" = $1 AND "deletedAt" IS NULL${guard} RETURNING ${cols}`,
++      values,
++    );
++    if (rows[0]) return map(rows[0]);
++  } catch (e) {
++    if (isUnique(e)) throw new DuplicateError('slug');
++    throw e;
++  }
++  if (!options.expectedUpdatedAt) return null;
++  const alive = await db.query(`SELECT 1 FROM "${table}" WHERE "id" = $1 AND "deletedAt" IS NULL`, [id]);
++  if (alive.length) throw new StaleWriteError();
++  return null;
++};
++
++// Parent rows are share-locked while a child is written, and archiving updates the parent first, so a
++// child can never be created under (or moved into) a parent that is being archived. Lock order is
++// always organization, then project, then workspace.
++const lockOrganization = async (tx: SqlExecutor, id: string): Promise<{ ownerUserId: string | null }> => {
++  const rows = await tx.query<{ ownerUserId: string | null }>(
++    `SELECT "ownerUserId" FROM "Organization" WHERE "id" = $1 AND "deletedAt" IS NULL FOR SHARE`,
++    [id],
++  );
++  if (!rows[0]) throw new MissingParentError('organization');
++  return rows[0];
++};
++const lockProject = async (tx: SqlExecutor, id: string, organizationId: string): Promise<void> => {
++  const rows = await tx.query(
++    `SELECT 1 FROM "Project" WHERE "id" = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL FOR SHARE`,
++    [id, organizationId],
++  );
++  if (!rows.length) throw new MissingParentError('project');
++};
++
++const MEMBER_SELECT = `SELECT m."organizationId", m."userId", u."email", u."name", r."slug" AS "role", m."status"::text AS "status",
++  m."createdAt" AT TIME ZONE 'UTC' AS "createdAt", m."updatedAt" AT TIME ZONE 'UTC' AS "updatedAt"
++  FROM "Membership" m JOIN "User" u ON u."id" = m."userId" JOIN "Role" r ON r."id" = m."roleId"
++  WHERE m."status" IN ('active','suspended') AND u."deletedAt" IS NULL AND m."organizationId" = $1`;
++const toMembership = (r: Row): MembershipRecord => ({
++  organizationId: String(r.organizationId),
++  userId: String(r.userId),
++  email: String(r.email),
++  name: String(r.name ?? ''),
++  role: r.role as MemberRole,
++  status: r.status as MembershipRecord['status'],
++  createdAt: iso(r.createdAt),
++  updatedAt: iso(r.updatedAt),
++});
++const findMember = async (db: SqlExecutor, organizationId: string, userId: string) => {
++  const rows = await db.query<Row>(`${MEMBER_SELECT} AND m."userId" = $2`, [organizationId, userId]);
++  return rows[0] ? toMembership(rows[0]) : null;
++};
++// Membership roles are per-organization Role rows; the unique (organizationId, slug) makes this safe to race.
++const ensureRole = async (tx: SqlExecutor, organizationId: string, role: MemberRole, at: string) => {
++  const rows = await tx.query<{ id: string }>(
++    `INSERT INTO "Role" ("id","organizationId","name","slug","system","createdAt","updatedAt")
++     VALUES (gen_random_uuid(),$1,$2,$2,true,$3,$3)
++     ON CONFLICT ("organizationId","slug") DO UPDATE SET "slug" = EXCLUDED."slug" RETURNING "id"`,
++    [organizationId, role, at],
++  );
++  return (rows[0] as { id: string }).id;
++};
++const upsertMember = async (
++  tx: SqlExecutor,
++  organizationId: string,
++  userId: string,
++  role: MemberRole,
++  at: string,
++  /** Overwrite an existing active/suspended membership instead of leaving it untouched. */
++  replace: boolean,
++): Promise<boolean> => {
++  const roleId = await ensureRole(tx, organizationId, role, at);
++  const rows = await tx.query(
++    `INSERT INTO "Membership" ("id","userId","organizationId","roleId","status","createdAt","updatedAt")
++     VALUES (gen_random_uuid(),$1,$2,$3,'active',$4,$4)
++     ON CONFLICT ("userId","organizationId") DO UPDATE SET "roleId" = EXCLUDED."roleId", "status" = 'active', "updatedAt" = EXCLUDED."updatedAt"
++     ${replace ? '' : `WHERE "Membership"."status" IN ('removed','invited')`}
++     RETURNING "id"`,
++    [userId, organizationId, roleId, at],
++  );
++  return rows.length > 0;
++};
++const parentWhere = (parent?: ParentFilter) =>
++  Object.entries(parent ?? {}).filter(([, v]) => v !== undefined) as Array<[string, string]>;
+ 
+ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepositories => {
+   const one = async <T>(text: string, values: unknown[], map: (r: Row) => T): Promise<T | null> => {
+@@ -421,11 +545,94 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+         );
+       },
+       list: (q, scope) => list(sql, orgSpec, q, scope),
+-      async softDelete(id, scope, at) {
+-        const t = orgTenant(scope, 3);
++      update: (id, patch, options) =>
++        patchRow(sql, 'Organization', ORG_COLS, toOrg, id, { ...patch }, options),
++      archive: (id, at) =>
++        sql.transaction(async (tx) => {
++          const r = await tx.query(
++            `UPDATE "Organization" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
++            [id, at],
++          );
++          if (!r.length) return false;
++          for (const table of ['Project', 'Workspace'])
++            await tx.query(
++              `UPDATE "${table}" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "organizationId"=$1 AND "deletedAt" IS NULL`,
++              [id, at],
++            );
++          return true;
++        }),
++      async roleOf(id, userId) {
++        const rows = await sql.query<{ role: string | null }>(
++          `SELECT CASE WHEN o."ownerUserId" = $2 THEN 'owner' ELSE (
++             SELECT r."slug" FROM "Membership" m JOIN "Role" r ON r."id" = m."roleId"
++             WHERE m."organizationId" = o."id" AND m."userId" = $2 AND m."status" = 'active') END AS "role"
++           FROM "Organization" o WHERE o."id" = $1 AND o."deletedAt" IS NULL`,
++          [id, userId],
++        );
++        return (rows[0]?.role as OrganizationRole | undefined) ?? null;
++      },
++      transferOwnership: (id, newOwnerUserId, at) =>
++        sql.transaction(async (tx) => {
++          const current = await tx.query<{ ownerUserId: string | null }>(
++            `SELECT "ownerUserId" FROM "Organization" WHERE "id"=$1 AND "deletedAt" IS NULL FOR UPDATE`,
++            [id],
++          );
++          if (!current[0]) return null;
++          const member = await findMember(tx, id, newOwnerUserId);
++          if (member?.status !== 'active') return null;
++          await tx.query(
++            `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2`,
++            [id, newOwnerUserId, at],
++          );
++          const previous = current[0].ownerUserId;
++          if (previous) await upsertMember(tx, id, previous, 'admin', at, true);
++          return patchRow(tx, 'Organization', ORG_COLS, toOrg, id, { ownerUserId: newOwnerUserId }, { at });
++        }),
++    },
++    memberships: {
++      async list(organizationId, q) {
++        const values: unknown[] = [organizationId];
++        let search = '';
++        if (q.search) {
++          values.push(like(q.search));
++          search = ` AND (u."email"::text ILIKE $2 OR u."name" ILIKE $2)`;
++        }
++        const order = q.sort === 'name' || q.sort === 'email' ? `u."${q.sort}"` : 'm."createdAt"';
++        const total = await sql.query<{ n: string }>(
++          `SELECT count(*)::text AS n FROM (${MEMBER_SELECT}${search}) t`,
++          values,
++        );
++        const rows = await sql.query<Row>(
++          `${MEMBER_SELECT}${search} ORDER BY ${order} ${q.order === 'asc' ? 'ASC' : 'DESC'}, m."id" LIMIT ${q.pageSize} OFFSET ${(q.page - 1) * q.pageSize}`,
++          values,
++        );
++        return { items: rows.map(toMembership), total: Number(total[0]?.n ?? 0), page: q.page, pageSize: q.pageSize };
++      },
++      find: (organizationId, userId) => findMember(sql, organizationId, userId),
++      add: (organizationId, userId, role, at) =>
++        sql.transaction(async (tx) => {
++          const org = await lockOrganization(tx, organizationId);
++          if (org.ownerUserId === userId) throw new DuplicateError('member');
++          if (!(await upsertMember(tx, organizationId, userId, role, at, false)))
++            throw new DuplicateError('member');
++          return (await findMember(tx, organizationId, userId)) as MembershipRecord;
++        }),
++      update: (organizationId, userId, patch, at) =>
++        sql.transaction(async (tx) => {
++          await lockOrganization(tx, organizationId);
++          if (!(await findMember(tx, organizationId, userId))) return null;
++          const roleId = patch.role ? await ensureRole(tx, organizationId, patch.role, at) : null;
++          await tx.query(
++            `UPDATE "Membership" SET "roleId" = COALESCE($3, "roleId"), "status" = COALESCE($4::"MembershipStatus", "status"), "updatedAt" = $5
++             WHERE "organizationId" = $1 AND "userId" = $2 AND "status" IN ('active','suspended')`,
++            [organizationId, userId, roleId, patch.status ?? null, at],
++          );
++          return findMember(tx, organizationId, userId);
++        }),
++      async remove(organizationId, userId, at) {
+         const r = await sql.query(
+-          `UPDATE "Organization" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL${t.sql ? ` AND ${t.sql}` : ''} RETURNING "id"`,
+-          [id, at, ...t.values],
++          `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2 AND "status" <> 'removed' RETURNING "id"`,
++          [organizationId, userId, at],
+         );
+         return r.length > 0;
+       },
+@@ -433,7 +640,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+     projects: {
+       async create(p) {
+         try {
+-          return (await one(
++          return await sql.transaction(async (tx) => {
++            await lockOrganization(tx, p.organizationId);
++            const rows = await tx.query<Row>(
+             `INSERT INTO "Project" ("id","organizationId","name","slug","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${PROJECT_COLS}`,
+             [
+               p.id,
+@@ -444,8 +653,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+               p.createdAt,
+               p.updatedAt,
+             ],
+-            toProject,
+-          )) as ProjectRecord;
++            );
++            return toProject(rows[0] as Row);
++          });
+         } catch (e) {
+           if (isUnique(e)) throw new DuplicateError('slug');
+           throw e;
+@@ -459,12 +669,30 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+           toProject,
+         );
+       },
+-      list: (q, scope) => list(sql, projectSpec, q, scope),
++      list: (q, scope, parent) => list(sql, projectSpec, q, scope, parent),
++      update: (id, patch, options) =>
++        patchRow(sql, 'Project', PROJECT_COLS, toProject, id, { ...patch }, options),
++      archive: (id, at) =>
++        sql.transaction(async (tx) => {
++          const r = await tx.query(
++            `UPDATE "Project" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
++            [id, at],
++          );
++          if (!r.length) return false;
++          await tx.query(
++            `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "projectId"=$1 AND "deletedAt" IS NULL`,
++            [id, at],
++          );
++          return true;
++        }),
+     },
+     workspaces: {
+       async create(w) {
+         try {
+-          return (await one(
++          return await sql.transaction(async (tx) => {
++            await lockOrganization(tx, w.organizationId);
++            if (w.projectId) await lockProject(tx, w.projectId, w.organizationId);
++            const rows = await tx.query<Row>(
+             `INSERT INTO "Workspace" ("id","organizationId","projectId","name","slug","environment","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${WORKSPACE_COLS}`,
+             [
+               w.id,
+@@ -476,8 +704,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+               w.createdAt,
+               w.updatedAt,
+             ],
+-            toWorkspace,
+-          )) as WorkspaceRecord;
++            );
++            return toWorkspace(rows[0] as Row);
++          });
+         } catch (e) {
+           if (isUnique(e)) throw new DuplicateError('slug');
+           throw e;
+@@ -491,7 +720,27 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
+           toWorkspace,
+         );
+       },
+-      list: (q, scope) => list(sql, workspaceSpec, q, scope),
++      list: (q, scope, parent) => list(sql, workspaceSpec, q, scope, parent),
++      update: (id, patch, options) =>
++        sql.transaction(async (tx) => {
++          if (patch.projectId) {
++            const current = await tx.query<{ organizationId: string }>(
++              `SELECT "organizationId" FROM "Workspace" WHERE "id"=$1 AND "deletedAt" IS NULL`,
++              [id],
++            );
++            if (!current[0]) return null;
++            await lockOrganization(tx, current[0].organizationId);
++            await lockProject(tx, patch.projectId, current[0].organizationId);
++          }
++          return patchRow(tx, 'Workspace', WORKSPACE_COLS, toWorkspace, id, { ...patch }, options);
++        }),
++      async archive(id, at) {
++        const r = await sql.query(
++          `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
++          [id, at],
++        );
++        return r.length > 0;
++      },
+     },
+     rateLimits: {
+       async hit(key, max, windowMs): Promise<RateLimitDecision> {
+diff --git a/apps/api/src/identity/types.ts b/apps/api/src/identity/types.ts
+index c4893208..d08d9d13 100644
+--- a/apps/api/src/identity/types.ts
++++ b/apps/api/src/identity/types.ts
+@@ -89,8 +89,42 @@ export interface Page<T> {
+   page: number;
+   pageSize: number;
+ }
+-/** Visibility scope: `all` for platform admins, otherwise only organizations owned by the user. */
+-export type TenantScope = { kind: 'all' } | { kind: 'owner'; userId: string };
++/**
++ * Visibility scope: `all` for platform admins, otherwise organizations the user owns or is an active
++ * member of (and everything inside them).
++ */
++export type TenantScope = { kind: 'all' } | { kind: 'user'; userId: string };
++
++/** Roles a membership can grant. Ownership is `Organization.ownerUserId`, not a membership. */
++export const MEMBER_ROLES = ['admin', 'member', 'viewer'] as const;
++export type MemberRole = (typeof MEMBER_ROLES)[number];
++export type OrganizationRole = 'owner' | MemberRole;
++export type MembershipStatus = 'active' | 'suspended';
++export interface MembershipRecord {
++  organizationId: string;
++  userId: string;
++  email: string;
++  name: string;
++  role: MemberRole;
++  status: MembershipStatus;
++  createdAt: string;
++  updatedAt: string;
++}
++
++/** Optimistic concurrency: the caller's `expectedUpdatedAt` no longer matches the stored row. */
++export class StaleWriteError extends Error {
++  constructor() {
++    super('Resource was modified by another request');
++    this.name = 'StaleWriteError';
++  }
++}
++/** The parent (organization or project) is absent, archived, or belongs to another organization. */
++export class MissingParentError extends Error {
++  constructor(readonly parent: 'organization' | 'project') {
++    super(`Missing parent ${parent}`);
++    this.name = 'MissingParentError';
++  }
++}
+ 
+ export class DuplicateError extends Error {
+   constructor(readonly field: string) {
+@@ -150,21 +184,69 @@ export interface AuditRepository {
+     limit?: number;
+   }): Promise<Array<AuditEntry & { id: string; createdAt: string }>>;
+ }
++export interface UpdateOptions {
++  at: string;
++  /** When set, the write applies only if the row is still at this version, else StaleWriteError. */
++  expectedUpdatedAt?: string | undefined;
++}
++export type OrganizationPatch = { name?: string; slug?: string };
++export type ProjectPatch = { name?: string; slug?: string; description?: string | null };
++export type WorkspacePatch = {
++  name?: string;
++  slug?: string;
++  environment?: string;
++  projectId?: string;
++};
++export interface ParentFilter {
++  organizationId?: string;
++  projectId?: string;
++}
+ export interface OrganizationRepository {
+   create(org: OrganizationRecord): Promise<OrganizationRecord>;
+   findById(id: string, scope: TenantScope): Promise<OrganizationRecord | null>;
+   list(query: PageQuery, scope: TenantScope): Promise<Page<OrganizationRecord>>;
+-  softDelete(id: string, scope: TenantScope, at: string): Promise<boolean>;
++  update(id: string, patch: OrganizationPatch, options: UpdateOptions): Promise<OrganizationRecord | null>;
++  /** Archives the organization with its projects and workspaces in one transaction. */
++  archive(id: string, at: string): Promise<boolean>;
++  /** The user's role in a live organization: owner, an active membership's role, or null. */
++  roleOf(id: string, userId: string): Promise<OrganizationRole | null>;
++  /**
++   * Makes an active member the owner; the previous owner becomes an admin member. Returns null when
++   * the organization is gone or the target is not an active member.
++   */
++  transferOwnership(id: string, newOwnerUserId: string, at: string): Promise<OrganizationRecord | null>;
++}
++export interface MembershipRepository {
++  /** Active and suspended members (never removed ones, never the owner). */
++  list(organizationId: string, query: PageQuery): Promise<Page<MembershipRecord>>;
++  find(organizationId: string, userId: string): Promise<MembershipRecord | null>;
++  /** Adds or re-adds a member. DuplicateError if already a member or the owner. */
++  add(organizationId: string, userId: string, role: MemberRole, at: string): Promise<MembershipRecord>;
++  update(
++    organizationId: string,
++    userId: string,
++    patch: { role?: MemberRole; status?: MembershipStatus },
++    at: string,
++  ): Promise<MembershipRecord | null>;
++  remove(organizationId: string, userId: string, at: string): Promise<boolean>;
+ }
+ export interface ProjectRepository {
++  /** MissingParentError when the organization is absent or archived. */
+   create(project: ProjectRecord): Promise<ProjectRecord>;
+   findById(id: string, scope: TenantScope): Promise<ProjectRecord | null>;
+-  list(query: PageQuery, scope: TenantScope): Promise<Page<ProjectRecord>>;
++  list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<ProjectRecord>>;
++  update(id: string, patch: ProjectPatch, options: UpdateOptions): Promise<ProjectRecord | null>;
++  /** Archives the project and its workspaces in one transaction. */
++  archive(id: string, at: string): Promise<boolean>;
+ }
+ export interface WorkspaceRepository {
++  /** MissingParentError when the organization or the referenced project cannot be a parent. */
+   create(workspace: WorkspaceRecord): Promise<WorkspaceRecord>;
+   findById(id: string, scope: TenantScope): Promise<WorkspaceRecord | null>;
+-  list(query: PageQuery, scope: TenantScope): Promise<Page<WorkspaceRecord>>;
++  list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<WorkspaceRecord>>;
++  /** A `projectId` patch must name a live project of the workspace's own organization. */
++  update(id: string, patch: WorkspacePatch, options: UpdateOptions): Promise<WorkspaceRecord | null>;
++  archive(id: string, at: string): Promise<boolean>;
+ }
+ export interface RateLimitDecision {
+   allowed: boolean;
+@@ -204,6 +286,7 @@ export interface IdentityRepositories {
+   organizations: OrganizationRepository;
+   projects: ProjectRepository;
+   workspaces: WorkspaceRepository;
++  memberships: MembershipRepository;
+   rateLimits: RateLimitStore;
+   retention: RetentionStore;
+   /** Throws when the backing store is unreachable. */
+diff --git a/apps/api/src/index.ts b/apps/api/src/index.ts
+index ac53c42a..df90bae8 100644
+--- a/apps/api/src/index.ts
++++ b/apps/api/src/index.ts
+@@ -67,7 +67,7 @@ import { checkDatabaseHealth, createPrismaClient, createSqlClient } from '@irp/d
+ import { PostgresHistoricalMeasurementStore } from '@irp/historical-analysis';
+ import { AuthService } from './identity/auth-service.js';
+ import { resolveEmailSender, resolvePublicBaseUrl, type EmailSender } from './identity/mailer.js';
+-import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
++import { type IdentityRepositories, type UserRecord } from './identity/types.js';
+ import {
+   createCanonicalRuntime,
+   controlRequest,
+@@ -79,6 +79,7 @@ import {
+ } from '@irp/resilience-runtime';
+ import { registerIntentRoutes } from './intent-api.js';
+ import { registerSubscriptionRoutes } from './subscription-api.js';
++import { registerTenancyRoutes } from './tenancy/routes.js';
+ import { sharedRateLimitPreHandler } from './security/rate-limit.js';
+ import {
+   generateSpeedInsightsScript,
+@@ -93,13 +94,6 @@ type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: st
+ type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
+ type NetworkMeasurement = NetworkSnapshot['measurements'][number];
+ 
+-const now = () => new Date().toISOString();
+-const slugify = (v: string) =>
+-  v
+-    .toLowerCase()
+-    .trim()
+-    .replace(/[^a-z0-9]+/g, '-')
+-    .replace(/(^-|-$)/g, '');
+ const ok = <T>(data: T, meta?: unknown) => ({ success: true, data, ...(meta ? { meta } : {}) });
+ const created = <T extends Entity>(data: T) => ok(data);
+ const publicUser = (user: UserRecord) => ({
+@@ -130,15 +124,6 @@ const loginSchema = z.object({
+   email: z.string().email().toLowerCase(),
+   password: z.string().min(1),
+ });
+-const nameSchema = z.object({
+-  name: z.string().min(1).max(120),
+-  slug: z.string().min(1).max(80).optional(),
+-  description: z.string().max(1000).optional(),
+-});
+-const workspaceSchema = nameSchema.extend({
+-  projectId: z.string().uuid().optional(),
+-  environment: z.enum(['development', 'staging', 'production']).default('production'),
+-});
+ const runtimeCycleSchema = z.object({
+   mode: z.enum(['simulation', 'safe', 'live']).default('simulation'),
+ });
+@@ -377,6 +362,7 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
+       openapi: '3.1.0',
+       info: { title: 'InternetResiliencePlatform API', version: config.app.version },
+       servers: [{ url: '/' }],
++      components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
+     },
+   });
+   // @fastify/swagger-ui pulls @fastify/static, which has a CJS/ESM conflict
+@@ -1257,8 +1243,6 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
+   });
+ 
+   const ctxOf = (request: FastifyRequest) => ({ ip: request.ip, userAgent: request.headers['user-agent'] });
+-  const scopeOf = (principal: Principal): TenantScope =>
+-    principal.roles.includes('platform_admin') ? { kind: 'all' } : { kind: 'owner', userId: principal.id };
+   const authRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'auth', max: 10, windowMs: 60_000 });
+   app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
+     const input = registerSchema.parse(request.body);
+@@ -1320,91 +1304,12 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
+     if (!user) throw new NotFoundAppError('user');
+     return ok(publicUser(user));
+   });
+-  const conflictOnDuplicate = async <T>(fn: () => Promise<T>, message: string): Promise<T> => {
+-    try {
+-      return await fn();
+-    } catch (e) {
+-      if (e instanceof DuplicateError) throw new ConflictAppError(message);
+-      throw e;
+-    }
+-  };
+-  app.get('/api/v1/organizations', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'organizations:read');
+-    const r = await repos.organizations.list(paginationSchema.parse(request.query), scopeOf(p));
+-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+-  });
+-  app.post('/api/v1/organizations', { preHandler: generalRateLimit }, async (request, reply) => {
+-    const p = await requirePermission(request, 'organizations:write');
+-    const i = nameSchema.parse(request.body);
+-    const t = now();
+-    const org = await conflictOnDuplicate(
+-      () => repos.organizations.create({ id: crypto.randomUUID(), name: i.name, slug: i.slug ?? slugify(i.name), ownerUserId: p.id, createdAt: t, updatedAt: t, deletedAt: null }),
+-      'Organization slug already exists.',
+-    );
+-    return reply.code(201).send(created(org));
+-  });
+-  app.get('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'organizations:read');
+-    const o = await repos.organizations.findById(idParams.parse(request.params).id, scopeOf(p));
+-    if (!o) throw new NotFoundAppError('organization');
+-    return ok(o);
+-  });
+-  app.delete('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'organizations:write');
+-    if (!(await repos.organizations.softDelete(idParams.parse(request.params).id, scopeOf(p), now()))) throw new NotFoundAppError('resource');
+-    return ok({ deleted: true });
+-  });
+-  app.get('/api/v1/projects', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'projects:read');
+-    const r = await repos.projects.list(paginationSchema.parse(request.query), scopeOf(p));
+-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+-  });
+-  app.post('/api/v1/organizations/:id/projects', { preHandler: generalRateLimit }, async (request, reply) => {
+-    const p = await requirePermission(request, 'projects:write');
+-    const organizationId = idParams.parse(request.params).id;
+-    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
+-    const i = nameSchema.parse(request.body);
+-    const t = now();
+-    const project = await conflictOnDuplicate(
+-      () => repos.projects.create({ id: crypto.randomUUID(), organizationId, name: i.name, slug: i.slug ?? slugify(i.name), ...(i.description ? { description: i.description } : {}), createdAt: t, updatedAt: t, deletedAt: null }),
+-      'Project slug already exists in this organization.',
+-    );
+-    return reply.code(201).send(created(project));
+-  });
+-  app.get('/api/v1/projects/:id', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'projects:read');
+-    const project = await repos.projects.findById(idParams.parse(request.params).id, scopeOf(p));
+-    if (!project) throw new NotFoundAppError('project');
+-    return ok(project);
+-  });
+-  app.get('/api/v1/workspaces', { preHandler: generalRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'workspaces:read');
+-    const r = await repos.workspaces.list(paginationSchema.parse(request.query), scopeOf(p));
+-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
+-  });
+-  app.post('/api/v1/organizations/:id/workspaces', { preHandler: generalRateLimit }, async (request, reply) => {
+-    const p = await requirePermission(request, 'workspaces:write');
+-    const organizationId = idParams.parse(request.params).id;
+-    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
+-    const i = workspaceSchema.parse(request.body);
+-    if (i.projectId) {
+-      const project = await repos.projects.findById(i.projectId, scopeOf(p));
+-      // A workspace may only reference a project of its own organization (cross-tenant reference guard).
+-      if (!project || project.organizationId !== organizationId) throw new NotFoundAppError('project');
+-    }
+-    const t = now();
+-    const workspace = await conflictOnDuplicate(
+-      () => repos.workspaces.create({ id: crypto.randomUUID(), organizationId, ...(i.projectId ? { projectId: i.projectId } : {}), name: i.name, slug: i.slug ?? slugify(i.name), environment: i.environment, createdAt: t, updatedAt: t, deletedAt: null }),
+-      'Workspace slug already exists in this organization.',
+-    );
+-    return reply.code(201).send(created(workspace));
+-  });
+-  const workspaceReadRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'workspace-read', max: 120, windowMs: 60_000 });
+-  app.get('/api/v1/workspaces/:id', { preHandler: workspaceReadRateLimit }, async (request) => {
+-    const p = await requirePermission(request, 'workspaces:read');
+-    const w = await repos.workspaces.findById(idParams.parse(request.params).id, scopeOf(p));
+-    if (!w) throw new NotFoundAppError('workspace');
+-    return ok(w);
++  registerTenancyRoutes(app, {
++    repos,
++    preHandler: generalRateLimit,
++    readPreHandler: sharedRateLimitPreHandler(repos.rateLimits, { name: 'workspace-read', max: 120, windowMs: 60_000 }),
++    requireAuth,
++    requirePermission,
+   });
+ 
+   // ── Device data plane routes (mobile/desktop clients) ──────────────────────
+diff --git a/apps/api/src/tenancy-postgres.integration.test.ts b/apps/api/src/tenancy-postgres.integration.test.ts
+new file mode 100644
+index 00000000..3788f062
+--- /dev/null
++++ b/apps/api/src/tenancy-postgres.integration.test.ts
+@@ -0,0 +1,672 @@
++import { randomUUID } from 'node:crypto';
++import { readdirSync, readFileSync } from 'node:fs';
++import { dirname, join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import pg from 'pg';
++import { afterAll, beforeAll, describe, expect, it } from 'vitest';
++import type { FastifyInstance } from 'fastify';
++import { hashPassword } from '@irp/auth';
++import { createSqlClient } from '@irp/database';
++import { buildServer } from './index.js';
++import { CapturingEmailSender } from './identity/mailer.js';
++import { createMemoryIdentityRepositories } from './identity/memory.js';
++import { createPostgresIdentityRepositories } from './identity/postgres.js';
++import { MissingParentError, type IdentityRepositories } from './identity/types.js';
++
++/**
++ * Organization / project / workspace behaviour. The same suite runs against the development-memory
++ * repositories and a real PostgreSQL (IRP_TEST_DATABASE_URL, a role that may CREATE DATABASE; required
++ * in CI). Restart, multi-instance and database-integrity cases run on PostgreSQL only.
++ */
++const adminUrl = process.env.IRP_TEST_DATABASE_URL;
++if (!adminUrl && process.env.CI)
++  throw new Error('IRP_TEST_DATABASE_URL is required in CI for the PostgreSQL integration tests.');
++
++const migrationsDir = join(
++  dirname(fileURLToPath(import.meta.url)),
++  '../../../packages/database/prisma/migrations',
++);
++const PW = 'Production12345';
++const dbName = `irp_tenancy_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
++const databaseUrl = () => {
++  const u = new URL(adminUrl!);
++  u.pathname = `/${dbName}`;
++  return u.toString();
++};
++const admin = async (statement: string) => {
++  const c = new pg.Client({ connectionString: adminUrl });
++  await c.connect();
++  await c.query(statement);
++  await c.end();
++};
++
++interface Instance {
++  app: FastifyInstance;
++  repos: IdentityRepositories;
++  close(): Promise<void>;
++}
++interface Actor {
++  id: string;
++  email: string;
++  headers: { authorization: string };
++}
++
++let ip = 0;
++const call = async (
++  i: Instance,
++  who: Actor | null,
++  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
++  url: string,
++  payload?: object,
++) => {
++  ip += 1;
++  const response = await i.app.inject({
++    method,
++    url,
++    ...(payload ? { payload } : {}),
++    ...(who ? { headers: who.headers } : {}),
++    // A distinct client address per request keeps the shared rate limiter out of these tests.
++    remoteAddress: `10.${(ip >> 16) & 255}.${(ip >> 8) & 255}.${ip & 255}`,
++  });
++  return { status: response.statusCode, body: response.json(), data: response.json().data };
++};
++
++const userIn = async (
++  i: Instance,
++  permissions: string[] = [],
++  roles = ['member'],
++): Promise<Actor> => {
++  const id = randomUUID();
++  const email = `u-${id.slice(0, 8)}@example.com`;
++  const t = new Date().toISOString();
++  await i.repos.users.create({
++    id,
++    email,
++    name: `User ${id.slice(0, 8)}`,
++    passwordHash: hashPassword(PW),
++    status: 'active',
++    roles,
++    permissions,
++    emailVerifiedAt: t,
++    lastLoginAt: null,
++    createdAt: t,
++    updatedAt: t,
++    deletedAt: null,
++  });
++  const login = await call(i, null, 'POST', '/api/v1/auth/login', { email, password: PW });
++  expect(login.status).toBe(200);
++  return { id, email, headers: { authorization: `Bearer ${login.data.accessToken}` } };
++};
++const creator = (i: Instance) => userIn(i, ['organizations:write']);
++const unique = (prefix: string) => `${prefix}-${randomUUID().slice(0, 8)}`;
++
++/** An organization with a project and a workspace, owned by a fresh user. */
++const tree = async (i: Instance) => {
++  const owner = await creator(i);
++  const org = (await call(i, owner, 'POST', '/api/v1/organizations', { name: unique('Org') })).data;
++  const project = (
++    await call(i, owner, 'POST', `/api/v1/organizations/${org.id}/projects`, { name: 'Alpha' })
++  ).data;
++  const workspace = (
++    await call(i, owner, 'POST', `/api/v1/projects/${project.id}/workspaces`, { name: 'Primary' })
++  ).data;
++  return { owner, org, project, workspace };
++};
++const addMember = async (
++  i: Instance,
++  owner: Actor,
++  orgId: string,
++  role: 'admin' | 'member' | 'viewer',
++) => {
++  const user = await userIn(i);
++  expect(
++    (
++      await call(i, owner, 'POST', `/api/v1/organizations/${orgId}/members`, {
++        email: user.email,
++        role,
++      })
++    ).status,
++  ).toBe(201);
++  return user;
++};
++
++const behaviour = (start: () => Promise<Instance>) => {
++  let i: Instance;
++  beforeAll(async () => {
++    i = await start();
++  }, 60_000);
++  afterAll(async () => {
++    await i?.close();
++  });
++
++  it('creates, reads, lists, updates and archives organizations', async () => {
++    const owner = await creator(i);
++    const created = await call(i, owner, 'POST', '/api/v1/organizations', {
++      name: 'Acme Net',
++      slug: unique('acme'),
++    });
++    expect(created.status).toBe(201);
++    expect(created.data.ownerUserId).toBe(owner.id);
++    const url = `/api/v1/organizations/${created.data.id}`;
++    expect((await call(i, owner, 'GET', url)).data.name).toBe('Acme Net');
++    expect(
++      (await call(i, owner, 'GET', '/api/v1/organizations')).data.map((o: { id: string }) => o.id),
++    ).toEqual([created.data.id]);
++    const updated = await call(i, owner, 'PATCH', url, { name: 'Acme Networks' });
++    expect(updated.status).toBe(200);
++    expect(updated.data).toMatchObject({ name: 'Acme Networks', slug: created.data.slug });
++    expect(Date.parse(updated.data.updatedAt)).toBeGreaterThan(Date.parse(created.data.updatedAt));
++    expect((await call(i, owner, 'DELETE', url)).status).toBe(200);
++    expect((await call(i, owner, 'GET', url)).status).toBe(404);
++    expect((await call(i, owner, 'DELETE', url)).status).toBe(404);
++    // Archived slugs stay reserved.
++    expect(
++      (
++        await call(i, owner, 'POST', '/api/v1/organizations', {
++          name: 'Again',
++          slug: created.data.slug,
++        })
++      ).status,
++    ).toBe(409);
++  });
++
++  it('creates, reads, lists, updates and archives projects and workspaces inside their parents', async () => {
++    const { owner, org, project, workspace } = await tree(i);
++    expect(project.organizationId).toBe(org.id);
++    expect(workspace).toMatchObject({
++      organizationId: org.id,
++      projectId: project.id,
++      environment: 'production',
++    });
++
++    const projects = await call(i, owner, 'GET', `/api/v1/organizations/${org.id}/projects`);
++    expect(projects.data.map((p: { id: string }) => p.id)).toEqual([project.id]);
++    expect(projects.body.meta).toEqual({ total: 1, page: 1, pageSize: 25 });
++    for (const url of [
++      `/api/v1/projects/${project.id}/workspaces`,
++      `/api/v1/organizations/${org.id}/workspaces`,
++      '/api/v1/workspaces',
++    ])
++      expect((await call(i, owner, 'GET', url)).data.map((w: { id: string }) => w.id)).toEqual([
++        workspace.id,
++      ]);
++
++    const p = await call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, {
++      name: 'Beta',
++      description: 'edge routing',
++    });
++    expect(p.data).toMatchObject({
++      name: 'Beta',
++      description: 'edge routing',
++      organizationId: org.id,
++    });
++    expect(
++      (await call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, { description: null })).data
++        .description,
++    ).toBeUndefined();
++    const w = await call(i, owner, 'PATCH', `/api/v1/workspaces/${workspace.id}`, {
++      environment: 'staging',
++      name: 'Edge',
++    });
++    expect(w.data).toMatchObject({ environment: 'staging', name: 'Edge', projectId: project.id });
++
++    expect((await call(i, owner, 'DELETE', `/api/v1/workspaces/${workspace.id}`)).status).toBe(200);
++    expect((await call(i, owner, 'GET', `/api/v1/workspaces/${workspace.id}`)).status).toBe(404);
++    const second = (
++      await call(i, owner, 'POST', `/api/v1/projects/${project.id}/workspaces`, { name: 'Second' })
++    ).data;
++    // Archiving a project archives its workspaces.
++    expect((await call(i, owner, 'DELETE', `/api/v1/projects/${project.id}`)).status).toBe(200);
++    expect((await call(i, owner, 'GET', `/api/v1/projects/${project.id}`)).status).toBe(404);
++    expect((await call(i, owner, 'GET', `/api/v1/workspaces/${second.id}`)).status).toBe(404);
++    expect((await call(i, owner, 'GET', `/api/v1/organizations/${org.id}`)).status).toBe(200);
++  });
++
++  it('archives everything inside an archived organization, also for platform admins', async () => {
++    const { owner, org, project, workspace } = await tree(i);
++    const root = await userIn(i, [], ['platform_admin']);
++    expect((await call(i, root, 'GET', `/api/v1/projects/${project.id}`)).status).toBe(200);
++    expect((await call(i, owner, 'DELETE', `/api/v1/organizations/${org.id}`)).status).toBe(200);
++    for (const url of [
++      `/api/v1/organizations/${org.id}`,
++      `/api/v1/projects/${project.id}`,
++      `/api/v1/workspaces/${workspace.id}`,
++    ])
++      expect((await call(i, root, 'GET', url)).status).toBe(404);
++    expect(
++      (await call(i, root, 'POST', `/api/v1/organizations/${org.id}/projects`, { name: 'Late' }))
++        .status,
++    ).toBe(404);
++  });
++
++  it('rejects invalid parent relationships and never detaches children', async () => {
++    const a = await tree(i);
++    const b = await tree(i);
++    // Foreign project as a parent, on create and on update, for someone who can see both.
++    const root = await userIn(i, [], ['platform_admin']);
++    for (const who of [a.owner, root]) {
++      expect(
++        (
++          await call(i, who, 'POST', `/api/v1/organizations/${a.org.id}/workspaces`, {
++            name: unique('x'),
++            projectId: b.project.id,
++          })
++        ).status,
++      ).toBe(404);
++      expect(
++        (
++          await call(i, who, 'PATCH', `/api/v1/workspaces/${a.workspace.id}`, {
++            projectId: b.project.id,
++          })
++        ).status,
++      ).toBe(404);
++    }
++    expect(
++      (
++        await call(i, a.owner, 'POST', `/api/v1/projects/${a.project.id}/workspaces`, {
++          name: 'x',
++          projectId: b.project.id,
++        })
++      ).status,
++    ).toBe(400);
++    expect(
++      (
++        await call(i, a.owner, 'PATCH', `/api/v1/projects/${a.project.id}`, {
++          organizationId: b.org.id,
++          name: 'moved',
++        })
++      ).status,
++    ).toBe(400);
++    expect(
++      (
++        await call(i, a.owner, 'PATCH', `/api/v1/workspaces/${a.workspace.id}`, {
++          organizationId: b.org.id,
++          name: 'moved',
++        })
++      ).status,
++    ).toBe(400);
++    expect(
++      (await call(i, a.owner, 'PATCH', `/api/v1/workspaces/${a.workspace.id}`, { projectId: null }))
++        .status,
++    ).toBe(400);
++    expect((await call(i, a.owner, 'PATCH', `/api/v1/projects/${a.project.id}`, {})).status).toBe(
++      400,
++    );
++    expect(
++      (await call(i, a.owner, 'GET', `/api/v1/organizations/${randomUUID()}/projects`)).status,
++    ).toBe(404);
++    expect(
++      (await call(i, a.owner, 'GET', `/api/v1/projects/${randomUUID()}/workspaces`)).status,
++    ).toBe(404);
++    // Moving between projects of the same organization is allowed.
++    const other = (
++      await call(i, a.owner, 'POST', `/api/v1/organizations/${a.org.id}/projects`, {
++        name: 'Other',
++      })
++    ).data;
++    expect(
++      (
++        await call(i, a.owner, 'PATCH', `/api/v1/workspaces/${a.workspace.id}`, {
++          projectId: other.id,
++        })
++      ).data.projectId,
++    ).toBe(other.id);
++    expect(
++      (await call(i, a.owner, 'GET', `/api/v1/workspaces/${a.workspace.id}`)).data.organizationId,
++    ).toBe(a.org.id);
++  });
++
++  it('enforces membership roles from the existing Membership and Role model', async () => {
++    const { owner, org, project, workspace } = await tree(i);
++    const base = `/api/v1/organizations/${org.id}`;
++    const viewer = await addMember(i, owner, org.id, 'viewer');
++    const member = await addMember(i, owner, org.id, 'member');
++    const manager = await addMember(i, owner, org.id, 'admin');
++    const stranger = await userIn(i);
++
++    for (const url of [
++      base,
++      `/api/v1/projects/${project.id}`,
++      `/api/v1/workspaces/${workspace.id}`,
++      `${base}/members`,
++    ])
++      expect((await call(i, stranger, 'GET', url)).status).toBe(404);
++    expect((await call(i, stranger, 'GET', '/api/v1/organizations')).status).toBe(403);
++    expect(
++      (await call(i, viewer, 'GET', '/api/v1/organizations')).data.map((o: { id: string }) => o.id),
++    ).toEqual([org.id]);
++    expect((await call(i, viewer, 'GET', `/api/v1/workspaces/${workspace.id}`)).status).toBe(200);
++    expect((await call(i, viewer, 'POST', `${base}/projects`, { name: 'no' })).status).toBe(403);
++    expect(
++      (await call(i, viewer, 'PATCH', `/api/v1/workspaces/${workspace.id}`, { name: 'no' })).status,
++    ).toBe(403);
++    // Membership does not grant the right to create organizations.
++    expect((await call(i, member, 'POST', '/api/v1/organizations', { name: 'no' })).status).toBe(
++      403,
++    );
++
++    expect((await call(i, member, 'POST', `${base}/projects`, { name: 'By member' })).status).toBe(
++      201,
++    );
++    expect(
++      (await call(i, member, 'PATCH', `/api/v1/projects/${project.id}`, { name: 'Edited' })).status,
++    ).toBe(200);
++    expect((await call(i, member, 'DELETE', `/api/v1/projects/${project.id}`)).status).toBe(403);
++    expect((await call(i, member, 'PATCH', base, { name: 'no' })).status).toBe(403);
++    expect(
++      (await call(i, member, 'POST', `${base}/members`, { email: stranger.email })).status,
++    ).toBe(403);
++    expect((await call(i, member, 'DELETE', `${base}/members/${viewer.id}`)).status).toBe(403);
++
++    expect((await call(i, manager, 'PATCH', base, { name: unique('Renamed') })).status).toBe(200);
++    expect((await call(i, manager, 'DELETE', base)).status).toBe(403);
++    expect(
++      (await call(i, manager, 'POST', `${base}/ownership`, { userId: manager.id })).status,
++    ).toBe(403);
++    // The owner is not a membership and cannot be added, changed or removed as one.
++    expect((await call(i, manager, 'POST', `${base}/members`, { userId: owner.id })).status).toBe(
++      409,
++    );
++    expect(
++      (await call(i, manager, 'PATCH', `${base}/members/${owner.id}`, { role: 'viewer' })).status,
++    ).toBe(404);
++    expect((await call(i, manager, 'DELETE', `${base}/members/${owner.id}`)).status).toBe(404);
++
++    expect((await call(i, manager, 'POST', `${base}/members`, { userId: viewer.id })).status).toBe(
++      409,
++    );
++    expect(
++      (await call(i, manager, 'POST', `${base}/members`, { email: 'nobody@example.com' })).status,
++    ).toBe(404);
++    expect(
++      (await call(i, manager, 'PATCH', `${base}/members/${viewer.id}`, { role: 'member' })).data
++        .role,
++    ).toBe('member');
++    expect((await call(i, viewer, 'POST', `${base}/projects`, { name: 'Promoted' })).status).toBe(
++      201,
++    );
++    // Suspension and removal take effect on the next request.
++    expect(
++      (await call(i, manager, 'PATCH', `${base}/members/${viewer.id}`, { status: 'suspended' }))
++        .data.status,
++    ).toBe('suspended');
++    expect((await call(i, viewer, 'GET', base)).status).toBe(404);
++    expect((await call(i, member, 'DELETE', `${base}/members/${member.id}`)).status).toBe(200); // leave
++    expect((await call(i, member, 'GET', base)).status).toBe(404);
++    const list = await call(i, owner, 'GET', `${base}/members?sort=email&order=asc&pageSize=1`);
++    expect(list.body.meta).toEqual({ total: 2, page: 1, pageSize: 1 });
++    expect(
++      (await call(i, owner, 'POST', `${base}/members`, { userId: member.id, role: 'viewer' }))
++        .status,
++    ).toBe(201); // re-add
++  });
++
++  it('transfers ownership to an active member', async () => {
++    const { owner, org } = await tree(i);
++    const base = `/api/v1/organizations/${org.id}`;
++    const next = await userIn(i);
++    expect((await call(i, owner, 'POST', `${base}/ownership`, { userId: next.id })).status).toBe(
++      400,
++    );
++    await call(i, owner, 'POST', `${base}/members`, { userId: next.id });
++    expect(
++      (await call(i, owner, 'POST', `${base}/ownership`, { userId: next.id })).data.ownerUserId,
++    ).toBe(next.id);
++    expect((await call(i, owner, 'DELETE', base)).status).toBe(403); // now only an admin
++    const members = (await call(i, next, 'GET', `${base}/members`)).data;
++    expect(members).toEqual([
++      expect.objectContaining({ userId: owner.id, role: 'admin', status: 'active' }),
++    ]);
++    expect((await call(i, next, 'DELETE', base)).status).toBe(200);
++  });
++
++  it('handles duplicate and concurrent writes deterministically', async () => {
++    const { owner, org, project } = await tree(i);
++    const attempts = <T>(fn: () => Promise<T>) => Promise.all(Array.from({ length: 6 }, fn));
++    const codes = (rs: Array<{ status: number }>) => rs.map((r) => r.status).sort();
++    const oneWinner = [201, 409, 409, 409, 409, 409];
++    const slug = unique('dup');
++    expect(
++      codes(
++        await attempts(() => call(i, owner, 'POST', '/api/v1/organizations', { name: 'D', slug })),
++      ),
++    ).toEqual(oneWinner);
++    expect(
++      codes(
++        await attempts(() =>
++          call(i, owner, 'POST', `/api/v1/organizations/${org.id}/projects`, { name: 'D', slug }),
++        ),
++      ),
++    ).toEqual(oneWinner);
++    expect(
++      codes(
++        await attempts(() =>
++          call(i, owner, 'POST', `/api/v1/projects/${project.id}/workspaces`, { name: 'D', slug }),
++        ),
++      ),
++    ).toEqual(oneWinner);
++    const user = await userIn(i);
++    expect(
++      codes(
++        await attempts(() =>
++          call(i, owner, 'POST', `/api/v1/organizations/${org.id}/members`, { userId: user.id }),
++        ),
++      ),
++    ).toEqual(oneWinner);
++    // Renaming onto a taken slug conflicts.
++    expect((await call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, { slug })).status).toBe(
++      409,
++    );
++
++    // Optimistic concurrency: of many writers holding the same version exactly one wins.
++    const current = (await call(i, owner, 'GET', `/api/v1/projects/${project.id}`)).data;
++    const raced = await attempts(() =>
++      call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, {
++        name: 'Raced',
++        expectedUpdatedAt: current.updatedAt,
++      }),
++    );
++    expect(codes(raced)).toEqual([200, 409, 409, 409, 409, 409]);
++    // Without a version, updates to different fields do not overwrite each other.
++    await Promise.all([
++      call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, { name: 'Left' }),
++      call(i, owner, 'PATCH', `/api/v1/projects/${project.id}`, { description: 'Right' }),
++    ]);
++    expect((await call(i, owner, 'GET', `/api/v1/projects/${project.id}`)).data).toMatchObject({
++      name: 'Left',
++      description: 'Right',
++    });
++  });
++
++  it('derives usable slugs for non-Latin names and bounds pagination', async () => {
++    const owner = await creator(i);
++    const a = await call(i, owner, 'POST', '/api/v1/organizations', { name: 'سازمان یک' });
++    const b = await call(i, owner, 'POST', '/api/v1/organizations', { name: 'سازمان دو' });
++    expect([a.status, b.status]).toEqual([201, 201]);
++    expect(a.data.slug).toMatch(/^item-[0-9a-f]{8}$/);
++    expect(b.data.slug).not.toBe(a.data.slug);
++    const page = await call(
++      i,
++      owner,
++      'GET',
++      '/api/v1/organizations?pageSize=1&page=2&sort=createdAt&order=asc',
++    );
++    expect(page.data.map((o: { id: string }) => o.id)).toEqual([b.data.id]);
++    expect(page.body.meta).toEqual({ total: 2, page: 2, pageSize: 1 });
++    expect((await call(i, owner, 'GET', '/api/v1/organizations?pageSize=101')).status).toBe(400);
++  });
++
++  it('documents the routes in OpenAPI', async () => {
++    const swagger = i.app as unknown as {
++      swagger(): { paths: Record<string, Record<string, unknown>> };
++    };
++    await i.app.ready();
++    const paths = swagger.swagger().paths;
++    expect(Object.keys(paths['/api/v1/organizations/{id}']!).sort()).toEqual([
++      'delete',
++      'get',
++      'patch',
++    ]);
++    for (const path of [
++      '/api/v1/organizations/{id}/members',
++      '/api/v1/organizations/{id}/members/{userId}',
++      '/api/v1/organizations/{id}/ownership',
++      '/api/v1/projects/{id}/workspaces',
++    ])
++      expect(paths).toHaveProperty([path]);
++  });
++};
++
++describe('tenancy on development-memory repositories', () => {
++  behaviour(async () => {
++    const repos = createMemoryIdentityRepositories();
++    const app = await buildServer({ identity: repos, mailer: new CapturingEmailSender() });
++    return { app, repos, close: () => app.close() };
++  });
++});
++
++(adminUrl ? describe : describe.skip)('tenancy on PostgreSQL (real database)', () => {
++  /** An independent API instance: its own connection pool, repositories and server. */
++  const instance = async (): Promise<Instance> => {
++    const repos = createPostgresIdentityRepositories(createSqlClient(databaseUrl(), { max: 6 }));
++    const app = await buildServer({ identity: repos, mailer: new CapturingEmailSender() });
++    // Closing the server ends its pool (onClose hook).
++    return { app, repos, close: () => app.close() };
++  };
++
++  beforeAll(async () => {
++    await admin(`CREATE DATABASE ${dbName}`);
++    const c = new pg.Client({ connectionString: databaseUrl() });
++    await c.connect();
++    const migrations = readdirSync(migrationsDir, { withFileTypes: true })
++      .filter((d) => d.isDirectory())
++      .map((d) => d.name)
++      .sort();
++    for (const m of migrations)
++      await c.query(readFileSync(join(migrationsDir, m, 'migration.sql'), 'utf8'));
++    await c.end();
++  }, 60_000);
++  afterAll(async () => {
++    await admin(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`);
++  }, 60_000);
++
++  behaviour(instance);
++
++  it('keeps everything across an API restart', async () => {
++    const first = await instance();
++    const { owner, org, project, workspace } = await tree(first);
++    const member = await addMember(first, owner, org.id, 'member');
++    await call(first, owner, 'PATCH', `/api/v1/workspaces/${workspace.id}`, {
++      environment: 'development',
++    });
++    await first.close();
++
++    const second = await instance();
++    expect((await call(second, owner, 'GET', `/api/v1/organizations/${org.id}`)).data.name).toBe(
++      org.name,
++    );
++    expect(
++      (await call(second, owner, 'GET', `/api/v1/projects/${project.id}`)).data.organizationId,
++    ).toBe(org.id);
++    expect(
++      (await call(second, member, 'GET', `/api/v1/workspaces/${workspace.id}`)).data,
++    ).toMatchObject({ environment: 'development', projectId: project.id });
++    await second.close();
++  });
++
++  it('shows one state to two independent instances', async () => {
++    const one = await instance();
++    const two = await instance();
++    const { owner, org, project } = await tree(one);
++    const member = await userIn(two);
++    expect((await call(two, owner, 'GET', `/api/v1/projects/${project.id}`)).status).toBe(200);
++    expect(
++      (
++        await call(two, owner, 'POST', `/api/v1/organizations/${org.id}/members`, {
++          userId: member.id,
++        })
++      ).status,
++    ).toBe(201);
++    expect((await call(one, member, 'GET', `/api/v1/organizations/${org.id}`)).status).toBe(200);
++    await call(one, owner, 'DELETE', `/api/v1/organizations/${org.id}/members/${member.id}`);
++    expect((await call(two, member, 'GET', `/api/v1/organizations/${org.id}`)).status).toBe(404);
++
++    const version = (await call(one, owner, 'GET', `/api/v1/projects/${project.id}`)).data
++      .updatedAt;
++    const results = await Promise.all(
++      [one, two].map((x, n) =>
++        call(x, owner, 'PATCH', `/api/v1/projects/${project.id}`, {
++          name: `from-${n}`,
++          expectedUpdatedAt: version,
++        }),
++      ),
++    );
++    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
++    const slug = unique('both');
++    const creates = await Promise.all(
++      [one, two].map((x) =>
++        call(x, owner, 'POST', `/api/v1/organizations/${org.id}/projects`, { name: 'Same', slug }),
++      ),
++    );
++    expect(creates.map((r) => r.status).sort()).toEqual([201, 409]);
++    await one.close();
++    await two.close();
++  });
++
++  it('never leaves a live child under an archived parent when archive and create race', async () => {
++    const one = await instance();
++    const two = await instance();
++    const owner = await creator(one);
++    const probe = createSqlClient(databaseUrl(), { max: 1 });
++    for (let round = 0; round < 8; round += 1) {
++      const org = (
++        await call(one, owner, 'POST', '/api/v1/organizations', { name: unique('race') })
++      ).data;
++      const project = (
++        await call(one, owner, 'POST', `/api/v1/organizations/${org.id}/projects`, { name: 'p' })
++      ).data;
++      const target =
++        round % 2 ? `/api/v1/organizations/${org.id}` : `/api/v1/projects/${project.id}`;
++      const outcomes = await Promise.all([
++        call(one, owner, 'DELETE', target),
++        ...Array.from({ length: 4 }, (_, n) =>
++          call(two, owner, 'POST', `/api/v1/projects/${project.id}/workspaces`, { name: `w${n}` }),
++        ),
++      ]);
++      expect(outcomes[0]!.status).toBe(200);
++      for (const outcome of outcomes.slice(1)) expect([201, 404]).toContain(outcome.status);
++      const orphans = await probe.query(
++        `SELECT w."id" FROM "Workspace" w JOIN "Project" p ON p."id" = w."projectId" JOIN "Organization" o ON o."id" = w."organizationId"
++         WHERE w."organizationId" = $1 AND w."deletedAt" IS NULL AND (p."deletedAt" IS NOT NULL OR o."deletedAt" IS NOT NULL)`,
++        [org.id],
++      );
++      expect(orphans).toEqual([]);
++    }
++    await probe.end();
++    await one.close();
++    await two.close();
++  }, 60_000);
++
++  it('guards parents inside the repository transaction, not only in the routes', async () => {
++    const one = await instance();
++    const a = await tree(one);
++    const b = await tree(one);
++    const t = new Date().toISOString();
++    const row = {
++      id: randomUUID(),
++      organizationId: a.org.id,
++      projectId: b.project.id,
++      name: 'x',
++      slug: unique('x'),
++      environment: 'production',
++      createdAt: t,
++      updatedAt: t,
++      deletedAt: null,
++    };
++    await expect(one.repos.workspaces.create(row)).rejects.toBeInstanceOf(MissingParentError);
++    await expect(
++      one.repos.workspaces.update(a.workspace.id, { projectId: b.project.id }, { at: t }),
++    ).rejects.toBeInstanceOf(MissingParentError);
++    await one.close();
++  });
++});
+diff --git a/apps/api/src/tenancy/routes.ts b/apps/api/src/tenancy/routes.ts
+new file mode 100644
+index 00000000..d172339f
+--- /dev/null
++++ b/apps/api/src/tenancy/routes.ts
+@@ -0,0 +1,529 @@
++import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
++import { z } from 'zod';
++import type { Principal } from '@irp/auth';
++import {
++  ConflictAppError,
++  ForbiddenAppError,
++  NotFoundAppError,
++  ValidationAppError,
++} from '@irp/core';
++import {
++  DuplicateError,
++  MEMBER_ROLES,
++  MissingParentError,
++  StaleWriteError,
++  type IdentityRepositories,
++  type OrganizationRole,
++  type PageQuery,
++  type TenantScope,
++} from '../identity/types.js';
++
++/**
++ * Organization, project, workspace and membership routes.
++ *
++ * Access inside an organization comes from ownership (`Organization.ownerUserId`) or an active
++ * `Membership`; platform admins have full access. Creating an organization still requires the
++ * `organizations:write` permission. Projects and workspaces have no membership of their own: access is
++ * inherited from the parent organization.
++ *
++ * A resource the caller cannot see is reported as 404; a visible resource with too low a role as 403.
++ */
++
++const RANK: Record<OrganizationRole, number> = { viewer: 0, member: 1, admin: 2, owner: 3 };
++
++export interface TenancyRouteDeps {
++  repos: IdentityRepositories;
++  preHandler: preHandlerAsyncHookHandler;
++  readPreHandler: preHandlerAsyncHookHandler;
++  requireAuth(request: FastifyRequest): Promise<Principal>;
++  requirePermission(request: FastifyRequest, permission: string): Promise<Principal>;
++}
++
++const idParams = z.object({ id: z.string().uuid() });
++const memberParams = z.object({ id: z.string().uuid(), userId: z.string().uuid() });
++const pageQuery = z.object({
++  page: z.coerce.number().int().min(1).max(100_000).default(1),
++  pageSize: z.coerce.number().int().min(1).max(100).default(25),
++  sort: z.string().default('createdAt'),
++  order: z.enum(['asc', 'desc']).default('desc'),
++  search: z.string().max(200).optional(),
++});
++
++const name = z.string().trim().min(1).max(120);
++const slug = z
++  .string()
++  .min(1)
++  .max(80)
++  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'slug must be lowercase letters, digits and single hyphens');
++const description = z.string().max(1000);
++const environment = z.enum(['development', 'staging', 'production']);
++// Creation keeps accepting what it accepted before (any 1-80 character slug, unknown keys ignored).
++const createSchema = z.object({
++  name,
++  slug: z.string().min(1).max(80).optional(),
++  description: description.optional(),
++});
++const createWorkspaceSchema = createSchema.extend({
++  projectId: z.string().uuid().optional(),
++  environment: environment.default('production'),
++});
++// Updates are strict: attempts to change parents or other fields (organizationId, ...) are rejected.
++const expectedUpdatedAt = z.string().datetime().optional();
++const patchOf = <S extends z.ZodRawShape>(shape: S) =>
++  z
++    .strictObject({ ...shape, expectedUpdatedAt })
++    .refine(
++      (body) => Object.entries(body).some(([k, v]) => k !== 'expectedUpdatedAt' && v !== undefined),
++      'at least one field to update is required',
++    );
++const organizationPatch = patchOf({ name: name.optional(), slug: slug.optional() });
++const projectPatch = patchOf({
++  name: name.optional(),
++  slug: slug.optional(),
++  description: description.nullable().optional(),
++});
++const workspacePatch = patchOf({
++  name: name.optional(),
++  slug: slug.optional(),
++  environment: environment.optional(),
++  projectId: z.string().uuid().optional(),
++});
++const role = z.enum(MEMBER_ROLES);
++const addMember = z
++  .strictObject({
++    email: z.string().email().toLowerCase().optional(),
++    userId: z.string().uuid().optional(),
++    role: role.default('member'),
++  })
++  .refine((b) => !!b.email !== !!b.userId, 'provide exactly one of email or userId');
++const memberPatch = z
++  .strictObject({ role: role.optional(), status: z.enum(['active', 'suspended']).optional() })
++  .refine((b) => b.role !== undefined || b.status !== undefined, 'role or status is required');
++
++const slugFor = (given: string | undefined, from: string): string => {
++  if (given) return given;
++  const derived = from
++    .toLowerCase()
++    .trim()
++    .replace(/[^a-z0-9]+/g, '-')
++    .slice(0, 80)
++    .replace(/(^-|-$)/g, '');
++  // Names without Latin letters or digits (for example Persian) would otherwise all derive "".
++  return derived || `item-${crypto.randomUUID().slice(0, 8)}`;
++};
++
++const ok = <T>(data: T, meta?: unknown) => ({ success: true, data, ...(meta ? { meta } : {}) });
++const paged = <T>(r: { items: T[]; total: number; page: number; pageSize: number }) =>
++  ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
++
++const translate = async <T>(operation: () => Promise<T>, duplicate: string): Promise<T> => {
++  try {
++    return await operation();
++  } catch (error) {
++    if (error instanceof DuplicateError) throw new ConflictAppError(duplicate);
++    if (error instanceof StaleWriteError)
++      throw new ConflictAppError('The resource was modified by another request. Reload and retry.');
++    if (error instanceof MissingParentError) throw new NotFoundAppError(error.parent);
++    throw error;
++  }
++};
++const found = <T>(value: T | null, resource: string): T => {
++  if (!value) throw new NotFoundAppError(resource);
++  return value;
++};
++
++export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDeps): void => {
++  const { repos } = deps;
++  const now = () => new Date().toISOString();
++  const isPlatformAdmin = (p: Principal) => p.roles.includes('platform_admin');
++  const scopeOf = (p: Principal): TenantScope =>
++    isPlatformAdmin(p) ? { kind: 'all' } : { kind: 'user', userId: p.id };
++
++  /** Requires at least `minimum` in a live organization. */
++  const authorize = async (p: Principal, organizationId: string, minimum: OrganizationRole) => {
++    if (isPlatformAdmin(p)) {
++      found(await repos.organizations.findById(organizationId, { kind: 'all' }), 'organization');
++      return 'owner' as const;
++    }
++    const actual = await repos.organizations.roleOf(organizationId, p.id);
++    if (!actual) throw new NotFoundAppError('organization');
++    if (RANK[actual] < RANK[minimum]) throw new ForbiddenAppError();
++    return actual;
++  };
++  const organizationFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
++    const principal = await deps.requireAuth(request);
++    const { id } = idParams.parse(request.params);
++    await authorize(principal, id, minimum);
++    return { principal, id };
++  };
++  const projectFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
++    const principal = await deps.requireAuth(request);
++    const { id } = idParams.parse(request.params);
++    const project = found(await repos.projects.findById(id, scopeOf(principal)), 'project');
++    await authorize(principal, project.organizationId, minimum);
++    return { principal, project };
++  };
++  const workspaceFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
++    const principal = await deps.requireAuth(request);
++    const { id } = idParams.parse(request.params);
++    const workspace = found(await repos.workspaces.findById(id, scopeOf(principal)), 'workspace');
++    await authorize(principal, workspace.organizationId, minimum);
++    return { principal, workspace };
++  };
++  // Collection lists keep denying (403) a user who neither holds the read permission nor belongs to any
++  // organization; results are always limited to the caller's own organizations.
++  const listFor = async (
++    request: FastifyRequest,
++    permission: string,
++  ): Promise<{ q: PageQuery; scope: TenantScope }> => {
++    const principal = await deps.requireAuth(request);
++    const scope = scopeOf(principal);
++    if (!isPlatformAdmin(principal) && !principal.scopes.includes(permission)) {
++      const mine = await repos.organizations.list(
++        { page: 1, pageSize: 1, sort: 'createdAt', order: 'desc' },
++        scope,
++      );
++      if (!mine.total) throw new ForbiddenAppError();
++    }
++    return { q: pageQuery.parse(request.query), scope };
++  };
++  const options = (tag: string, summary: string, preHandler = deps.preHandler) => ({
++    preHandler,
++    // Documentation only: validation stays in zod, as elsewhere in this API.
++    schema: { tags: [tag], summary, security: [{ bearerAuth: [] }] },
++  });
++
++  // ── Organizations ────────────────────────────────────────────────────────
++  app.get(
++    '/api/v1/organizations',
++    options('organizations', 'List organizations you can access'),
++    async (request) => {
++      const { q, scope } = await listFor(request, 'organizations:read');
++      return paged(await repos.organizations.list(q, scope));
++    },
++  );
++  app.post(
++    '/api/v1/organizations',
++    options('organizations', 'Create an organization (you become its owner)'),
++    async (request, reply) => {
++      const p = await deps.requirePermission(request, 'organizations:write');
++      const input = createSchema.parse(request.body);
++      const t = now();
++      const organization = await translate(
++        () =>
++          repos.organizations.create({
++            id: crypto.randomUUID(),
++            name: input.name,
++            slug: slugFor(input.slug, input.name),
++            ownerUserId: p.id,
++            createdAt: t,
++            updatedAt: t,
++            deletedAt: null,
++          }),
++        'Organization slug already exists.',
++      );
++      return reply.code(201).send(ok(organization));
++    },
++  );
++  app.get(
++    '/api/v1/organizations/:id',
++    options('organizations', 'Get an organization'),
++    async (request) => {
++      const { principal, id } = await organizationFor(request, 'viewer');
++      return ok(found(await repos.organizations.findById(id, scopeOf(principal)), 'organization'));
++    },
++  );
++  app.patch(
++    '/api/v1/organizations/:id',
++    options('organizations', 'Update an organization (admin)'),
++    async (request) => {
++      const { id } = await organizationFor(request, 'admin');
++      const { expectedUpdatedAt: expected, ...patch } = organizationPatch.parse(request.body);
++      const updated = await translate(
++        () =>
++          repos.organizations.update(id, patch as { name?: string; slug?: string }, {
++            at: now(),
++            expectedUpdatedAt: expected,
++          }),
++        'Organization slug already exists.',
++      );
++      return ok(found(updated, 'organization'));
++    },
++  );
++  app.delete(
++    '/api/v1/organizations/:id',
++    options('organizations', 'Archive an organization and its contents (owner)'),
++    async (request) => {
++      const { id } = await organizationFor(request, 'owner');
++      if (!(await repos.organizations.archive(id, now())))
++        throw new NotFoundAppError('organization');
++      return ok({ deleted: true });
++    },
++  );
++  app.post(
++    '/api/v1/organizations/:id/ownership',
++    options('organizations', 'Transfer ownership to an active member (owner)'),
++    async (request) => {
++      const { id } = await organizationFor(request, 'owner');
++      const { userId } = z.strictObject({ userId: z.string().uuid() }).parse(request.body);
++      const updated = await repos.organizations.transferOwnership(id, userId, now());
++      if (!updated)
++        throw new ValidationAppError('The new owner must be an active member of the organization.');
++      return ok(updated);
++    },
++  );
++
++  // ── Organization members ─────────────────────────────────────────────────
++  app.get(
++    '/api/v1/organizations/:id/members',
++    options('members', 'List members'),
++    async (request) => {
++      const { id } = await organizationFor(request, 'viewer');
++      return paged(await repos.memberships.list(id, pageQuery.parse(request.query)));
++    },
++  );
++  app.post(
++    '/api/v1/organizations/:id/members',
++    options('members', 'Add a member (admin)'),
++    async (request, reply) => {
++      const { id } = await organizationFor(request, 'admin');
++      const input = addMember.parse(request.body);
++      const user = input.userId
++        ? await repos.users.findById(input.userId)
++        : await repos.users.findByEmail(input.email!);
++      if (!user || user.status !== 'active') throw new NotFoundAppError('user');
++      const member = await translate(
++        () => repos.memberships.add(id, user.id, input.role, now()),
++        'User is already a member of this organization.',
++      );
++      return reply.code(201).send(ok(member));
++    },
++  );
++  app.patch(
++    '/api/v1/organizations/:id/members/:userId',
++    options('members', 'Change a member role or status (admin)'),
++    async (request) => {
++      const principal = await deps.requireAuth(request);
++      const { id, userId } = memberParams.parse(request.params);
++      await authorize(principal, id, 'admin');
++      const patch = memberPatch.parse(request.body);
++      const updated = await translate(
++        () =>
++          repos.memberships.update(
++            id,
++            userId,
++            {
++              ...(patch.role ? { role: patch.role } : {}),
++              ...(patch.status ? { status: patch.status } : {}),
++            },
++            now(),
++          ),
++        'Membership conflict.',
++      );
++      return ok(found(updated, 'membership'));
++    },
++  );
++  app.delete(
++    '/api/v1/organizations/:id/members/:userId',
++    options('members', 'Remove a member (admin), or leave'),
++    async (request) => {
++      const principal = await deps.requireAuth(request);
++      const { id, userId } = memberParams.parse(request.params);
++      await authorize(principal, id, principal.id === userId ? 'viewer' : 'admin');
++      if (!(await repos.memberships.remove(id, userId, now())))
++        throw new NotFoundAppError('membership');
++      return ok({ deleted: true });
++    },
++  );
++
++  // ── Projects ─────────────────────────────────────────────────────────────
++  app.get(
++    '/api/v1/projects',
++    options('projects', 'List projects you can access'),
++    async (request) => {
++      const { q, scope } = await listFor(request, 'projects:read');
++      return paged(await repos.projects.list(q, scope));
++    },
++  );
++  app.get(
++    '/api/v1/organizations/:id/projects',
++    options('projects', 'List projects of an organization'),
++    async (request) => {
++      const { principal, id } = await organizationFor(request, 'viewer');
++      return paged(
++        await repos.projects.list(pageQuery.parse(request.query), scopeOf(principal), {
++          organizationId: id,
++        }),
++      );
++    },
++  );
++  app.post(
++    '/api/v1/organizations/:id/projects',
++    options('projects', 'Create a project (member)'),
++    async (request, reply) => {
++      const { id } = await organizationFor(request, 'member');
++      const input = createSchema.parse(request.body);
++      const t = now();
++      const project = await translate(
++        () =>
++          repos.projects.create({
++            id: crypto.randomUUID(),
++            organizationId: id,
++            name: input.name,
++            slug: slugFor(input.slug, input.name),
++            ...(input.description ? { description: input.description } : {}),
++            createdAt: t,
++            updatedAt: t,
++            deletedAt: null,
++          }),
++        'Project slug already exists in this organization.',
++      );
++      return reply.code(201).send(ok(project));
++    },
++  );
++  app.get('/api/v1/projects/:id', options('projects', 'Get a project'), async (request) => {
++    return ok((await projectFor(request, 'viewer')).project);
++  });
++  app.patch(
++    '/api/v1/projects/:id',
++    options('projects', 'Update a project (member)'),
++    async (request) => {
++      const { project } = await projectFor(request, 'member');
++      const { expectedUpdatedAt: expected, ...patch } = projectPatch.parse(request.body);
++      const updated = await translate(
++        () =>
++          repos.projects.update(
++            project.id,
++            patch as { name?: string; slug?: string; description?: string | null },
++            { at: now(), expectedUpdatedAt: expected },
++          ),
++        'Project slug already exists in this organization.',
++      );
++      return ok(found(updated, 'project'));
++    },
++  );
++  app.delete(
++    '/api/v1/projects/:id',
++    options('projects', 'Archive a project and its workspaces (admin)'),
++    async (request) => {
++      const { project } = await projectFor(request, 'admin');
++      if (!(await repos.projects.archive(project.id, now()))) throw new NotFoundAppError('project');
++      return ok({ deleted: true });
++    },
++  );
++
++  // ── Workspaces ───────────────────────────────────────────────────────────
++  const createWorkspace = async (
++    organizationId: string,
++    input: z.infer<typeof createWorkspaceSchema>,
++  ) => {
++    const t = now();
++    return translate(
++      () =>
++        repos.workspaces.create({
++          id: crypto.randomUUID(),
++          organizationId,
++          ...(input.projectId ? { projectId: input.projectId } : {}),
++          name: input.name,
++          slug: slugFor(input.slug, input.name),
++          environment: input.environment,
++          createdAt: t,
++          updatedAt: t,
++          deletedAt: null,
++        }),
++      'Workspace slug already exists in this organization.',
++    );
++  };
++  app.get(
++    '/api/v1/workspaces',
++    options('workspaces', 'List workspaces you can access'),
++    async (request) => {
++      const { q, scope } = await listFor(request, 'workspaces:read');
++      return paged(await repos.workspaces.list(q, scope));
++    },
++  );
++  app.get(
++    '/api/v1/organizations/:id/workspaces',
++    options('workspaces', 'List workspaces of an organization'),
++    async (request) => {
++      const { principal, id } = await organizationFor(request, 'viewer');
++      return paged(
++        await repos.workspaces.list(pageQuery.parse(request.query), scopeOf(principal), {
++          organizationId: id,
++        }),
++      );
++    },
++  );
++  app.get(
++    '/api/v1/projects/:id/workspaces',
++    options('workspaces', 'List workspaces of a project'),
++    async (request) => {
++      const { principal, project } = await projectFor(request, 'viewer');
++      return paged(
++        await repos.workspaces.list(pageQuery.parse(request.query), scopeOf(principal), {
++          projectId: project.id,
++        }),
++      );
++    },
++  );
++  app.post(
++    '/api/v1/organizations/:id/workspaces',
++    options('workspaces', 'Create a workspace in an organization (member)'),
++    async (request, reply) => {
++      const { id } = await organizationFor(request, 'member');
++      return reply
++        .code(201)
++        .send(ok(await createWorkspace(id, createWorkspaceSchema.parse(request.body))));
++    },
++  );
++  app.post(
++    '/api/v1/projects/:id/workspaces',
++    options('workspaces', 'Create a workspace in a project (member)'),
++    async (request, reply) => {
++      const { project } = await projectFor(request, 'member');
++      const input = createWorkspaceSchema.parse(request.body);
++      if (input.projectId && input.projectId !== project.id)
++        throw new ValidationAppError('projectId does not match the project in the URL.');
++      return reply
++        .code(201)
++        .send(
++          ok(await createWorkspace(project.organizationId, { ...input, projectId: project.id })),
++        );
++    },
++  );
++  app.get(
++    '/api/v1/workspaces/:id',
++    options('workspaces', 'Get a workspace', deps.readPreHandler),
++    async (request) => {
++      return ok((await workspaceFor(request, 'viewer')).workspace);
++    },
++  );
++  app.patch(
++    '/api/v1/workspaces/:id',
++    options('workspaces', 'Update a workspace (member)'),
++    async (request) => {
++      const { workspace } = await workspaceFor(request, 'member');
++      const { expectedUpdatedAt: expected, ...patch } = workspacePatch.parse(request.body);
++      const updated = await translate(
++        () =>
++          repos.workspaces.update(
++            workspace.id,
++            patch as { name?: string; slug?: string; environment?: string; projectId?: string },
++            { at: now(), expectedUpdatedAt: expected },
++          ),
++        'Workspace slug already exists in this organization.',
++      );
++      return ok(found(updated, 'workspace'));
++    },
++  );
++  app.delete(
++    '/api/v1/workspaces/:id',
++    options('workspaces', 'Archive a workspace (admin)'),
++    async (request) => {
++      const { workspace } = await workspaceFor(request, 'admin');
++      if (!(await repos.workspaces.archive(workspace.id, now())))
++        throw new NotFoundAppError('workspace');
++      return ok({ deleted: true });
++    },
++  );
++};
+diff --git a/docs/api/README.md b/docs/api/README.md
+index 8723efc6..73cc0c91 100644
+--- a/docs/api/README.md
++++ b/docs/api/README.md
+@@ -46,6 +46,10 @@ The SDK exposes typed capability discovery through `InternetResilienceClient.cap
+ 
+ The wire contract is authoritative in the API implementation. SDK types are intentionally kept wire-compatible without adding a new package dependency or altering the lockfile dependency graph.
+ 
++## Organizations, projects and workspaces
++
++See [organizations.md](organizations.md) for the endpoints, access roles and archive behaviour.
++
+ ## Client rule
+ 
+ Web, desktop and mobile clients consume these contracts. They must not duplicate authoritative routing, gateway selection, failover or policy logic.
+diff --git a/docs/api/organizations.md b/docs/api/organizations.md
+new file mode 100644
+index 00000000..04856548
+--- /dev/null
++++ b/docs/api/organizations.md
+@@ -0,0 +1,53 @@
++# Organizations, projects and workspaces
++
++Persistent in PostgreSQL (`Organization`, `Project`, `Workspace`, `Membership`, `Role`). All routes need a
++bearer access token and are listed in the OpenAPI document (`/docs`).
++
++## Access
++
++| Caller                | Can                                                                                   |
++| --------------------- | ------------------------------------------------------------------------------------- |
++| `viewer` member       | read the organization, its members, projects and workspaces                           |
++| `member`              | viewer, plus create and update projects and workspaces                                |
++| `admin`               | member, plus update the organization, manage members, archive projects and workspaces |
++| owner (`ownerUserId`) | admin, plus archive the organization and transfer ownership                           |
++| `platform_admin`      | everything, in every organization                                                     |
++
++- Creating an organization requires the `organizations:write` permission; the creator becomes the owner.
++- Inside an organization, access comes from ownership or an active membership, not from global permissions.
++- Projects and workspaces have no membership of their own; access is inherited from the organization.
++- Resources you cannot see return `404`; a visible resource with too low a role returns `403`.
++- The three global lists return `403` to a user with neither the read permission nor any organization.
++
++## Endpoints (prefix `/api/v1`)
++
++| Method and path                                                                | Purpose                                                            |
++| ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
++| `GET`, `POST /organizations`                                                   | list, create                                                       |
++| `GET`, `PATCH`, `DELETE /organizations/{id}`                                   | read, update (`name`, `slug`), archive                             |
++| `POST /organizations/{id}/ownership`                                           | transfer to an active member (`userId`)                            |
++| `GET`, `POST /organizations/{id}/members`                                      | list, add (`email` or `userId`, `role`)                            |
++| `PATCH`, `DELETE /organizations/{id}/members/{userId}`                         | change `role` / `status`, remove or leave                          |
++| `GET /projects`, `GET`, `POST /organizations/{id}/projects`                    | list, create (`name`, `slug`, `description`)                       |
++| `GET`, `PATCH`, `DELETE /projects/{id}`                                        | read, update (`name`, `slug`, `description`), archive              |
++| `GET /workspaces`, `GET /organizations/{id}/workspaces`                        | list                                                               |
++| `POST /organizations/{id}/workspaces`, `GET`, `POST /projects/{id}/workspaces` | create, list by project                                            |
++| `GET`, `PATCH`, `DELETE /workspaces/{id}`                                      | read, update (`name`, `slug`, `environment`, `projectId`), archive |
++
++## Behaviour
++
++- Lists accept `page`, `pageSize` (max 100), `sort`, `order`, `search` and return `meta.total`.
++- `DELETE` archives (`deletedAt`). Archiving an organization archives its projects and workspaces; archiving
++  a project archives its workspaces. Slugs of archived records stay reserved.
++- A project cannot change organization. A workspace can move only to a project of its own organization and
++  cannot be detached from a project through an update.
++- `PATCH` changes only the fields sent. Send `expectedUpdatedAt` (the record's `updatedAt`) to get `409`
++  instead of overwriting a newer change.
++- Duplicate slugs and duplicate memberships return `409`.
++- A name with no Latin letters or digits gets a generated slug (`item-xxxxxxxx`).
++- Members must already have an active account; there is no invitation flow.
++
++## Verification
++
++`apps/api/src/tenancy-postgres.integration.test.ts` runs against development memory and, with
++`IRP_TEST_DATABASE_URL`, a real PostgreSQL (required in CI).
+diff --git a/docs/architecture/api-state-durability.md b/docs/architecture/api-state-durability.md
+index fe830fb5..e2961f5a 100644
+--- a/docs/architecture/api-state-durability.md
++++ b/docs/architecture/api-state-durability.md
+@@ -13,6 +13,7 @@ NON-DURABLE warning.
+ | --- | --- | --- |
+ | users, sessions, refresh/reset/verification tokens, audit | `identity/postgres.ts` | `identity-postgres.integration.test.ts` |
+ | device credentials, refresh tokens, enrollment requests, remote audit | `remote-client-store.ts` | `durable-state-postgres.integration.test.ts` |
++| organizations, projects, workspaces, memberships and roles | `identity/postgres.ts` | `tenancy-postgres.integration.test.ts` |
+ | platform settings (zero-cost mode) | `PlatformSetting` via `durability.ts` | `durable-state-postgres.integration.test.ts` |
+ | incidents and notifications | `notifications.ts` | `durable-state-postgres.integration.test.ts` |
+ 
+-- 
+2.43.0
+
