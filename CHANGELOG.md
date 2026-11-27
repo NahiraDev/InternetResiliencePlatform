@@ -1,3 +1,14 @@
+### Verified (2026-11-27 18:40 UTC continuous engineer)
+- Packaging version alignment and docs refresh for Linux end-user prerelease path on `release/linux-enduser-ready` (base main `97abdb91`).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Aligned linux-client Debian packaging default to `0.3.0-prerelease` for consistency with `@irp/daemon`.
+  - Refreshed prerelease notes to current base SHA and version.
+  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers. No second control plane.
+  - Packaging version 0.3.0-prerelease consistent.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for new Pull Request into main for owner review. Final approval/tagging left to repository owner.
+
 ### Verified (2026-11-27 17:45 UTC continuous engineer)
 - Local clean-checkout verification of Linux end-user prerelease path on `release/linux-enduser-ready` (base main `97abdb91`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
