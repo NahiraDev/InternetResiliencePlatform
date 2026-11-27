@@ -1,3 +1,9 @@
+### Verified (2026-11-27 00:50 UTC continuous engineer)
+- Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready` after fast-forward to latest main.
+  - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only), fail-closed host trust (dns.write requires euid===0), dual opt-in, PrivilegedMutationBoundary sole mutation path, honest status surfaces (including prereleaseBlockers).
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+
 ### Verified (2026-11-27 03:15 UTC continuous engineer)
 - Independent verification of Linux end-user prerelease path on `release/linux-enduser-ready`.
   - Confirmed `scripts/verify-linux-prerelease.sh` contracts remain green.
