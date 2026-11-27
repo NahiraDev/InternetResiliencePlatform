@@ -46,6 +46,10 @@ The SDK exposes typed capability discovery through `InternetResilienceClient.cap
 
 The wire contract is authoritative in the API implementation. SDK types are intentionally kept wire-compatible without adding a new package dependency or altering the lockfile dependency graph.
 
+## Organizations, projects and workspaces
+
+See [organizations.md](organizations.md) for the endpoints, access roles and archive behaviour.
+
 ## Client rule
 
 Web, desktop and mobile clients consume these contracts. They must not duplicate authoritative routing, gateway selection, failover or policy logic.
