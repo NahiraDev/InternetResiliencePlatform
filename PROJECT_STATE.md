@@ -1,3 +1,21 @@
+## Autonomous engineer checkpoint (2026-11-27 12:11 UTC) — live inspection; open PR #559 failing Validate repository on Docker smoke
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main)
+- Current main HEAD: `1094544cb92841008af47f59dd58d59beb2a9f33`
+- Open PR: https://github.com/NahiraDev/InternetResiliencePlatform/pull/559 (release/linux-enduser-ready @ 80af843c8d3249a7c497093270c255b826e22768)
+  - Status: open, mergeable_state=unstable
+  - Failing check: Validate repository (job https://github.com/NahiraDev/InternetResiliencePlatform/actions/runs/45960013164/job/140376498501) — Run production Docker runtime smoke test exited 1
+  - Other checks: Linux primary, netns-e2e, architecture, platforms mostly green; Vercel API deploy failed
+- Phases 94–150: phase documents and additive modules present on main (e.g. packages/resilience-runtime/src/scale/certification.ts for Phase 150); disposition PARTIAL pending exact-SHA CI evidence and external runtime verification. No new mutation authority.
+- Remaining blockers (explicit):
+  - Linux runtime soak / external validation (#323)
+  - PostgreSQL production deployment (#410/#411)
+  - exact-SHA CI cleanliness (current PR failing Docker smoke)
+  - DNS write under non-root User=irp (intentionally disabled)
+  - Full production certification / Phase 150 evidence open
+- Honest status: **prerelease / developer-preview only**. Not production-certified. ResilienceRuntime remains sole production mutation authority.
+- Next: Diagnose Docker smoke failure on PR #559 (logs require auth; no local Docker available this run). Continue independent verification of phase evidence on current SHA. Do not merge while checks fail.
+
 ## Autonomous engineer checkpoint (2026-11-27 00:50 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `1e7358530cf54dbd326d39a2202a2fa666a00686` (current HEAD after fast-forward merge of origin/main)
