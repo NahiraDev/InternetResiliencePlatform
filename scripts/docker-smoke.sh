@@ -10,6 +10,10 @@ export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-irp_smoke_postgres_password}
 export JWT_SECRET=${JWT_SECRET:-irp_smoke_jwt_secret_012345678901234567890123456789}
 export REMOTE_CLIENT_CREDENTIAL_KEY=${REMOTE_CLIENT_CREDENTIAL_KEY:-irp_smoke_credential_key_012345678901234567890123}
 export REMOTE_CLIENT_REFRESH_KEY=${REMOTE_CLIENT_REFRESH_KEY:-irp_smoke_refresh_key_012345678901234567890123}
+# Production startup requires real mail configuration; smoke uses reserved .invalid domains.
+# This keeps CI unable to deliver an email to an actual recipient.
+export IRP_EMAIL_WEBHOOK_URL=https://email-relay.invalid/ci-smoke
+export IRP_PUBLIC_BASE_URL=https://irp-smoke.invalid
 
 docker compose -f "$compose_file" config >/dev/null
 docker compose -f "$compose_file" build --pull
