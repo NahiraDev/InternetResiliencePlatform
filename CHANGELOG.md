@@ -1,5 +1,14 @@
 ## [0.3.0-prerelease] — 2026-11-28
 
+### Verified (2026-11-27 22:39 UTC continuous engineer)
+- Merged latest main (phase/119-tenant-isolation, PR #562) into `release/linux-enduser-ready` and re-verified Linux end-user prerelease path.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for owner review via PR #563. Final approval/tagging left to repository owner.
+
+
 ### Verified (2026-11-28 01:10 UTC continuous engineer)
 - Independent re-verification of Linux end-user prerelease path on \`release/linux-enduser-ready\` (base main \`3f30d791\`).
   - Ran \`scripts/verify-linux-prerelease.sh\`: all contracts green.

@@ -100,6 +100,22 @@ export const MEMBER_ROLES = ['admin', 'member', 'viewer'] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
 export type OrganizationRole = 'owner' | MemberRole;
 export type MembershipStatus = 'active' | 'suspended';
+
+const ROLE_RANK: Record<OrganizationRole, number> = { viewer: 0, member: 1, admin: 2, owner: 3 };
+/** Unknown role values (legacy or hand-edited data) grant nothing. */
+export const hasRole = (actual: string, minimum: OrganizationRole): boolean =>
+  Object.hasOwn(ROLE_RANK, actual) && ROLE_RANK[actual as OrganizationRole] >= ROLE_RANK[minimum];
+
+/** The actor lost the required role between route authorization and the write. */
+export class AccessDeniedError extends Error {
+  constructor(
+    readonly organizationId: string,
+    readonly reason: 'not_a_member' | 'insufficient_role',
+  ) {
+    super(`Access denied: ${reason}`);
+    this.name = 'AccessDeniedError';
+  }
+}
 export interface MembershipRecord {
   organizationId: string;
   userId: string;
@@ -125,6 +141,38 @@ export class MissingParentError extends Error {
     this.name = 'MissingParentError';
   }
 }
+
+/** Per-organization ceilings on live records; the owner does not count as a member. */
+export interface TenantQuotas {
+  maxProjects: number;
+  maxWorkspaces: number;
+  maxMembers: number;
+}
+export class QuotaExceededError extends Error {
+  constructor(
+    readonly resource: 'project' | 'workspace' | 'member',
+    readonly limit: number,
+  ) {
+    super(`Organization ${resource} quota of ${limit} reached`);
+    this.name = 'QuotaExceededError';
+  }
+}
+/** Reads the quotas from the environment; an invalid value stops start-up instead of disabling a limit. */
+export const tenantQuotasFromEnv = (env: NodeJS.ProcessEnv = process.env): TenantQuotas => {
+  const read = (name: string, fallback: number): number => {
+    const raw = env[name]?.trim();
+    if (!raw) return fallback;
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < 1)
+      throw new Error(`${name} must be a positive integer`);
+    return value;
+  };
+  return {
+    maxProjects: read('IRP_TENANT_MAX_PROJECTS', 100),
+    maxWorkspaces: read('IRP_TENANT_MAX_WORKSPACES', 500),
+    maxMembers: read('IRP_TENANT_MAX_MEMBERS', 200),
+  };
+};
 
 export class DuplicateError extends Error {
   constructor(readonly field: string) {
@@ -205,48 +253,77 @@ export interface OrganizationRepository {
   create(org: OrganizationRecord): Promise<OrganizationRecord>;
   findById(id: string, scope: TenantScope): Promise<OrganizationRecord | null>;
   list(query: PageQuery, scope: TenantScope): Promise<Page<OrganizationRecord>>;
-  update(id: string, patch: OrganizationPatch, options: UpdateOptions): Promise<OrganizationRecord | null>;
+  update(
+    id: string,
+    patch: OrganizationPatch,
+    options: UpdateOptions,
+    actor: TenantScope,
+  ): Promise<OrganizationRecord | null>;
   /** Archives the organization with its projects and workspaces in one transaction. */
-  archive(id: string, at: string): Promise<boolean>;
+  archive(id: string, at: string, actor: TenantScope): Promise<boolean>;
   /** The user's role in a live organization: owner, an active membership's role, or null. */
   roleOf(id: string, userId: string): Promise<OrganizationRole | null>;
   /**
    * Makes an active member the owner; the previous owner becomes an admin member. Returns null when
-   * the organization is gone or the target is not an active member.
+   * the organization is gone or the target is not an active member. StaleWriteError when the owner is
+   * no longer `expectedOwnerUserId` (a concurrent transfer won).
    */
-  transferOwnership(id: string, newOwnerUserId: string, at: string): Promise<OrganizationRecord | null>;
+  transferOwnership(
+    id: string,
+    newOwnerUserId: string,
+    at: string,
+    expectedOwnerUserId: string | null,
+  ): Promise<OrganizationRecord | null>;
 }
 export interface MembershipRepository {
   /** Active and suspended members (never removed ones, never the owner). */
   list(organizationId: string, query: PageQuery): Promise<Page<MembershipRecord>>;
   find(organizationId: string, userId: string): Promise<MembershipRecord | null>;
-  /** Adds or re-adds a member. DuplicateError if already a member or the owner. */
-  add(organizationId: string, userId: string, role: MemberRole, at: string): Promise<MembershipRecord>;
+  /** Adds or re-adds a member. DuplicateError if already a member or the owner; QuotaExceededError. */
+  add(
+    organizationId: string,
+    userId: string,
+    role: MemberRole,
+    at: string,
+    actor: TenantScope,
+  ): Promise<MembershipRecord>;
   update(
     organizationId: string,
     userId: string,
     patch: { role?: MemberRole; status?: MembershipStatus },
-    at: string,
+    options: UpdateOptions,
+    actor: TenantScope,
   ): Promise<MembershipRecord | null>;
-  remove(organizationId: string, userId: string, at: string): Promise<boolean>;
+  /** Admins remove members; anyone active may remove themselves. */
+  remove(organizationId: string, userId: string, at: string, actor: TenantScope): Promise<boolean>;
 }
 export interface ProjectRepository {
-  /** MissingParentError when the organization is absent or archived. */
-  create(project: ProjectRecord): Promise<ProjectRecord>;
+  /** MissingParentError when the organization is absent or archived; QuotaExceededError. */
+  create(project: ProjectRecord, actor: TenantScope): Promise<ProjectRecord>;
   findById(id: string, scope: TenantScope): Promise<ProjectRecord | null>;
   list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<ProjectRecord>>;
-  update(id: string, patch: ProjectPatch, options: UpdateOptions): Promise<ProjectRecord | null>;
+  update(
+    id: string,
+    patch: ProjectPatch,
+    options: UpdateOptions,
+    actor: TenantScope,
+  ): Promise<ProjectRecord | null>;
   /** Archives the project and its workspaces in one transaction. */
-  archive(id: string, at: string): Promise<boolean>;
+  archive(id: string, at: string, actor: TenantScope): Promise<boolean>;
 }
 export interface WorkspaceRepository {
   /** MissingParentError when the organization or the referenced project cannot be a parent. */
-  create(workspace: WorkspaceRecord): Promise<WorkspaceRecord>;
+  create(workspace: WorkspaceRecord, actor: TenantScope): Promise<WorkspaceRecord>;
   findById(id: string, scope: TenantScope): Promise<WorkspaceRecord | null>;
   list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<WorkspaceRecord>>;
   /** A `projectId` patch must name a live project of the workspace's own organization. */
-  update(id: string, patch: WorkspacePatch, options: UpdateOptions): Promise<WorkspaceRecord | null>;
-  archive(id: string, at: string): Promise<boolean>;
+  update(
+    id: string,
+    patch: WorkspacePatch,
+    options: UpdateOptions,
+    actor: TenantScope,
+  ): Promise<WorkspaceRecord | null>;
+  archive(id: string, at: string, actor: TenantScope): Promise<boolean>;
 }
 export interface RateLimitDecision {
   allowed: boolean;
