@@ -89,8 +89,42 @@ export interface Page<T> {
   page: number;
   pageSize: number;
 }
-/** Visibility scope: `all` for platform admins, otherwise only organizations owned by the user. */
-export type TenantScope = { kind: 'all' } | { kind: 'owner'; userId: string };
+/**
+ * Visibility scope: `all` for platform admins, otherwise organizations the user owns or is an active
+ * member of (and everything inside them).
+ */
+export type TenantScope = { kind: 'all' } | { kind: 'user'; userId: string };
+
+/** Roles a membership can grant. Ownership is `Organization.ownerUserId`, not a membership. */
+export const MEMBER_ROLES = ['admin', 'member', 'viewer'] as const;
+export type MemberRole = (typeof MEMBER_ROLES)[number];
+export type OrganizationRole = 'owner' | MemberRole;
+export type MembershipStatus = 'active' | 'suspended';
+export interface MembershipRecord {
+  organizationId: string;
+  userId: string;
+  email: string;
+  name: string;
+  role: MemberRole;
+  status: MembershipStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Optimistic concurrency: the caller's `expectedUpdatedAt` no longer matches the stored row. */
+export class StaleWriteError extends Error {
+  constructor() {
+    super('Resource was modified by another request');
+    this.name = 'StaleWriteError';
+  }
+}
+/** The parent (organization or project) is absent, archived, or belongs to another organization. */
+export class MissingParentError extends Error {
+  constructor(readonly parent: 'organization' | 'project') {
+    super(`Missing parent ${parent}`);
+    this.name = 'MissingParentError';
+  }
+}
 
 export class DuplicateError extends Error {
   constructor(readonly field: string) {
@@ -150,21 +184,69 @@ export interface AuditRepository {
     limit?: number;
   }): Promise<Array<AuditEntry & { id: string; createdAt: string }>>;
 }
+export interface UpdateOptions {
+  at: string;
+  /** When set, the write applies only if the row is still at this version, else StaleWriteError. */
+  expectedUpdatedAt?: string | undefined;
+}
+export type OrganizationPatch = { name?: string; slug?: string };
+export type ProjectPatch = { name?: string; slug?: string; description?: string | null };
+export type WorkspacePatch = {
+  name?: string;
+  slug?: string;
+  environment?: string;
+  projectId?: string;
+};
+export interface ParentFilter {
+  organizationId?: string;
+  projectId?: string;
+}
 export interface OrganizationRepository {
   create(org: OrganizationRecord): Promise<OrganizationRecord>;
   findById(id: string, scope: TenantScope): Promise<OrganizationRecord | null>;
   list(query: PageQuery, scope: TenantScope): Promise<Page<OrganizationRecord>>;
-  softDelete(id: string, scope: TenantScope, at: string): Promise<boolean>;
+  update(id: string, patch: OrganizationPatch, options: UpdateOptions): Promise<OrganizationRecord | null>;
+  /** Archives the organization with its projects and workspaces in one transaction. */
+  archive(id: string, at: string): Promise<boolean>;
+  /** The user's role in a live organization: owner, an active membership's role, or null. */
+  roleOf(id: string, userId: string): Promise<OrganizationRole | null>;
+  /**
+   * Makes an active member the owner; the previous owner becomes an admin member. Returns null when
+   * the organization is gone or the target is not an active member.
+   */
+  transferOwnership(id: string, newOwnerUserId: string, at: string): Promise<OrganizationRecord | null>;
+}
+export interface MembershipRepository {
+  /** Active and suspended members (never removed ones, never the owner). */
+  list(organizationId: string, query: PageQuery): Promise<Page<MembershipRecord>>;
+  find(organizationId: string, userId: string): Promise<MembershipRecord | null>;
+  /** Adds or re-adds a member. DuplicateError if already a member or the owner. */
+  add(organizationId: string, userId: string, role: MemberRole, at: string): Promise<MembershipRecord>;
+  update(
+    organizationId: string,
+    userId: string,
+    patch: { role?: MemberRole; status?: MembershipStatus },
+    at: string,
+  ): Promise<MembershipRecord | null>;
+  remove(organizationId: string, userId: string, at: string): Promise<boolean>;
 }
 export interface ProjectRepository {
+  /** MissingParentError when the organization is absent or archived. */
   create(project: ProjectRecord): Promise<ProjectRecord>;
   findById(id: string, scope: TenantScope): Promise<ProjectRecord | null>;
-  list(query: PageQuery, scope: TenantScope): Promise<Page<ProjectRecord>>;
+  list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<ProjectRecord>>;
+  update(id: string, patch: ProjectPatch, options: UpdateOptions): Promise<ProjectRecord | null>;
+  /** Archives the project and its workspaces in one transaction. */
+  archive(id: string, at: string): Promise<boolean>;
 }
 export interface WorkspaceRepository {
+  /** MissingParentError when the organization or the referenced project cannot be a parent. */
   create(workspace: WorkspaceRecord): Promise<WorkspaceRecord>;
   findById(id: string, scope: TenantScope): Promise<WorkspaceRecord | null>;
-  list(query: PageQuery, scope: TenantScope): Promise<Page<WorkspaceRecord>>;
+  list(query: PageQuery, scope: TenantScope, parent?: ParentFilter): Promise<Page<WorkspaceRecord>>;
+  /** A `projectId` patch must name a live project of the workspace's own organization. */
+  update(id: string, patch: WorkspacePatch, options: UpdateOptions): Promise<WorkspaceRecord | null>;
+  archive(id: string, at: string): Promise<boolean>;
 }
 export interface RateLimitDecision {
   allowed: boolean;
@@ -204,6 +286,7 @@ export interface IdentityRepositories {
   organizations: OrganizationRepository;
   projects: ProjectRepository;
   workspaces: WorkspaceRepository;
+  memberships: MembershipRepository;
   rateLimits: RateLimitStore;
   retention: RetentionStore;
   /** Throws when the backing store is unreachable. */
