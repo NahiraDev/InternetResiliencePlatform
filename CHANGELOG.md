@@ -10,8 +10,8 @@
 
 
 ### Verified (2026-11-28 01:10 UTC continuous engineer)
-- Independent re-verification of Linux end-user prerelease path on \`release/linux-enduser-ready\` (base main \`3f30d791\`).
-  - Ran \`scripts/verify-linux-prerelease.sh\`: all contracts green.
+- Independent re-verification of Linux end-user prerelease path on `release/linux-enduser-ready` (base main `3f30d791`).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
   - Control socket rejects live cycle requests. No second control plane.
   - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers.
@@ -20,8 +20,8 @@
   - Branch ready for owner review via PR #563. Final approval/tagging left to repository owner.
 
 ### Verified (2026-11-27 20:55 UTC continuous engineer)
-- Synced \`release/linux-enduser-ready\` with latest main (dependabot #561 cosign-installer) and re-verified Linux end-user prerelease path.
-  - Ran \`scripts/verify-linux-prerelease.sh\`: all contracts green.
+- Synced `release/linux-enduser-ready` with latest main (dependabot #561 cosign-installer) and re-verified Linux end-user prerelease path.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
   - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
   - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
