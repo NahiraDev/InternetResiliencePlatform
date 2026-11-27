@@ -14,7 +14,7 @@ Latest continuous verification: 2026-11-27 18:40 UTC (local clean-checkout + ver
 
 ## What works correctly today on Linux (Debian 13)
 
-- Daemon installs via Debian package (`irp-daemon_0.3.0-prerelease_amd64.deb`) or `scripts/install-linux.sh`.
+- Daemon installs via Debian package (`irp-daemon_0.3.0~prerelease_amd64.deb`) or `scripts/install-linux.sh`.
 - Starts under systemd as `User=irp` / `Group=irp` with `CapabilityBoundingSet=CAP_NET_ADMIN` and `AmbientCapabilities=CAP_NET_ADMIN` only (no CAP_SYS_ADMIN).
 - Host trust is fail-closed and correctly reported (probeHostFacts + authorizeHost). `dns.write` requires `euid === 0` + `resolvectl`.
 - Status is honest (live vs safe + explicit blockers + `releaseStatus: "prerelease / developer-preview (not production-certified)"` in `/v1/health` and `irp status` / `irp doctor`, plus `prereleaseBlockers` and `liveActive`).
