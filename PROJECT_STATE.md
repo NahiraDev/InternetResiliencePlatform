@@ -1,3 +1,25 @@
+## Autonomous engineer checkpoint (2026-11-27 16:45 UTC) — continued independent verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `f3dbcf07e2f58679266194b17816c44294a67866` (origin/main, post PR #560 merge)
+- Branch tip at verification: `fd7290f3b614314f39bd34a4740b8a3268796dd3` (pre-this-commit)
+- Completed this run:
+  - Inspected `release/linux-enduser-ready` via GitHub API.
+  - Confirmed systemd units (infra and linux-client) enforce User=irp, CapabilityBoundingSet=CAP_NET_ADMIN only (no CAP_SYS_ADMIN), AmbientCapabilities=CAP_NET_ADMIN, NoNewPrivileges=true, ProtectSystem=strict.
+  - Host trust fail-closed: dns.write requires euid === 0 + resolvectl; correctly blocked and reported under non-root User=irp.
+  - Dual live opt-in enforced; control socket rejects live cycles.
+  - PrivilegedMutationBoundary is the sole live mutation path (apply → verify → rollback → verifyRollback).
+  - Honest status surface reports releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive, and authorization blockers.
+  - Operator guide, install path, and Debian packaging accurately describe prerelease limitations and remaining blockers. No second control plane.
+  - Packaging version 0.3.0-prerelease consistent.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch will be pushed; a new Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-27 15:57 UTC) — independent verification complete; Linux end-user path ready for owner approval
 
 - Starting base SHA: `f3dbcf07e2f58679266194b17816c44294a67866` (origin/main, post PR #559 merge)
