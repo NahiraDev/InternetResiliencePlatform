@@ -1,3 +1,22 @@
+## Autonomous engineer checkpoint (2026-11-27 01:40 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `1094544cb92841008af47f59dd58d59beb2a9f33` (origin/main after PR #558 merge)
+- Branch: `release/linux-enduser-ready` (fast-forwarded to main)
+- Completed this run:
+  - Fast-forwarded branch to latest main.
+  - Independent confirmation of contracts on current tree.
+  - `scripts/verify-linux-prerelease.sh` contracts remain green (systemd least-privilege User=irp + CAP_NET_ADMIN only for infra and linux-client units, fail-closed dns.write requiring euid===0 + resolvectl, dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole path with apply → verify → rollback → verifyRollback, honest status with prereleaseBlockers).
+  - Operator guide, install path, and deb builder accurate with explicit remaining blockers.
+  - No second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch will be pushed. Pull Request will be opened into main for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-27 00:50 UTC) — post-merge independent verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `1e7358530cf54dbd326d39a2202a2fa666a00686` (current HEAD after fast-forward merge of origin/main)
