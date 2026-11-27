@@ -67,7 +67,7 @@ import { checkDatabaseHealth, createPrismaClient, createSqlClient } from '@irp/d
 import { PostgresHistoricalMeasurementStore } from '@irp/historical-analysis';
 import { AuthService } from './identity/auth-service.js';
 import { resolveEmailSender, resolvePublicBaseUrl, type EmailSender } from './identity/mailer.js';
-import { DuplicateError, type IdentityRepositories, type TenantScope, type UserRecord } from './identity/types.js';
+import { type IdentityRepositories, type UserRecord } from './identity/types.js';
 import {
   createCanonicalRuntime,
   controlRequest,
@@ -79,6 +79,7 @@ import {
 } from '@irp/resilience-runtime';
 import { registerIntentRoutes } from './intent-api.js';
 import { registerSubscriptionRoutes } from './subscription-api.js';
+import { registerTenancyRoutes } from './tenancy/routes.js';
 import { sharedRateLimitPreHandler } from './security/rate-limit.js';
 import {
   generateSpeedInsightsScript,
@@ -93,13 +94,6 @@ type Entity = { id: string; createdAt: string; updatedAt: string; deletedAt?: st
 type NetworkSnapshot = Awaited<ReturnType<NetworkMonitoringService['runOnce']>>;
 type NetworkMeasurement = NetworkSnapshot['measurements'][number];
 
-const now = () => new Date().toISOString();
-const slugify = (v: string) =>
-  v
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
 const ok = <T>(data: T, meta?: unknown) => ({ success: true, data, ...(meta ? { meta } : {}) });
 const created = <T extends Entity>(data: T) => ok(data);
 const publicUser = (user: UserRecord) => ({
@@ -129,15 +123,6 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email().toLowerCase(),
   password: z.string().min(1),
-});
-const nameSchema = z.object({
-  name: z.string().min(1).max(120),
-  slug: z.string().min(1).max(80).optional(),
-  description: z.string().max(1000).optional(),
-});
-const workspaceSchema = nameSchema.extend({
-  projectId: z.string().uuid().optional(),
-  environment: z.enum(['development', 'staging', 'production']).default('production'),
 });
 const runtimeCycleSchema = z.object({
   mode: z.enum(['simulation', 'safe', 'live']).default('simulation'),
@@ -377,6 +362,7 @@ export const buildServer = async (options: BuildServerOptions = {}): Promise<Fas
       openapi: '3.1.0',
       info: { title: 'InternetResiliencePlatform API', version: config.app.version },
       servers: [{ url: '/' }],
+      components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
     },
   });
   // @fastify/swagger-ui pulls @fastify/static, which has a CJS/ESM conflict
@@ -1257,8 +1243,6 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
   });
 
   const ctxOf = (request: FastifyRequest) => ({ ip: request.ip, userAgent: request.headers['user-agent'] });
-  const scopeOf = (principal: Principal): TenantScope =>
-    principal.roles.includes('platform_admin') ? { kind: 'all' } : { kind: 'owner', userId: principal.id };
   const authRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'auth', max: 10, windowMs: 60_000 });
   app.post('/api/v1/auth/register', { preHandler: authRateLimit }, async (request, reply) => {
     const input = registerSchema.parse(request.body);
@@ -1320,91 +1304,12 @@ const withInsights = injectSpeedInsightsIntoHtml(html, {
     if (!user) throw new NotFoundAppError('user');
     return ok(publicUser(user));
   });
-  const conflictOnDuplicate = async <T>(fn: () => Promise<T>, message: string): Promise<T> => {
-    try {
-      return await fn();
-    } catch (e) {
-      if (e instanceof DuplicateError) throw new ConflictAppError(message);
-      throw e;
-    }
-  };
-  app.get('/api/v1/organizations', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'organizations:read');
-    const r = await repos.organizations.list(paginationSchema.parse(request.query), scopeOf(p));
-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
-  });
-  app.post('/api/v1/organizations', { preHandler: generalRateLimit }, async (request, reply) => {
-    const p = await requirePermission(request, 'organizations:write');
-    const i = nameSchema.parse(request.body);
-    const t = now();
-    const org = await conflictOnDuplicate(
-      () => repos.organizations.create({ id: crypto.randomUUID(), name: i.name, slug: i.slug ?? slugify(i.name), ownerUserId: p.id, createdAt: t, updatedAt: t, deletedAt: null }),
-      'Organization slug already exists.',
-    );
-    return reply.code(201).send(created(org));
-  });
-  app.get('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'organizations:read');
-    const o = await repos.organizations.findById(idParams.parse(request.params).id, scopeOf(p));
-    if (!o) throw new NotFoundAppError('organization');
-    return ok(o);
-  });
-  app.delete('/api/v1/organizations/:id', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'organizations:write');
-    if (!(await repos.organizations.softDelete(idParams.parse(request.params).id, scopeOf(p), now()))) throw new NotFoundAppError('resource');
-    return ok({ deleted: true });
-  });
-  app.get('/api/v1/projects', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'projects:read');
-    const r = await repos.projects.list(paginationSchema.parse(request.query), scopeOf(p));
-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
-  });
-  app.post('/api/v1/organizations/:id/projects', { preHandler: generalRateLimit }, async (request, reply) => {
-    const p = await requirePermission(request, 'projects:write');
-    const organizationId = idParams.parse(request.params).id;
-    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
-    const i = nameSchema.parse(request.body);
-    const t = now();
-    const project = await conflictOnDuplicate(
-      () => repos.projects.create({ id: crypto.randomUUID(), organizationId, name: i.name, slug: i.slug ?? slugify(i.name), ...(i.description ? { description: i.description } : {}), createdAt: t, updatedAt: t, deletedAt: null }),
-      'Project slug already exists in this organization.',
-    );
-    return reply.code(201).send(created(project));
-  });
-  app.get('/api/v1/projects/:id', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'projects:read');
-    const project = await repos.projects.findById(idParams.parse(request.params).id, scopeOf(p));
-    if (!project) throw new NotFoundAppError('project');
-    return ok(project);
-  });
-  app.get('/api/v1/workspaces', { preHandler: generalRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'workspaces:read');
-    const r = await repos.workspaces.list(paginationSchema.parse(request.query), scopeOf(p));
-    return ok(r.items, { total: r.total, page: r.page, pageSize: r.pageSize });
-  });
-  app.post('/api/v1/organizations/:id/workspaces', { preHandler: generalRateLimit }, async (request, reply) => {
-    const p = await requirePermission(request, 'workspaces:write');
-    const organizationId = idParams.parse(request.params).id;
-    if (!(await repos.organizations.findById(organizationId, scopeOf(p)))) throw new NotFoundAppError('organization');
-    const i = workspaceSchema.parse(request.body);
-    if (i.projectId) {
-      const project = await repos.projects.findById(i.projectId, scopeOf(p));
-      // A workspace may only reference a project of its own organization (cross-tenant reference guard).
-      if (!project || project.organizationId !== organizationId) throw new NotFoundAppError('project');
-    }
-    const t = now();
-    const workspace = await conflictOnDuplicate(
-      () => repos.workspaces.create({ id: crypto.randomUUID(), organizationId, ...(i.projectId ? { projectId: i.projectId } : {}), name: i.name, slug: i.slug ?? slugify(i.name), environment: i.environment, createdAt: t, updatedAt: t, deletedAt: null }),
-      'Workspace slug already exists in this organization.',
-    );
-    return reply.code(201).send(created(workspace));
-  });
-  const workspaceReadRateLimit = sharedRateLimitPreHandler(repos.rateLimits, { name: 'workspace-read', max: 120, windowMs: 60_000 });
-  app.get('/api/v1/workspaces/:id', { preHandler: workspaceReadRateLimit }, async (request) => {
-    const p = await requirePermission(request, 'workspaces:read');
-    const w = await repos.workspaces.findById(idParams.parse(request.params).id, scopeOf(p));
-    if (!w) throw new NotFoundAppError('workspace');
-    return ok(w);
+  registerTenancyRoutes(app, {
+    repos,
+    preHandler: generalRateLimit,
+    readPreHandler: sharedRateLimitPreHandler(repos.rateLimits, { name: 'workspace-read', max: 120, windowMs: 60_000 }),
+    requireAuth,
+    requirePermission,
   });
 
   // ── Device data plane routes (mobile/desktop clients) ──────────────────────

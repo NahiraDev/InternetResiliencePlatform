@@ -1,6 +1,13 @@
 import { type SqlClient, type SqlExecutor } from '@irp/database';
 import {
   DuplicateError,
+  MissingParentError,
+  StaleWriteError,
+  type MemberRole,
+  type MembershipRecord,
+  type OrganizationRole,
+  type ParentFilter,
+  type UpdateOptions,
   type AuditEntry,
   type IdentityRepositories,
   type OneTimeTokenRecord,
@@ -112,6 +119,7 @@ const list = async <T>(
   spec: ListSpec<T>,
   q: PageQuery,
   scope?: TenantScope,
+  parent?: ParentFilter,
 ): Promise<Page<T>> => {
   const where: string[] = ['"deletedAt" IS NULL'];
   const values: unknown[] = [];
@@ -119,6 +127,10 @@ const list = async <T>(
     const t = spec.tenant(scope, values.length + 1);
     if (t.sql) where.push(t.sql);
     values.push(...t.values);
+  }
+  for (const [column, value] of parentWhere(parent)) {
+    values.push(value);
+    where.push(`"${column}" = $${values.length}`);
   }
   if (q.search) {
     values.push(like(q.search));
@@ -143,17 +155,129 @@ const list = async <T>(
     pageSize: q.pageSize,
   };
 };
+// `$n` is the caller's user id: organizations they own or actively belong to.
+const accessibleOrgs = (idx: number) =>
+  `SELECT o."id" FROM "Organization" o WHERE o."deletedAt" IS NULL AND (o."ownerUserId" = $${idx} OR EXISTS (
+     SELECT 1 FROM "Membership" m WHERE m."organizationId" = o."id" AND m."userId" = $${idx} AND m."status" = 'active'))`;
 const orgTenant = (scope: TenantScope, idx: number) =>
   scope.kind === 'all'
     ? { sql: '', values: [] }
-    : { sql: `"ownerUserId" = $${idx}`, values: [scope.userId] };
+    : { sql: `"id" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
 const viaOrgTenant = (scope: TenantScope, idx: number) =>
   scope.kind === 'all'
     ? { sql: '', values: [] }
-    : {
-        sql: `"organizationId" IN (SELECT "id" FROM "Organization" WHERE "deletedAt" IS NULL AND "ownerUserId" = $${idx})`,
-        values: [scope.userId],
-      };
+    : { sql: `"organizationId" IN (${accessibleOrgs(idx)})`, values: [scope.userId] };
+
+/** Applies a partial update; only the provided columns change, so unrelated concurrent edits survive. */
+const patchRow = async <T>(
+  db: SqlExecutor,
+  table: 'Organization' | 'Project' | 'Workspace',
+  cols: string,
+  map: (r: Row) => T,
+  id: string,
+  patch: Record<string, unknown>,
+  options: UpdateOptions,
+): Promise<T | null> => {
+  const values: unknown[] = [id, options.at];
+  // Column names come from the typed patch objects, never from request input.
+  const sets = Object.entries(patch)
+    .filter(([, v]) => v !== undefined)
+    .map(([column, v]) => {
+      values.push(v);
+      return `"${column}" = $${values.length}`;
+    });
+  // updatedAt always advances, so it can serve as the row version.
+  sets.push(`"updatedAt" = GREATEST($2::timestamp(3), "updatedAt" + interval '1 millisecond')`);
+  let guard = '';
+  if (options.expectedUpdatedAt) {
+    values.push(options.expectedUpdatedAt);
+    guard = ` AND "updatedAt" = $${values.length}::timestamp(3)`;
+  }
+  try {
+    const rows = await db.query<Row>(
+      `UPDATE "${table}" SET ${sets.join(', ')} WHERE "id" = $1 AND "deletedAt" IS NULL${guard} RETURNING ${cols}`,
+      values,
+    );
+    if (rows[0]) return map(rows[0]);
+  } catch (e) {
+    if (isUnique(e)) throw new DuplicateError('slug');
+    throw e;
+  }
+  if (!options.expectedUpdatedAt) return null;
+  const alive = await db.query(`SELECT 1 FROM "${table}" WHERE "id" = $1 AND "deletedAt" IS NULL`, [id]);
+  if (alive.length) throw new StaleWriteError();
+  return null;
+};
+
+// Parent rows are share-locked while a child is written, and archiving updates the parent first, so a
+// child can never be created under (or moved into) a parent that is being archived. Lock order is
+// always organization, then project, then workspace.
+const lockOrganization = async (tx: SqlExecutor, id: string): Promise<{ ownerUserId: string | null }> => {
+  const rows = await tx.query<{ ownerUserId: string | null }>(
+    `SELECT "ownerUserId" FROM "Organization" WHERE "id" = $1 AND "deletedAt" IS NULL FOR SHARE`,
+    [id],
+  );
+  if (!rows[0]) throw new MissingParentError('organization');
+  return rows[0];
+};
+const lockProject = async (tx: SqlExecutor, id: string, organizationId: string): Promise<void> => {
+  const rows = await tx.query(
+    `SELECT 1 FROM "Project" WHERE "id" = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL FOR SHARE`,
+    [id, organizationId],
+  );
+  if (!rows.length) throw new MissingParentError('project');
+};
+
+const MEMBER_SELECT = `SELECT m."organizationId", m."userId", u."email", u."name", r."slug" AS "role", m."status"::text AS "status",
+  m."createdAt" AT TIME ZONE 'UTC' AS "createdAt", m."updatedAt" AT TIME ZONE 'UTC' AS "updatedAt"
+  FROM "Membership" m JOIN "User" u ON u."id" = m."userId" JOIN "Role" r ON r."id" = m."roleId"
+  WHERE m."status" IN ('active','suspended') AND u."deletedAt" IS NULL AND m."organizationId" = $1`;
+const toMembership = (r: Row): MembershipRecord => ({
+  organizationId: String(r.organizationId),
+  userId: String(r.userId),
+  email: String(r.email),
+  name: String(r.name ?? ''),
+  role: r.role as MemberRole,
+  status: r.status as MembershipRecord['status'],
+  createdAt: iso(r.createdAt),
+  updatedAt: iso(r.updatedAt),
+});
+const findMember = async (db: SqlExecutor, organizationId: string, userId: string) => {
+  const rows = await db.query<Row>(`${MEMBER_SELECT} AND m."userId" = $2`, [organizationId, userId]);
+  return rows[0] ? toMembership(rows[0]) : null;
+};
+// Membership roles are per-organization Role rows; the unique (organizationId, slug) makes this safe to race.
+const ensureRole = async (tx: SqlExecutor, organizationId: string, role: MemberRole, at: string) => {
+  const rows = await tx.query<{ id: string }>(
+    `INSERT INTO "Role" ("id","organizationId","name","slug","system","createdAt","updatedAt")
+     VALUES (gen_random_uuid(),$1,$2,$2,true,$3,$3)
+     ON CONFLICT ("organizationId","slug") DO UPDATE SET "slug" = EXCLUDED."slug" RETURNING "id"`,
+    [organizationId, role, at],
+  );
+  return (rows[0] as { id: string }).id;
+};
+const upsertMember = async (
+  tx: SqlExecutor,
+  organizationId: string,
+  userId: string,
+  role: MemberRole,
+  at: string,
+  /** Overwrite an existing active/suspended membership instead of leaving it untouched. */
+  replace: boolean,
+): Promise<boolean> => {
+  const roleId = await ensureRole(tx, organizationId, role, at);
+  const rows = await tx.query(
+    `INSERT INTO "Membership" ("id","userId","organizationId","roleId","status","createdAt","updatedAt")
+     VALUES (gen_random_uuid(),$1,$2,$3,'active',$4,$4)
+     ON CONFLICT ("userId","organizationId") DO UPDATE SET "roleId" = EXCLUDED."roleId", "status" = 'active', "updatedAt" = EXCLUDED."updatedAt"
+     ${replace ? '' : `WHERE "Membership"."status" IN ('removed','invited')`}
+     RETURNING "id"`,
+    [userId, organizationId, roleId, at],
+  );
+  return rows.length > 0;
+};
+const parentWhere = (parent?: ParentFilter) =>
+  Object.entries(parent ?? {}).filter(([, v]) => v !== undefined) as Array<[string, string]>;
 
 export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepositories => {
   const one = async <T>(text: string, values: unknown[], map: (r: Row) => T): Promise<T | null> => {
@@ -421,11 +545,94 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
         );
       },
       list: (q, scope) => list(sql, orgSpec, q, scope),
-      async softDelete(id, scope, at) {
-        const t = orgTenant(scope, 3);
+      update: (id, patch, options) =>
+        patchRow(sql, 'Organization', ORG_COLS, toOrg, id, { ...patch }, options),
+      archive: (id, at) =>
+        sql.transaction(async (tx) => {
+          const r = await tx.query(
+            `UPDATE "Organization" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
+            [id, at],
+          );
+          if (!r.length) return false;
+          for (const table of ['Project', 'Workspace'])
+            await tx.query(
+              `UPDATE "${table}" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "organizationId"=$1 AND "deletedAt" IS NULL`,
+              [id, at],
+            );
+          return true;
+        }),
+      async roleOf(id, userId) {
+        const rows = await sql.query<{ role: string | null }>(
+          `SELECT CASE WHEN o."ownerUserId" = $2 THEN 'owner' ELSE (
+             SELECT r."slug" FROM "Membership" m JOIN "Role" r ON r."id" = m."roleId"
+             WHERE m."organizationId" = o."id" AND m."userId" = $2 AND m."status" = 'active') END AS "role"
+           FROM "Organization" o WHERE o."id" = $1 AND o."deletedAt" IS NULL`,
+          [id, userId],
+        );
+        return (rows[0]?.role as OrganizationRole | undefined) ?? null;
+      },
+      transferOwnership: (id, newOwnerUserId, at) =>
+        sql.transaction(async (tx) => {
+          const current = await tx.query<{ ownerUserId: string | null }>(
+            `SELECT "ownerUserId" FROM "Organization" WHERE "id"=$1 AND "deletedAt" IS NULL FOR UPDATE`,
+            [id],
+          );
+          if (!current[0]) return null;
+          const member = await findMember(tx, id, newOwnerUserId);
+          if (member?.status !== 'active') return null;
+          await tx.query(
+            `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2`,
+            [id, newOwnerUserId, at],
+          );
+          const previous = current[0].ownerUserId;
+          if (previous) await upsertMember(tx, id, previous, 'admin', at, true);
+          return patchRow(tx, 'Organization', ORG_COLS, toOrg, id, { ownerUserId: newOwnerUserId }, { at });
+        }),
+    },
+    memberships: {
+      async list(organizationId, q) {
+        const values: unknown[] = [organizationId];
+        let search = '';
+        if (q.search) {
+          values.push(like(q.search));
+          search = ` AND (u."email"::text ILIKE $2 OR u."name" ILIKE $2)`;
+        }
+        const order = q.sort === 'name' || q.sort === 'email' ? `u."${q.sort}"` : 'm."createdAt"';
+        const total = await sql.query<{ n: string }>(
+          `SELECT count(*)::text AS n FROM (${MEMBER_SELECT}${search}) t`,
+          values,
+        );
+        const rows = await sql.query<Row>(
+          `${MEMBER_SELECT}${search} ORDER BY ${order} ${q.order === 'asc' ? 'ASC' : 'DESC'}, m."id" LIMIT ${q.pageSize} OFFSET ${(q.page - 1) * q.pageSize}`,
+          values,
+        );
+        return { items: rows.map(toMembership), total: Number(total[0]?.n ?? 0), page: q.page, pageSize: q.pageSize };
+      },
+      find: (organizationId, userId) => findMember(sql, organizationId, userId),
+      add: (organizationId, userId, role, at) =>
+        sql.transaction(async (tx) => {
+          const org = await lockOrganization(tx, organizationId);
+          if (org.ownerUserId === userId) throw new DuplicateError('member');
+          if (!(await upsertMember(tx, organizationId, userId, role, at, false)))
+            throw new DuplicateError('member');
+          return (await findMember(tx, organizationId, userId)) as MembershipRecord;
+        }),
+      update: (organizationId, userId, patch, at) =>
+        sql.transaction(async (tx) => {
+          await lockOrganization(tx, organizationId);
+          if (!(await findMember(tx, organizationId, userId))) return null;
+          const roleId = patch.role ? await ensureRole(tx, organizationId, patch.role, at) : null;
+          await tx.query(
+            `UPDATE "Membership" SET "roleId" = COALESCE($3, "roleId"), "status" = COALESCE($4::"MembershipStatus", "status"), "updatedAt" = $5
+             WHERE "organizationId" = $1 AND "userId" = $2 AND "status" IN ('active','suspended')`,
+            [organizationId, userId, roleId, patch.status ?? null, at],
+          );
+          return findMember(tx, organizationId, userId);
+        }),
+      async remove(organizationId, userId, at) {
         const r = await sql.query(
-          `UPDATE "Organization" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL${t.sql ? ` AND ${t.sql}` : ''} RETURNING "id"`,
-          [id, at, ...t.values],
+          `UPDATE "Membership" SET "status"='removed',"updatedAt"=$3 WHERE "organizationId"=$1 AND "userId"=$2 AND "status" <> 'removed' RETURNING "id"`,
+          [organizationId, userId, at],
         );
         return r.length > 0;
       },
@@ -433,7 +640,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
     projects: {
       async create(p) {
         try {
-          return (await one(
+          return await sql.transaction(async (tx) => {
+            await lockOrganization(tx, p.organizationId);
+            const rows = await tx.query<Row>(
             `INSERT INTO "Project" ("id","organizationId","name","slug","description","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${PROJECT_COLS}`,
             [
               p.id,
@@ -444,8 +653,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
               p.createdAt,
               p.updatedAt,
             ],
-            toProject,
-          )) as ProjectRecord;
+            );
+            return toProject(rows[0] as Row);
+          });
         } catch (e) {
           if (isUnique(e)) throw new DuplicateError('slug');
           throw e;
@@ -459,12 +669,30 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
           toProject,
         );
       },
-      list: (q, scope) => list(sql, projectSpec, q, scope),
+      list: (q, scope, parent) => list(sql, projectSpec, q, scope, parent),
+      update: (id, patch, options) =>
+        patchRow(sql, 'Project', PROJECT_COLS, toProject, id, { ...patch }, options),
+      archive: (id, at) =>
+        sql.transaction(async (tx) => {
+          const r = await tx.query(
+            `UPDATE "Project" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
+            [id, at],
+          );
+          if (!r.length) return false;
+          await tx.query(
+            `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "projectId"=$1 AND "deletedAt" IS NULL`,
+            [id, at],
+          );
+          return true;
+        }),
     },
     workspaces: {
       async create(w) {
         try {
-          return (await one(
+          return await sql.transaction(async (tx) => {
+            await lockOrganization(tx, w.organizationId);
+            if (w.projectId) await lockProject(tx, w.projectId, w.organizationId);
+            const rows = await tx.query<Row>(
             `INSERT INTO "Workspace" ("id","organizationId","projectId","name","slug","environment","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${WORKSPACE_COLS}`,
             [
               w.id,
@@ -476,8 +704,9 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
               w.createdAt,
               w.updatedAt,
             ],
-            toWorkspace,
-          )) as WorkspaceRecord;
+            );
+            return toWorkspace(rows[0] as Row);
+          });
         } catch (e) {
           if (isUnique(e)) throw new DuplicateError('slug');
           throw e;
@@ -491,7 +720,27 @@ export const createPostgresIdentityRepositories = (sql: SqlClient): IdentityRepo
           toWorkspace,
         );
       },
-      list: (q, scope) => list(sql, workspaceSpec, q, scope),
+      list: (q, scope, parent) => list(sql, workspaceSpec, q, scope, parent),
+      update: (id, patch, options) =>
+        sql.transaction(async (tx) => {
+          if (patch.projectId) {
+            const current = await tx.query<{ organizationId: string }>(
+              `SELECT "organizationId" FROM "Workspace" WHERE "id"=$1 AND "deletedAt" IS NULL`,
+              [id],
+            );
+            if (!current[0]) return null;
+            await lockOrganization(tx, current[0].organizationId);
+            await lockProject(tx, patch.projectId, current[0].organizationId);
+          }
+          return patchRow(tx, 'Workspace', WORKSPACE_COLS, toWorkspace, id, { ...patch }, options);
+        }),
+      async archive(id, at) {
+        const r = await sql.query(
+          `UPDATE "Workspace" SET "deletedAt"=$2,"updatedAt"=$2 WHERE "id"=$1 AND "deletedAt" IS NULL RETURNING "id"`,
+          [id, at],
+        );
+        return r.length > 0;
+      },
     },
     rateLimits: {
       async hit(key, max, windowMs): Promise<RateLimitDecision> {
