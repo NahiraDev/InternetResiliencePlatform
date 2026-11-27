@@ -152,17 +152,44 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     isPlatformAdmin(p) ? { kind: 'all' } : { kind: 'user', userId: p.id };
 
   type TenantResource = 'organization' | 'project' | 'workspace';
-  const auditDenied = (request: FastifyRequest, p: Principal, resource: TenantResource, resourceId: string, organizationId: string, reason: 'not_a_member' | 'insufficient_role' | 'cross_tenant_parent') => repos.audit.record({ actorUserId: p.id, action: 'tenancy.access.denied', resource, resourceId, metadata: { organizationId, reason, method: request.method, route: request.routeOptions.url }, ipAddress: request.ip });
+  /** Records a refused access to an existing tenant resource. The request is refused either way. */
+  const auditDenied = (
+    request: FastifyRequest,
+    p: Principal,
+    resource: TenantResource,
+    resourceId: string,
+    organizationId: string,
+    reason: 'not_a_member' | 'insufficient_role' | 'cross_tenant_parent',
+  ) =>
+    repos.audit.record({
+      actorUserId: p.id,
+      action: 'tenancy.access.denied',
+      resource,
+      resourceId,
+      metadata: { organizationId, reason, method: request.method, route: request.routeOptions.url },
+      ipAddress: request.ip,
+    });
 
   /** Requires at least `minimum` in a live organization. */
-  const authorize = async (request: FastifyRequest, p: Principal, organizationId: string, minimum: OrganizationRole, target: { resource: TenantResource; id: string } = { resource: 'organization', id: organizationId }) => {
+  const authorize = async (
+    request: FastifyRequest,
+    p: Principal,
+    organizationId: string,
+    minimum: OrganizationRole,
+    target: { resource: TenantResource; id: string } = {
+      resource: 'organization',
+      id: organizationId,
+    },
+  ) => {
     if (isPlatformAdmin(p)) {
       found(await repos.organizations.findById(organizationId, { kind: 'all' }), 'organization');
       return 'owner' as const;
     }
     const actual = await repos.organizations.roleOf(organizationId, p.id);
     if (!actual) {
-      if (await repos.organizations.findById(organizationId, { kind: 'all' })) await auditDenied(request, p, target.resource, target.id, organizationId, 'not_a_member');
+      // Only an organization that exists is a cross-tenant attempt; unknown ids are not recorded.
+      if (await repos.organizations.findById(organizationId, { kind: 'all' }))
+        await auditDenied(request, p, target.resource, target.id, organizationId, 'not_a_member');
       throw new NotFoundAppError(target.resource);
     }
     if (!hasRole(actual, minimum)) {
@@ -171,9 +198,25 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     }
     return actual;
   };
-  const write = async <T>(request: FastifyRequest, p: Principal, target: { resource: TenantResource; id: string }, operation: (actor: TenantScope) => Promise<T>, duplicate = 'Resource conflict.'): Promise<T> => {
-    try { return await translate(() => operation(scopeOf(p)), duplicate); }
-    catch (error) { if (!(error instanceof AccessDeniedError)) throw error; await auditDenied(request, p, target.resource, target.id, error.organizationId, error.reason); if (error.reason === 'insufficient_role') throw new ForbiddenAppError(); throw new NotFoundAppError(target.resource); }
+  /**
+   * Runs a write that rechecks the actor's role inside its transaction, so a role revoked after
+   * `authorize` still stops it, and audits that refusal like any other.
+   */
+  const write = async <T>(
+    request: FastifyRequest,
+    p: Principal,
+    target: { resource: TenantResource; id: string },
+    operation: (actor: TenantScope) => Promise<T>,
+    duplicate = 'Resource conflict.',
+  ): Promise<T> => {
+    try {
+      return await translate(() => operation(scopeOf(p)), duplicate);
+    } catch (error) {
+      if (!(error instanceof AccessDeniedError)) throw error;
+      await auditDenied(request, p, target.resource, target.id, error.organizationId, error.reason);
+      if (error.reason === 'insufficient_role') throw new ForbiddenAppError();
+      throw new NotFoundAppError(target.resource);
+    }
   };
   const organizationTarget = (id: string) => ({ resource: 'organization' as const, id });
   const organizationFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
@@ -182,22 +225,46 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     await authorize(request, principal, id, minimum);
     return { principal, id };
   };
-  // Unscoped lookup is only used to authorize and audit; nothing is returned before authorization.
+  // The unscoped lookup is used only to authorize and audit; nothing is returned before `authorize`.
   const projectFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
     const principal = await deps.requireAuth(request);
     const { id } = idParams.parse(request.params);
     const project = found(await repos.projects.findById(id, { kind: 'all' }), 'project');
-    await authorize(request, principal, project.organizationId, minimum, { resource: 'project', id });
+    await authorize(request, principal, project.organizationId, minimum, {
+      resource: 'project',
+      id,
+    });
     return { principal, project };
   };
   const workspaceFor = async (request: FastifyRequest, minimum: OrganizationRole) => {
     const principal = await deps.requireAuth(request);
     const { id } = idParams.parse(request.params);
     const workspace = found(await repos.workspaces.findById(id, { kind: 'all' }), 'workspace');
-    await authorize(request, principal, workspace.organizationId, minimum, { resource: 'workspace', id });
+    await authorize(request, principal, workspace.organizationId, minimum, {
+      resource: 'workspace',
+      id,
+    });
     return { principal, workspace };
   };
-  const auditForeignProject = async (request: FastifyRequest, p: Principal, organizationId: string, projectId: string | undefined) => { if (!projectId) return; const project = await repos.projects.findById(projectId, { kind: 'all' }); if (project && project.organizationId !== organizationId) await auditDenied(request, p, 'project', projectId, project.organizationId, 'cross_tenant_parent'); };
+  /** Records an attempt to attach a workspace to another organization's project. */
+  const auditForeignProject = async (
+    request: FastifyRequest,
+    p: Principal,
+    organizationId: string,
+    projectId: string | undefined,
+  ) => {
+    if (!projectId) return;
+    const project = await repos.projects.findById(projectId, { kind: 'all' });
+    if (project && project.organizationId !== organizationId)
+      await auditDenied(
+        request,
+        p,
+        'project',
+        projectId,
+        project.organizationId,
+        'cross_tenant_parent',
+      );
+  };
   // Collection lists keep denying (403) a user who neither holds the read permission nor belongs to any
   // organization; results are always limited to the caller's own organizations.
   const listFor = async (
@@ -267,7 +334,16 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     async (request) => {
       const { principal, id } = await organizationFor(request, 'admin');
       const { expectedUpdatedAt: expected, ...patch } = organizationPatch.parse(request.body);
-      const updated = await write(request, principal, organizationTarget(id), (actor) => repos.organizations.update(id, patch as { name?: string; slug?: string }, { at: now(), expectedUpdatedAt: expected }, actor),
+      const updated = await write(
+        request,
+        principal,
+        organizationTarget(id),
+        (actor) => repos.organizations.update(
+          id,
+          patch as { name?: string; slug?: string },
+          { at: now(), expectedUpdatedAt: expected },
+          actor,
+        ),
         'Organization slug already exists.',
       );
       return ok(found(updated, 'organization'));
@@ -278,7 +354,9 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     options('organizations', 'Archive an organization and its contents (owner)'),
     async (request) => {
       const { principal, id } = await organizationFor(request, 'owner');
-      const archived = await write(request, principal, organizationTarget(id), (actor) => repos.organizations.archive(id, now(), actor));
+      const archived = await write(request, principal, organizationTarget(id), (actor) =>
+        repos.organizations.archive(id, now(), actor),
+      );
       if (!archived) throw new NotFoundAppError('organization');
       return ok({ deleted: true });
     },
@@ -289,8 +367,14 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     async (request) => {
       const { principal, id } = await organizationFor(request, 'owner');
       const { userId } = z.strictObject({ userId: z.string().uuid() }).parse(request.body);
-      const expectedOwner = isPlatformAdmin(principal) ? found(await repos.organizations.findById(id, { kind: 'all' }), 'organization').ownerUserId : principal.id;
-      const updated = await translate(() => repos.organizations.transferOwnership(id, userId, now(), expectedOwner), 'Ownership conflict.');
+      // An owner may only give away ownership they still hold when the write happens.
+      const expectedOwner = isPlatformAdmin(principal)
+        ? found(await repos.organizations.findById(id, { kind: 'all' }), 'organization').ownerUserId
+        : principal.id;
+      const updated = await translate(
+        () => repos.organizations.transferOwnership(id, userId, now(), expectedOwner),
+        'Ownership conflict.',
+      );
       if (!updated)
         throw new ValidationAppError('The new owner must be an active member of the organization.');
       return ok(updated);
@@ -316,7 +400,11 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
         ? await repos.users.findById(input.userId)
         : await repos.users.findByEmail(input.email!);
       if (!user || user.status !== 'active') throw new NotFoundAppError('user');
-      const member = await write(request, principal, organizationTarget(id), (actor) => repos.memberships.add(id, user.id, input.role, now(), actor),
+      const member = await write(
+        request,
+        principal,
+        organizationTarget(id),
+        (actor) => repos.memberships.add(id, user.id, input.role, now(), actor),
         'User is already a member of this organization.',
       );
       return reply.code(201).send(ok(member));
@@ -330,7 +418,11 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
       const { id, userId } = memberParams.parse(request.params);
       await authorize(request, principal, id, 'admin');
       const patch = memberPatch.parse(request.body);
-      const updated = await write(request, principal, organizationTarget(id), (actor) =>
+      const updated = await write(
+        request,
+        principal,
+        organizationTarget(id),
+        (actor) =>
           repos.memberships.update(
             id,
             userId,
@@ -353,7 +445,9 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
       const principal = await deps.requireAuth(request);
       const { id, userId } = memberParams.parse(request.params);
       await authorize(request, principal, id, principal.id === userId ? 'viewer' : 'admin');
-      const removed = await write(request, principal, organizationTarget(id), (actor) => repos.memberships.remove(id, userId, now(), actor));
+      const removed = await write(request, principal, organizationTarget(id), (actor) =>
+        repos.memberships.remove(id, userId, now(), actor),
+      );
       if (!removed) throw new NotFoundAppError('membership');
       return ok({ deleted: true });
     },
@@ -387,7 +481,24 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
       const { principal, id } = await organizationFor(request, 'member');
       const input = createSchema.parse(request.body);
       const t = now();
-      const project = await write(request, principal, organizationTarget(id), (actor) => repos.projects.create({ id: crypto.randomUUID(), organizationId: id, name: input.name, slug: slugFor(input.slug, input.name), ...(input.description ? { description: input.description } : {}), createdAt: t, updatedAt: t, deletedAt: null }, actor),
+      const project = await write(
+        request,
+        principal,
+        organizationTarget(id),
+        (actor) =>
+          repos.projects.create(
+            {
+              id: crypto.randomUUID(),
+              organizationId: id,
+              name: input.name,
+              slug: slugFor(input.slug, input.name),
+              ...(input.description ? { description: input.description } : {}),
+              createdAt: t,
+              updatedAt: t,
+              deletedAt: null,
+            },
+            actor,
+          ),
         'Project slug already exists in this organization.',
       );
       return reply.code(201).send(ok(project));
@@ -402,7 +513,11 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     async (request) => {
       const { principal, project } = await projectFor(request, 'member');
       const { expectedUpdatedAt: expected, ...patch } = projectPatch.parse(request.body);
-      const updated = await write(request, principal, { resource: 'project', id: project.id }, (actor) =>
+      const updated = await write(
+        request,
+        principal,
+        { resource: 'project', id: project.id },
+        (actor) =>
           repos.projects.update(
             project.id,
             patch as { name?: string; slug?: string; description?: string | null },
@@ -419,7 +534,12 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     options('projects', 'Archive a project and its workspaces (admin)'),
     async (request) => {
       const { principal, project } = await projectFor(request, 'admin');
-      const archived = await write(request, principal, { resource: 'project', id: project.id }, (actor) => repos.projects.archive(project.id, now(), actor));
+      const archived = await write(
+        request,
+        principal,
+        { resource: 'project', id: project.id },
+        (actor) => repos.projects.archive(project.id, now(), actor),
+      );
       if (!archived) throw new NotFoundAppError('project');
       return ok({ deleted: true });
     },
@@ -433,7 +553,25 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     input: z.infer<typeof createWorkspaceSchema>,
   ) => {
     const t = now();
-    return write(request, principal, organizationTarget(organizationId), (actor) => repos.workspaces.create({ id: crypto.randomUUID(), organizationId, ...(input.projectId ? { projectId: input.projectId } : {}), name: input.name, slug: slugFor(input.slug, input.name), environment: input.environment, createdAt: t, updatedAt: t, deletedAt: null }, actor),
+    return write(
+      request,
+      principal,
+      organizationTarget(organizationId),
+      (actor) =>
+        repos.workspaces.create(
+          {
+            id: crypto.randomUUID(),
+            organizationId,
+            ...(input.projectId ? { projectId: input.projectId } : {}),
+            name: input.name,
+            slug: slugFor(input.slug, input.name),
+            environment: input.environment,
+            createdAt: t,
+            updatedAt: t,
+            deletedAt: null,
+          },
+          actor,
+        ),
       'Workspace slug already exists in this organization.',
     );
   };
@@ -514,7 +652,11 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
       const { principal, workspace } = await workspaceFor(request, 'member');
       const { expectedUpdatedAt: expected, ...patch } = workspacePatch.parse(request.body);
       await auditForeignProject(request, principal, workspace.organizationId, patch.projectId);
-      const updated = await write(request, principal, { resource: 'workspace', id: workspace.id }, (actor) =>
+      const updated = await write(
+        request,
+        principal,
+        { resource: 'workspace', id: workspace.id },
+        (actor) =>
           repos.workspaces.update(
             workspace.id,
             patch as { name?: string; slug?: string; environment?: string; projectId?: string },
@@ -531,7 +673,12 @@ export const registerTenancyRoutes = (app: FastifyInstance, deps: TenancyRouteDe
     options('workspaces', 'Archive a workspace (admin)'),
     async (request) => {
       const { principal, workspace } = await workspaceFor(request, 'admin');
-      const archived = await write(request, principal, { resource: 'workspace', id: workspace.id }, (actor) => repos.workspaces.archive(workspace.id, now(), actor));
+      const archived = await write(
+        request,
+        principal,
+        { resource: 'workspace', id: workspace.id },
+        (actor) => repos.workspaces.archive(workspace.id, now(), actor),
+      );
       if (!archived) throw new NotFoundAppError('workspace');
       return ok({ deleted: true });
     },
