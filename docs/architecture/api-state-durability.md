@@ -13,6 +13,7 @@ NON-DURABLE warning.
 | --- | --- | --- |
 | users, sessions, refresh/reset/verification tokens, audit | `identity/postgres.ts` | `identity-postgres.integration.test.ts` |
 | device credentials, refresh tokens, enrollment requests, remote audit | `remote-client-store.ts` | `durable-state-postgres.integration.test.ts` |
+| organizations, projects, workspaces, memberships and roles | `identity/postgres.ts` | `tenancy-postgres.integration.test.ts` |
 | platform settings (zero-cost mode) | `PlatformSetting` via `durability.ts` | `durable-state-postgres.integration.test.ts` |
 | incidents and notifications | `notifications.ts` | `durable-state-postgres.integration.test.ts` |
 
