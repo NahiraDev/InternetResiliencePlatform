@@ -107,6 +107,8 @@ jobs:
           contents="$(mktemp)"
           trap 'rm -f "$contents"' EXIT
           dpkg-deb --info "$package"
+          dpkg-deb --field "$package" Version | grep -Fx '0.3.0~prerelease'
+          dpkg --compare-versions '0.3.0~prerelease' lt '0.3.0'
           dpkg-deb --contents "$package" > "$contents"
           grep -Fq './usr/lib/irp/linux-client/dist/index.js' "$contents"
           grep -Fq './usr/lib/irp/linux-client/dist/main.js' "$contents"
