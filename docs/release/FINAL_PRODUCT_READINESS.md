@@ -158,7 +158,7 @@ The previous main CI runs I listed (`2a980afc`, `4a8f9ea8`, `3f30d791`, `97abdb9
 | Federation routes answer 503 in production (no durable store) | Reproduced; deliberate fail-closed |
 | Anonymous access to `/api/v1/platform/status`, `/measurements`, `/metrics`, `/docs` | Reproduced; confirm it is intended |
 | Ordinary users cannot create organizations (members have no permissions) | Reproduced; product decision |
-| `pnpm audit --prod`: 1 high (`effect`, through `prisma`), 2 moderate | Reproduced; reachability not analysed |
+| Dependency advisories. Full `pnpm audit`: 2 critical, 2 high, 8 moderate, 1 low (matches GitHub's count of 13). Both criticals are `tinypool` through `vitest`, and one high is `vite`: development tooling, which the `Dockerfile` leaves out of the runtime image. `pnpm audit --prod`: 1 high (`effect`, through `prisma`), 2 moderate | Reproduced; reachability not analysed; Dependabot alert details not readable (403) |
 | Stray files in repository root: `workspace.patch` (2231 lines), `compose.dev.yaml.bak-*` | Code |
 | `RELEASE_GATE_ROADMAP.md` says a `latest` image tag is published; the policy forbids it | Code |
 | `compose.yaml` publishes PostgreSQL port 5432 on the host | Code |
