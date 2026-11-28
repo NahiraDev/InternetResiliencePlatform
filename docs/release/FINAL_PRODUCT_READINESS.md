@@ -23,7 +23,7 @@ Date: 2026-11-28. Assessment only: no application code was changed.
 
 ## 1. Verified main SHA
 
-`d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (merge of PR #564). No pull request was open when the assessment started. PR #565 (owner, `release/linux-enduser-ready`, head `a798ce26`) was opened during it: documentation and `scripts/install-linux.sh` only. It changes no finding below. Its checks passed except `macos-client` (cancelled).
+`d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (merge of PR #564). No pull request was open when the assessment started. PR #565 (owner, `release/linux-enduser-ready`, head `a798ce26`) was opened during it: documentation and `scripts/install-linux.sh` only. It changes no finding below. Its GitHub check runs passed except `macos-client` (cancelled); both Vercel commit statuses on it failed with "Deployment was blocked" (cause not investigated).
 
 | Check at this SHA | Result |
 | --- | --- |
