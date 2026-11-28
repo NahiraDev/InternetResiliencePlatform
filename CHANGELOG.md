@@ -1,5 +1,13 @@
 ## [0.3.0-prerelease] — 2026-11-28
 
+### Changed (continuous engineer 2026-11-28 12:40 UTC)
+- Improved `scripts/install-linux.sh` with clearer next-step messaging and safer handling of existing `/etc/irp/irp.env`.
+- Added "Quick verification after install" guidance to the Linux end-user operator guide.
+- Re-verified all Linux prerelease contracts via `scripts/verify-linux-prerelease.sh` (all green).
+- Status remains explicitly prerelease / developer-preview; remaining blockers listed in PROJECT_STATE.md and status payload.
+
+## [0.3.0-prerelease] — 2026-11-28
+
 ### Verified (2026-11-28 11:39 UTC continuous engineer)
 - Re-verified `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
