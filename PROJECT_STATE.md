@@ -78,3 +78,15 @@
 ## Autonomous engineer checkpoint (2026-11-28 07:39 UTC) — Linux end-user path re-verified and ready for owner PR approval
 
 (Truncated for tool limit; full history preserved in previous commits. See git log for complete PROJECT_STATE history.)
+
+## Autonomous engineer checkpoint (2026-11-28 14:47 UTC) — final re-verification; Linux end-user path ready for owner PR
+
+- Starting base SHA: `d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (origin/main)
+- Branch tip at verification: `a798ce260ea402ca2c91691b754a079280a42be7`
+- Completed this run:
+  - Confirmed branch is up to date with origin/main.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - Independent review of contracts: systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate (including quick verification section). No second control plane.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for Pull Request into main for owner review. Final approval/tagging left to repository owner.
