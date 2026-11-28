@@ -332,10 +332,18 @@ jobs:
 
       - name: Show Docker Compose logs
         if: always()
+        # Compose interpolates all of compose.yaml for any command, and exports made inside
+        # docker-smoke.sh do not outlive that step. Reserved .invalid domains: nothing is deliverable.
+        env:
+          IRP_EMAIL_WEBHOOK_URL: https://email-relay.invalid/ci-smoke
+          IRP_PUBLIC_BASE_URL: https://irp-smoke.invalid
         run: docker compose logs --no-color
 
       - name: Remove Docker Compose runtime
         if: always()
+        env:
+          IRP_EMAIL_WEBHOOK_URL: https://email-relay.invalid/ci-smoke
+          IRP_PUBLIC_BASE_URL: https://irp-smoke.invalid
         run: docker compose down --volumes --remove-orphans
 
       - name: Create trusted source artifact
