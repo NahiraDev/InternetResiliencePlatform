@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -148,5 +148,51 @@ describe('committed conflict marker scan', () => {
     }
 
     expect(result.files).toEqual([]);
+  });
+});
+
+/**
+ * Docker Compose interpolates the whole of compose.yaml for every command, so each CI step that calls
+ * it needs every `${VAR:?}` variable. Exports made inside scripts/docker-smoke.sh do not reach later
+ * steps, which once broke the always() logs and cleanup steps.
+ */
+describe('CI Docker Compose step environment', () => {
+  const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+  const keys = (block, indent) =>
+    [...block.matchAll(new RegExp(`^ {${indent}}([A-Z][A-Z0-9_]*):`, 'gm'))].map((m) => m[1]);
+  const envBlock = (text, indent) =>
+    text.match(new RegExp(`^ {${indent}}env:\\n((?: {${indent + 2}}.*\\n)+)`, 'm'))?.[1] ?? '';
+
+  const required = new Set(
+    [...read('compose.yaml').matchAll(/\$\{([A-Z0-9_]+):\?/g)].map((m) => m[1]),
+  );
+  const workflow = read('.github/workflows/ci.yml').replace(/\r\n/g, '\n');
+  const job = workflow.slice(workflow.indexOf('\n  validate:\n'));
+  const jobEnv = keys(envBlock(job, 4), 6);
+  const composeSteps = job
+    .split(/^ {6}- name: /m)
+    .filter((step) => /^ {8}run: docker compose /m.test(step));
+
+  it('finds the compose requirements and the logs and cleanup steps', () => {
+    expect(required).toContain('IRP_EMAIL_WEBHOOK_URL');
+    expect(composeSteps.map((step) => step.split('\n')[0])).toEqual([
+      'Show Docker Compose logs',
+      'Remove Docker Compose runtime',
+    ]);
+  });
+
+  it('gives each of those steps every required variable', () => {
+    for (const step of composeSteps) {
+      const available = new Set([...jobEnv, ...keys(envBlock(`${step}\n`, 8), 10)]);
+      const missing = [...required].filter((name) => !available.has(name));
+      expect(missing, step.split('\n')[0]).toEqual([]);
+      expect(step).toMatch(/^ {8}if: always\(\)$/m);
+    }
+  });
+
+  it('only ever supplies undeliverable .invalid email endpoints', () => {
+    const urls = [...workflow.matchAll(/IRP_(?:EMAIL_WEBHOOK|PUBLIC_BASE)_URL: (\S+)/g)];
+    expect(urls.length).toBeGreaterThan(0);
+    for (const [, url] of urls) expect(new URL(url).hostname.endsWith('.invalid')).toBe(true);
   });
 });
