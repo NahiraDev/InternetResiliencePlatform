@@ -1,3 +1,21 @@
+## Autonomous engineer checkpoint (2026-11-28 16:43 UTC) — continuous verification; Linux end-user path ready for owner approval
+
+- Starting base SHA: `d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (origin/main)
+- Branch tip at verification: current HEAD (pre-this-commit)
+- Completed this run:
+  - Confirmed branch is up to date with origin/main.
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - Independent review of contracts: systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual live opt-in, control-server rejects live, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status surface with prereleaseBlockers and releaseStatus, packaging version 0.3.0-prerelease, operator docs.
+  - Confirmed no second control plane.
+- Remaining blockers (explicit, not hidden):
+  - Linux runtime soak / external validation evidence (#323)
+  - PostgreSQL production deployment evidence (#410/#411)
+  - exact-SHA CI cleanliness
+  - DNS write under non-root User=irp (intentionally disabled; requires root or polkit)
+  - Full production certification / Phase 150 evidence remains open
+- Honest status: **prerelease / developer-preview only**. Not production-certified.
+- Next: Branch will be pushed; existing Pull Request #565 will be updated for repository owner review and approval. Final release approval, tagging, and publish remain exclusively with the repository owner.
+
 ## Autonomous engineer checkpoint (2026-11-28 16:03 UTC) — continuous verification; Linux end-user path ready for owner approval
 
 - Starting base SHA: `d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (origin/main)
