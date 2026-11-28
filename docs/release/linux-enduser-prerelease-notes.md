@@ -6,11 +6,11 @@
 
 ## Base
 
-Current main SHA at time of this note: `2a980afc7cf6b6c19f448a2bf1f750bd4a69f3a5` (post merge of PR #563)
+Current main SHA at time of this note: `d6fa748f4526a75845b30c6aa1bdf5e9335cd614` (origin/main)
 
 Branch used for continuous tracking: `release/linux-enduser-ready`
 
-Latest continuous verification: 2026-11-28 00:45 UTC (post-merge of PR #563 + verify-linux-prerelease.sh all contracts green).
+Latest continuous verification: 2026-11-28 11:39 UTC (verify-linux-prerelease.sh all contracts green).
 
 ## What works correctly today on Linux (Debian 13)
 
