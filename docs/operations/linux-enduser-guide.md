@@ -62,6 +62,25 @@ sudo irp doctor
 
 `irp status` and `irp doctor` exit non-zero when the daemon is unreachable or when evidence is incomplete. The status payload includes an explicit `releaseStatus` field confirming this is a prerelease / developer-preview (not production-certified), plus a `prereleaseBlockers` array listing the remaining open items so operators do not need to consult external docs for the current limitations.
 
+
+## Quick verification after install
+
+After `systemctl enable --now irp-daemon` and a few seconds:
+
+```bash
+sudo irp status | jq '.releaseStatus, .prereleaseBlockers, .authorization'
+# or without jq:
+sudo irp status
+```
+
+Expect:
+- `releaseStatus` containing "prerelease / developer-preview"
+- `prereleaseBlockers` listing the known open items (soak evidence, Postgres evidence, etc.)
+- `authorization.liveActive` false unless you have completed the dual opt-in and the host facts allow it
+- blockers mentioning DNS write under non-root User=irp (intentional)
+
+This confirms the honest status surface is working.
+
 ## Configuration (`/etc/irp/irp.env`)
 
 | Variable | Default | Meaning |

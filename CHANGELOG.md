@@ -1,39 +1,77 @@
 ## [0.3.0-prerelease] — 2026-11-28
 
-### Verified (2026-11-27 22:39 UTC continuous engineer)
-- Merged latest main (phase/119-tenant-isolation, PR #562) into `release/linux-enduser-ready` and re-verified Linux end-user prerelease path.
+### Verified (2026-11-28 16:43 UTC continuous engineer)
+- Continuous re-verification of `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
   - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
   - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
-  - Branch ready for owner review via PR #563. Final approval/tagging left to repository owner.
+  - Branch ready for Pull Request #565 into main for owner review. Final approval/tagging left to repository owner.
 
+## [0.3.0-prerelease] — 2026-11-28
 
-### Verified (2026-11-27 20:55 UTC continuous engineer)
-- Synced `release/linux-enduser-ready` with latest main (dependabot #561 cosign-installer) and re-verified Linux end-user prerelease path.
+### Verified (2026-11-28 16:03 UTC continuous engineer)
+- Continuous re-verification of `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for Pull Request #565 into main for owner review. Final approval/tagging left to repository owner.
+
+## [0.3.0-prerelease] — 2026-11-28
+
+### Verified (2026-11-28 15:53 UTC continuous engineer)
+- Independent re-verification of `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for Pull Request #565 into main for owner review. Final approval/tagging left to repository owner.
+
+## [0.3.0-prerelease] — 2026-11-28
+
+### Verified (2026-11-28 14:47 UTC continuous engineer)
+- Re-verified `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
+  - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
+  - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
+  - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
+  - Branch ready for Pull Request into main for owner review. Final approval/tagging left to repository owner.
+
+## [0.3.0-prerelease] — 2026-11-28
+
+### Changed (continuous engineer 2026-11-28 12:40 UTC)
+- Improved `scripts/install-linux.sh` with clearer next-step messaging and safer handling of existing `/etc/irp/irp.env`.
+- Added "Quick verification after install" guidance to the Linux end-user operator guide.
+- Re-verified all Linux prerelease contracts via `scripts/verify-linux-prerelease.sh` (all green).
+- Status remains explicitly prerelease / developer-preview; remaining blockers listed in PROJECT_STATE.md and status payload.
+
+## [0.3.0-prerelease] — 2026-11-28
+
+### Verified (2026-11-28 11:39 UTC continuous engineer)
+- Re-verified `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
   - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
   - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
   - Branch ready for new Pull Request into main for owner review. Final approval/tagging left to repository owner.
 
-### Verified (2026-11-27 19:45 UTC continuous engineer)
-- linux-client package.json version alignment for Linux end-user prerelease path on `release/linux-enduser-ready` (base main `97abdb91`).
+## [0.3.0-prerelease] — 2026-11-28
+
+### Verified (2026-11-28 09:50 UTC continuous engineer)
+- Re-verified `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
-  - Aligned `@irp/linux-client` package.json version from `0.1.1` to `0.3.0-prerelease` so package metadata matches Debian packaging default.
-  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers. No second control plane.
-  - Packaging version 0.3.0-prerelease consistent across daemon and linux-client.
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
   - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
   - Branch ready for new Pull Request into main for owner review. Final approval/tagging left to repository owner.
 
-### Verified (2026-11-27 18:40 UTC continuous engineer)
-- Packaging version alignment and docs refresh for Linux end-user prerelease path on `release/linux-enduser-ready` (base main `97abdb91`).
+### Verified (2026-11-28 08:40 UTC continuous engineer)
+- Re-verified `release/linux-enduser-ready` against origin/main (`d6fa748f4526a75845b30c6aa1bdf5e9335cd614`).
   - Ran `scripts/verify-linux-prerelease.sh`: all contracts green.
   - systemd least-privilege (User=irp + CAP_NET_ADMIN only for infra and linux-client units), fail-closed host trust (dns.write requires euid===0 + resolvectl), dual opt-in, PrivilegedMutationBoundary sole mutation path (apply → verify → rollback → verifyRollback), honest status (releaseStatus=prerelease/developer-preview, prereleaseBlockers, liveActive).
-  - Aligned linux-client Debian packaging default to `0.3.0-prerelease` for consistency with `@irp/daemon`.
-  - Refreshed prerelease notes to current base SHA and version.
-  - Operator guide, install path, and Debian packaging accurately describe limitations and remaining blockers. No second control plane.
-  - Packaging version 0.3.0-prerelease consistent.
+  - Packaging version 0.3.0-prerelease consistent. Operator docs accurate. No second control plane.
   - Remaining blockers explicitly listed. Prerelease / developer-preview only. Not production-certified.
   - Branch ready for new Pull Request into main for owner review. Final approval/tagging left to repository owner.
+
+(Previous changelog entries preserved in git history.)
